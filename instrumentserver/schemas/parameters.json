@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "title": "Parameter state",
+  "description": "This schema helps us validate json files that store parameter data.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "patternProperties": {
+    "^(\\w+)(\\.\\w+)*$": {
+      "type": "object",
+      "description": "name of the parameter, in object notation: object.subobject.[...].parameter -- any number of parent objects for the parameter are possible.",
+      "properties": {
+        "value": {
+          "type": ["string", "object", "null", "number", "boolean", "array"],
+          "description": "value of the parameter"
+        },
+        "unit": {
+          "type": "string",
+          "description": "unit of the parameter"
+        },
+        "vals": {
+          "type": ["object", "string", "array"],
+          "description": "validator for the value of the parameter"
+        }
+      },
+      "required": ["value"]
+    }
+  }
+}
