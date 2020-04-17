@@ -6,7 +6,7 @@ from enum import Enum, unique, auto
 import zmq
 from qcodes import Parameter, Station
 
-from qtpy import QtCore, QtWidgets, QtGui
+from . import QtCore, QtWidgets, QtGui
 from .base import send, recv
 from .log import LogLevels, LogWidget, log, setupLogging
 
