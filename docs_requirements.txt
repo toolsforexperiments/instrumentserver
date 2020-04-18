@@ -1,11 +1,1 @@
-sphinx==2.4.4
-sphinx_rtd_theme
-sphinx-jsonschema
-nbsphinx
-nbconvert==5.6.1
-ipython
-jupyter
-scipy
-pandas
-xarray
-packaging
+sphinx_autodoc_typehints
