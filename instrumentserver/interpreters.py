@@ -9,8 +9,10 @@ Created on Mon Apr 20 15:57:23 2020
 
 from typing import Dict, List, Any, Union
 from qcodes import Station
+from qcodes.utils.validators import Validator, range_str
+import re
 
-def dict_to_instrument_call(station: Station, instructionDict : Dict) ->  Any:
+def instructionDict_to_instrumentCall(station: Station, instructionDict : Dict) ->  Any:
     """
     This is the interpreter function that the server will call to translate the
     dictionary received from the proxy to instrument calls.
@@ -48,3 +50,40 @@ def dict_to_instrument_call(station: Station, instructionDict : Dict) ->  Any:
     funcName = next(iter(instructionDict['funcs']))
     funcArgs = instructionDict['funcs'][funcName]
     return instrument.call(funcName, *funcArgs)
+
+
+    
+
+def validatorStr_to_validatorObj(valStr: str) -> Validator:
+    """
+    This is the interpreter function that translate the validator string back 
+    to a Validator object. 
+    This can be used in the proxy class for the instantiate of virtual parameters.
+    Or in the GUI clients for interface generation.
+    
+    :param valStr: the string that represents the validator which is generated
+        from the snapshot method (parameter.snapshot()['vals'])
+
+    :returns: a Validator object the is easy to use for the goals mentioned above
+    """
+    # Not fully implemented yet. A very stupid version for now.
+    # I have to look into the python re package
+    
+    # supportedTypes = ['Numbers', 'Strings', 'Boolean']
+    # number_type = r"[-+]?\d*\.\d+|\d+"
+    # supportedRange = ['=', "<=", '>=']
+    #supportedPatterns = []
+    def str_to_number(x: str) -> Union[float, int]:
+        return float(x) if '.' in x else int(x)
+    
+    if valStr[:8] ==  '<Numbers':
+        if valStr[8] == '>':
+            valObj = Numbers()
+        elif valStr[9:12] == 'v>='
+            valObj = Numbers(str_to_number(valstr[12:-2]))
+        elif bool (re.search("<=v", valStr) ):
+            valObj = Numbers(str_to_number(valstr[12:-2]))
+        
+    
+    
+    

@@ -7,6 +7,7 @@ Created on Sat Apr 18 16:13:40 2020
 from typing import Dict, List, Any, Union, Tuple
 from qcodes.instrument import parameter
 from functools import partial
+from qcodes.utils.validators import Numbers
 
 class InstrumentProxy():
     """Prototype for an instrument proxy object. Each proxy instantiation 
@@ -43,7 +44,8 @@ class InstrumentProxy():
                             paramName_, 
                             set_cmd = partial(self.setParam, paramName_),
                             get_cmd = partial(self.getParam, paramName_),
-                            initial_value = self.__paramDict[paramName_]['value']                             
+                            initial_value = self.__paramDict[paramName_]['value'],
+                            vals =  Numbers(-5, 5)                           
                             )
             setattr(self, paramName_, param_temp)  
         
