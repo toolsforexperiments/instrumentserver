@@ -7,83 +7,159 @@ Created on Mon Apr 20 15:57:23 2020
 
 
 
-from typing import Dict, List, Any, Union
-from qcodes import Station
+from typing import Dict, List, Any, Union, List, Optional
+from typing_extensions import Literal, TypedDict
+from qcodes import Station, Instrument
 from qcodes.utils.validators import Validator, range_str
 import re
+import jsonpickle
 
-def instructionDict_to_instrumentCall(station: Station, instructionDict : Dict) ->  Any:
+
+# dictionary type defination 
+
+class InstrumentDictType(TypedDict):
+    instrument_type : str
+    address : Optional[str]
+    serial_number : Optional[str]
+    
+class ParamDictType(TypedDict):
+    name :  str
+    value : Optional[Any] 
+    
+class FuncDictType(TypedDict):
+    name :  str
+    args : Optional[tuple]
+
+class InstructionDictType(TypedDict):
+    operation: Literal['get_existing_instruments'
+                        'instrument_creation',
+                        'proxy_construction', 
+                        'proxy_get_param', 
+                        'proxy_set_param',
+                        'proxy_call_func'
+                        'instrument_snapshot'
+                        ] 
+    
+    instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
+    instrumnet : Optional[InstrumentDictType]  # for instrument creation
+    parameter : Optional[ParamDictType] # for get/set_param
+    function : Optional[FuncDictType] # for function call
+    
+    
+    
+    
+def instructionDict_to_instrumentCall(station: Station, instructionDict : InstructionDictType) -> Any:
     """
     This is the interpreter function that the server will call to translate the
     dictionary received from the proxy to instrument calls.
     
     :param station: qcodes.station object, the station that contains the 
         instrument to call.
-    :param instructionDict:  The dicitonary passed from the instrument proxy. 
-        Must contains a 'name' item whihc is the instrument name.
-        And either one of the following:
-            a) A dictionary called 'functions' with one item whose key is the 
-                name of the function, and the value is a tuple that cantains 
-                the values of the function arguments.
-                e.g. 
-                    functions = {'multiply' : (a, b)}
-            b) A dictionary called 'parameters' with one item which is a dictionary
-                contains one parameter (qcodes parameter snapshot format). 
-                e.g.
-                    parameters = {'ch1' : {'value' : 1, 'unit' : V}}
-                if value is None, will call 'get parameter', otherwise, set the
-                value
-    :returns: the parameter returned from the instrument call
+    :param instructionDict:  The dicitonary passed from the instrument proxy
+        that contains the information needed for the operation. 
+
+    :returns: the results returned from the instrument call
     """
     
-    instrument = station[instructionDict['name']]
-    # if only 'parameters' is in instructionDict and only has one item
-    paramName = next(iter(instructionDict['parameters']))
-    paramToChange = instructionDict['parameters'][paramName]
-    if paramToChange['value'] == None:
-        return instrument[paramName]()
-    else:
-        return instrument[paramName](paramToChange['value'])
-
+    operation = instructionDict['operation']
     
-    # if only 'functions' is in instructionDict and only has one item
-    funcName = next(iter(instructionDict['funcs']))
-    funcArgs = instructionDict['funcs'][funcName]
-    return instrument.call(funcName, *funcArgs)
+    if operation == 'get_existing_instruments': 
+        # usually this operation will be called before all the others to check
+        # if the instrument already exists ont the server.
+        returns = _getExistingInstruments(station)
+    elif operation == 'instrument_creation':
+        returns = _instrumentCreation(station, instructionDict)
+    else: # doing operation on an existing instrument
+        instrument = station[instructionDict['instrument_name']]     
+        if operation == 'proxy_construction':
+            returns = _proxyConstruction(instrument)
+        elif operation == 'proxy_get_param':
+            returns = _proxyGetParam(instrument, instructionDict['parameter'])       
+        elif operation == 'proxy_set_param':
+            returns = _proxySetParam(instrument, instructionDict['parameter'])  
+        elif operation == 'proxy_call_func':
+            returns = _proxyCallFunc(instrument, instructionDict['function'])    
+        elif operation == 'instrument_snapshot':
+            returns = instrument.snapshot()          
+        else :
+            # the instructionDict will be ckecked in the proxy before sent to 
+            # here, so in principle this error should not happen.
+            raise TypeError('operation type not supported')
+    return  returns
 
 
-    
-
-def validatorStr_to_validatorObj(valStr: str) -> Validator:
+# Some private tool functions
+def _getExistingInstruments(station: Station) -> List:
     """
-    This is the interpreter function that translate the validator string back 
-    to a Validator object. 
-    This can be used in the proxy class for the instantiate of virtual parameters.
-    Or in the GUI clients for interface generation.
+    Get the existing instruments in the station,
     
-    :param valStr: the string that represents the validator which is generated
-        from the snapshot method (parameter.snapshot()['vals'])
-
-    :returns: a Validator object the is easy to use for the goals mentioned above
+    :returns : list of the existing instruemnt names in the station
     """
-    # Not fully implemented yet. A very stupid version for now.
-    # I have to look into the python re package
+    return list(station.snapshot()['instruments'].keys())
+
+def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
+    # not implemented yet
+    pass
+
+def _proxyConstruction(instrument: Instrument) -> Dict:
+    '''
+    Get the dictionary that describes the instrument.
+    This is very similar to the qcodes snapshot of the instrument, the only 
+    difference (for now) is that the string that describs the validator of 
+    each parameter/argument is replaced with a jsonpickle encoded form so that 
+    it is easier to reproduce the validator object in the proxy.
     
-    # supportedTypes = ['Numbers', 'Strings', 'Boolean']
-    # number_type = r"[-+]?\d*\.\d+|\d+"
-    # supportedRange = ['=', "<=", '>=']
-    #supportedPatterns = []
-    def str_to_number(x: str) -> Union[float, int]:
-        return float(x) if '.' in x else int(x)
+    :returns : a dictionary that dercribes the instrument
+
+    '''
+    construct_dict_ = instrument.snapshot()
+    for param in construct_dict_['parameters']:
+        jp_vals = jsonpickle.encode(instrument[param].vals)
+        construct_dict_['parameters'][param]['vals'] = jp_vals
     
-    if valStr[:8] ==  '<Numbers':
-        if valStr[8] == '>':
-            valObj = Numbers()
-        elif valStr[9:12] == 'v>='
-            valObj = Numbers(str_to_number(valstr[12:-2]))
-        elif bool (re.search("<=v", valStr) ):
-            valObj = Numbers(str_to_number(valstr[12:-2]))
+    for func in construct_dict_['functions']:
+        jp_args = jsonpickle.encode(instrument[func]._args)
+        construct_dict_['functions'][func]['args'] = jp_args
         
+    return construct_dict_
     
     
+def _proxyGetParam(instrument: Instrument, paramDict : ParamDictType) -> Any:
+    '''
+    Get a parameter from the instrument.
+    
+    :param paramDict: the dictionary that contains the parameter to change, the 
+        'value' item will be omited.
+    :returns : value of the parameter returned from instrument
+
+    '''
+    paramName = paramDict['name']   
+    return instrument[paramName]()
+
+def _proxySetParam(instrument: Instrument, paramDict : ParamDictType) -> None:
+    '''
+    Set a parameter in the instrument.
+    
+    :param paramDict:  the dictionary that contains the parameter to change, the 
+        'value' item will be the set value.
+        e.g. {'ch1': {'value' : 10} }
+    '''
+    paramName = paramDict['name']     
+    instrument[paramName](paramDict['value'])
+
+def _proxyCallFunc(instrument: Instrument, funcDict : FuncDictType) -> Any:  
+    '''
+    Call an instrument function.
+    
+    :param funcDict:  the dictionary that contains the name of the function to
+        call and the argument values
+        
+    :returns : result returned from the instrument function
+    '''
+    funcName = funcDict['name']
+    args = funcDict['args']
+    return instrument.call(funcName, *args)
+    
+
+
     
