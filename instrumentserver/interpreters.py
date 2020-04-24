@@ -31,7 +31,7 @@ class FuncDictType(TypedDict):
     args : Optional[tuple]
 
 class InstructionDictType(TypedDict):
-    operation: Literal['get_existing_instruments'
+    operation: Literal['get_existing_instruments',
                         'instrument_creation',
                         'proxy_construction', 
                         'proxy_get_param', 
@@ -112,16 +112,33 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
     :returns : a dictionary that dercribes the instrument
 
     '''
-    construct_dict_ = instrument.snapshot()
-    for param in construct_dict_['parameters']:
-        jp_vals = jsonpickle.encode(instrument[param].vals)
-        construct_dict_['parameters'][param]['vals'] = jp_vals
-    
-    for func in construct_dict_['functions']:
-        jp_args = jsonpickle.encode(instrument[func]._args)
-        construct_dict_['functions'][func]['args'] = jp_args
+    param_names = list(instrument.__dict__['parameters'].keys())
+    construct_param_dict = {}    
+    for param_name in param_names:
+        param_dict_temp = {}
+        param_dict_temp['name'] = param_name
+        param_dict_temp['unit'] = instrument[param_name].unit
         
-    return construct_dict_
+        jp_vals = jsonpickle.encode(instrument[param_name].vals)
+        param_dict_temp['vals'] = jp_vals
+        
+        construct_param_dict[param_name] = param_dict_temp
+    
+    func_names = list(instrument.__dict__['functions'].keys())
+    construct_func_dict = {}
+    for func_name in func_names:
+        func_dict_temp = {}
+        param_dict_temp['name'] = func_name
+        
+        jp_args = jsonpickle.encode(instrument[func_name]._args)
+        func_dict_temp['args'] = jp_args
+        
+        construct_func_dict[func_name] = func_dict_temp
+        
+    construct_dict = {'functions' : construct_func_dict,
+                      'parameters' : construct_param_dict}
+        
+    return construct_dict
     
     
 def _proxyGetParam(instrument: Instrument, paramDict : ParamDictType) -> Any:

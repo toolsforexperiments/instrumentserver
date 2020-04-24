@@ -76,18 +76,3 @@ yoko_ss = station.snapshot()['instruments']['yoko']
 current_ss = yoko_ss['parameters']['current']
 
 
-# setup a zmq server
-context = zmq.Context()
-socket = context.socket(zmq.REP)
-socket.bind("tcp://*:5555")
-
-while True:
-    #  Wait for request from client
-    received_dict = socket.recv_json()
-    print("Received instruction: "  + received_dict['operation'])
-    #  find which instrument client is communicating
-    respondes = instructionDict_to_instrumentCall(station, received_dict)    
-    #  Send reply back to client
-    socket.send_json(respondes)
-
-
