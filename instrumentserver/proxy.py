@@ -4,14 +4,19 @@ Created on Sat Apr 18 16:13:40 2020
 
 @author: Chao
 """
+import os
 import zmq
+import json
 import jsonpickle
+from jsonschema import validate
 from typing import Dict, List, Any, Union, Tuple
 from qcodes.instrument import parameter
 from functools import partial
 from qcodes.utils.validators import Numbers
+from . import getInstrumentserverPath
 
-
+PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+                                  'instruction_dict.json')
 
 class InstrumentProxy():
     """Prototype for an instrument proxy object. Each proxy instantiation 
@@ -29,7 +34,6 @@ class InstrumentProxy():
         :param server_address: the last 4 digits of the local host tcp address
         """
         # This does not include create instrument from client yet
-
         
         self.name = instruemnt_name
         self.context = zmq.Context()
@@ -53,7 +57,7 @@ class InstrumentProxy():
                 
         # Get all the parameters and functions from the server and add them to 
         # this virtual instrument class
-        print("Setting up virtual instrument..." )
+        print("Setting up virtual instrument "+ self.name + "..." )
         instructionDict = {
             'operation' : 'proxy_construction',
             'instrument_name' : self.name
@@ -69,13 +73,19 @@ class InstrumentProxy():
         """ send commend to the server in instructionDict format, return the 
         respond from server.
         """        
-        # need some sort of validator here
+        with open(PARAMS_SCHEMA_PATH) as f:
+            schema = json.load(f)
+        try:
+            validate(instructionDict, schema)
+        except:
+            raise
+            
         self.socket.send_json(instructionDict)
         return self.socket.recv_json()         
            
     def _constructProxyParameters(self):
         """Based on the parameter dictionary replied from server, add the 
-            instrument parameters to the proxy instrument class
+        instrument parameters to the proxy instrument class
         """     
         for param in self._construct_param_dict :  
             param_dict_temp = self._construct_param_dict[param]        

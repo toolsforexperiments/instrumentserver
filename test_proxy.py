@@ -9,5 +9,7 @@ from instrumentserver.proxy import InstrumentProxy
 
 yoko = InstrumentProxy('yoko')
 
-# print(yoko.current(10))
+print(yoko.current(10))
 print(yoko.current())
+
+yoko.dac1()
