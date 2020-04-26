@@ -6,9 +6,11 @@ Created on Fri Apr 10 21:52:09 2020
 """
 
 import os
+from types import MethodType
 import json
 from functools import partial
 from time import sleep
+import inspect
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,15 +43,26 @@ start_all_logging()
 station = qc.Station()
 yoko = DummyInstrument('yoko')
 
-def dum_multiply( a : int, b : int, c:int =3):
+
+# a function added using the old style 'add_function' method
+def multiply_addfunc( a : int, b : int, c:int=3):
     print (a*b*c)
     return a*b*c
-
 yoko.add_function(
-    'dum_multiply', 
-    call_cmd = dum_multiply, 
+    'multiply_addfunc', 
+    call_cmd = multiply_addfunc, 
     args = [Numbers(), Numbers(), Numbers()]
     )
+
+
+# a function added to instrument class as bound methods
+def multiply_method(self,  a : int, b : int, c:int=3, *args, **kwargs):
+    print (a*b*c*self.current())
+    return a*b*c*self.current()
+yoko.multiply_method = MethodType(multiply_method, yoko)
+
+
+# add parameters
 yoko.add_parameter(
     'operation_mode', 
     vals =  Strings() 
@@ -75,4 +88,16 @@ station.add_component(test_param)
 yoko_ss = station.snapshot()['instruments']['yoko']
 current_ss = yoko_ss['parameters']['current']
 
+inspect.getmembers(yoko)
 
+def get_instrument_functions(instrument):
+    methods = set(dir(instrument))
+    base_methods = (dir(base) for base in instrument.__class__.__bases__)
+    unique_methods = methods.difference(*base_methods)
+    functions = [method for method in unique_methods if callable(getattr(instrument, method))]
+    return list(functions)
+
+print(get_instrument_functions(yoko))
+
+inspect.getfullargspec(yoko.multiply_addfunc)
+inspect.getfullargspec(yoko.multiply_method)

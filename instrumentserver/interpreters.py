@@ -5,14 +5,16 @@ Created on Mon Apr 20 15:57:23 2020
 @author: Chao
 """
 
-
-
+import re
+import inspect
+import jsonpickle
 from typing import Dict, List, Any, Union, List, Optional
 from typing_extensions import Literal, TypedDict
+import qcodes as qc
 from qcodes import Station, Instrument
 from qcodes.utils.validators import Validator, range_str
-import re
-import jsonpickle
+
+
 
 
 # dictionary type defination 
@@ -104,10 +106,11 @@ def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
 def _proxyConstruction(instrument: Instrument) -> Dict:
     '''
     Get the dictionary that describes the instrument.
-    This is very similar to the qcodes snapshot of the instrument, the only 
-    difference (for now) is that the string that describs the validator of 
+    This parameter part is similar to the qcodes snapshot of the instrument,
+    but with less information, also the string that describes the validator of 
     each parameter/argument is replaced with a jsonpickle encoded form so that 
     it is easier to reproduce the validator object in the proxy.
+    The functions are directly extracted from the instrument class.
     
     :returns : a dictionary that dercribes the instrument
 
@@ -117,24 +120,40 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
     for param_name in param_names:
         param_dict_temp = {}
         param_dict_temp['name'] = param_name
-        param_dict_temp['unit'] = instrument[param_name].unit
-        
+        param_dict_temp['unit'] = instrument[param_name].unit        
         jp_vals = jsonpickle.encode(instrument[param_name].vals)
-        param_dict_temp['vals'] = jp_vals
-        
+        param_dict_temp['vals'] = jp_vals    
         construct_param_dict[param_name] = param_dict_temp
     
-    func_names = list(instrument.__dict__['functions'].keys())
+    # get the fucntions belong to the instrument
+    methods = set(dir(instrument))
+    base_methods = (dir(base) for base in instrument.__class__.__bases__)
+    unique_methods = methods.difference(*base_methods)
+    func_names = []
+    for method in unique_methods :
+        if callable(getattr(instrument, method)) and method not in construct_param_dict:
+            func_names.append(method)
+    # create the dictionary that contains the info needed for creating virtual 
+    # instrument.    
     construct_func_dict = {}
     for func_name in func_names:
         func_dict_temp = {}
-        param_dict_temp['name'] = func_name
-        
-        jp_args = jsonpickle.encode(instrument[func_name]._args)
-        func_dict_temp['args'] = jp_args
-        
-        construct_func_dict[func_name] = func_dict_temp
-        
+        func_dict_temp['name'] = func_name
+
+        if getattr(instrument , func_name).__class__ == qc.instrument.function.Function:
+        # for functions added using the old 'instruemnt.add_function' method,
+        # (the functions only have positional arguments, and each argument has
+        # a validator). In this case, the list of validators is pickled            
+            jp_argvals = jsonpickle.encode(instrument[func_name]._args)
+            func_dict_temp['arg_vals'] = jp_argvals            
+        else:
+        # for functions added directly to instrument class as bound methods,
+        # the fullargspec is pickled             
+            func = getattr(instrument , func_name)
+            fullargspec = inspect.getfullargspec(func)
+            jp_fullargspec = jsonpickle.encode(fullargspec)
+            func_dict_temp['fullargspec'] = jp_fullargspec                      
+        construct_func_dict[func_name] = func_dict_temp        
     construct_dict = {'functions' : construct_func_dict,
                       'parameters' : construct_param_dict}
         
@@ -174,8 +193,20 @@ def _proxyCallFunc(instrument: Instrument, funcDict : FuncDictType) -> Any:
     :returns : result returned from the instrument function
     '''
     funcName = funcDict['name']
-    args = funcDict['args']
-    return instrument.call(funcName, *args)
+    
+    if ('kwargs' in funcDict) and ('args' in funcDict):
+        args = funcDict['args']
+        kwargs = funcDict['kwargs']
+        return getattr(instrument, funcName)(*args, **kwargs)
+    elif 'args' in funcDict:
+        args = funcDict['args']
+        return getattr(instrument, funcName)(*args)
+    elif 'kwargs' in funcDict:
+        kwargs = funcDict['kwargs']
+        return getattr(instrument, funcName)(**kwargs)
+    else:
+        return getattr(instrument, funcName)()
+
     
 
 

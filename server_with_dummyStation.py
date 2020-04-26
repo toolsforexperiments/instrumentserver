@@ -6,6 +6,7 @@ Created on Fri Apr 10 21:52:09 2020
 """
 
 import os
+from types import MethodType
 import json
 from functools import partial
 from time import sleep
@@ -41,15 +42,36 @@ start_all_logging()
 station = qc.Station()
 yoko = DummyInstrument('yoko')
 
-def dum_multiply( a : int, b : int, c:int =3):
+# a function added using the old style 'add_function' method
+def multiply_addfunc( a : int, b : int, c:int=3):
     print (a*b*c)
     return a*b*c
-
 yoko.add_function(
-    'dum_multiply', 
-    call_cmd = dum_multiply, 
+    'multiply_addfunc', 
+    call_cmd = multiply_addfunc, 
     args = [Numbers(), Numbers(), Numbers()]
     )
+
+
+# functions added to instrument class as bound methods
+def multiply_method(self,  a : int, b : int, c:int=3):
+    print (a*b*c*self.current())
+    return a*b*c*self.current()
+yoko.multiply_method = MethodType(multiply_method, yoko)
+
+def sum_method(self,  a : int, b : int, c:int=3):
+    print (a+b+c+self.current())
+    return a+b+c+self.current()
+yoko.sum_method = MethodType(sum_method, yoko)
+
+def reset_method(self):
+    print ('reset')
+    self.current(0)
+yoko.reset_method = MethodType(reset_method, yoko)
+
+
+
+# add parameters
 yoko.add_parameter(
     'operation_mode', 
     vals =  Strings() 

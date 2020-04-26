@@ -114,9 +114,12 @@
               },
               "args": {
                 "description": "positional arguments for the function"
+              },
+              "kwargs": {
+                "description": "keyword arguments for the function"
               }
             },
-          "required": ["name", "args"]       
+          "required": ["name"]       
           }
         },       
         "required": ["instrument_name", "function"]

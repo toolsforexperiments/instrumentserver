@@ -5,6 +5,7 @@ Created on Sat Apr 18 16:13:40 2020
 @author: Chao
 """
 import os
+import inspect
 import zmq
 import json
 import jsonpickle
@@ -12,7 +13,7 @@ from jsonschema import validate
 from typing import Dict, List, Any, Union, Tuple
 from qcodes.instrument import parameter
 from functools import partial
-from qcodes.utils.validators import Numbers
+from qcodes.utils.validators import Validator
 from . import getInstrumentserverPath
 
 PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
@@ -102,10 +103,22 @@ class InstrumentProxy():
         """Based on the function dictionary replied from server, add the 
             instrument functions to the proxy instrument class
         """   
-        for func in self._construct_func_dict :
-            func_temp = partial(self._callFunc, func) 
-            setattr(self, func, func_temp ) 
-
+        for func_name in self._construct_func_dict :
+            func_dic = self._construct_func_dict[func_name]
+            print (func_dic.keys())
+            print (self._construct_func_dict.keys())
+            if len(func_dic) != 2:
+                raise KeyError('invalid function construction dictionary')
+            if 'arg_vals' in func_dic:
+                vals = jsonpickle.decode(func_dic['arg_vals'])
+                func_temp = partial(self._validateAndCallFunc, func_name, vals) 
+            elif 'fullargspec' in func_dic:
+                fullargspec = jsonpickle.decode(func_dic['fullargspec'])
+                if 'self' in fullargspec.args:
+                    fullargspec.args.remove('self')
+                func_temp = partial(self._callFunc, func_name, fullargspec) 
+            
+            setattr(self, func_name, func_temp )
 
     
     def _getParam(self, para_name: str) -> Any:
@@ -134,13 +147,21 @@ class InstrumentProxy():
             }
         self._requestFromServer(instructionDict)
         
-    def _callFunc(self, func_name: str, *args: Any) -> Any: 
-        """ send requet to the server for function call.
+    
+    def _validateAndCallFunc(self, func_name: str, 
+                             validators : List[Validator], 
+                             *args: Any) -> Any: 
+        """ validate the arguments with the provided validators first, then 
+        send requet to the server for function call. Only used for the functions
+        that are in the qcodes.instrument.function.Function class.
         
         :param funcName: The name of the function to call
+        :param validators: List of validators for each argument
         :param args: A tuple that contains the value of the function arguments
         :returns: the return value of the function replied from the server
         """
+        for i in range(len(args)):
+            validators[i].validate(args[i])
         instructionDict = {
             'operation' : 'proxy_call_func',
             'instrument_name' : self.name,
@@ -148,6 +169,38 @@ class InstrumentProxy():
             }
         return_value = self._requestFromServer(instructionDict)
         return return_value
+
+
+    def _callFunc(self, func_name: str, 
+              fullargspec: inspect.FullArgSpec,
+              *args: Any, 
+              **kwargs: Dict) -> Any: 
+        """ call functions that are bound methods to the instruemnt class.
+        
+        :param funcName: The name of the function to call
+        :param fullargspec: Signiture of the origional instruemnt function on
+            the server.
+        :param args: A tuple that contains the value of the function arguments
+        :returns: the return value of the function replied from the server
+        """
+        def len_(foo):
+            if foo ==None:
+                return 0
+            else:
+                return len(foo)
+        required_vlue_number = len_(fullargspec.args) - len_(fullargspec.defaults) 
+        max_provided_value_number = len_(args) + len_(kwargs)
+        if required_vlue_number > max_provided_value_number:
+            raise TypeError(func_name + ' missing arguments')
+            
+        instructionDict = {
+            'operation' : 'proxy_call_func',
+            'instrument_name' : self.name,
+            'function' : {'name' : func_name, 'args' : args, 'kwargs' : kwargs}
+            }
+        return_value = self._requestFromServer(instructionDict)
+        return return_value    
+    
 
     def snapshot(self) -> Dict:
         """ send requet to the server for a snapshot of the instruemnt.
