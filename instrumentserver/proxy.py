@@ -103,22 +103,53 @@ class InstrumentProxy():
         """Based on the function dictionary replied from server, add the 
             instrument functions to the proxy instrument class
         """   
+        def _build_facade(func_dic):
+            """Build a facade function, matching the signature of the origional
+            instrument function.
+            """
+            name = func_dic['name']
+            docstring = func_dic['docstring']
+            spec = jsonpickle.decode(func_dic['fullargspec'])
+            sig = jsonpickle.decode(func_dic['signature'])
+            
+            if spec.args[0]=='self':
+                spec.args.remove('self')
+            args, default_values = spec[0], spec[3]
+            arglen = len(args)
+            
+            if default_values is not None:
+                defaults = args[arglen - len(default_values):]                       
+                arglen -= len(list(defaults))
+        
+            def _proxy(*pargs, **pkw):       
+                # Reconstruct keyword arguments
+                if default_values is not None:            
+                    pargs, kwparams = pargs[:arglen], pargs[arglen:]
+                    for positional, key in zip(kwparams, defaults):
+                            pkw[key] = positional
+                return self._callFunc(name, *pargs, **pkw)
+                    
+            args_str = str(sig)
+            callargs = str(tuple(sig.parameters.keys())).replace("'",  '')
+                    
+            facade = 'def {}{}:\n    """{}"""\n    return _proxy{}'.format(
+                name, args_str, docstring, callargs)
+            facade_globs = {'_proxy': _proxy}
+            exec (facade,  facade_globs)
+            return facade_globs[name]
+
+
+
         for func_name in self._construct_func_dict :
             func_dic = self._construct_func_dict[func_name]
-            if len(func_dic) != 3:
-                raise KeyError('invalid function construction dictionary')
-            if 'arg_vals' in func_dic:
+            if 'arg_vals' in func_dic: # old style added functions
                 vals = jsonpickle.decode(func_dic['arg_vals'])
                 func_temp = partial(self._validateAndCallFunc, func_name, vals) 
+                func_temp.__doc__ = func_dic['docstring'] 
             elif 'fullargspec' in func_dic:
-                fullargspec = jsonpickle.decode(func_dic['fullargspec'])
-                if 'self' in fullargspec.args:
-                    fullargspec.args.remove('self')
-                func_temp = partial(self._callFunc, func_name, fullargspec) 
-            
-            func_temp.__doc__ = func_dic['docstring']       
+                func_temp = _build_facade(func_dic)
+                              
             setattr(self, func_name, func_temp )
-            getattr(self, func_name).__doc__ = func_dic['docstring']
 
     
     def _getParam(self, para_name: str) -> Any:
@@ -161,7 +192,8 @@ class InstrumentProxy():
         :returns: the return value of the function replied from the server
         """
         if len(args) != len(validators):
-            raise TypeError(func_name + ' missing arguments')
+            raise TypeError(func_name + ' is missing or got extra arguments, ' +\
+                            str(len(validators)) + ' required')
         for i in range(len(args)):
             validators[i].validate(args[i])
         instructionDict = {
@@ -174,7 +206,6 @@ class InstrumentProxy():
 
 
     def _callFunc(self, func_name: str, 
-              fullargspec: inspect.FullArgSpec,
               *args: Any, 
               **kwargs: Dict) -> Any: 
         """ call functions that are bound methods to the instruemnt class.
@@ -184,17 +215,7 @@ class InstrumentProxy():
             the server.
         :param args: A tuple that contains the value of the function arguments
         :returns: the return value of the function replied from the server
-        """
-        def len_(foo):
-            if foo ==None:
-                return 0
-            else:
-                return len(foo)
-        required_vlue_number = len_(fullargspec.args) - len_(fullargspec.defaults) 
-        max_provided_value_number = len_(args) + len_(kwargs)
-        if required_vlue_number > max_provided_value_number:
-            raise TypeError(func_name + ' missing arguments')
-            
+        """            
         instructionDict = {
             'operation' : 'proxy_call_func',
             'instrument_name' : self.name,

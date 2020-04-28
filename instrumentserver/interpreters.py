@@ -150,10 +150,11 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
             func_dict_temp['arg_vals'] = jp_argvals            
         else:
         # for functions added directly to instrument class as bound methods,
-        # the fullargspec is pickled             
-            fullargspec = inspect.getfullargspec(func)
-            jp_fullargspec = jsonpickle.encode(fullargspec)
-            func_dict_temp['fullargspec'] = jp_fullargspec                      
+        # the fullargspec and signature is pickled             
+            jp_fullargspec = jsonpickle.encode(inspect.getfullargspec(func))
+            jp_signature = jsonpickle.encode(inspect.signature(func))
+            func_dict_temp['fullargspec'] = jp_fullargspec 
+            func_dict_temp['signature'] = jp_signature                     
         construct_func_dict[func_name] = func_dict_temp        
     construct_dict = {'functions' : construct_func_dict,
                       'parameters' : construct_param_dict}

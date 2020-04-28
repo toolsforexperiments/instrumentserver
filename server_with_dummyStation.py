@@ -52,7 +52,7 @@ def multiply_addfunc( a : int, b : int, c:int=3):
 yoko.add_function(
     'multiply_addfunc', 
     call_cmd = multiply_addfunc, 
-    args = [Numbers(), Numbers(), Numbers()],
+    args = [Numbers(1,5), Numbers(), Numbers()],
     docstring = multiply_addfunc.__doc__
     )
 
