@@ -105,9 +105,7 @@ class InstrumentProxy():
         """   
         for func_name in self._construct_func_dict :
             func_dic = self._construct_func_dict[func_name]
-            print (func_dic.keys())
-            print (self._construct_func_dict.keys())
-            if len(func_dic) != 2:
+            if len(func_dic) != 3:
                 raise KeyError('invalid function construction dictionary')
             if 'arg_vals' in func_dic:
                 vals = jsonpickle.decode(func_dic['arg_vals'])
@@ -118,7 +116,9 @@ class InstrumentProxy():
                     fullargspec.args.remove('self')
                 func_temp = partial(self._callFunc, func_name, fullargspec) 
             
+            func_temp.__doc__ = func_dic['docstring']       
             setattr(self, func_name, func_temp )
+            getattr(self, func_name).__doc__ = func_dic['docstring']
 
     
     def _getParam(self, para_name: str) -> Any:
@@ -160,6 +160,8 @@ class InstrumentProxy():
         :param args: A tuple that contains the value of the function arguments
         :returns: the return value of the function replied from the server
         """
+        if len(args) != len(validators):
+            raise TypeError(func_name + ' missing arguments')
         for i in range(len(args)):
             validators[i].validate(args[i])
         instructionDict = {

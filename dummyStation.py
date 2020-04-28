@@ -57,6 +57,9 @@ yoko.add_function(
 
 # a function added to instrument class as bound methods
 def multiply_method(self,  a : int, b : int, c:int=3, *args, **kwargs):
+    '''
+    multiply_method
+    '''
     print (a*b*c*self.current())
     return a*b*c*self.current()
 yoko.multiply_method = MethodType(multiply_method, yoko)

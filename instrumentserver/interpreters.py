@@ -139,17 +139,18 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
     for func_name in func_names:
         func_dict_temp = {}
         func_dict_temp['name'] = func_name
+        func = getattr(instrument , func_name)
+        func_dict_temp['docstring'] = func.__doc__
 
-        if getattr(instrument , func_name).__class__ == qc.instrument.function.Function:
+        if func.__class__ == qc.instrument.function.Function:
         # for functions added using the old 'instruemnt.add_function' method,
         # (the functions only have positional arguments, and each argument has
         # a validator). In this case, the list of validators is pickled            
-            jp_argvals = jsonpickle.encode(instrument[func_name]._args)
+            jp_argvals = jsonpickle.encode(func._args)
             func_dict_temp['arg_vals'] = jp_argvals            
         else:
         # for functions added directly to instrument class as bound methods,
         # the fullargspec is pickled             
-            func = getattr(instrument , func_name)
             fullargspec = inspect.getfullargspec(func)
             jp_fullargspec = jsonpickle.encode(fullargspec)
             func_dict_temp['fullargspec'] = jp_fullargspec                      

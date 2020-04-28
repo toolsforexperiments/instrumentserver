@@ -44,27 +44,40 @@ yoko = DummyInstrument('yoko')
 
 # a function added using the old style 'add_function' method
 def multiply_addfunc( a : int, b : int, c:int=3):
+    '''
+    multiply_addfunc docs
+    '''
     print (a*b*c)
     return a*b*c
 yoko.add_function(
     'multiply_addfunc', 
     call_cmd = multiply_addfunc, 
-    args = [Numbers(), Numbers(), Numbers()]
+    args = [Numbers(), Numbers(), Numbers()],
+    docstring = multiply_addfunc.__doc__
     )
 
 
 # functions added to instrument class as bound methods
 def multiply_method(self,  a : int, b : int, c:int=3):
+    '''
+    multiply_method docs
+    '''
     print (a*b*c*self.current())
     return a*b*c*self.current()
 yoko.multiply_method = MethodType(multiply_method, yoko)
 
 def sum_method(self,  a : int, b : int, c:int=3):
+    '''
+    sum_method docs
+    '''
     print (a+b+c+self.current())
     return a+b+c+self.current()
 yoko.sum_method = MethodType(sum_method, yoko)
 
 def reset_method(self):
+    '''
+    reset_method docs
+    '''
     print ('reset')
     self.current(0)
 yoko.reset_method = MethodType(reset_method, yoko)
