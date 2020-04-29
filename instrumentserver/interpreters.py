@@ -19,10 +19,11 @@ from qcodes.utils.validators import Validator, range_str
 
 # dictionary type defination 
 
-class InstrumentDictType(TypedDict):
-    instrument_type : str
-    address : Optional[str]
-    serial_number : Optional[str]
+class InstrumentCreateDictType(TypedDict):
+    instrument_class : str
+    args : Optional[tuple]
+    kwargs : Optional[Dict]
+
     
 class ParamDictType(TypedDict):
     name :  str
@@ -31,6 +32,7 @@ class ParamDictType(TypedDict):
 class FuncDictType(TypedDict):
     name :  str
     args : Optional[tuple]
+    kwargs : Optional[Dict]
 
 class InstructionDictType(TypedDict):
     operation: Literal['get_existing_instruments',
@@ -43,7 +45,7 @@ class InstructionDictType(TypedDict):
                         ] 
     
     instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
-    instrumnet : Optional[InstrumentDictType]  # for instrument creation
+    instrumnet_create : Optional[InstrumentCreateDictType]  # for instrument creation
     parameter : Optional[ParamDictType] # for get/set_param
     function : Optional[FuncDictType] # for function call
     
@@ -100,8 +102,31 @@ def _getExistingInstruments(station: Station) -> List:
     return list(station.snapshot()['instruments'].keys())
 
 def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
-    # not implemented yet
-    pass
+    """Create a new instrument on the server
+    """
+    instrument_name = instructionDict['instrument_name']
+    instrumnet_create_dict = instructionDict['instrumnet_create']    
+    instrument_class = instrumnet_create_dict['instrument_class']
+    instrument_args = instrumnet_create_dict['args']
+    instrument_kwargs = instrumnet_create_dict['kwargs']
+    
+    try:
+        instrument_class = eval(instrument_class)
+    except NameError:
+        exec( f'import {instrument_class}' )
+        instrument_class = eval(instrument_class)
+    
+
+    # print (instrument_class, instrument_name, instrument_args, instrument_recreate, instrument_kwargs)        
+    new_instruemnt = qc.find_or_create_instrument(instrument_class,
+                                                  instrument_name,
+                                                  *instrument_args,
+                                                  recreate = False,
+                                                  **instrument_kwargs)
+    print (new_instruemnt)
+    if not instrument_name in station.components:
+        station.add_component(new_instruemnt)
+    
 
 def _proxyConstruction(instrument: Instrument) -> Dict:
     '''

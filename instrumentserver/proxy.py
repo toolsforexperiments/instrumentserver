@@ -10,8 +10,10 @@ import zmq
 import json
 import jsonpickle
 from jsonschema import validate
-from typing import Dict, List, Any, Union, Tuple
+import qcodes as qc
+from typing import Dict, List, Any, Union, Tuple, Type
 from qcodes.instrument import parameter
+from qcodes import Instrument
 from functools import partial
 from qcodes.utils.validators import Validator
 from . import getInstrumentserverPath
@@ -239,4 +241,53 @@ class InstrumentProxy():
     def __delete__(self): 
         """ delete class objects and disconnect from server.        
         """
-        
+
+
+def create_instrument(instrument_class: Union[Type[Instrument],str],
+                      name: str,
+                      *args: Any,
+                      recreate: bool = False,
+                      server_address : str = '5555',
+                      **kwargs: Any,                      
+                      ) -> InstrumentProxy:     
+    """ create a new instrument.
+    
+    :param instrument_class: Class of the instrument to create or a string of 
+        of the class
+    :param name: Name of the new instrument
+    :param recreate: When ``True``, the instruments gets recreated if it is found.
+    :returns: a new virtual instrument
+    """  
+    ########
+    # we need some kind of instrument class validator here
+    # i.e. check if the driver exists or not, etc
+    ########    
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:" + server_address)
+    # look for existing instruments
+    instructionDict = {'operation' : 'get_existing_instruments'}
+    socket.send_json(instructionDict)
+    existing_instruemnts = socket.recv_json()     
+    if name in existing_instruemnts:
+        raise NameError(f'Instrument {name} alreadt exists on the server')
+    # create new instrument
+    instructionDict = {
+        'operation' : 'instrument_creation',
+        'instrument_name' : name,
+        'instrumnet_create' : { 
+            'instrument_class' : str(instrument_class),
+            'args' : args,
+            'kwargs' : kwargs
+            }
+        }
+    with open(PARAMS_SCHEMA_PATH) as f:
+        schema = json.load(f)
+    try:
+        validate(instructionDict, schema)
+    except:
+        raise        
+    socket.send_json(instructionDict)
+    socket.recv_json()   
+    return InstrumentProxy(name, server_address)
+    

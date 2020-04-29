@@ -20,11 +20,25 @@
             "description": "name of the instrument",
             "type": "string"  
           },
-          "instrument_info": { 
-            "description": "Coordinates of the warehouse where the product is located."
+          "instrumnet_create": { 
+            "description": "Information needed for creating the new instrument",
+            "type": "object",
+            "properties" : {
+              "instrument_class": {
+                "type" : "string",
+                "description": "class path of the instrument"
+              },
+              "args": {
+                "description": "tuple of postional arguments"
+              },
+              "kwargs": {
+                "description": "dict of keyword arguments"
+              }
+            },
+            "required": ["instrument_class"]
           }
         },
-        "required": ["instrument_name", "instrument_info"]
+        "required": ["instrument_name", "instrumnet_create"]
       }
     },
     {

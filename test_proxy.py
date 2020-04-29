@@ -5,8 +5,8 @@ Created on Sat Apr 18 22:12:05 2020
 @author: Chao
 """
 
-from instrumentserver.proxy import InstrumentProxy
-
+from instrumentserver.proxy import InstrumentProxy, create_instrument
+import qcodes
 yoko = InstrumentProxy('yoko')
 
 print(yoko.current(10))
@@ -19,3 +19,7 @@ yoko.multiply_method(1,2,3)
 yoko.reset_method()
 
 yoko.multiply_method(1,2,c=5)
+
+
+yoko2 = create_instrument(instrument_class = 'qc.tests.instrument_mocks.DummyInstrument',                          
+                          name = 'yoko2')
