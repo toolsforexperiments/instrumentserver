@@ -1,0 +1,99 @@
+{
+	"instruments": {
+		"SWT0": {
+			"type": "Switch",
+			"default_name": "SWTTexas0",
+			"memo": "Texas"
+		},
+		"SWT1": {
+			"type": "Switch",
+			"default_name": "SWTTexas1",
+			"memo": "Texas"
+		},
+		"SWT2": {
+			"type": "Switch",
+			"default_name": "SWTCRs0",
+			"memo": "CRs"
+		},
+		"SWT3": {
+			"type": "Switch",
+			"default_name": "SWTCRs1",
+			"memo": "CRs"
+		},
+		"Gen0":{
+			"type": "Generator",
+			"default_name": "Gen0",
+			"memo":"signalCore"
+		},
+		"Gen1":{
+			"type": "Generator",
+			"default_name": "Gen1",
+			"memo":"signalCore"
+		},
+		"Gen2":{
+			"type": "Generator",
+			"default_name": "Gen2",
+			"memo":"signalCore"
+		},
+		"Gen3":{
+			"type": "Generator",
+			"default_name": "Gen3",
+			"memo":"Keysight"
+		},
+		"Gen4":{
+			"type": "Generator",
+			"default_name": "Gen4",
+			"memo":"Keysight"
+		},
+		"VNA0":{
+			"type": "VNA",
+			"default_name": "VNATexas",
+			"memo": "Texas"
+		},
+		"VNA1":{
+			"type": "VNA",
+			"default_name": "VNACRs",
+			"memo": "CRs"
+		},
+		"VNA2":{
+			"type": "VNA",
+			"default_name": "PVNA",
+			"memo": "portable VNA"
+		},
+		"CS0":{
+			"type": "Current Source",
+			"default_name": "CS0",
+			"memo": "YOKOGAWA"
+		},
+		"CS1":{
+			"type": "Current Source",
+			"default_name": "CS1",
+			"memo": "YOKOGAWA"
+		},
+		"CS2":{
+			"type": "Current Source",
+			"default_name": "CS2",
+			"memo": "HomeMade"
+		},
+		"SA0":{
+			"type": "Spectrum Analyzer",
+			"default_name": "SA0",
+			"memo": "Keysight"
+		},
+		"SA1":{
+			"type": "Spectrum Analyzer",
+			"default_name": "SA1",
+			"memo": "signalHound"
+		},
+		"PXIe0":{
+			"type": "PXIe",
+			"default_name": "PXIe0",
+			"memo": "AWG X2"
+		},
+		"PXIe1":{
+			"type": "PXIe",
+			"default_name": "PXIe1",
+			"memo": "AWG X1"
+		}
+	}
+}
