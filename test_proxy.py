@@ -25,4 +25,4 @@ yoko.multiply_method(1,2,c=5)
                           # name = 'yoko2')
                           
                           
-mudummy = InstrumentProxy('mydummy')                          
+mydummy = InstrumentProxy('mydummy')                          

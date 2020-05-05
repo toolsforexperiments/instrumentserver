@@ -153,13 +153,16 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
     try:
         submodules = list(instrument.submodules.keys())
     except AttributeError:
-        pass
+        submodules = []
     
+    submodule_dict = {}
     for module_name in submodules: 
         submodule = getattr(instrument, module_name)
         # the ChannelList is not supported yet
         if submodule.__class__ != qc.instrument.channel.ChannelList:
-            construct_dict[module_name] = _get_module_info(submodule)
+            submodule_dict[module_name] = _get_module_info(submodule)
+            
+    construct_dict['submodule_dict'] = submodule_dict
     return construct_dict
     
     
@@ -181,7 +184,7 @@ def _get_module_info(module: Instrument) -> Dict:
         try:
             param_dict_temp['vals'] = jsonpickle.encode(module[param_name].vals) 
         except:
-            param_dict_temp['vals'] = None
+            param_dict_temp['vals'] = jsonpickle.encode(None)
         module_param_dict[param_name] = param_dict_temp
 
     # get fucntions 
