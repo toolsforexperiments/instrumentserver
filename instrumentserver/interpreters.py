@@ -45,6 +45,7 @@ class InstructionDictType(TypedDict):
                         ] 
     
     instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
+    submodule_name: Optional[Union[str, None]]  # not needed for 'get_existing_instruments'
     instrumnet_create : Optional[InstrumentCreateDictType]  # for instrument creation
     parameter : Optional[ParamDictType] # for get/set_param
     function : Optional[FuncDictType] # for function call
@@ -74,7 +75,13 @@ def instructionDict_to_instrumentCall(station: Station, instructionDict : Instru
     elif operation == 'instrument_creation':
         returns = _instrumentCreation(station, instructionDict)
     else: # doing operation on an existing instrument
-        instrument = station[instructionDict['instrument_name']]     
+        instrument = station[instructionDict['instrument_name']]        
+        if 'submodule_name' in instructionDict :
+            submodule_name = instructionDict['submodule_name']
+            if submodule_name is not None:
+                # do operation on an instrument submodule
+                instrument = getattr(instrument, submodule_name)            
+        
         if operation == 'proxy_construction':
             returns = _proxyConstruction(instrument)
         elif operation == 'proxy_get_param':
@@ -140,31 +147,57 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
     :returns : a dictionary that dercribes the instrument
 
     '''
-    param_names = list(instrument.__dict__['parameters'].keys())
-    construct_param_dict = {}    
+    # get functions and parameters belong to the top instrument
+    construct_dict = _get_module_info(instrument)
+    # get functions and parameters belong to the submodule
+    try:
+        submodules = list(instrument.submodules.keys())
+    except AttributeError:
+        pass
+    
+    for module_name in submodules: 
+        submodule = getattr(instrument, module_name)
+        # the ChannelList is not supported yet
+        if submodule.__class__ != qc.instrument.channel.ChannelList:
+            construct_dict[module_name] = _get_module_info(submodule)
+    return construct_dict
+    
+    
+def _get_module_info(module: Instrument) -> Dict:
+    ''' Get the parameters and functions of an instrument (sub)module and put 
+    them a dictionary.
+    '''
+    # get paramaters
+    param_names = list(module.__dict__['parameters'].keys())
+    module_param_dict = {}    
     for param_name in param_names:
         param_dict_temp = {}
         param_dict_temp['name'] = param_name
-        param_dict_temp['unit'] = instrument[param_name].unit        
-        jp_vals = jsonpickle.encode(instrument[param_name].vals)
-        param_dict_temp['vals'] = jp_vals    
-        construct_param_dict[param_name] = param_dict_temp
-    
-    # get the fucntions belong to the instrument
-    methods = set(dir(instrument))
-    base_methods = (dir(base) for base in instrument.__class__.__bases__)
+        try:
+            param_dict_temp['unit'] = module[param_name].unit        
+        except AttributeError:
+            param_dict_temp['unit'] = None
+          
+        try:
+            param_dict_temp['vals'] = jsonpickle.encode(module[param_name].vals) 
+        except:
+            param_dict_temp['vals'] = None
+        module_param_dict[param_name] = param_dict_temp
+
+    # get fucntions 
+    methods = set(dir(module))
+    base_methods = (dir(base) for base in module.__class__.__bases__)
     unique_methods = methods.difference(*base_methods)
     func_names = []
     for method in unique_methods :
-        if callable(getattr(instrument, method)) and method not in construct_param_dict:
+        if callable(getattr(module, method)) and method not in module_param_dict:
             func_names.append(method)
-    # create the dictionary that contains the info needed for creating virtual 
-    # instrument.    
-    construct_func_dict = {}
+  
+    module_func_dict = {}
     for func_name in func_names:
         func_dict_temp = {}
         func_dict_temp['name'] = func_name
-        func = getattr(instrument , func_name)
+        func = getattr(module , func_name)
         func_dict_temp['docstring'] = func.__doc__
 
         if func.__class__ == qc.instrument.function.Function:
@@ -180,11 +213,10 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
             jp_signature = jsonpickle.encode(inspect.signature(func))
             func_dict_temp['fullargspec'] = jp_fullargspec 
             func_dict_temp['signature'] = jp_signature                     
-        construct_func_dict[func_name] = func_dict_temp        
-    construct_dict = {'functions' : construct_func_dict,
-                      'parameters' : construct_param_dict}
-        
-    return construct_dict
+        module_func_dict[func_name] = func_dict_temp        
+    module_construct_dict = {'functions' : module_func_dict,
+                             'parameters' : module_param_dict}        
+    return module_construct_dict
     
     
 def _proxyGetParam(instrument: Instrument, paramDict : ParamDictType) -> Any:

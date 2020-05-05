@@ -21,5 +21,8 @@ yoko.reset_method()
 yoko.multiply_method(1,2,c=5)
 
 
-yoko2 = create_instrument(instrument_class = 'qc.tests.instrument_mocks.DummyInstrument',                          
-                          name = 'yoko2')
+# yoko2 = create_instrument(instrument_class = 'qc.tests.instrument_mocks.DummyInstrument',                          
+                          # name = 'yoko2')
+                          
+                          
+mudummy = InstrumentProxy('mydummy')                          

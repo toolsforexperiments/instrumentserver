@@ -65,6 +65,10 @@
             "description": "name of the instrument",
             "type": "string"  
           },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
+          },
           "parameter": {
             "type": "object",
             "description": "dictionary contains the parameter to set or get",
@@ -89,6 +93,10 @@
           "instrument_name": { 
             "description": "name of the instrument",
             "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
           },
           "parameter": {
             "type": "object",
@@ -117,6 +125,10 @@
           "instrument_name": { 
             "description": "name of the instrument",
             "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
           },
           "function": {
             "type": "object",
@@ -148,6 +160,10 @@
           "instrument_name": { 
             "description": "name of the instrument",
             "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
           }
         },       
         "required": ["instrument_name"]

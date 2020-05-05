@@ -29,7 +29,7 @@ from qcodes import (
 )
 from qcodes.dataset.plotting import plot_dataset
 from qcodes.logger.logger import start_all_logging
-from qcodes.tests.instrument_mocks import DummyInstrument
+from qcodes.tests.instrument_mocks import DummyInstrument, DummyChannelInstrument
 from qcodes.utils.validators import Validator, Numbers, Anything, Strings
 from qcodes.instrument import parameter
 
@@ -104,11 +104,14 @@ test_param = parameter.Parameter(
                                  get_cmd = None,
                                  set_cmd = None
                                 )
+
+mydummy = DummyChannelInstrument('mydummy')
+
+
 station.add_component(yoko)
 station.add_component(test_param)
+station.add_component(mydummy)
 
-yoko_ss = station.snapshot()['instruments']['yoko']
-current_ss = yoko_ss['parameters']['current']
 
 
 # setup a zmq server

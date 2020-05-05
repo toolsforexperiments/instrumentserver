@@ -5,11 +5,13 @@ Created on Sat Apr 18 16:13:40 2020
 @author: Chao
 """
 import os
+from types import MethodType
 import inspect
 import zmq
+from zmq.sugar.socket import Socket
 import json
 import jsonpickle
-from jsonschema import validate
+from jsonschema import validate as jsvalidate
 import qcodes as qc
 from typing import Dict, List, Any, Union, Tuple, Type
 from qcodes.instrument import parameter
@@ -36,7 +38,6 @@ class InstrumentProxy():
         represnt. The name must match the instrument name in the server.
         :param server_address: the last 4 digits of the local host tcp address
         """
-        # This does not include create instrument from client yet
         
         self.name = instruemnt_name
         self.context = zmq.Context()
@@ -48,7 +49,7 @@ class InstrumentProxy():
         # check if instrument exits on the server or not 
         print("Checking instruments on the server..." )        
         instructionDict = {'operation' : 'get_existing_instruments'}
-        existing_instruemnts = self._requestFromServer(instructionDict)
+        existing_instruemnts = _requestFromServer(self.socket, instructionDict)
         print 
 
         if self.name in existing_instruemnts:
@@ -65,32 +66,20 @@ class InstrumentProxy():
             'operation' : 'proxy_construction',
             'instrument_name' : self.name
             }
-        construct_dict = self._requestFromServer(instructionDict)
-        self._construct_param_dict = construct_dict['parameters']
-        self._construct_func_dict = construct_dict['functions']
+        self._construct_dict = _requestFromServer(self.socket, instructionDict)
+        self._construct_param_dict = self._construct_dict['parameters']
+        self._construct_func_dict = self._construct_dict['functions']
 
         self._constructProxyParameters()
         self._constructProxyFunctions()
         
-    def _requestFromServer(self, instructionDict: Dict) -> Any:
-        """ send commend to the server in instructionDict format, return the 
-        respond from server.
-        """        
-        with open(PARAMS_SCHEMA_PATH) as f:
-            schema = json.load(f)
-        try:
-            validate(instructionDict, schema)
-        except:
-            raise
-            
-        self.socket.send_json(instructionDict)
-        return self.socket.recv_json()         
+       
            
     def _constructProxyParameters(self):
         """Based on the parameter dictionary replied from server, add the 
         instrument parameters to the proxy instrument class
         """     
-        for param in self._construct_param_dict :  
+        for param in self._construct_param_dict:  
             param_dict_temp = self._construct_param_dict[param]        
             param_temp = parameter.Parameter(
                             name = param, 
@@ -99,11 +88,16 @@ class InstrumentProxy():
                             get_cmd = partial(self._getParam, param),
                             vals =  jsonpickle.decode(param_dict_temp['vals'])                      
                             )
+            # override the parameter snapshot function
+            # def test_func(self):
+            #     print ('hello snapshot')
+            # param_temp.snapshot = MethodType(test_func, param_temp)
             setattr(self, param, param_temp) 
+            
             
     def _constructProxyFunctions(self):
         """Based on the function dictionary replied from server, add the 
-            instrument functions to the proxy instrument class
+        instrument functions to the proxy instrument class
         """   
         def _build_facade(func_dic):
             """Build a facade function, matching the signature of the origional
@@ -140,8 +134,6 @@ class InstrumentProxy():
             exec (facade,  facade_globs)
             return facade_globs[name]
 
-
-
         for func_name in self._construct_func_dict :
             func_dic = self._construct_func_dict[func_name]
             if 'arg_vals' in func_dic: # old style added functions
@@ -165,7 +157,7 @@ class InstrumentProxy():
             'instrument_name' : self.name,
             'parameter' : {'name' : para_name}
             }
-        param_value = self._requestFromServer(instructionDict)
+        param_value = _requestFromServer(self.socket, instructionDict)
         return param_value
         
     def _setParam(self, para_name: str, value: any) -> None: 
@@ -178,7 +170,7 @@ class InstrumentProxy():
             'instrument_name' : self.name,
             'parameter' : {'name' : para_name, 'value' : value}
             }
-        self._requestFromServer(instructionDict)
+        _requestFromServer(self.socket, instructionDict)
         
     
     def _validateAndCallFunc(self, func_name: str, 
@@ -203,7 +195,7 @@ class InstrumentProxy():
             'instrument_name' : self.name,
             'function' : {'name' : func_name, 'args' : args}
             }
-        return_value = self._requestFromServer(instructionDict)
+        return_value = _requestFromServer(self.socket, instructionDict)
         return return_value
 
 
@@ -223,7 +215,7 @@ class InstrumentProxy():
             'instrument_name' : self.name,
             'function' : {'name' : func_name, 'args' : args, 'kwargs' : kwargs}
             }
-        return_value = self._requestFromServer(instructionDict)
+        return_value = _requestFromServer(self.socket, instructionDict)
         return return_value    
     
 
@@ -234,12 +226,13 @@ class InstrumentProxy():
             'operation' : 'instrument_snapshot',
             'instrument_name' : self.name,
             }
-        snapshot_ = self._requestFromServer(instructionDict)
+        snapshot_ = _requestFromServer(self.socket, instructionDict)
         return snapshot_
         
         
     def __delete__(self): 
-        """ delete class objects and disconnect from server.        
+        """ delete class objects and disconnect from server.   
+        (Also remove the instrument from the server?)
         """
 
 
@@ -281,13 +274,22 @@ def create_instrument(instrument_class: Union[Type[Instrument],str],
             'kwargs' : kwargs
             }
         }
+    _requestFromServer(socket, instructionDict)
+    return InstrumentProxy(name, server_address)
+    
+
+
+# ------------------ helper functions ----------------------------------------
+def _requestFromServer(socket: Socket, instructionDict: Dict) -> Any:
+    """ send commend to the server in instructionDict format, return the 
+    respond from server.
+    """        
     with open(PARAMS_SCHEMA_PATH) as f:
         schema = json.load(f)
     try:
-        validate(instructionDict, schema)
+        jsvalidate(instructionDict, schema)
     except:
-        raise        
+        raise
+        
     socket.send_json(instructionDict)
-    socket.recv_json()   
-    return InstrumentProxy(name, server_address)
-    
+    return socket.recv_json()  
