@@ -10,7 +10,6 @@ from types import MethodType
 import json
 from functools import partial
 from time import sleep
-
 import matplotlib.pyplot as plt
 import numpy as np
 import zmq
@@ -123,9 +122,10 @@ while True:
     #  Wait for request from client
     received_dict = socket.recv_json()
     print("Received instruction: "  + received_dict['operation'])
-    #  find which instrument client is communicating
-    respondes = instructionDict_to_instrumentCall(station, received_dict)    
+    response = instructionDict_to_instrumentCall(station, received_dict)
     #  Send reply back to client
-    socket.send_json(respondes)
+    socket.send_json(response)
+    
+
 
 

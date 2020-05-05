@@ -7,12 +7,15 @@ Created on Mon Apr 20 15:57:23 2020
 
 import re
 import inspect
+import warnings
+import json
 import jsonpickle
 from typing import Dict, List, Any, Union, List, Optional
 from typing_extensions import Literal, TypedDict
 import qcodes as qc
 from qcodes import Station, Instrument
 from qcodes.utils.validators import Validator, range_str
+
 
 
 
@@ -65,7 +68,36 @@ def instructionDict_to_instrumentCall(station: Station, instructionDict : Instru
 
     :returns: the results returned from the instrument call
     """
+    response = {'return_value': None,
+                'error': None}
+    try:
+        returns = _instructionProcesser(station, instructionDict)
+        response['return_value'] = jsonpickle.encode(returns) # I'm not using
+        # json.dumps() here because some of the parameters (e.g. complex numbers)
+        # are not JSON serializable.So now at least all the get commands will
+        # work properly, but the set part is still using json. I'm not sure
+        # do I need to change this also for the set command or not.
+    except Exception as err:
+        encoded_error = jsonpickle.encode(err)
+        response['error']  = encoded_error
+        warnings.simplefilter('always', UserWarning) # since this runs in loop
+        warnings.warn(str(err))
+   
+    return response
+
+
+def _instructionProcesser(station: Station, instructionDict : InstructionDictType):
+    """
+    process the operation instruction from the client and excute the operation.
     
+    :param station: qcodes.station object, the station that contains the 
+        instrument to call.
+    :param instructionDict:  The dicitonary passed from the instrument proxy
+        that contains the information needed for the operation. 
+
+    :returns: the results returned from the instrument call
+
+    """
     operation = instructionDict['operation']
     
     if operation == 'get_existing_instruments': 
@@ -99,6 +131,7 @@ def instructionDict_to_instrumentCall(station: Station, instructionDict : Instru
     return  returns
 
 
+
 # Some private tool functions
 def _getExistingInstruments(station: Station) -> List:
     """
@@ -119,7 +152,7 @@ def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
     
     try:
         instrument_class = eval(instrument_class)
-    except NameError:
+    except NameError: #instrument class not imported yet
         exec( f'import {instrument_class}' )
         instrument_class = eval(instrument_class)
     

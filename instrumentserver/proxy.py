@@ -261,7 +261,6 @@ class InstrumentProxy(ModuleProxy):
         print("Checking instruments on the server..." )        
         instructionDict = {'operation' : 'get_existing_instruments'}
         existing_instruemnts = _requestFromServer(self.socket, instructionDict)
-        print 
 
         if self.name in existing_instruemnts:
             print ('Found '+ instruemnt_name + ' on server')
@@ -305,7 +304,6 @@ class InstrumentProxy(ModuleProxy):
 def create_instrument(instrument_class: Union[Type[Instrument],str],
                       name: str,
                       *args: Any,
-                      recreate: bool = False,
                       server_address : str = '5555',
                       **kwargs: Any,                      
                       ) -> InstrumentProxy:     
@@ -314,7 +312,6 @@ def create_instrument(instrument_class: Union[Type[Instrument],str],
     :param instrument_class: Class of the instrument to create or a string of 
         of the class
     :param name: Name of the new instrument
-    :param recreate: When ``True``, the instruments gets recreated if it is found.
     :returns: a new virtual instrument
     """  
     ########
@@ -349,14 +346,21 @@ def create_instrument(instrument_class: Union[Type[Instrument],str],
 def _requestFromServer(socket: Socket, instructionDict: Dict) -> Any:
     """ send commend to the server in instructionDict format, return the 
     respond from server.
-    """        
+    """ 
+    # validate instruction dictionary first       
     with open(PARAMS_SCHEMA_PATH) as f:
         schema = json.load(f)
     try:
         jsvalidate(instructionDict, schema)
     except:
         raise
-        
+    # sende instruction dictionary to server      
     socket.send_json(instructionDict)
-    return socket.recv_json()  
+    # receive response from server and handle error
+    response = socket.recv_json()      
+    if response['error'] != None:
+        error = jsonpickle.decode(response['error'])
+        raise error
+    return_value = jsonpickle.decode(response['return_value'])        
+    return return_value
 

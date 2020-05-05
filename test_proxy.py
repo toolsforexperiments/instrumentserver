@@ -26,3 +26,4 @@ yoko.multiply_method(1,2,c=5)
                           
                           
 mydummy = InstrumentProxy('mydummy')                          
+mydummy.A.snapshot()
