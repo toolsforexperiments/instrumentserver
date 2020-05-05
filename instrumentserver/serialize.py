@@ -84,7 +84,7 @@ def toParamDict(input: Union[Station,
     """Create a dictionary that holds parameter values, and optionally additional
     information about them.
 
-    :param input: qcodes station, instrument, or list of instruments/parameters.
+    :param input: qcodes station or list of instruments/parameters.
     :param get: whether to call `get` on the parameters.
         if not, use the values from the current snapshot.
         Note: parameters that are not included in the snapshot are never included.
@@ -102,7 +102,7 @@ def toParamDict(input: Union[Station,
     if isinstance(input, Station):
         snap = input.snapshot()
         input = [getattr(input, k) for k in snap['instruments'].keys()] \
-                + [getattr(input, k) for k in snap['parameters'].keys()]
+            + [getattr(input, k) for k in snap['parameters'].keys()]
 
     ret = {}
     for obj in input:
@@ -171,14 +171,39 @@ def fromParamDict(paramDict: Dict[str, Any],
 
 # Tools
 
-def saveParamsToFile(input, filePath: str) -> None:
-    raise NotImplementedError
+def saveParamsToFile(input: Union[Station,
+                                  List[Union[Instrument, Parameter]]],
+                     filePath: str, **kw: Any) -> None:
+    """Save (instrument) parameters to file.
+
+    First obtains the parameters from :func:`toParamDict`, then saves its output.
+
+    :param input: qcodes station or list of instruments/parameters.
+    :param filePath: output file path.
+    :param kw: options, all passed to :func:`toParamDict`.
+    :returns:
+    """
+    ret = toParamDict(input, **kw)
+    filePath = os.path.abspath(filePath)
+    folder, file = os.path.split(filePath)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    with open(filePath, 'w') as f:
+        json.dump(ret, f, indent=2, sort_keys=True)
 
 
 def loadParamsFromFile(filePath,
                        target: Union[Station,
                                      List[Union[Instrument, Parameter]]]) -> None:
-    raise NotImplementedError
+    """Load (instrument) parameters from file.
+
+    Loads the json from file, then tries to restore the state into the target,
+    using :func:`fromParamDict`.
+    """
+    ret = None
+    with open(filePath, 'r') as f:
+        ret = json.load(f)
+    fromParamDict(ret, target)
 
 
 def isSimpleFormat(paramDict: Dict[str, Any]):
@@ -206,7 +231,7 @@ def validateParamDict(params: Dict[str, Any]):
         raise
 
 
-# Some private tool functions
+# private tool functions
 
 def _singleParameterToJson(parameter: Parameter,
                            get: bool = False,
