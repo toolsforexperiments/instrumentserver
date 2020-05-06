@@ -5,28 +5,14 @@ Created on Fri Apr 10 21:52:09 2020
 @author: Chao
 """
 
-import os
 from types import MethodType
-import json
-from functools import partial
-from time import sleep
-import matplotlib.pyplot as plt
+
 import numpy as np
 import zmq
 import qcodes as qc
-from qcodes import (
-    Measurement,
-    experiments,
-    initialise_database,
-    initialise_or_create_database_at,
-    load_by_guid,
-    load_by_run_spec,
-    load_experiment,
-    load_last_experiment,
-    load_or_create_experiment,
-    new_experiment,
-)
-from qcodes.dataset.plotting import plot_dataset
+from instrument_mocker.dummy_gennerator import DumGen
+
+
 from qcodes.logger.logger import start_all_logging
 from qcodes.tests.instrument_mocks import DummyInstrument, DummyChannelInstrument
 from qcodes.utils.validators import Validator, Numbers, Anything, Strings
@@ -105,13 +91,12 @@ test_param = parameter.Parameter(
                                 )
 
 mydummy = DummyChannelInstrument('mydummy')
-
+gen = DumGen('gen','dum_address')
 
 station.add_component(yoko)
 station.add_component(test_param)
 station.add_component(mydummy)
-
-
+station.add_component(gen)
 
 # setup a zmq server
 context = zmq.Context()

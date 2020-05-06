@@ -5,7 +5,7 @@ Created on Sat Apr 18 22:12:05 2020
 @author: Chao
 """
 
-from instrumentserver.proxy import InstrumentProxy, create_instrument
+from instrumentserver.proxy import InstrumentProxy, create_instrument, get_existing_instruments
 import qcodes
 yoko = InstrumentProxy('yoko')
 
@@ -27,3 +27,10 @@ yoko.multiply_method(1,2,c=5)
                           
 mydummy = InstrumentProxy('mydummy')                          
 mydummy.A.snapshot()
+
+
+gen = InstrumentProxy('gen')
+# some dictionaries that can be used to construct the GUI 
+all_instruemnts = get_existing_instruments()
+gen_param_ss = gen.snapshot()['parameters']
+gen_func_dict = gen.simple_func_dict

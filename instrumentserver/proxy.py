@@ -25,7 +25,7 @@ PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
 
 
 class ModuleProxy():
-    """Prototype for an module proxy object. Each proxy instantiation 
+    """Prototype for a module proxy object. Each proxy instantiation 
     represents a virtual module (instrument of submodule of instrument).     
     """
     
@@ -35,8 +35,8 @@ class ModuleProxy():
                  submodule_name : Optional[Union[str, None]] = None,
                  server_address : str = '5555'):
         """ Initialize a proxy. Create a zmq.REQ socket that connectes to the
-        server, and get a snapshot from the server. The snapshot will be 
-        stroed in a private dictionary.
+        server, get all the parameters and functions belong to this module and
+        add them to this virtual module class.
     
         :param instruemnt_name: The name of the instrument that the proxy will 
         represnt. The name must match the instrument name in the server.
@@ -51,11 +51,9 @@ class ModuleProxy():
         """     
         
         self.instrument_name = instrument_name
-        self.submodule_name = submodule_name
-        
+        self.submodule_name = submodule_name        
         self._construct_dict = construct_dict
-        self._construct_param_dict = self._construct_dict['parameters']
-        self._construct_func_dict = self._construct_dict['functions']
+        
         
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
@@ -69,70 +67,44 @@ class ModuleProxy():
         """Based on the parameter dictionary replied from server, add the 
         instrument parameters to the proxy instrument class
         """     
-        for param_name in self._construct_param_dict:  
-            param_dict_temp = self._construct_param_dict[param_name]    
+        construct_param_dict = self._construct_dict['parameters']
+        self.simple_param_dict = {} # for GUI use
+        for param_name in construct_param_dict:  
+            param_dict_temp = construct_param_dict[param_name] 
+            unit = param_dict_temp['unit']
             param_temp = parameter.Parameter(
                             name = param_name, 
-                            unit = param_dict_temp['unit'],
+                            unit = unit,
                             set_cmd = partial(self._setParam, param_name),
                             get_cmd = partial(self._getParam, param_name),
                             vals =  jsonpickle.decode(param_dict_temp['vals'])                      
                             )
-            # override the parameter snapshot function
-            # def test_func(self):
-            #     print ('hello snapshot')
-            # param_temp.snapshot = MethodType(test_func, param_temp)
+            self.simple_param_dict[param_name] = {
+                'name' : param_name,                                                 
+                'unit' : unit
+                }
             setattr(self, param_name, param_temp) 
             
             
     def _constructProxyFunctions(self):
         """Based on the function dictionary replied from server, add the 
         instrument functions to the proxy instrument class
-        """   
-        def _build_facade(func_dic):
-            """Build a facade function, matching the signature of the origional
-            instrument function.
-            """
-            name = func_dic['name']
-            docstring = func_dic['docstring']
-            spec = jsonpickle.decode(func_dic['fullargspec'])
-            sig = jsonpickle.decode(func_dic['signature'])
-            
-            if spec.args[0]=='self':
-                spec.args.remove('self')
-            args, default_values = spec[0], spec[3]
-            arglen = len(args)
-            
-            if default_values is not None:
-                defaults = args[arglen - len(default_values):]                       
-                arglen -= len(list(defaults))
-        
-            def _proxy(*pargs, **pkw):       
-                # Reconstruct keyword arguments
-                if default_values is not None:            
-                    pargs, kwparams = pargs[:arglen], pargs[arglen:]
-                    for positional, key in zip(kwparams, defaults):
-                            pkw[key] = positional
-                return self._callFunc(name, *pargs, **pkw)
-                    
-            args_str = str(sig)
-            callargs = str(tuple(sig.parameters.keys())).replace("'",  '')
-                    
-            facade = 'def {}{}:\n    """{}"""\n    return _proxy{}'.format(
-                name, args_str, docstring, callargs)
-            facade_globs = {'_proxy': _proxy}
-            exec (facade,  facade_globs)
-            return facade_globs[name]
-
-        for func_name in self._construct_func_dict :
-            func_dic = self._construct_func_dict[func_name]
+        """                   
+        construct_func_dict = self._construct_dict['functions']
+        self.simple_func_dict = {} # for GUI use
+        for func_name in construct_func_dict :
+            func_dic = construct_func_dict[func_name]
             if 'arg_vals' in func_dic: # old style added functions
                 vals = jsonpickle.decode(func_dic['arg_vals'])
                 func_temp = partial(self._validateAndCallFunc, func_name, vals) 
                 func_temp.__doc__ = func_dic['docstring'] 
             elif 'fullargspec' in func_dic:
-                func_temp = _build_facade(func_dic)
-                              
+                func_temp = self._buildFacadeFunc(func_dic)   
+            
+            self.simple_func_dict[func_name] = {
+                'name' : func_name,                                                
+                'signature' : inspect.signature(func_temp)
+                }                           
             setattr(self, func_name, func_temp )
 
 
@@ -166,7 +138,42 @@ class ModuleProxy():
             }
         _requestFromServer(self.socket, instructionDict)    
 
+
+    def _buildFacadeFunc(self, func_dic):
+        """Build a facade function, matching the signature of the origional
+        instrument function.
+        """
+        name = func_dic['name']
+        docstring = func_dic['docstring']
+        spec = jsonpickle.decode(func_dic['fullargspec'])
+        sig = jsonpickle.decode(func_dic['signature'])
         
+        if spec.args[0]=='self':
+            spec.args.remove('self')
+        args, default_values = spec[0], spec[3]
+        arglen = len(args)
+        
+        if default_values is not None:
+            defaults = args[arglen - len(default_values):]                       
+            arglen -= len(list(defaults))
+    
+        def _proxy(*pargs, **pkw):       
+            # Reconstruct keyword arguments
+            if default_values is not None:            
+                pargs, kwparams = pargs[:arglen], pargs[arglen:]
+                for positional, key in zip(kwparams, defaults):
+                        pkw[key] = positional
+            return self._callFunc(name, *pargs, **pkw)
+                
+        args_str = str(sig)
+        callargs = str(tuple(sig.parameters.keys())).replace("'",  '')
+                
+        facade = 'def {}{}:\n    """{}"""\n    return _proxy{}'.format(
+            name, args_str, docstring, callargs)
+        facade_globs = {'_proxy': _proxy}
+        exec (facade,  facade_globs)
+        return facade_globs[name]   
+     
     
     def _validateAndCallFunc(self, func_name: str, 
                              validators : List[Validator], 
@@ -242,8 +249,8 @@ class InstrumentProxy(ModuleProxy):
     
     def __init__(self, instruemnt_name: str, server_address : str = '5555'):
         """ Initialize a proxy. Create a zmq.REQ socket that connectes to the
-        server, and get a snapshot from the server. The snapshot will be 
-        stroed in a private dictionary.
+        server, get all the functions, parameters, and submodules of this
+        instrument from the server and add them to this virtual instrument class.
     
         :param instruemnt_name: The name of the instrument that the proxy will 
         represnt. The name must match the instrument name in the server.
@@ -259,8 +266,7 @@ class InstrumentProxy(ModuleProxy):
         
         # check if instrument exits on the server or not 
         print("Checking instruments on the server..." )        
-        instructionDict = {'operation' : 'get_existing_instruments'}
-        existing_instruemnts = _requestFromServer(self.socket, instructionDict)
+        existing_instruemnts = list(get_existing_instruments(server_address).keys())
 
         if self.name in existing_instruemnts:
             print ('Found '+ instruemnt_name + ' on server')
@@ -281,15 +287,15 @@ class InstrumentProxy(ModuleProxy):
         # create the top instrument module
         super().__init__(self.name, self._construct_dict, None, server_address)
         
-        # create the instrument submodules
+        # create the instrument submodules if exist
         try:
             submodule_dict = self._construct_dict['submodule_dict']
-            submodules = list(submodule_dict.keys())
+            self.submodule_list = list(submodule_dict.keys())
         except AttributeError:
             submodule_dict = {}
-            submodules = []
+            self.submodule_list = []
         
-        for module_name in submodules: 
+        for module_name in self.submodule_list: 
             submodule_construct_dict = submodule_dict[module_name]
             submodule = ModuleProxy(self.name, 
                                     submodule_construct_dict, 
@@ -298,8 +304,17 @@ class InstrumentProxy(ModuleProxy):
             setattr(self, module_name, submodule)
         
         
-        
-       
+
+def get_existing_instruments(server_address : str = '5555') :
+    ''' Get the existing instruments on the server
+    
+    '''
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:" + server_address)
+    instructionDict = {'operation' : 'get_existing_instruments'}
+    existing_instruemnts = _requestFromServer(socket, instructionDict)
+    return existing_instruemnts       
 
 def create_instrument(instrument_class: Union[Type[Instrument],str],
                       name: str,
@@ -322,9 +337,7 @@ def create_instrument(instrument_class: Union[Type[Instrument],str],
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:" + server_address)
     # look for existing instruments
-    instructionDict = {'operation' : 'get_existing_instruments'}
-    socket.send_json(instructionDict)
-    existing_instruemnts = socket.recv_json()     
+    existing_instruemnts = list(get_existing_instruments(server_address).keys())
     if name in existing_instruemnts:
         raise NameError(f'Instrument {name} alreadt exists on the server')
     # create new instrument

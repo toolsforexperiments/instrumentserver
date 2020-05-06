@@ -86,6 +86,7 @@ def instructionDict_to_instrumentCall(station: Station, instructionDict : Instru
     return response
 
 
+# ------------------ helper functions ----------------------------------------
 def _instructionProcesser(station: Station, instructionDict : InstructionDictType):
     """
     process the operation instruction from the client and excute the operation.
@@ -131,15 +132,20 @@ def _instructionProcesser(station: Station, instructionDict : InstructionDictTyp
     return  returns
 
 
-
-# Some private tool functions
-def _getExistingInstruments(station: Station) -> List:
+def _getExistingInstruments(station: Station) -> Dict:
     """
     Get the existing instruments in the station,
     
-    :returns : list of the existing instruemnt names in the station
+    :returns : a dictionary that contains the instrument name and its identity
     """
-    return list(station.snapshot()['instruments'].keys())
+    instrument_info = {}
+    list_instruments = list(station.snapshot()['instruments'].keys())
+    for instrument_name in list_instruments:
+        instrument_info[instrument_name] = {}
+        instrument_info[instrument_name]['name'] = instrument_name
+        instrument_IDN = station[instrument_name].IDN()        
+        instrument_info[instrument_name]['IDN'] = instrument_IDN
+    return instrument_info
 
 def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
     """Create a new instrument on the server
@@ -156,8 +162,7 @@ def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
         exec( f'import {instrument_class}' )
         instrument_class = eval(instrument_class)
     
-
-    # print (instrument_class, instrument_name, instrument_args, instrument_recreate, instrument_kwargs)        
+    
     new_instruemnt = qc.find_or_create_instrument(instrument_class,
                                                   instrument_name,
                                                   *instrument_args,
