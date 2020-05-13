@@ -4,8 +4,6 @@ from scipy import constants
 from qcodes import Instrument, ParameterWithSetpoints
 from qcodes.utils import validators
 
-from labcore.testing.signals.rf import resonator_reflection_signal
-
 
 class ResonatorResponse(Instrument):
     """A dummy instrument that generates the response of a resonator measured in
@@ -95,3 +93,23 @@ class ResonatorResponse(Instrument):
         noise_real = np.random.normal(size=ideal_signal.size, loc=0, scale=noise)
         noise_imag = np.random.normal(size=ideal_signal.size, loc=0, scale=noise)
         return ideal_signal + noise_real + 1j * noise_imag
+
+
+class Generator(Instrument):
+
+    def __init__(self, name, *arg, **kw):
+        super().__init__(name, *arg, **kw)
+
+        self.add_parameter('frequency', unit='Hz',
+                           set_cmd=None,
+                           vals=validators.Numbers(1e3, 20e9),
+                           initial_value=10e9)
+
+        self.add_parameter('power', unit='dBm',
+                           set_cmd=None,
+                           vals=validators.Numbers(-100, 25),
+                           initial_value=-100)
+
+        self.add_parameter('rf_on', set_cmd=None,
+                           vals=validators.Bool(),
+                           initial_value=False)

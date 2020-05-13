@@ -47,17 +47,17 @@ class LogWidget(QtWidgets.QWidget):
     A simple logger widget. Uses QLogHandler as handler.
     The handler has the actual widget that is used to display the logs.
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, level=logging.INFO):
         super().__init__(parent)
 
         # set up the graphical handler
         fmt = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s\n" +
-                "    %(message)s",
-            datefmt='%Y-%m-%d %H:%M:%S',
-            )
+            "[%(asctime)s] [%(name)s: %(levelname)s] %(message)s",
+            datefmt='%m-%d %H:%M:%S',
+        )
         logTextBox = QLogHandler(self)
         logTextBox.setFormatter(fmt)
+        logTextBox.setLevel(level)
 
         # make the widget
         layout = QtWidgets.QVBoxLayout()
@@ -65,34 +65,45 @@ class LogWidget(QtWidgets.QWidget):
         layout.addWidget(logTextBox.widget)
         self.setLayout(layout)
 
-        # configure the logger. delete pre-existing graphical handler.
+        # configure the logger
         self.logger = logging.getLogger('instrumentserver')
-        for h in self.logger.handlers:
-            if isinstance(h, QLogHandler):
-                self.logger.removeHandler(h)
-                h.widget.deleteLater()
-                del h
+
+        # delete old graphical handler. however, that would allow only one
+        # graphical handler per kernel. not sure i want that...?
+        # for h in self.logger.handlers:
+        #     if isinstance(h, QLogHandler):
+        #         self.logger.removeHandler(h)
+        #         h.widget.deleteLater()
+        #         del h
 
         self.logger.addHandler(logTextBox)
 
 
-def setupLogging(level=logging.INFO, addStreamHandler=True,
-                  name='instrumentserver'):
+def setupLogging(addStreamHandler=True, logFile=None,
+                 name='instrumentserver'):
     """Setting up logging, incl adding a custom handler"""
 
     print(f'Setting up logging for {name} ...')
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+
+    for h in logger.handlers:
+        logger.removeHandler(h)
+        del h
+
+    if logFile is not None:
+        fmt = logging.Formatter(
+            "%(asctime)s\t: %(name)s\t: %(levelname)s\t: %(message)s",
+            datefmt='%Y-%m-%d %H:%M:%S',
+        )
+        fh = logging.FileHandler(logFile)
+        fh.setFormatter(fmt)
+        fh.setLevel(logging.DEBUG)
+        logger.addHandler(fh)
 
     if addStreamHandler:
-        for h in logger.handlers:
-            if isinstance(h, logging.StreamHandler):
-                logger.removeHandler(h)
-                del h
-
         fmt = logging.Formatter(
             "[%(asctime)s] [%(name)s: %(levelname)s] %(message)s",
-            datefmt='%Y-%m-%d %H:%M:%S',
+            datefmt='%m/%d %H:%M',
         )
         streamHandler = logging.StreamHandler(sys.stderr)
         streamHandler.setFormatter(fmt)

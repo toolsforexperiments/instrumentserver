@@ -65,14 +65,12 @@ import os
 from typing import Dict, List, Any, Union
 
 from jsonschema import validate
+import pandas as pd
 from qcodes import Instrument, Station, Parameter
 
-from . import getInstrumentserverPath
+from . import PARAMS_SCHEMA_PATH
 
 logger = logging.getLogger(__name__)
-
-PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
-                                  'parameters.json')
 
 
 def toParamDict(input: Union[Station,
@@ -192,7 +190,7 @@ def saveParamsToFile(input: Union[Station,
         json.dump(ret, f, indent=2, sort_keys=True)
 
 
-def loadParamsFromFile(filePath,
+def loadParamsFromFile(filePath: str,
                        target: Union[Station,
                                      List[Union[Instrument, Parameter]]]) -> None:
     """Load (instrument) parameters from file.
@@ -229,6 +227,13 @@ def validateParamDict(params: Dict[str, Any]):
         validate(params, schema)
     except:
         raise
+
+
+def toDataFrame(input: Union[Station, List[Union[Instrument, Parameter]]]):
+    """Make a pandas data frame from the parameters. mainly useful for 
+    printing overviews in notebooks."""
+    params = toParamDict(input, includeMeta=['unit', 'vals'])
+    return pd.DataFrame(params).T.sort_index()
 
 
 # private tool functions
