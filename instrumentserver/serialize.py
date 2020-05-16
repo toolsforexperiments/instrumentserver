@@ -250,9 +250,9 @@ def _singleParameterToJson(parameter: Parameter,
         ret[parameter.name] = snap.get('value', None)
     else:
         ret[parameter.name] = dict()
-        for k, v in snap.items():
-            if k in ['value'] + includeMeta:
-                ret[parameter.name][k] = v
+        for k in ['value'] + includeMeta:
+            ret[parameter.name][k] = snap.get(k, None)
+
     return ret
 
 

@@ -1,3 +1,4 @@
+from typing import Any, Dict, Union, Tuple
 import numpy as np
 from scipy import constants
 
@@ -58,6 +59,19 @@ class ResonatorResponse(Instrument):
                            ),
                            get_cmd=self._get_data, )
 
+    def calibrate(self) -> Dict[str, Union[tuple, Any]]:
+        """perform a calibration of some sort."""
+        return True
+
+    def setup_stuff(self, a_parameter: int, another_parameter: float = 5.0,
+                    *arg, **kw: Any) -> bool:
+        """setting up."""
+        return True
+
+    def poorly_annotated_function(self, x, y, *, z=5, **kwargs):
+        return 10
+
+    # private utility methods
     def _frequency_vals(self):
         return np.linspace(self.start_frequency(), self.stop_frequency(), self.npoints())
 

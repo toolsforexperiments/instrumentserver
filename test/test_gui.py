@@ -23,6 +23,15 @@ def main():
     station = make_station()
     app = QtWidgets.QApplication([])
     server = servergui(station)
+
+    # add some more stuff through another interface.
+    from instrumentserver.testing.dummy_instruments.rf import Generator
+    rf_src = Generator('rf_src')
+    lo_src = Generator('lo_src')
+    qubit_src = Generator('qubit_src')
+    for c in rf_src, lo_src, qubit_src:
+        server.addStationComponent(c)
+
     return app.exec_()
 
 

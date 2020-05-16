@@ -11,6 +11,8 @@ from . import resource
 from . import QtCore, QtWidgets, QtGui, serialize
 from .base import send, recv
 from .log import LogLevels, LogWidget, log, setupLogging
+from .serialize import toParamDict
+from .helpers import getInstrumentMethods, getInstrumentParameters, toHtml
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,10 @@ class StationList(QtWidgets.QTreeWidget):
 
     cols = ['Name', 'Info']
 
+    #: Signal(str) --
+    #: emitted when a parameter or Instrument is selected
+    componentSelected = QtCore.Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -34,6 +40,8 @@ class StationList(QtWidgets.QTreeWidget):
         self.setSortingEnabled(True)
         self.clear()
 
+        self.itemSelectionChanged.connect(self._processSelection)
+
     def clear(self):
         super().clear()
         self.instrumentsItem = QtWidgets.QTreeWidgetItem(['Instruments', ''])
@@ -41,12 +49,23 @@ class StationList(QtWidgets.QTreeWidget):
         self.addTopLevelItem(self.paramsItem)
         self.addTopLevelItem(self.instrumentsItem)
 
+    def _addParameterTo(self, parent, obj):
+        lst = [obj.name]
+        info = toParamDict([obj], includeMeta=['vals', 'unit'])[obj.name]
+        infoString = f"{str(obj.__class__.__name__)}"
+        lst.append(infoString)
+        paramItem = QtWidgets.QTreeWidgetItem(lst)
+        parent.addChild(paramItem)
+
     def addObject(self, obj: Union[Instrument, Parameter]):
-        lst = [obj.name, f"{type(obj)}"]
+        lst = [obj.name, f"{str(obj.__class__.__name__)}"]
         if isinstance(obj, Instrument):
-            self.instrumentsItem.addChild(QtWidgets.QTreeWidgetItem(lst))
+            insItem = QtWidgets.QTreeWidgetItem(lst)
+            self.instrumentsItem.addChild(insItem)
+
         elif isinstance(obj, Parameter):
-            self.paramsItem.addChild(QtWidgets.QTreeWidgetItem(lst))
+            paramItem = QtWidgets.QTreeWidgetItem(lst)
+            self.paramsItem.addChild(paramItem)
 
     def removeObject(self, name: str):
         items = self.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
@@ -55,6 +74,34 @@ class StationList(QtWidgets.QTreeWidget):
                 parent = i.parent()
                 parent.removeChild(i)
                 del i
+
+    def _processSelection(self):
+        items = self.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        if item not in [self.instrumentsItem, self.paramsItem]:
+            self.componentSelected.emit(item.text(0))
+
+
+class StationObjectInfo(QtWidgets.QTextEdit):
+
+    @staticmethod
+    def htmlDoc(obj: Union[Parameter, Instrument]):
+        pass
+
+    @staticmethod
+    def parameterHtml(param: Parameter):
+        pass
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setReadOnly(True)
+
+    @QtCore.Slot(object)
+    def setObject(self, obj: Union[Instrument, Parameter]):
+        self.setHtml(toHtml(obj))
 
 
 class ServerStatus(QtWidgets.QWidget):
@@ -117,7 +164,14 @@ class ServerGui(QtWidgets.QMainWindow):
         self.setCentralWidget(self.tabs)
 
         self.stationList = StationList()
-        self.tabs.addTab(self.stationList, 'Station')
+        self.stationObjInfo = StationObjectInfo()
+        self.stationList.componentSelected.connect(self.displayComponentInfo)
+
+        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        stationWidgets.addWidget(self.stationList)
+        stationWidgets.addWidget(self.stationObjInfo)
+        stationWidgets.setSizes([300, 700])
+        self.tabs.addTab(stationWidgets, 'Station')
 
         self.tabs.addTab(LogWidget(level=logging.INFO), 'Log')
 
@@ -241,6 +295,13 @@ class ServerGui(QtWidgets.QMainWindow):
         for _, obj in self.station.components.items():
             self.stationList.addObject(obj)
 
+        for i in range(self.stationList.topLevelItemCount()):
+            item = self.stationList.topLevelItem(i)
+            self.stationList.expandItem(item)
+
+        for i, _ in enumerate(self.stationList.cols):
+            self.stationList.resizeColumnToContents(i)
+
     def loadParamsFromFile(self):
         """load the values of all parameters present in the server's params json file
         to parameters registered in the station (incl those in instruments)."""
@@ -256,6 +317,14 @@ class ServerGui(QtWidgets.QMainWindow):
         self.log(f"Saving parameters to file: "
                  f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
         serialize.saveParamsToFile(self.station, self._paramValuesFile)
+
+    @QtCore.Slot(str)
+    def displayComponentInfo(self, name: Union[str, None]):
+        if name is not None:
+            obj = self.station.components[name]
+        else:
+            obj = None
+        self.stationObjInfo.setObject(obj)
 
 
 def servergui(station: Station) -> "ServerGui":
