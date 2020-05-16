@@ -19,6 +19,7 @@ from qcodes import Instrument
 from functools import partial
 from qcodes.utils.validators import Validator
 from . import getInstrumentserverPath
+from .base import send, recv
 
 PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
                                   'instruction_dict.json')
@@ -368,12 +369,13 @@ def _requestFromServer(socket: Socket, instructionDict: Dict) -> Any:
     except:
         raise
     # sende instruction dictionary to server      
-    socket.send_json(instructionDict)
+    send(socket, instructionDict)
     # receive response from server and handle error
-    response = socket.recv_json()      
+    response = recv(socket)     
     if response['error'] != None:
-        error = jsonpickle.decode(response['error'])
+        error = response['error']
+        print('Error from server:')
         raise error
-    return_value = jsonpickle.decode(response['return_value'])        
+    return_value = response['return_value']
     return return_value
 

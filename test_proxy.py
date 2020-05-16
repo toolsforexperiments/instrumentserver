@@ -7,6 +7,9 @@ Created on Sat Apr 18 22:12:05 2020
 
 from instrumentserver.proxy import InstrumentProxy, create_instrument, get_existing_instruments
 import qcodes
+import json 
+import jsonpickle
+
 yoko = InstrumentProxy('yoko')
 
 print(yoko.current(10))
@@ -34,3 +37,11 @@ gen = InstrumentProxy('gen')
 all_instruemnts = get_existing_instruments()
 gen_param_ss = gen.snapshot()['parameters']
 gen_func_dict = gen.simple_func_dict
+
+# outpur_dir = r'C:\Users\zctid.LAPTOP-150KME16\Desktop\Qcodes_test\GUI_JSON\\'
+# with open(outpur_dir + 'instrument_list.json', 'w') as outfile:
+#     json.dump(all_instruemnts, outfile)
+# with open(outpur_dir + 'gen_param.json', 'w') as outfile:
+#     json.dump(gen_param_ss, outfile)
+# with open(outpur_dir + 'gen_func.json', 'w') as outfile:
+#     json.dump(jsonpickle.encode(gen_func_dict), outfile)

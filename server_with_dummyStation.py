@@ -19,6 +19,7 @@ from qcodes.utils.validators import Validator, Numbers, Anything, Strings
 from qcodes.instrument import parameter
 
 from instrumentserver.interpreters import instructionDict_to_instrumentCall 
+from instrumentserver.base import send, recv
 
 
 #  Create a dummy station with a dummy instruemnt 'yoko'
@@ -105,11 +106,11 @@ socket.bind("tcp://*:5555")
 
 while True:
     #  Wait for request from client
-    received_dict = socket.recv_json()
+    received_dict = recv(socket)
     print("Received instruction: "  + received_dict['operation'])
     response = instructionDict_to_instrumentCall(station, received_dict)
     #  Send reply back to client
-    socket.send_json(response)
+    send(socket, response)
     
 
 

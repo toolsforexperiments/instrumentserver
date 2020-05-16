@@ -15,6 +15,7 @@ from typing_extensions import Literal, TypedDict
 import qcodes as qc
 from qcodes import Station, Instrument
 from qcodes.utils.validators import Validator, range_str
+from .base import send, recv
 
 
 
@@ -72,14 +73,9 @@ def instructionDict_to_instrumentCall(station: Station, instructionDict : Instru
                 'error': None}
     try:
         returns = _instructionProcesser(station, instructionDict)
-        response['return_value'] = jsonpickle.encode(returns) # I'm not using
-        # json.dumps() here because some of the parameters (e.g. complex numbers)
-        # are not JSON serializable.So now at least all the get commands will
-        # work properly, but the set part is still using json. I'm not sure
-        # do I need to change this also for the set command or not.
+        response['return_value'] = returns
     except Exception as err:
-        encoded_error = jsonpickle.encode(err)
-        response['error']  = encoded_error
+        response['error']  = err
         warnings.simplefilter('always', UserWarning) # since this runs in loop
         warnings.warn(str(err))
    
