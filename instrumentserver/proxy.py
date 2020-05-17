@@ -6,17 +6,20 @@ Created on Sat Apr 18 16:13:40 2020
 """
 import os
 from types import MethodType
+import json
 import inspect
+import typing
+from typing import Dict, List, Any, Union, Tuple, Type, Optional
+from functools import partial
+
 import zmq
 from zmq.sugar.socket import Socket
-import json
 import jsonpickle
 from jsonschema import validate as jsvalidate
+
 import qcodes as qc
-from typing import Dict, List, Any, Union, Tuple, Type, Optional
 from qcodes.instrument import parameter
 from qcodes import Instrument
-from functools import partial
 from qcodes.utils.validators import Validator
 from . import getInstrumentserverPath
 from .base import send, recv
@@ -146,8 +149,8 @@ class ModuleProxy():
         """
         name = func_dic['name']
         docstring = func_dic['docstring']
-        spec = jsonpickle.decode(func_dic['fullargspec'])
-        sig = jsonpickle.decode(func_dic['signature'])
+        spec = func_dic['fullargspec']
+        sig = func_dic['signature']
         
         if spec.args[0]=='self':
             spec.args.remove('self')
@@ -165,13 +168,16 @@ class ModuleProxy():
                 for positional, key in zip(kwparams, defaults):
                         pkw[key] = positional
             return self._callFunc(name, *pargs, **pkw)
-                
+        print ('name:',name,'sig: ',sig)                
         args_str = str(sig)
         callargs = str(tuple(sig.parameters.keys())).replace("'",  '')
                 
         facade = 'def {}{}:\n    """{}"""\n    return _proxy{}'.format(
             name, args_str, docstring, callargs)
-        facade_globs = {'_proxy': _proxy}
+        # facade_globs = {'_proxy': _proxy}
+        facade_globs = _argument_hints()
+        facade_globs['_proxy'] = _proxy
+        # facade_globs['typing'] = typing
         exec (facade,  facade_globs)
         return facade_globs[name]   
      
@@ -379,3 +385,16 @@ def _requestFromServer(socket: Socket, instructionDict: Dict) -> Any:
     return_value = response['return_value']
     return return_value
 
+def _argument_hints(package=None) ->Dict[str, object]:
+    ''' generate a dictionary that contains the argument hints for construncting
+    the facade functions. By default, all the hint type from typing package will
+    be included
+    
+    :param package: package that contains the customized hint types
+    :return : Dictionary that contain the hints.
+    '''
+    arg_hint_dict = {}
+    for obj in typing.__all__:
+        if obj[0] >= 'A' and obj[0]<='Z':
+            arg_hint_dict[obj] = typing.__dict__[obj]
+    return arg_hint_dict
