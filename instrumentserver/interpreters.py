@@ -146,6 +146,7 @@ def _getExistingInstruments(station: Station) -> Dict:
 def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
     """Create a new instrument on the server
     """
+    #TODO: Use the YAML configuration file for finding the correct package
     instrument_name = instructionDict['instrument_name']
     instrumnet_create_dict = instructionDict['instrumnet_create']    
     instrument_class = instrumnet_create_dict['instrument_class']
@@ -154,8 +155,11 @@ def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
     
     try:
         instrument_class = eval(instrument_class)
-    except NameError: #instrument class not imported yet
-        exec( f'import {instrument_class}' )
+    except NameError: #instrument class not imported yeta
+        seperate_point = instrument_class.rfind('.')
+        package_str = instrument_class[:seperate_point]
+        instrument_class = instrument_class[seperate_point+1:]
+        exec( f'from {package_str} import {instrument_class}' )
         instrument_class = eval(instrument_class)
     
     
@@ -245,9 +249,11 @@ def _get_module_info(module: Instrument) -> Dict:
             func_dict_temp['arg_vals'] = jp_argvals            
         else:
         # for functions added directly to instrument class as bound methods,
-        # the fullargspec and signature is pickled             
-            jp_fullargspec = jsonpickle.encode(inspect.getfullargspec(func))
-            jp_signature = jsonpickle.encode(inspect.signature(func))
+        # the fullargspec and signature is stored in the dictionary(will be 
+        # pickled when sending to proxy)(jsonpickle.en/decode has some bugs that 
+        # don't workd for some function arguments)             
+            jp_fullargspec = inspect.getfullargspec(func)
+            jp_signature = inspect.signature(func)
             func_dict_temp['fullargspec'] = jp_fullargspec 
             func_dict_temp['signature'] = jp_signature                     
         module_func_dict[func_name] = func_dict_temp        
