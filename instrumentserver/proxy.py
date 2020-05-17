@@ -167,17 +167,14 @@ class ModuleProxy():
                 pargs, kwparams = pargs[:arglen], pargs[arglen:]
                 for positional, key in zip(kwparams, defaults):
                         pkw[key] = positional
-            return self._callFunc(name, *pargs, **pkw)
-        print ('name:',name,'sig: ',sig)                
+            return self._callFunc(name, *pargs, **pkw)          
         args_str = str(sig)
         callargs = str(tuple(sig.parameters.keys())).replace("'",  '')
                 
         facade = 'def {}{}:\n    """{}"""\n    return _proxy{}'.format(
             name, args_str, docstring, callargs)
-        # facade_globs = {'_proxy': _proxy}
         facade_globs = _argument_hints()
         facade_globs['_proxy'] = _proxy
-        # facade_globs['typing'] = typing
         exec (facade,  facade_globs)
         return facade_globs[name]   
      

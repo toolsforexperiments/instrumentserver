@@ -5,15 +5,20 @@ import random
 from typing import Union
 
 import zmq
+import json
+from jsonschema import validate as jsvalidate
 from qcodes import Parameter, Station, Instrument
 
-from . import resource
+from . import resource, getInstrumentserverPath
+from .interpreters import instructionDict_to_instrumentCall
 from . import QtCore, QtWidgets, QtGui, serialize
 from .base import send, recv
 from .log import LogLevels, LogWidget, log, setupLogging
 from .serialize import toParamDict
 from .helpers import getInstrumentMethods, getInstrumentParameters, toHtml
 
+PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+                                  'instruction_dict.json')
 
 logger = logging.getLogger(__name__)
 
@@ -393,15 +398,29 @@ class StationServer(QtCore.QObject):
 
         while self.serverRunning:
             message = recv(socket)
-
+            show_message = message
             if message == self.SAFEWORD:
                 reply = 'As you command, server will now shut down.'
                 self.serverRunning = False
-            else:
-                reply = 'Thank you for your message.'
-
-            send(socket, str(reply))
-            self.messageReceived.emit(message, reply)
+                response = {'error': RuntimeError('Server closed by user')}
+            elif isinstance(message, str): #other string messages
+                reply = 'Thank you for your message'
+                response = str(reply)
+            else: 
+                # check if the message is the instruction dictionary from proxy
+                with open(PARAMS_SCHEMA_PATH) as f:
+                    schema = json.load(f)
+                try:
+                    jsvalidate(message, schema)
+                except:
+                    raise
+                show_message = f"Command from proxy : {message['operation']}"
+                response = instructionDict_to_instrumentCall(self.station, message)
+                reply = 'a dictionary that contains the requested information'
+                # Is it necessary to show the explicit reply(a huge dictionary) here ?
+            
+            send(socket, response)            
+            self.messageReceived.emit(show_message, reply)
 
         socket.close()
         self.finished.emit()
