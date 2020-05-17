@@ -20,7 +20,7 @@
             "description": "name of the instrument",
             "type": "string"  
           },
-          "instrumnet_create": { 
+          "instrument_create": {
             "description": "Information needed for creating the new instrument",
             "type": "object",
             "properties" : {
@@ -29,7 +29,7 @@
                 "description": "class path of the instrument"
               },
               "args": {
-                "description": "tuple of postional arguments"
+                "description": "tuple of positional arguments"
               },
               "kwargs": {
                 "description": "dict of keyword arguments"
@@ -38,7 +38,7 @@
             "required": ["instrument_class"]
           }
         },
-        "required": ["instrument_name", "instrumnet_create"]
+        "required": ["instrument_name", "instrument_create"]
       }
     },
     {

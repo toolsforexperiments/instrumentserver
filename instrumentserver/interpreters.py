@@ -18,46 +18,46 @@ from qcodes.utils.validators import Validator, range_str
 from .base import send, recv
 
 
-
-
-
-# dictionary type defination 
+# dictionary type definition
 
 class InstrumentCreateDictType(TypedDict):
-    instrument_class : str
-    args : Optional[tuple]
-    kwargs : Optional[Dict]
+    instrument_class: str
+    args: Optional[tuple]
+    kwargs: Optional[Dict]
 
-    
+
 class ParamDictType(TypedDict):
-    name :  str
-    value : Optional[Any] 
-    
+    name: str
+    value: Optional[Any]
+
+
 class FuncDictType(TypedDict):
-    name :  str
-    args : Optional[tuple]
-    kwargs : Optional[Dict]
+    name: str
+    args: Optional[tuple]
+    kwargs: Optional[Dict]
+
 
 class InstructionDictType(TypedDict):
-    operation: Literal['get_existing_instruments',
-                        'instrument_creation',
-                        'proxy_construction', 
-                        'proxy_get_param', 
-                        'proxy_set_param',
-                        'proxy_call_func'
-                        'instrument_snapshot'
-                        ] 
-    
+    operation: Literal["get_existing_instruments",
+                       'instrument_creation',
+                       'proxy_construction',
+                       'proxy_get_param',
+                       'proxy_set_param',
+                       'proxy_call_func',
+                       'instrument_snapshot']
+
     instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
-    submodule_name: Optional[Union[str, None]]  # not needed for 'get_existing_instruments'
-    instrumnet_create : Optional[InstrumentCreateDictType]  # for instrument creation
-    parameter : Optional[ParamDictType] # for get/set_param
-    function : Optional[FuncDictType] # for function call
-    
-    
-    
-    
-def instructionDict_to_instrumentCall(station: Station, instructionDict : InstructionDictType) -> Any:
+    submodule_name: Optional[
+        Union[str, None]]  # not needed for 'get_existing_instruments'
+    instrument_create: Optional[
+        InstrumentCreateDictType]  # for instrument creation
+    parameter: Optional[ParamDictType]  # for get/set_param
+    function: Optional[FuncDictType]  # for function call
+
+
+def instructionDict_to_instrumentCall(station: Station,
+                                      instructionDict:
+                                      InstructionDictType) -> Any:
     """
     This is the interpreter function that the server will call to translate the
     dictionary received from the proxy to instrument calls.
@@ -75,15 +75,16 @@ def instructionDict_to_instrumentCall(station: Station, instructionDict : Instru
         returns = _instructionProcesser(station, instructionDict)
         response['return_value'] = returns
     except Exception as err:
-        response['error']  = err
-        warnings.simplefilter('always', UserWarning) # since this runs in loop
+        response['error'] = err
+        warnings.simplefilter('always', UserWarning)  # since this runs in loop
         warnings.warn(str(err))
-   
+
     return response
 
 
 # ------------------ helper functions ----------------------------------------
-def _instructionProcesser(station: Station, instructionDict : InstructionDictType):
+def _instructionProcesser(station: Station,
+                          instructionDict: InstructionDictType):
     """
     process the operation instruction from the client and excute the operation.
     
@@ -96,36 +97,36 @@ def _instructionProcesser(station: Station, instructionDict : InstructionDictTyp
 
     """
     operation = instructionDict['operation']
-    
-    if operation == 'get_existing_instruments': 
+
+    if operation == 'get_existing_instruments':
         # usually this operation will be called before all the others to check
         # if the instrument already exists ont the server.
         returns = _getExistingInstruments(station)
     elif operation == 'instrument_creation':
         returns = _instrumentCreation(station, instructionDict)
-    else: # doing operation on an existing instrument
-        instrument = station[instructionDict['instrument_name']]        
-        if 'submodule_name' in instructionDict :
+    else:  # doing operation on an existing instrument
+        instrument = station[instructionDict['instrument_name']]
+        if 'submodule_name' in instructionDict:
             submodule_name = instructionDict['submodule_name']
             if submodule_name is not None:
                 # do operation on an instrument submodule
-                instrument = getattr(instrument, submodule_name)            
-        
+                instrument = getattr(instrument, submodule_name)
+
         if operation == 'proxy_construction':
             returns = _proxyConstruction(instrument)
         elif operation == 'proxy_get_param':
-            returns = _proxyGetParam(instrument, instructionDict['parameter'])       
+            returns = _proxyGetParam(instrument, instructionDict['parameter'])
         elif operation == 'proxy_set_param':
-            returns = _proxySetParam(instrument, instructionDict['parameter'])  
+            returns = _proxySetParam(instrument, instructionDict['parameter'])
         elif operation == 'proxy_call_func':
-            returns = _proxyCallFunc(instrument, instructionDict['function'])    
+            returns = _proxyCallFunc(instrument, instructionDict['function'])
         elif operation == 'instrument_snapshot':
-            returns = instrument.snapshot()          
-        else :
+            returns = instrument.snapshot()
+        else:
             # the instructionDict will be ckecked in the proxy before sent to 
             # here, so in principle this error should not happen.
             raise TypeError('operation type not supported')
-    return  returns
+    return returns
 
 
 def _getExistingInstruments(station: Station) -> Dict:
@@ -139,39 +140,39 @@ def _getExistingInstruments(station: Station) -> Dict:
     for instrument_name in list_instruments:
         instrument_info[instrument_name] = {}
         instrument_info[instrument_name]['name'] = instrument_name
-        instrument_IDN = station[instrument_name].IDN()        
+        instrument_IDN = station[instrument_name].IDN()
         instrument_info[instrument_name]['IDN'] = instrument_IDN
     return instrument_info
 
-def _instrumentCreation(station: Station, instructionDict : Dict) -> None:
+
+def _instrumentCreation(station: Station, instructionDict: Dict) -> None:
     """Create a new instrument on the server
     """
-    #TODO: Use the YAML configuration file for finding the correct package
+    # TODO: Use the YAML configuration file for finding the correct package
     instrument_name = instructionDict['instrument_name']
-    instrumnet_create_dict = instructionDict['instrumnet_create']    
-    instrument_class = instrumnet_create_dict['instrument_class']
-    instrument_args = instrumnet_create_dict['args']
-    instrument_kwargs = instrumnet_create_dict['kwargs']
-    
+    instrument_create_dict = instructionDict['instrument_create']
+    instrument_class = instrument_create_dict['instrument_class']
+    instrument_args = instrument_create_dict['args']
+    instrument_kwargs = instrument_create_dict['kwargs']
+
     try:
         instrument_class = eval(instrument_class)
-    except NameError: #instrument class not imported yeta
+    except NameError:  # instrument class not imported yeta
         seperate_point = instrument_class.rfind('.')
         package_str = instrument_class[:seperate_point]
-        instrument_class = instrument_class[seperate_point+1:]
-        exec( f'from {package_str} import {instrument_class}' )
+        instrument_class = instrument_class[seperate_point + 1:]
+        exec(f'from {package_str} import {instrument_class}')
         instrument_class = eval(instrument_class)
-    
-    
+
     new_instruemnt = qc.find_or_create_instrument(instrument_class,
                                                   instrument_name,
                                                   *instrument_args,
-                                                  recreate = False,
+                                                  recreate=False,
                                                   **instrument_kwargs)
-    print (new_instruemnt)
-    if not instrument_name in station.components:
+    print(new_instruemnt)
+    if instrument_name not in station.components:
         station.add_component(new_instruemnt)
-    
+
 
 def _proxyConstruction(instrument: Instrument) -> Dict:
     '''
@@ -192,35 +193,35 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
         submodules = list(instrument.submodules.keys())
     except AttributeError:
         submodules = []
-    
+
     submodule_dict = {}
-    for module_name in submodules: 
+    for module_name in submodules:
         submodule = getattr(instrument, module_name)
         # the ChannelList is not supported yet
         if submodule.__class__ != qc.instrument.channel.ChannelList:
             submodule_dict[module_name] = _get_module_info(submodule)
-            
+
     construct_dict['submodule_dict'] = submodule_dict
     return construct_dict
-    
-    
+
+
 def _get_module_info(module: Instrument) -> Dict:
     ''' Get the parameters and functions of an instrument (sub)module and put 
     them a dictionary.
     '''
     # get paramaters
     param_names = list(module.__dict__['parameters'].keys())
-    module_param_dict = {}    
+    module_param_dict = {}
     for param_name in param_names:
         param_dict_temp = {}
         param_dict_temp['name'] = param_name
         try:
-            param_dict_temp['unit'] = module[param_name].unit        
+            param_dict_temp['unit'] = module[param_name].unit
         except AttributeError:
             param_dict_temp['unit'] = None
-          
+
         try:
-            param_dict_temp['vals'] = jsonpickle.encode(module[param_name].vals) 
+            param_dict_temp['vals'] = jsonpickle.encode(module[param_name].vals)
         except:
             param_dict_temp['vals'] = jsonpickle.encode(None)
         module_param_dict[param_name] = param_dict_temp
@@ -230,39 +231,39 @@ def _get_module_info(module: Instrument) -> Dict:
     base_methods = (dir(base) for base in module.__class__.__bases__)
     unique_methods = methods.difference(*base_methods)
     func_names = []
-    for method in unique_methods :
-        if callable(getattr(module, method)) and method not in module_param_dict:
+    for method in unique_methods:
+        if callable(
+                getattr(module, method)) and method not in module_param_dict:
             func_names.append(method)
-  
+
     module_func_dict = {}
     for func_name in func_names:
-        func_dict_temp = {}
-        func_dict_temp['name'] = func_name
-        func = getattr(module , func_name)
+        func_dict_temp = {'name': func_name}
+        func = getattr(module, func_name)
         func_dict_temp['docstring'] = func.__doc__
 
         if func.__class__ == qc.instrument.function.Function:
-        # for functions added using the old 'instruemnt.add_function' method,
-        # (the functions only have positional arguments, and each argument has
-        # a validator). In this case, the list of validators is pickled            
+            # for functions added using the old 'instruemnt.add_function' method,
+            # (the functions only have positional arguments, and each argument has
+            # a validator). In this case, the list of validators is pickled
             jp_argvals = jsonpickle.encode(func._args)
-            func_dict_temp['arg_vals'] = jp_argvals            
+            func_dict_temp['arg_vals'] = jp_argvals
         else:
-        # for functions added directly to instrument class as bound methods,
-        # the fullargspec and signature is stored in the dictionary(will be 
-        # pickled when sending to proxy)(jsonpickle.en/decode has some bugs that 
-        # don't workd for some function arguments)             
+            # for functions added directly to instrument class as bound methods,
+            # the fullargspec and signature is stored in the dictionary(will be pickled
+            # when sending to proxy)(jsonpickle.en/decode has some bugs that don't
+            # workd for some function arguments)
             jp_fullargspec = inspect.getfullargspec(func)
             jp_signature = inspect.signature(func)
-            func_dict_temp['fullargspec'] = jp_fullargspec 
-            func_dict_temp['signature'] = jp_signature                     
-        module_func_dict[func_name] = func_dict_temp        
-    module_construct_dict = {'functions' : module_func_dict,
-                             'parameters' : module_param_dict}        
+            func_dict_temp['fullargspec'] = jp_fullargspec
+            func_dict_temp['signature'] = jp_signature
+        module_func_dict[func_name] = func_dict_temp
+    module_construct_dict = {'functions': module_func_dict,
+                             'parameters': module_param_dict}
     return module_construct_dict
-    
-    
-def _proxyGetParam(instrument: Instrument, paramDict : ParamDictType) -> Any:
+
+
+def _proxyGetParam(instrument: Instrument, paramDict: ParamDictType) -> Any:
     '''
     Get a parameter from the instrument.
     
@@ -271,10 +272,11 @@ def _proxyGetParam(instrument: Instrument, paramDict : ParamDictType) -> Any:
     :returns : value of the parameter returned from instrument
 
     '''
-    paramName = paramDict['name']   
+    paramName = paramDict['name']
     return instrument[paramName]()
 
-def _proxySetParam(instrument: Instrument, paramDict : ParamDictType) -> None:
+
+def _proxySetParam(instrument: Instrument, paramDict: ParamDictType) -> None:
     '''
     Set a parameter in the instrument.
     
@@ -282,10 +284,11 @@ def _proxySetParam(instrument: Instrument, paramDict : ParamDictType) -> None:
         'value' item will be the set value.
         e.g. {'ch1': {'value' : 10} }
     '''
-    paramName = paramDict['name']     
+    paramName = paramDict['name']
     instrument[paramName](paramDict['value'])
 
-def _proxyCallFunc(instrument: Instrument, funcDict : FuncDictType) -> Any:  
+
+def _proxyCallFunc(instrument: Instrument, funcDict: FuncDictType) -> Any:
     '''
     Call an instrument function.
     
@@ -295,7 +298,7 @@ def _proxyCallFunc(instrument: Instrument, funcDict : FuncDictType) -> Any:
     :returns : result returned from the instrument function
     '''
     funcName = funcDict['name']
-    
+
     if ('kwargs' in funcDict) and ('args' in funcDict):
         args = funcDict['args']
         kwargs = funcDict['kwargs']
@@ -308,8 +311,3 @@ def _proxyCallFunc(instrument: Instrument, funcDict : FuncDictType) -> Any:
         return getattr(instrument, funcName)(**kwargs)
     else:
         return getattr(instrument, funcName)()
-
-    
-
-
-    
