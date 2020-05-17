@@ -17,7 +17,7 @@ from .log import LogLevels, LogWidget, log, setupLogging
 from .serialize import toParamDict
 from .helpers import getInstrumentMethods, getInstrumentParameters, toHtml
 
-PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
                                   'instruction_dict.json')
 
 logger = logging.getLogger(__name__)
@@ -408,7 +408,7 @@ class StationServer(QtCore.QObject):
                 response = str(reply)
             else: 
                 # check if the message is the instruction dictionary from proxy
-                with open(PARAMS_SCHEMA_PATH) as f:
+                with open(INSTRUCT_SCHEMA_PATH) as f:
                     schema = json.load(f)
                 try:
                     jsvalidate(message, schema)
