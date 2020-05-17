@@ -6,9 +6,6 @@ Created on Sat Apr 18 22:12:05 2020
 """
 
 from instrumentserver.proxy import InstrumentProxy, create_instrument, get_existing_instruments
-import qcodes
-import json 
-import jsonpickle
 
 rf_src = InstrumentProxy('rf_src')
 dummy_vna = InstrumentProxy('dummy_vna')
