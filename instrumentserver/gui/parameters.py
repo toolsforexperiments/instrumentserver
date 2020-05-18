@@ -33,7 +33,7 @@ class ParameterWidget(QtWidgets.QWidget):
     def __init__(self, parameter: Parameter, parent=None):
         super().__init__(parent)
 
-        self.setAutoFillBackground(True)
+        self.setAutoFillBackground(False)
 
         self._parameter = parameter
         self._getMethod = lambda: None
@@ -82,7 +82,7 @@ class ParameterWidget(QtWidgets.QWidget):
             self._setMethod = lambda x: self.paramWidget.setText(str(x))
 
         layout.addWidget(self.paramWidget, 0, 0)
-
+        layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(layout)
 
     @QtCore.Slot(object)
@@ -156,18 +156,25 @@ class AnyInput(QtWidgets.QWidget):
         self.input = QtWidgets.QLineEdit()
         self.input.textEdited.connect(self._processTextEdited)
 
-        self.doEval = QtWidgets.QCheckBox()
-        self.doEval.setCheckState(QtCore.Qt.Checked)
-        doEvalLabel = QtWidgets.QLabel('Eval')
-        keepSmallHorizontally(doEvalLabel)
+        self.doEval = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/python.svg"), "", parent=self,
+        )
+        self.doEval.setCheckable(True)
+        self.doEval.setChecked(True)
+        self.doEval.setToolTip("Evaluate input as python expression.\n"
+                               "If evaluation fails, treat as string.")
+        keepSmallHorizontally(self.doEval)
 
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.input)
-        layout.addWidget(doEvalLabel)
         layout.addWidget(self.doEval)
 
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        self.setStyleSheet("""
+QPushButton:checked { background-color: palegreen }
+""")
 
     def value(self):
         if self.doEval.isChecked():
@@ -185,6 +192,9 @@ class AnyInput(QtWidgets.QWidget):
     @QtCore.Slot(str)
     def _processTextEdited(self, val: str):
         self.inputChanged.emit(val)
+
+    def resetStyle(self):
+        pass
 
 
 # ----------------------------------------------------------------------------

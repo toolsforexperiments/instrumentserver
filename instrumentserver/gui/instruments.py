@@ -8,6 +8,11 @@ from ..param_manager import ParameterManager
 
 from .parameters import ParameterWidget
 
+# TODO: adding parameters
+# TODO: deleting parameters
+# TODO: refreshing parameters
+# TODO: loading/saving parameters? profiles?
+# TODO: filter
 
 class ParameterManagerGui(QtWidgets.QWidget):
 

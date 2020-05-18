@@ -6,5 +6,7 @@
     <file alias="icons/set.svg">resource/icons/set.svg</file>
     <file alias="icons/no-alert.svg">resource/icons/alert-octagon.svg</file>
     <file alias="icons/red-alert.svg">resource/icons/alert-octagon-red.svg</file>
+    <file alias="icons/python.svg">resource/icons/python.svg</file>
+    <file alias="icons/code.svg">resource/icons/code.svg</file>
 </qresource>
 </RCC>
