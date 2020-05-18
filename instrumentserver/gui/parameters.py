@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 import logging
 
 from qcodes import Parameter
@@ -19,6 +19,10 @@ class ParameterWidget(QtWidgets.QWidget):
     #: emitted when the parameter was set successfully
     parameterSet = QtCore.Signal(object)
 
+    #: Signal(str) ---
+    #: emitted when setting gave an error. Argument is the error message.
+    parameterSetError = QtCore.Signal(str)
+
     #: Signal(Any) --
     #: emitted when the parameter value is pending
     parameterPending = QtCore.Signal(object)
@@ -29,6 +33,8 @@ class ParameterWidget(QtWidgets.QWidget):
     def __init__(self, parameter: Parameter, parent=None):
         super().__init__(parent)
 
+        self.setAutoFillBackground(True)
+
         self._parameter = parameter
         self._getMethod = lambda: None
         self._setMethod = lambda x: None
@@ -37,16 +43,24 @@ class ParameterWidget(QtWidgets.QWidget):
         self.getButton = QtWidgets.QPushButton(QtGui.QIcon(":/icons/refresh.svg"),
                                                "", parent=self)
         self.getButton.pressed.connect(self.setWidgetFromParameter)
+        keepSmallHorizontally(self.getButton)
         layout.addWidget(self.getButton, 0, 1)
+
+        self.setButton = SetButton(QtGui.QIcon(":/icons/set.svg"), "", parent=self)
+        keepSmallHorizontally(self.setButton)
+        layout.addWidget(self.setButton, 0, 2)
+
+        self.alertWidget = AlertLabel(self)
+        layout.addWidget(self.alertWidget, 0, 3)
 
         # an input field will only be created if we have a set method.
         if hasattr(parameter, 'set'):
 
-            self.setButton = SetButton(QtGui.QIcon(":/icons/set.svg"), "", parent=self)
             self.parameterSet.connect(lambda x: self.setButton.setPending(False))
+            self.parameterSet.connect(lambda x: self.alertWidget.clearAlert())
             self.parameterPending.connect(lambda x: self.setButton.setPending(True))
+            self.parameterSetError.connect(self.alertWidget.setAlert)
             self.setButton.pressed.connect(self.getAndEmitValueFromWidget)
-            layout.addWidget(self.setButton, 0, 2)
 
             # depending on the validator of the parameter, we'll create a fitting
             # input widget
@@ -59,19 +73,26 @@ class ParameterWidget(QtWidgets.QWidget):
                 self._getMethod = self.paramWidget.value
                 self._setMethod = self.paramWidget.setValue
 
-            layout.addWidget(self.paramWidget, 0, 0)
-
             self._valueFromWidget.connect(self.setParameter)
 
         # if we have no set method, then it'll be read-only
         else:
-            pass
+            self.setButton.setDisabled(True)
+            self.paramWidget = QtWidgets.QLabel(self)
+            self._setMethod = lambda x: self.paramWidget.setText(str(x))
+
+        layout.addWidget(self.paramWidget, 0, 0)
 
         self.setLayout(layout)
 
     @QtCore.Slot(object)
     def setParameter(self, value: Any):
-        self._parameter.set(value)
+        try:
+            self._parameter.set(value)
+        except TypeError as e:
+            self.parameterSetError.emit(e.args[0])
+            return
+
         self.parameterSet.emit(value)
 
     @QtCore.Slot(object)
@@ -102,6 +123,27 @@ class SetButton(QtWidgets.QPushButton):
             self.setStyleSheet("SetButton {}")
 
 
+class AlertLabel(QtWidgets.QLabel):
+
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
+        super().__init__(parent)
+        pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(16, 16)
+        self.setPixmap(pix)
+        self.setToolTip('no alerts')
+
+    @QtCore.Slot(str)
+    def setAlert(self, message: str):
+        pix = QtGui.QIcon(":/icons/red-alert.svg").pixmap(16, 16)
+        self.setPixmap(pix)
+        self.setToolTip(message)
+
+    @QtCore.Slot()
+    def clearAlert(self):
+        pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(16, 16)
+        self.setPixmap(pix)
+        self.setToolTip('no alerts')
+
+
 class AnyInput(QtWidgets.QWidget):
 
     #: Signal(str) --
@@ -117,10 +159,7 @@ class AnyInput(QtWidgets.QWidget):
         self.doEval = QtWidgets.QCheckBox()
         self.doEval.setCheckState(QtCore.Qt.Checked)
         doEvalLabel = QtWidgets.QLabel('Eval')
-        doEvalLabel.setSizePolicy(
-            QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                  QtWidgets.QSizePolicy.Minimum)
-        )
+        keepSmallHorizontally(doEvalLabel)
 
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.input)
@@ -150,6 +189,13 @@ class AnyInput(QtWidgets.QWidget):
 
 # ----------------------------------------------------------------------------
 # Tools
+
+def keepSmallHorizontally(w: QtWidgets.QWidget):
+    w.setSizePolicy(
+        QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                              QtWidgets.QSizePolicy.Minimum)
+    )
+
 
 def parameterDialog(parameter: Parameter):
     def set(x):

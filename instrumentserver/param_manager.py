@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict
 
 from qcodes import Instrument, Parameter
 from qcodes.utils.validators import Anything
@@ -12,9 +12,23 @@ class ParameterManager(Instrument):
     Allows extra-easy on-the-fly addition/removal of new parameters.
     """
 
+    # TODO: method to instantiate entirely from paramDict
+
     def __init__(self, name):
         super().__init__(name)
         self.parameters.pop('IDN')
+
+    @classmethod
+    def _to_tree(cls, pm: 'ParameterManager') -> Dict:
+        ret = {}
+        for smn, sm in pm.submodules.items():
+            ret[smn] = cls._to_tree(sm)
+        for pn, p in pm.parameters.items():
+            ret[pn] = p
+        return ret
+
+    def to_tree(self):
+        return ParameterManager._to_tree(self)
 
     def _get_param(self, param_name: str) -> Parameter:
         parent = self._get_parent(param_name)
@@ -99,3 +113,11 @@ class ParameterManager(Instrument):
                 del parent.submodules[n]
 
         purge(self)
+
+    def parameter(self, name: str) -> Parameter:
+        """get a parameter object from the manager.
+
+        :param name: the full name
+        :returns: the parameter
+        """
+        return self._get_param(name)

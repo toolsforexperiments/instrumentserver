@@ -185,7 +185,7 @@ class ServerGui(QtWidgets.QMainWindow):
         # station tools
         self.toolBar.addWidget(QtWidgets.QLabel('Station:'))
         refreshStationAction = QtWidgets.QAction(
-            QtGui.QIcon(":/resource/icons/refresh.svg"), 'Refresh', self)
+            QtGui.QIcon(":/icons/refresh.svg"), 'Refresh', self)
         refreshStationAction.triggered.connect(self.refreshStationComponents)
         self.toolBar.addAction(refreshStationAction)
 
@@ -194,12 +194,12 @@ class ServerGui(QtWidgets.QMainWindow):
         self.toolBar.addWidget(QtWidgets.QLabel('Params:'))
 
         loadParamsAction = QtWidgets.QAction(
-            QtGui.QIcon(":/resource/icons/load.svg"), 'Load from file', self)
+            QtGui.QIcon(":/icons/load.svg"), 'Load from file', self)
         loadParamsAction.triggered.connect(self.loadParamsFromFile)
         self.toolBar.addAction(loadParamsAction)
 
         saveParamsAction = QtWidgets.QAction(
-            QtGui.QIcon(":/resource/icons/save.svg"), 'Save to file', self)
+            QtGui.QIcon(":/icons/save.svg"), 'Save to file', self)
         saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(saveParamsAction)
 
