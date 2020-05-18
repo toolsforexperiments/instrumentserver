@@ -10,11 +10,10 @@ from . import keepSmallHorizontally
 
 logger = logging.getLogger(__name__)
 
+# TODO: support for different validators / input widgets
 
 class ParameterWidget(QtWidgets.QWidget):
     """A widget that allows editing and/or displaying a parameter value."""
-
-    # TODO: a method to show that there's a return value of some sort
 
     #: Signal(Any) --
     #: emitted when the parameter was set successfully
@@ -202,29 +201,5 @@ QPushButton:checked { background-color: palegreen }
 
     def resetStyle(self):
         pass
-
-
-# ----------------------------------------------------------------------------
-# Tools
-
-def parameterDialog(parameter: Parameter):
-    def set(x):
-        print(f'parameter set to: {x}')
-
-    def pending(x):
-        print(f'parameter value pending: {x}')
-
-    pw = ParameterWidget(parameter)
-    pw.parameterSet.connect(set)
-    pw.parameterPending.connect(pending)
-
-    dg = QtWidgets.QDialog()
-    dg.setWindowTitle(parameter.label)
-    lay = QtWidgets.QVBoxLayout(dg)
-    lay.addWidget(pw)
-    lay.setContentsMargins(0, 0, 0, 0)
-    dg.setLayout(lay)
-    dg.show()
-    return dg
 
 
