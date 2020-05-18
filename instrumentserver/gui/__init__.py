@@ -13,3 +13,10 @@ def widgetDialog(w: QtWidgets.QWidget):
 
     dg.show()
     return dg
+
+def keepSmallHorizontally(w: QtWidgets.QWidget):
+    w.setSizePolicy(
+        QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                              QtWidgets.QSizePolicy.Minimum)
+    )
+

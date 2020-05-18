@@ -1,10 +1,11 @@
-from typing import Any, Optional
+from typing import Any, Optional, List
 import logging
 
 from qcodes import Parameter
 
 from .. import QtWidgets, QtCore, QtGui, resource
-from .. import log
+
+from . import keepSmallHorizontally
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,9 @@ class ParameterWidget(QtWidgets.QWidget):
     #: Signal(Any) --
     _valueFromWidget = QtCore.Signal(object)
 
-    def __init__(self, parameter: Parameter, parent=None):
+    def __init__(self, parameter: Parameter, parent=None,
+                 additionalWidgets: Optional[List[QtWidgets.QWidget]] = []):
+
         super().__init__(parent)
 
         self.setAutoFillBackground(False)
@@ -82,6 +85,10 @@ class ParameterWidget(QtWidgets.QWidget):
             self._setMethod = lambda x: self.paramWidget.setText(str(x))
 
         layout.addWidget(self.paramWidget, 0, 0)
+
+        for i, w in enumerate(additionalWidgets):
+            layout.addWidget(w, 0, 4+i)
+
         layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(layout)
 
@@ -199,13 +206,6 @@ QPushButton:checked { background-color: palegreen }
 
 # ----------------------------------------------------------------------------
 # Tools
-
-def keepSmallHorizontally(w: QtWidgets.QWidget):
-    w.setSizePolicy(
-        QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                              QtWidgets.QSizePolicy.Minimum)
-    )
-
 
 def parameterDialog(parameter: Parameter):
     def set(x):
