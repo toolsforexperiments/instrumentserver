@@ -10,7 +10,6 @@ from .parameters import ParameterWidget
 from . import keepSmallHorizontally
 
 # TODO: adding parameters
-# TODO: deleting parameters
 # TODO: refreshing parameters
 # TODO: loading/saving parameters? profiles?
 # TODO: filter
