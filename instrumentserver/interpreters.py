@@ -28,7 +28,7 @@ from qcodes.utils.validators import Validator, Arrays
 SUPPORTED_PARAMETER_CLASS = Union[Parameter, ParameterWithSetpoints]
 
 
-# dictionary type definition
+# ---------------- dictionary type definition -----------------------------------
 class InstrumentCreateDictType(TypedDict):
     instrument_class: str
     args: Optional[tuple]
@@ -53,6 +53,8 @@ class InstructionDictType(TypedDict):
                        'proxy_get_param',
                        'proxy_set_param',
                        'proxy_call_func',
+                       'proxy_write_raw',
+                       'proxy_ask_raw',
                        'instrument_snapshot']
 
     instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
@@ -62,9 +64,10 @@ class InstructionDictType(TypedDict):
         InstrumentCreateDictType]  # for instrument creation
     parameter: Optional[ParamDictType]  # for get/set_param
     function: Optional[FuncDictType]  # for function call
+    cmd: Optional[str]  # for function call
 
 
-# interpreter function
+# ------------------------- interpreter function --------------------------------
 def instructionDict_to_instrumentCall(station: Station,
                                       instructionDict:
                                       InstructionDictType) -> Any:
@@ -92,7 +95,7 @@ def instructionDict_to_instrumentCall(station: Station,
     return response
 
 
-# ------------------ helper functions ----------------------------------------
+# ------------------ helper functions -------------------------------------------
 def _instructionProcessor(station: Station,
                           instructionDict: InstructionDictType):
     """
@@ -130,6 +133,10 @@ def _instructionProcessor(station: Station,
             _proxySetParam(instrument, instructionDict['parameter'])
         elif operation == 'proxy_call_func':
             returns = _proxyCallFunc(instrument, instructionDict['function'])
+        elif operation == 'proxy_write_raw':
+            returns = _proxyWriteRaw(instrument, instructionDict['cmd'])
+        elif operation == 'proxy_ask_raw':
+            returns = _proxyAskRaw(instrument, instructionDict['cmd'])
         elif operation == 'instrument_snapshot':
             returns = instrument.snapshot()
         else:
@@ -382,3 +389,11 @@ def _proxyCallFunc(instrument: Instrument, funcDict: FuncDictType) -> Any:
         return getattr(instrument, funcName)(**kwargs)
     else:
         return getattr(instrument, funcName)()
+
+
+def _proxyWriteRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
+    return instrument.write_raw(cmd)
+
+
+def _proxyAskRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
+    return instrument.ask_raw(cmd)

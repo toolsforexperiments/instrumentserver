@@ -5,7 +5,15 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "operation": {
-      "enum": ["get_existing_instruments", "instrument_creation", "proxy_construction", "proxy_get_param", "proxy_set_param","proxy_call_func","instrument_snapshot"],
+      "enum": ["get_existing_instruments",
+        "instrument_creation",
+        "proxy_construction",
+        "proxy_get_param",
+        "proxy_set_param",
+        "proxy_call_func",
+        "instrument_snapshot",
+        "proxy_write_raw",
+        "proxy_ask_raw"],
       "description": "the operation to perform on the server"      
     }
   },
@@ -149,6 +157,50 @@
           }
         },       
         "required": ["instrument_name", "function"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_write_raw" } }
+      },
+      "then": {
+        "properties": {
+          "instrument_name": {
+            "description": "name of the instrument",
+            "type": "string"
+          },
+          "submodule_name": {
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"]
+          },
+          "cmd": {
+            "type": "string",
+            "description": "The string to send to the instrument"
+          }
+        },
+        "required": ["instrument_name", "cmd"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_ask_raw" } }
+      },
+      "then": {
+        "properties": {
+          "instrument_name": {
+            "description": "name of the instrument",
+            "type": "string"
+          },
+          "submodule_name": {
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"]
+          },
+          "cmd": {
+            "type": "string",
+            "description": "The string to send to the instrument"
+          }
+        },
+        "required": ["instrument_name", "cmd"]
       }
     },
     {
