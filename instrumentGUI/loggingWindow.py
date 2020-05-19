@@ -9,6 +9,7 @@ import sys
 import os
 import json
 from qtpy import QtGui, QtCore, QtWidgets
+from pkg import hatWidgets as hW
 import GUIpackage as GP
 import generators as GUIgen
 import numpy as np
@@ -140,7 +141,7 @@ class UI_MainWindow(object):
         instX = 1000
         instY = numInst * 50
 
-        centralwidget = QtWidgets.QWidget(MainWindow)
+        centralwidget = QtWidgets.QWidget(self.win_)
         centralwidget.setGeometry(QtCore.QRect((self.pixelX-instX)-100, 100, instX, instY))
 
         formLayoutWidget = QtWidgets.QWidget(self.win_)  # All instruments form

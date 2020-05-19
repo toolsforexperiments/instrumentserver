@@ -98,6 +98,8 @@ def combo_label_lineEdit(widget, labelList, startX=0, startY=0):
 
 
 def createAllProjectsDir():
+    """Summary
+    """
     try:
         with open('./static/allProjects.json', 'r') as jsonOpen_:
             jsonOpen = json.load(jsonOpen_)
