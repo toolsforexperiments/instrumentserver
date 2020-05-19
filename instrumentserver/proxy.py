@@ -18,9 +18,9 @@ import jsonpickle
 from jsonschema import validate as jsvalidate
 
 # import qcodes as qc
-from qcodes.instrument import parameter
+from qcodes.instrument.parameter import Parameter, ParameterWithSetpoints
 from qcodes import Instrument
-from qcodes.utils.validators import Validator
+from qcodes.utils.validators import Validator, Arrays
 from . import getInstrumentserverPath
 from .base import send, recv
 
@@ -62,30 +62,65 @@ class ModuleProxy:
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:" + server_address)
 
-        self._constructProxyParameters()
         self._constructProxyFunctions()
+        self._constructProxyParameters()
 
     def _constructProxyParameters(self) -> None:
         """Based on the parameter dictionary replied from server, add the 
         instrument parameters to the proxy instrument class
         """
         construct_param_dict = self._construct_dict['parameters']
-        self.simple_param_dict = {}  # for GUI use
-        for param_name in construct_param_dict:
-            param_dict_temp = construct_param_dict[param_name]
-            unit = param_dict_temp['unit']
-            param_temp = parameter.Parameter(
-                name=param_name,
-                unit=unit,
-                set_cmd=partial(self._setParam, param_name),
-                get_cmd=partial(self._getParam, param_name),
-                vals=jsonpickle.decode(param_dict_temp['vals'])
+        normal_params = {k: v for k, v in construct_param_dict.items()
+                         if v['class'] is Parameter}
+        params_with_setpoints = {k: v for k, v in construct_param_dict.items()
+                                 if v['class'] is ParameterWithSetpoints}
+
+        def _constructSingleParam(param_args_: Dict) -> None:
+            """ Construct a single parameter and add to the proxy instrument
+            class
+            """
+            try:
+                param_args_['vals'] = jsonpickle.decode(param_args_['vals'])
+            except TypeError:
+                param_args_['vals'] = self._decodeArrayVals(
+                    param_args_['vals'])
+            param_class = param_args_.pop('class')
+            param_temp = param_class(
+                set_cmd=partial(self._setParam, param_args_['name']),
+                get_cmd=partial(self._getParam, param_args_['name']),
+                **param_args_
             )
-            self.simple_param_dict[param_name] = {
-                'name': param_name,
-                'unit': unit
-            }
-            setattr(self, param_name, param_temp)
+            setattr(self, param_args_['name'], param_temp)
+
+        # construct 'Parameter's first
+        for param_args in normal_params.values():
+            _constructSingleParam(param_args)
+
+        # construct 'ParameterWithSetpoints'
+        for param_args in params_with_setpoints.values():
+            param_args['setpoints'] = [getattr(self, setpoint) for
+                                       setpoint in param_args['setpoints']]
+            _constructSingleParam(param_args)
+
+    def _decodeArrayVals(self, encode_val: Dict) -> Arrays:
+        """ decode the array validators (mainly the shape part).
+        :param encode_val: encoded validator of an parameter
+        :returns: Array validator
+        """
+        val_shape = ()
+        for dim in encode_val['shape']:
+            if type(dim) is int:
+                val_shape += (dim,)
+            elif hasattr(self, dim):
+                member = getattr(self, dim)
+                if type(member) is Parameter:
+                    val_shape += (member.get_latest,)
+                else:  # function
+                    val_shape += (member,)
+            else:
+                raise TypeError('Unsupported Array validator shape')
+        encode_val['shape'] = val_shape
+        return Arrays(**encode_val)
 
     def _constructProxyFunctions(self):
         """Based on the function dictionary replied from server, add the 
@@ -246,8 +281,9 @@ class InstrumentProxy(ModuleProxy):
 
     def __init__(self, instrument_name: str, server_address: str = '5555'):
         """ Initialize a proxy. Create a zmq.REQ socket that connects to the
-        server, get all the functions, parameters, and submodules of this
-        instrument from the server and add them to this virtual instrument class.
+        server, get all the functions, parameters and submodules of this
+        instrument from the server and add them to this virtual instrument
+        class.
     
         :param instrument_name: The name of the instrument that the proxy will
         represent. The name must match the instrument name in the server.

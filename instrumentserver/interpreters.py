@@ -5,21 +5,30 @@ Created on Mon Apr 20 15:57:23 2020
 @author: Chao
 """
 
-import re
 import inspect
 import warnings
-import json
-import jsonpickle
-from typing import Dict, List, Any, Union, List, Optional
+from types import MethodType
+from typing import Dict, Any, Union, Optional
 from typing_extensions import Literal, TypedDict
+
+import jsonpickle
+
 import qcodes as qc
-from qcodes import Station, Instrument
-from qcodes.utils.validators import Validator, range_str
-from .base import send, recv
+from qcodes import (Station,
+                    Instrument,
+                    ChannelList,
+                    Parameter,
+                    ParameterWithSetpoints,
+                    Function)
+from qcodes.instrument import parameter
+from qcodes.utils.validators import Validator, Arrays
+
+# for now, only these two types of parameter are supported, which should have
+# covered most of the cases)
+SUPPORTED_PARAMETER_CLASS = Union[Parameter, ParameterWithSetpoints]
 
 
 # dictionary type definition
-
 class InstrumentCreateDictType(TypedDict):
     instrument_class: str
     args: Optional[tuple]
@@ -55,6 +64,7 @@ class InstructionDictType(TypedDict):
     function: Optional[FuncDictType]  # for function call
 
 
+# interpreter function
 def instructionDict_to_instrumentCall(station: Station,
                                       instructionDict:
                                       InstructionDictType) -> Any:
@@ -64,7 +74,7 @@ def instructionDict_to_instrumentCall(station: Station,
     
     :param station: qcodes.station object, the station that contains the 
         instrument to call.
-    :param instructionDict:  The dicitonary passed from the instrument proxy
+    :param instructionDict:  The dictionary passed from the instrument proxy
         that contains the information needed for the operation. 
 
     :returns: the results returned from the instrument call
@@ -72,7 +82,7 @@ def instructionDict_to_instrumentCall(station: Station,
     response = {'return_value': None,
                 'error': None}
     try:
-        returns = _instructionProcesser(station, instructionDict)
+        returns = _instructionProcessor(station, instructionDict)
         response['return_value'] = returns
     except Exception as err:
         response['error'] = err
@@ -83,27 +93,27 @@ def instructionDict_to_instrumentCall(station: Station,
 
 
 # ------------------ helper functions ----------------------------------------
-def _instructionProcesser(station: Station,
+def _instructionProcessor(station: Station,
                           instructionDict: InstructionDictType):
     """
-    process the operation instruction from the client and excute the operation.
+    process the operation instruction from the client and execute the operation.
     
     :param station: qcodes.station object, the station that contains the 
         instrument to call.
-    :param instructionDict:  The dicitonary passed from the instrument proxy
+    :param instructionDict:  The dictionary passed from the instrument proxy
         that contains the information needed for the operation. 
 
     :returns: the results returned from the instrument call
 
     """
     operation = instructionDict['operation']
-
+    returns = None
     if operation == 'get_existing_instruments':
         # usually this operation will be called before all the others to check
         # if the instrument already exists ont the server.
         returns = _getExistingInstruments(station)
     elif operation == 'instrument_creation':
-        returns = _instrumentCreation(station, instructionDict)
+        _instrumentCreation(station, instructionDict)
     else:  # doing operation on an existing instrument
         instrument = station[instructionDict['instrument_name']]
         if 'submodule_name' in instructionDict:
@@ -117,13 +127,13 @@ def _instructionProcesser(station: Station,
         elif operation == 'proxy_get_param':
             returns = _proxyGetParam(instrument, instructionDict['parameter'])
         elif operation == 'proxy_set_param':
-            returns = _proxySetParam(instrument, instructionDict['parameter'])
+            _proxySetParam(instrument, instructionDict['parameter'])
         elif operation == 'proxy_call_func':
             returns = _proxyCallFunc(instrument, instructionDict['function'])
         elif operation == 'instrument_snapshot':
             returns = instrument.snapshot()
         else:
-            # the instructionDict will be ckecked in the proxy before sent to 
+            # the instructionDict will be checked in the proxy before sent to
             # here, so in principle this error should not happen.
             raise TypeError('operation type not supported')
     return returns
@@ -157,35 +167,35 @@ def _instrumentCreation(station: Station, instructionDict: Dict) -> None:
 
     try:
         instrument_class = eval(instrument_class)
-    except NameError:  # instrument class not imported yeta
-        seperate_point = instrument_class.rfind('.')
-        package_str = instrument_class[:seperate_point]
-        instrument_class = instrument_class[seperate_point + 1:]
+    except NameError:  # instrument class not imported yet
+        separate_point = instrument_class.rfind('.')
+        package_str = instrument_class[:separate_point]
+        instrument_class = instrument_class[separate_point + 1:]
         exec(f'from {package_str} import {instrument_class}')
         instrument_class = eval(instrument_class)
 
-    new_instruemnt = qc.find_or_create_instrument(instrument_class,
+    new_instrument = qc.find_or_create_instrument(instrument_class,
                                                   instrument_name,
                                                   *instrument_args,
                                                   recreate=False,
                                                   **instrument_kwargs)
-    print(new_instruemnt)
+    print(new_instrument)
     if instrument_name not in station.components:
-        station.add_component(new_instruemnt)
+        station.add_component(new_instrument)
 
 
 def _proxyConstruction(instrument: Instrument) -> Dict:
-    '''
+    """
     Get the dictionary that describes the instrument.
     This parameter part is similar to the qcodes snapshot of the instrument,
-    but with less information, also the string that describes the validator of 
-    each parameter/argument is replaced with a jsonpickle encoded form so that 
+    but with less information, also the string that describes the validator of
+    each parameter/argument is replaced with a jsonpickle encoded form so that
     it is easier to reproduce the validator object in the proxy.
     The functions are directly extracted from the instrument class.
-    
-    :returns : a dictionary that dercribes the instrument
 
-    '''
+    :returns : a dictionary that describes the instrument
+
+    """
     # get functions and parameters belong to the top instrument
     construct_dict = _get_module_info(instrument)
     # get functions and parameters belong to the submodule
@@ -198,35 +208,94 @@ def _proxyConstruction(instrument: Instrument) -> Dict:
     for module_name in submodules:
         submodule = getattr(instrument, module_name)
         # the ChannelList is not supported yet
-        if submodule.__class__ != qc.instrument.channel.ChannelList:
+        if submodule.__class__ != ChannelList:
             submodule_dict[module_name] = _get_module_info(submodule)
 
     construct_dict['submodule_dict'] = submodule_dict
     return construct_dict
 
 
+def _encodeArrayVals(param_vals: Arrays) -> Dict:
+    """ encode the array validators to a serializable format. This function is
+    necessary when the shape of the array validator contains a callable (another
+    parameter or a function) who belongs to an instrument class, which should
+    not be directly pickled.
+
+    :param param_vals: array validator of a parameter
+
+    :returns: A dictionary contains the encoded validator
+    """
+    encode_val = {"min_value": param_vals._min_value,
+                  "max_value": param_vals._max_value,
+                  "valid_types": param_vals.valid_types
+                  }
+    encode_val_shape = []
+    for dim in param_vals._shape:
+        # some possible ways of defining array validator shape in drivers.
+        # only parameters or functions of the same instrument are supported
+        if type(dim) is int:
+            encode_val_shape.append(dim)
+        elif isinstance(dim, Parameter) or isinstance(dim, parameter.GetLatest):
+            encode_val_shape.append(dim.name)
+        elif isinstance(dim, parameter._Cache):
+            encode_val_shape.append(dim._parameter.name)
+        elif type(dim) is MethodType:  # instrument function
+            encode_val_shape.append(dim.__name__)
+        else:
+            raise TypeError('Unsupported way of defining the shape of array '
+                            'validator, try to use one of the followings:\n'
+                            '1) a constant int\n'
+                            '2) a parameter in the same instrument\n'
+                            '   2a) self.parameter\n'
+                            '   2b) self.parameter.get_latest\n'
+                            '   2c) self.parameter.cache\n'
+                            '3) a function in the same instrument\n'
+                            )
+        encode_val['shape'] = encode_val_shape
+    return encode_val
+
+
 def _get_module_info(module: Instrument) -> Dict:
-    ''' Get the parameters and functions of an instrument (sub)module and put 
+    """ Get the parameters and functions of an instrument (sub)module and put
     them a dictionary.
-    '''
-    # get paramaters
+    """
+    # get parameters
     param_names = list(module.__dict__['parameters'].keys())
     module_param_dict = {}
     for param_name in param_names:
-        param_dict_temp = {}
-        param_dict_temp['name'] = param_name
-        try:
-            param_dict_temp['unit'] = module[param_name].unit
-        except AttributeError:
-            param_dict_temp['unit'] = None
+        param: SUPPORTED_PARAMETER_CLASS = module[param_name]
+        param_dict_temp = {'name': param_name}
+        param_class = param.__class__
+        if param_class not in SUPPORTED_PARAMETER_CLASS.__args__:
+            raise TypeError(f"{param} is not supported yet, the current "
+                            f"supported parameter classes are "
+                            f"{SUPPORTED_PARAMETER_CLASS.__args__}")
 
-        try:
-            param_dict_temp['vals'] = jsonpickle.encode(module[param_name].vals)
-        except:
-            param_dict_temp['vals'] = jsonpickle.encode(None)
+        if param_class is ParameterWithSetpoints:
+            param_dict_temp['setpoints'] = [setpoint.name for setpoint in
+                                            param.setpoints]
+
+        param_vals: Union[Validator, Arrays] = param.vals
+        try:  # directly pickle
+            param_dict_temp['vals'] = jsonpickle.encode(param_vals)
+        except RuntimeError:  # contains instrument class which cannot be pickled
+            if type(param_vals) is Arrays:
+                # Array validator is necessary for ParameterWithSetpoints
+                param_dict_temp['vals'] = _encodeArrayVals(param_vals)
+            else:  # otherwise, give up validation on proxy parameters
+                param_dict_temp['vals'] = jsonpickle.encode(None)
+
+        # some extra items are added here to support the snapshot in the proxy
+        # instrument class
+        param_dict_temp['class'] = param_class
+        param_dict_temp['unit'] = param.unit
+        param_dict_temp['snapshot_value'] = param._snapshot_value
+        param_dict_temp['snapshot_exclude'] = param.snapshot_exclude
+        param_dict_temp['max_val_age'] = param.cache._max_val_age
+        param_dict_temp['docstring'] = param.__doc__
         module_param_dict[param_name] = param_dict_temp
 
-    # get fucntions 
+    # get functions
     methods = set(dir(module))
     base_methods = (dir(base) for base in module.__class__.__bases__)
     unique_methods = methods.difference(*base_methods)
@@ -242,17 +311,18 @@ def _get_module_info(module: Instrument) -> Dict:
         func = getattr(module, func_name)
         func_dict_temp['docstring'] = func.__doc__
 
-        if func.__class__ == qc.instrument.function.Function:
-            # for functions added using the old 'instruemnt.add_function' method,
-            # (the functions only have positional arguments, and each argument has
-            # a validator). In this case, the list of validators is pickled
-            jp_argvals = jsonpickle.encode(func._args)
-            func_dict_temp['arg_vals'] = jp_argvals
+        if func.__class__ == Function:
+            # for functions added using the old 'instrument.add_function'
+            # method, (the functions only have positional arguments, and each
+            # argument has a validator). In this case, the list of validators
+            # is pickled
+            func_dict_temp['arg_vals'] = jsonpickle.encode(func._args)
         else:
-            # for functions added directly to instrument class as bound methods,
-            # the fullargspec and signature is stored in the dictionary(will be pickled
-            # when sending to proxy)(jsonpickle.en/decode has some bugs that don't
-            # workd for some function arguments)
+            # for functions added directly to instrument class as bound
+            # methods, the fullargspec and signature is stored in the
+            # dictionary(will be pickled when sending to proxy)(
+            # jsonpickle.en/decode has some bugs that don't worked for some
+            # function signatures)
             jp_fullargspec = inspect.getfullargspec(func)
             jp_signature = inspect.signature(func)
             func_dict_temp['fullargspec'] = jp_fullargspec
@@ -260,43 +330,44 @@ def _get_module_info(module: Instrument) -> Dict:
         module_func_dict[func_name] = func_dict_temp
     module_construct_dict = {'functions': module_func_dict,
                              'parameters': module_param_dict}
+
     return module_construct_dict
 
 
 def _proxyGetParam(instrument: Instrument, paramDict: ParamDictType) -> Any:
-    '''
+    """
     Get a parameter from the instrument.
-    
-    :param paramDict: the dictionary that contains the parameter to change, the 
-        'value' item will be omited.
+
+    :param paramDict: the dictionary that contains the parameter to change, the
+        'value' item will be omitted.
     :returns : value of the parameter returned from instrument
 
-    '''
+    """
     paramName = paramDict['name']
     return instrument[paramName]()
 
 
 def _proxySetParam(instrument: Instrument, paramDict: ParamDictType) -> None:
-    '''
+    """
     Set a parameter in the instrument.
-    
-    :param paramDict:  the dictionary that contains the parameter to change, the 
+
+    :param paramDict:  the dictionary that contains the parameter to change, the
         'value' item will be the set value.
         e.g. {'ch1': {'value' : 10} }
-    '''
+    """
     paramName = paramDict['name']
     instrument[paramName](paramDict['value'])
 
 
 def _proxyCallFunc(instrument: Instrument, funcDict: FuncDictType) -> Any:
-    '''
+    """
     Call an instrument function.
-    
+
     :param funcDict:  the dictionary that contains the name of the function to
         call and the argument values
-        
+
     :returns : result returned from the instrument function
-    '''
+    """
     funcName = funcDict['name']
 
     if ('kwargs' in funcDict) and ('args' in funcDict):

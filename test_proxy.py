@@ -19,33 +19,32 @@ test_src = create_instrument(instrument_class =
 InstrumentProxy("instrument_that_doesnt_exit")
 rf_src.frequency(10)
 '''
-                          
+
 yoko = InstrumentProxy('yoko')
 
 print(yoko.current(10))
 print(yoko.current())
 
 yoko.dac1()
-yoko.multiply_addfunc(1,2,3)
+yoko.multiply_addfunc(1, 2, 3)
 
-yoko.multiply_method(1,2,3)
+yoko.multiply_method(1, 2, 3)
 yoko.reset_method()
 
-yoko.multiply_method(1,2,c=5)
-
+yoko.multiply_method(1, 2, c=5)
 
 # yoko2 = create_instrument(
 #           instrument_class = 'qc.tests.instrument_mocks.DummyInstrument',
 #                           name = 'yoko2')
 
 
-mydummy = InstrumentProxy('mydummy')                          
-mydummy.A.snapshot()
+# mydummy = InstrumentProxy('mydummy')
+# mydummy.A.snapshot()
 
-
-gen = InstrumentProxy('gen')
-# some dictionaries that can be used to construct the GUI 
-all_instruments = get_existing_instruments()
-gen_param_ss = gen.snapshot()['parameters']
-gen_func_dict = gen.simple_func_dict
-
+dummy_vna = InstrumentProxy('dummy_vna')
+# gen = InstrumentProxy('gen')
+# # some dictionaries that can be used to construct the GUI 
+# all_instruments = get_existing_instruments()
+# gen_param_ss = gen.snapshot()['parameters']
+# gen_func_dict = gen.simple_func_dict
+# 1

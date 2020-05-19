@@ -30,12 +30,12 @@ from qcodes import (
 )
 from qcodes.dataset.plotting import plot_dataset
 from qcodes.logger.logger import start_all_logging
-from qcodes.tests.instrument_mocks import DummyInstrument
-from qcodes.utils.validators import Validator, Numbers, Anything, Strings
+from qcodes.tests.instrument_mocks import DummyInstrument, DummyChannelInstrument
+from qcodes.utils.validators import Validator, Numbers, Anything, Strings, Arrays
 from qcodes.instrument import parameter
 
 from instrumentserver.interpreters import instructionDict_to_instrumentCall 
-
+from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
 
 #  Create a dummy station with a dummy instruemnt 'yoko'
 start_all_logging()
@@ -85,7 +85,13 @@ test_param = parameter.Parameter(
                                  get_cmd = None,
                                  set_cmd = None
                                 )
+mydummy = DummyChannelInstrument('mydummy')
+dummy_vna = ResonatorResponse('dummy_vna')
+
+
+station.add_component(mydummy)
 station.add_component(yoko)
+station.add_component(dummy_vna)
 station.add_component(test_param)
 
 yoko_ss = station.snapshot()['instruments']['yoko']
