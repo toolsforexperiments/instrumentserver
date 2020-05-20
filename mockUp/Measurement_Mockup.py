@@ -41,7 +41,7 @@ CS = fakeCS("CS")
 mockup.add_component(VNA)
 mockup.add_component(CS)
 
-cwd="C:\\Users\\Ryan K\\Documents\\GitHub\\instrumentserver\\demo_files\\"
+cwd="C:\\Users\\Ryan K\\Documents\\GitHub\\instrumentserver\\mockUp\\demo_files\\"
 filename = "demo_5_20_2020"
 filepath = cwd+filename
 
@@ -96,17 +96,32 @@ for curr in curr_arr:
 
 
 # # Storage
-# '''
-# This section takes the data which is actively stored in the kernel and 
-# saves it into a file
-# Questions: 
-#     - do we want to save/overwrite as the script is taking data? 
-#     -- yes to avoid losing it if script throws execution or kernel 
-#        needs to be stopped
+'''
+This section takes the data which is actively stored in the kernel and 
+saves it into a file
+Questions: 
+    - do we want to save/overwrite as the script is taking data? 
        
-# Takes: 
-#     data[NxM array]
-#     parameters: 
-#         -dictionary
-#     cwd
-# '''
+Takes: 
+    data[NxM array]
+    parameters: 
+        -dictionary
+    cwd
+'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

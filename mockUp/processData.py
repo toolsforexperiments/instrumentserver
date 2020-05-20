@@ -116,7 +116,7 @@ class dataProcess():
         self.identifier = identifier
         return self.identifier
 
-    def save():
+    def save(self):
         """(main execution) Save files and also identifier.
 
         """
