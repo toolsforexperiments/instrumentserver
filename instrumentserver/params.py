@@ -1,7 +1,57 @@
-from typing import Any, Dict
+from typing import Any, Dict, Union, List
+from enum import Enum, unique, auto
 
 from qcodes import Instrument, Parameter
-from qcodes.utils.validators import Anything
+from qcodes.utils import validators
+
+@unique
+class ParameterTypes(Enum):
+    any = auto()
+    numeric = auto()
+    integer = auto()
+    string = auto()
+    bool = auto()
+    complex = auto()
+
+
+parameterTypes = {
+    ParameterTypes.any:
+        {'name': 'Any',
+         'validatorType': validators.Anything},
+    ParameterTypes.numeric:
+        {'name': 'Numeric',
+         'validatorType': validators.Numbers},
+    ParameterTypes.integer:
+        {'name': 'Integer',
+         'validatorType': validators.Ints},
+    ParameterTypes.string:
+        {'name': 'String',
+         'validatorType': validators.Strings},
+    ParameterTypes.bool:
+        {'name': 'Boolean',
+         'validatorType': validators.Bool},
+    ParameterTypes.complex:
+        {'name': 'Complex',
+         'validatorType': validators.ComplexNumbers},
+}
+
+
+def paramTypeFromVals(vals: validators.Validator) -> Union[ParameterTypes, None]:
+    if vals is None:
+        vals = validators.Anything()
+
+    for k, v in parameterTypes.items():
+        if isinstance(vals, v['validatorType']):
+            return k
+
+    return None
+
+
+def paramTypeFromName(name: str) -> Union[ParameterTypes, None]:
+    for k, v in parameterTypes.items():
+        if name == v['name']:
+            return k
+    return None
 
 
 class ParameterManager(Instrument):
@@ -71,7 +121,7 @@ class ParameterManager(Instrument):
         """
         kw['parameter_class'] = Parameter
         if 'vals' not in kw:
-            kw['vals'] = Anything()
+            kw['vals'] = validators.Anything()
         kw['set_cmd'] = None
         kw['initial_value'] = value
 
@@ -121,3 +171,19 @@ class ParameterManager(Instrument):
         :returns: the parameter
         """
         return self._get_param(name)
+
+    def list(self) -> List[str]:
+        """return a list of all parameters."""
+        ret = []
+        tree = self.to_tree()
+
+        def tolist(x):
+            ret_ = []
+            for k, v in x.items():
+                if isinstance(v, Parameter):
+                    ret_.append(f"{k}")
+                else:
+                    ret_ += [f"{k}.{e}" for e in tolist(v)]
+            return ret_
+
+        return tolist(tree)

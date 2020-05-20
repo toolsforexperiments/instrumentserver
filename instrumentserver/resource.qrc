@@ -9,5 +9,6 @@
     <file alias="icons/python.svg">resource/icons/python.svg</file>
     <file alias="icons/code.svg">resource/icons/code.svg</file>
     <file alias="icons/delete.svg">resource/icons/delete.svg</file>
+    <file alias="icons/plus-square.svg">resource/icons/plus-square.svg</file>
 </qresource>
 </RCC>

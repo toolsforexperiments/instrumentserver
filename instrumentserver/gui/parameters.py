@@ -1,16 +1,17 @@
-from typing import Any, Optional, List
 import logging
+import math
+import numbers
+from typing import Any, Optional, List
 
 from qcodes import Parameter
 
-from .. import QtWidgets, QtCore, QtGui, resource
-
 from . import keepSmallHorizontally
-
+from .misc import AlertLabel
+from .. import QtWidgets, QtCore, QtGui, resource
+from ..params import ParameterTypes, paramTypeFromVals
 
 logger = logging.getLogger(__name__)
 
-# TODO: support for different validators / input widgets
 
 class ParameterWidget(QtWidgets.QWidget):
     """A widget that allows editing and/or displaying a parameter value."""
@@ -66,12 +67,49 @@ class ParameterWidget(QtWidgets.QWidget):
 
             # depending on the validator of the parameter, we'll create a fitting
             # input widget
-            if False:
-                pass
-            else:
+            ptype = paramTypeFromVals(parameter.vals)
+            vals = parameter.vals
+
+            if ptype is ParameterTypes.integer:
+                self.paramWidget = QtWidgets.QSpinBox(self)
+                self.paramWidget.setMinimum(
+                    -int(1e10) if not math.isfinite(vals._min_value) or
+                                  abs(vals._min_value) > 1e10 else vals._min_value
+                )
+                self.paramWidget.setMaximum(
+                    int(1e10) if not math.isfinite(vals._max_value) or
+                                 abs(vals._max_value) > 1e10 else vals._max_value
+                )
+                self.paramWidget.setValue(parameter())
+                self.paramWidget.valueChanged.connect(self.setPending)
+                self._getMethod = self.paramWidget.value
+                self._setMethod = self.paramWidget.setValue
+
+            elif ptype is ParameterTypes.numeric or ptype is ParameterTypes.complex:
+                self.paramWidget = NumberInput(self)
+                self.paramWidget.setValue(parameter())
+                self.paramWidget.textChanged.connect(self.setPending)
+                self._getMethod = self.paramWidget.value
+                self._setMethod = self.paramWidget.setValue
+
+            elif ptype is ParameterTypes.string:
+                self.paramWidget = QtWidgets.QLineEdit(self)
+                self.paramWidget.setText(parameter())
+                self.paramWidget.textChanged.connect(self.setPending)
+                self._getMethod = self.paramWidget.text
+                self._setMethod = self.paramWidget.setText
+
+            elif ptype is ParameterTypes.bool:
+                self.paramWidget = QtWidgets.QCheckBox(self)
+                self.paramWidget.setChecked(parameter())
+                self.paramWidget.toggled.connect(self.setPending)
+                self._getMethod = self.paramWidget.isChecked
+                self._setMethod = self.paramWidget.setChecked
+
+            else:  # means it's any, or an unsupported type.
                 self.paramWidget = AnyInput(self)
                 self.paramWidget.setValue(parameter())
-                self.paramWidget.inputChanged.connect(lambda x: self.setPending(x))
+                self.paramWidget.inputChanged.connect(self.setPending)
                 self._getMethod = self.paramWidget.value
                 self._setMethod = self.paramWidget.setValue
 
@@ -84,24 +122,28 @@ class ParameterWidget(QtWidgets.QWidget):
             self._setMethod = lambda x: self.paramWidget.setText(str(x))
 
         layout.addWidget(self.paramWidget, 0, 0)
-
         for i, w in enumerate(additionalWidgets):
-            layout.addWidget(w, 0, 4+i)
+            layout.addWidget(w, 0, 4 + i)
+
+        for i in range(layout.columnCount()):
+            if i == 0:
+                layout.setColumnStretch(i, 1)
+            else:
+                layout.setColumnStretch(i, 0)
 
         layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(layout)
 
-    @QtCore.Slot(object)
     def setParameter(self, value: Any):
         try:
             self._parameter.set(value)
-        except TypeError as e:
-            self.parameterSetError.emit(e.args[0])
+        except Exception as e:
+            self.parameterSetError.emit(f"Could not set parameter, raised {type(e)}:"
+                                        f" {e.args}")
             return
 
         self.parameterSet.emit(value)
 
-    @QtCore.Slot(object)
     def setPending(self, value: Any):
         self.parameterPending.emit(value)
 
@@ -116,42 +158,7 @@ class ParameterWidget(QtWidgets.QWidget):
         self.parameterSet.emit(val)
 
 
-# ----------------------------------------------------------------------------
-# custom (input) widgets
-
-class SetButton(QtWidgets.QPushButton):
-
-    @QtCore.Slot(bool)
-    def setPending(self, isPending: bool):
-        if isPending:
-            self.setStyleSheet("SetButton { background-color: orange }")
-        else:
-            self.setStyleSheet("SetButton {}")
-
-
-class AlertLabel(QtWidgets.QLabel):
-
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
-        super().__init__(parent)
-        pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(16, 16)
-        self.setPixmap(pix)
-        self.setToolTip('no alerts')
-
-    @QtCore.Slot(str)
-    def setAlert(self, message: str):
-        pix = QtGui.QIcon(":/icons/red-alert.svg").pixmap(16, 16)
-        self.setPixmap(pix)
-        self.setToolTip(message)
-
-    @QtCore.Slot()
-    def clearAlert(self):
-        pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(16, 16)
-        self.setPixmap(pix)
-        self.setToolTip('no alerts')
-
-
 class AnyInput(QtWidgets.QWidget):
-
     #: Signal(str) --
     #: emitted when the input field is changed, argument is the new value.
     inputChanged = QtCore.Signal(str)
@@ -174,7 +181,6 @@ class AnyInput(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.input)
         layout.addWidget(self.doEval)
-
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
@@ -186,7 +192,7 @@ QPushButton:checked { background-color: palegreen }
         if self.doEval.isChecked():
             try:
                 ret = eval(self.input.text())
-            except Exception:
+            except Exception as e:
                 ret = self.input.text()
             return ret
         else:
@@ -199,7 +205,48 @@ QPushButton:checked { background-color: palegreen }
     def _processTextEdited(self, val: str):
         self.inputChanged.emit(val)
 
-    def resetStyle(self):
-        pass
+
+class NumberInput(QtWidgets.QLineEdit):
+    """A text edit widget that checks whether its input can be read as a number."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.textChanged.connect(self.checkIfNumber)
+
+    def checkIfNumber(self, value: str):
+        try:
+            val = eval(value)
+        except:
+            val = None
+
+        if not isinstance(val, numbers.Number):
+            self.setStyleSheet("""
+            NumberInput { background-color: pink }
+            """)
+        else:
+            self.setStyleSheet("""
+            NumberInput { }
+            """)
+
+    def value(self):
+        try:
+            value = eval(self.text())
+        except:
+            return None
+        if isinstance(value, numbers.Number):
+            return value
+        else:
+            return None
+
+    def setValue(self, value: numbers.Number):
+        self.setText(str(value))
 
 
+class SetButton(QtWidgets.QPushButton):
+
+    @QtCore.Slot(bool)
+    def setPending(self, isPending: bool):
+        if isPending:
+            self.setStyleSheet("SetButton { background-color: orange }")
+        else:
+            self.setStyleSheet("SetButton {}")
