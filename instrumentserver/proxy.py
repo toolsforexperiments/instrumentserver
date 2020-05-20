@@ -150,8 +150,26 @@ class ModuleProxy(Instrument):
                 'name': func_name,
                 'signature': inspect.signature(func_temp)
             }
+            func_temp.snapshot = partial(self._funcSnapshot, func_temp)
             setattr(self, func_name, func_temp)
             self.functions[func_name] = func_temp
+
+    def _funcSnapshot(self, func: Callable, **kwargs: Any) -> Dict:
+        """ This function is added because the snapshot method of
+        qcodes.Instrument class will also take snapshot of functions, but our
+        current functions are not qcodes.Metadatable type.
+
+        :param func: Function to take snapshot.
+        :param **kwargs: Not used for now. Just to fit in the frame of
+            Instrument.snapshot()
+        :returns: signature of function.
+        """
+        # this is not very consistent with the old style function snapshot (
+        # when functions were instances of Function class). The Function class
+        # didn't override the snapshot method of its base class (Metadatable),
+        # thus it actually returns {}.
+        snap = {"signature": str(inspect.signature(func))}
+        return snap
 
     def _buildFacadeFunc(self, func_dic):
         """Build a facade function, matching the signature of the original
@@ -289,6 +307,7 @@ class ModuleProxy(Instrument):
             raise KeyError('Duplicate function name {}'.format(name))
 
         if func is not None:  # bind function to proxy module class
+            func.snapshot = partial(self._funcSnapshot, func)
             func_sig = inspect.signature(func)
             if 'self' in func_sig.parameters:
                 bound_func = MethodType(func, self)
@@ -339,7 +358,7 @@ class ModuleProxy(Instrument):
 
     # ------------- extra methods for the proxy module --------------------------
     def snapshot_from_server(self) -> Dict:
-        """ send request to the server for a snapshot of the instrument.
+        """ send request to the server for a snapshot of the instrument. 
         """
         instructionDict = {
             'operation': 'instrument_snapshot',
