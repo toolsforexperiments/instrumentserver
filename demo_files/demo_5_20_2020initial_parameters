@@ -1,0 +1,6 @@
+{
+  "CS.current": 0,
+  "VNA.IFBW": 3000.0,
+  "VNA.fstart": 6000000000.0,
+  "VNA.fstop": 8000000000.0
+}

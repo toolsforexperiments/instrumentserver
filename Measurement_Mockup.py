@@ -28,64 +28,85 @@ from qcodes import (Instrument, VisaInstrument,
                     ManualParameter, MultiParameter,
                     validators as vals)
 from qcodes.instrument.channel import InstrumentChannel
+
 from fakeVNA import fakeVNA
+from fakeCS import fakeCS
 
+from instrumentserver import serialize
 
+mockup = qc.Station()
 VNA = fakeVNA("VNA")
-fCS = fakeCurrentSource("fCS")
-cwd = "C:\\"
+CS = fakeCS("CS")
+
+mockup.add_component(VNA)
+mockup.add_component(CS)
+
+cwd="C:\\Users\\Ryan K\\Documents\\GitHub\\instrumentserver\\demo_files\\"
+filename = "demo_5_20_2020"
+filepath = cwd+filename
+
+#saving
+serialize.saveParamsToFile(mockup, filepath+"initial_parameters") 
+    
+### Supporting functions: 
+
+
 # Configuration
 '''
 This section takes input (that here is just manually put in the script)
 and loads it into the instrument
 Questions: 
+    - how might we automatically load in options that the user can change? 
+    - - serialize gives list of params
 '''
-pardict = {
- param1: vals
- .
- .
- .
- 
- 
- }
-loading(pardict)
+par_dict = serialize.toParamDict(mockup)
+
+print("Available Parameters: ")
+for key in par_dict.keys():
+    print(key)
+#This would be the section for a GUI, but here I'll just manually set some
+
+VNA.fstart.set(3e9)
+VNA.fstop.set(4e9)
+CS.current.set(0)
+
+#TODO: GUI for initial setting of parameters
+
+#saving initial settings
+serialize.saveParamsToFile(mockup, filepath+"initial_set_parameters") 
+
 
 # Control 
 '''
 This section takes loose variables and generates sweep variables that are
 fed into the instruments to take data
 Questions: 
-    
+    - should we use ArrayParameters for sweep variables?
 '''
-def oneVal(curr): 
-    CS.set_current()
+def dataLine(curr): 
+    CS.set_current(curr)
     data = VNA.get_Trace()
     return data
 
 data = []
+curr_arr = np.linspace(0,10e-3,100)
 for curr in curr_arr: 
-    data.append(oneVal(curr))
-    
-    .
-    .
-    .
-    
+    data.append(dataLine(curr))
 
 
 
-
-# Storage
-'''
-This section takes the data which is actively stored in the kernel and 
-saves it into a file
-Questions: 
-    - do we want to save/overwrite as the script is taking data? 
-    -- yes to avoid losing it if script throws execution or kernel 
-       needs to be stopped
+# # Storage
+# '''
+# This section takes the data which is actively stored in the kernel and 
+# saves it into a file
+# Questions: 
+#     - do we want to save/overwrite as the script is taking data? 
+#     -- yes to avoid losing it if script throws execution or kernel 
+#        needs to be stopped
        
-Takes: 
-    data[NxM array]
-    parameters: 
-        -dictionary
-    cwd
-'''
+# Takes: 
+#     data[NxM array]
+#     parameters: 
+#         -dictionary
+#     cwd
+# '''
