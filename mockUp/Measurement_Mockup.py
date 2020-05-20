@@ -15,12 +15,19 @@ compatible with the instrumentserver
 This section of a measurement grabs instruments from the instrument server
 in the real code, but here it will grab my 2 dummy instruments and load their 
 current settings
+
 Questions: 
-    
+    -how to get around appending path?
 '''
 
+import sys
+sys.path.append(r'C:\Users\Ryan K\Documents\GitHub\instrumentserver')
 
-import h5py 
+from instrumentserver import serialize
+from fakeVNA import fakeVNA
+from fakeCS import fakeCS
+from processData import dataProcess
+
 from time import sleep, time
 import numpy as np
 import qcodes as qc
@@ -29,27 +36,26 @@ from qcodes import (Instrument, VisaInstrument,
                     validators as vals)
 from qcodes.instrument.channel import InstrumentChannel
 
-from fakeVNA import fakeVNA
-from fakeCS import fakeCS
-
-from instrumentserver import serialize
 
 mockup = qc.Station()
+
 VNA = fakeVNA("VNA")
 CS = fakeCS("CS")
 
 mockup.add_component(VNA)
 mockup.add_component(CS)
 
-cwd="C:\\Users\\Ryan K\\Documents\\GitHub\\instrumentserver\\mockUp\\demo_files\\"
+cwd = "C:/Users/Ryan K/Documents/GitHub/instrumentserver/mockUp/demo_files/"
 filename = "demo_5_20_2020"
 filepath = cwd+filename
 
-#saving
-serialize.saveParamsToFile(mockup, filepath+"initial_parameters") 
-    
-### Supporting functions: 
+dirInfo = {"cwd": cwd,
+           "peopleName": "Pinlei, Ryan",
+           "projectName": "SNAIL",
+           "msmtName": "FluxSweep"}
 
+#saving previous settings
+serialize.saveParamsToFile(mockup, filepath+"_initial_parameters") 
 
 # Configuration
 '''
@@ -73,7 +79,7 @@ CS.current.set(0)
 #TODO: GUI for initial setting of parameters
 
 #saving initial settings
-serialize.saveParamsToFile(mockup, filepath+"initial_set_parameters") 
+serialize.saveParamsToFile(mockup, filepath+"_initial_set_parameters") 
 
 
 # Control 
@@ -84,7 +90,7 @@ Questions:
     - should we use ArrayParameters for sweep variables?
 '''
 def dataLine(curr): 
-    CS.set_current(curr)
+    CS.current.set(curr)
     data = VNA.get_Trace()
     return data
 
@@ -109,11 +115,12 @@ Takes:
     cwd
 '''
 
+sv = dataProcess(dirInfo, "_data", data, par_dict)
+sv.save()
 
+#Cleanup for restarting
 
-
-
-
+mockup.close_all_registered_instruments()
 
 
 
