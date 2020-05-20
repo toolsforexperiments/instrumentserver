@@ -5,6 +5,7 @@ Created on Sat Apr 18 16:13:40 2020
 @author: Chao
 """
 import os
+import warnings
 from types import MethodType
 import json
 import inspect
@@ -54,7 +55,7 @@ class ModuleProxy(Instrument):
         :param server_address: the last 4 digits of the local host tcp address
         """
         super().__init__(instrument_name)
-        self.parameters.pop('IDN')
+        self.parameters.pop('IDN')  # we will redefine this later
         self.submodule_name = submodule_name
         self._construct_dict = construct_dict
 
@@ -110,7 +111,7 @@ class ModuleProxy(Instrument):
 
     def _decodeArrayVals(self, encode_val: Dict) -> Arrays:
         """ decode the array validators (mainly the shape part).
-        :param encode_val: encoded validator of an parameter
+        :param encode_val: encoded validator of an array parameter
         :returns: Array validator
         """
         val_shape = ()
@@ -267,9 +268,10 @@ class ModuleProxy(Instrument):
     def add_function(self, func: Optional[Callable] = None, name: str = None,
                      override: bool = False, **kwargs: Any) -> None:
         """ Bind a function to this proxy module. Can bind a function
-        directly to this proxy instrument. The old way of adding a Function
-        class (qcodes.instrument.base.Instrument.add_function) is still
-        supported, but deprecated.
+        directly to this proxy instrument ('self' argument is also supported,
+        which will point to the current proxy instrument ). The old way of
+        adding a  Function class (qcodes.instrument.base.Instrument.add_function)
+        is still supported, but deprecated.
 
         : param func: the function to be added
         : param name: name of the function, default name is the same as the
@@ -295,6 +297,8 @@ class ModuleProxy(Instrument):
             setattr(self, name, bound_func)
             self.functions[name] = bound_func
         else:  # construct ``Function``
+            warnings.warn('The qcodes Function class is deprecated, try to '
+                          'bind a function directly')
             function = Function(name=name, instrument=self, **kwargs)
             self.functions[name] = function
 
