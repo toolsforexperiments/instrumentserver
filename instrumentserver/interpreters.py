@@ -9,10 +9,8 @@ import inspect
 import warnings
 from types import MethodType
 from typing import Dict, Any, Union, Optional
-from typing_extensions import Literal, TypedDict
 
 import jsonpickle
-
 import qcodes as qc
 from qcodes import (Station,
                     Instrument,
@@ -22,6 +20,7 @@ from qcodes import (Station,
                     Function)
 from qcodes.instrument import parameter
 from qcodes.utils.validators import Validator, Arrays
+from typing_extensions import Literal, TypedDict
 
 # for now, only these two types of parameter are supported, which should have
 # covered most of the cases)
@@ -68,6 +67,7 @@ class InstructionDictType(TypedDict):
 
 
 # ------------------------- interpreter function --------------------------------
+# TODO: i don't like this name. should generalize a bit.
 def instructionDict_to_instrumentCall(station: Station,
                                       instructionDict:
                                       InstructionDictType) -> Any:
