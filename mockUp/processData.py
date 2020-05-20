@@ -41,12 +41,13 @@ class dataProcess():
         self.fileName = fileName
         self.rawData = rawData
         self.paramDict = paramDict
+        self.extraItem = {}
 
     def createDir(self):
         """Create directory if this is the first time.
 
         """
-        self.cwd = self.dirInfo.get("cwd", "~/")
+        self.cwd = self.dirInfo.get("cwd", "D://Data//")
         self.peopleName = self.dirInfo.get("peopleName", "Others")
         self.projectName = self.dirInfo.get("projectName", "Project")
         self.msmtName = self.dirInfo.get("msmtName", "msmt")
@@ -56,6 +57,16 @@ class dataProcess():
             os.makedirs(self.dirSave)
         except FileExistsError:
             print("Directory exists, continue.")
+
+    def addSaveItem(self, itemName: str, data_):
+        """Add more items to save (sweeping parameter, etc.)
+        
+        Args:
+            itemName (str): the name of itme you want to save
+            data_ (TYPE): data, generally should be numpy array
+        
+        """
+        self.extraItem[itemName] = data_
 
     def saveData(self):
         """Save data, if already exists, will add index after.
@@ -73,6 +84,8 @@ class dataProcess():
             index += 1
         fileOpen.create_dataset('rawData', data=self.rawData)
         fileOpen.create_dataset('paramDict', data=str(self.paramDict))
+        for item in self.extraItem.keys():
+            fileOpen.create_dataset(item, data=self.extraItem[item])
         fileOpen.close()
         self.saveName = saveName
 
@@ -124,9 +137,29 @@ class dataProcess():
         self.saveData()
         self.createIdentifier()
 
+class dataPlot():
+    def __init__():
+        return
+
+    def livePlotStart():
+        return
+
+    def livePlotAdd():
+        return
+
+    def livePlotEnd():
+        return
+
+    def singlePlot():
+        return
+
+    def plotSave():
+        return
+
+
 if __name__ == '__main__':
 
-    dirInfo = {"cwd": "Data/",
+    dirInfo = {"cwd": "D://Data//",
                "peopleName": "Pinlei",
                "projectName": "SNAIL",
                "msmtName": "GainSweep"}
