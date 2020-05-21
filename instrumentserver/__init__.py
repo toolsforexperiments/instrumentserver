@@ -23,4 +23,4 @@ PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
 
 
 from .log import setupLogging, logger
-from .server import servergui
+from .server import start_server

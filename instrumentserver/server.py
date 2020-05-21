@@ -2,7 +2,7 @@ import os
 import time
 import logging
 import random
-from typing import Union
+from typing import Union, Optional
 
 import zmq
 import json
@@ -15,7 +15,7 @@ from . import QtCore, QtWidgets, QtGui, serialize
 from .base import send, recv
 from .log import LogLevels, LogWidget, log, setupLogging
 from .serialize import toParamDict
-from .helpers import getInstrumentMethods, getInstrumentParameters, toHtml
+from .helpers import toHtml
 
 INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
                                   'instruction_dict.json')
@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: parameter file location should be optionally configurable
-# TODO: should be possible to look at all parameters in an instrument
 # TODO: add an option to save one file per station component
 
 
@@ -156,11 +155,12 @@ class ServerGui(QtWidgets.QMainWindow):
 
     serverPortSet = QtCore.Signal(int)
 
-    def __init__(self, station, startServer=True):
+    def __init__(self, station, startServer: Optional[bool] = True,
+                 serverPort: Optional[int] = 5555):
         super().__init__()
 
         self._paramValuesFile = os.path.join('.', 'parameters.json')
-        self._serverPort = None
+        self._serverPort = serverPort
 
         self.setWindowTitle('Instrument server')
 
@@ -233,7 +233,8 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def startServer(self):
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(station=self.station)
+        self.stationServer = StationServer(station=self.station,
+                                           port=self._serverPort)
         self.stationServerThread = QtCore.QThread()
         self.stationServer.moveToThread(self.stationServerThread)
         self.stationServerThread.started.connect(self.stationServer.startServer)
@@ -332,7 +333,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(obj)
 
 
-def servergui(station: Station) -> "ServerGui":
+def start_server(station: Station, port: Optional[int] = 5555) -> "ServerGui":
     """Create a server gui window
 
     Can be used in an ipython kernel with Qt mainloop.
@@ -341,7 +342,7 @@ def servergui(station: Station) -> "ServerGui":
     setupLogging(addStreamHandler=False,
                  logFile=os.path.abspath('instrumentserver.log'))
     logging.getLogger('instrumentserver').setLevel(logging.DEBUG)
-    window = ServerGui(station, startServer=True)
+    window = ServerGui(station, startServer=True, serverPort=port)
     window.show()
     return window
 
@@ -389,6 +390,7 @@ class StationServer(QtCore.QObject):
     def startServer(self):
         addr = f"tcp://*:{self.port}"
         self.log.emit(f"Starting server at {addr}", LogLevels.info)
+        self.log.emit(f"The safe word is: {self.SAFEWORD}", LogLevels.info)
         context = zmq.Context()
         socket = context.socket(zmq.REP)
         socket.bind(addr)
@@ -399,13 +401,17 @@ class StationServer(QtCore.QObject):
         while self.serverRunning:
             message = recv(socket)
             show_message = message
+
+            # allow the test client from within the same process to make sure the
+            # server shuts down. This is
             if message == self.SAFEWORD:
                 reply = 'As you command, server will now shut down.'
                 self.serverRunning = False
-                response = {'error': RuntimeError('Server closed by user')}
-            elif isinstance(message, str): #other string messages
+                response_to_client = {'error': RuntimeError('Server closed by user')}
+
+            elif isinstance(message, str):
                 reply = 'Thank you for your message'
-                response = str(reply)
+                response_to_client = str(reply)
             else: 
                 # check if the message is the instruction dictionary from proxy
                 with open(INSTRUCT_SCHEMA_PATH) as f:
@@ -415,11 +421,11 @@ class StationServer(QtCore.QObject):
                 except:
                     raise
                 show_message = f"Command from proxy : {message['operation']}"
-                response = instructionDict_to_instrumentCall(self.station, message)
+                response_to_client = instructionDict_to_instrumentCall(self.station, message)
                 reply = 'a dictionary that contains the requested information'
                 # Is it necessary to show the explicit reply(a huge dictionary) here ?
             
-            send(socket, response)            
+            send(socket, response_to_client)
             self.messageReceived.emit(show_message, reply)
 
         socket.close()
