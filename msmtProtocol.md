@@ -25,11 +25,11 @@ When start doing experiment, the following protocol should start by steps
 
 
 ## Initialization of measurement client (kernel 2)
-### User need to:
+### User needs to:
 1. Start a new kernel;
 2. Instantiate proxy instruments that are needed for the experiment, which can
  be done by (either or both):
-    1. write `my_instruemnt = InstrumentProxy('target_instruemnt_name')` manually
+    1. write `my_instruemnt = InstrumentProxy('target_instruemnt_name')` manually 
     2. load from JSON (/YAML?) file.
     
 ### The program will:   
@@ -40,17 +40,23 @@ When start doing experiment, the following protocol should start by steps
  give access to change parameters and call functions.   
  
 ### Notice and suggestions:
-*
+* For any given measurement, 
 
 ### _TODO:_
 * we need to define a format for saving instrument configuration at this stage
 , should we use the same format as the qcodes one? Also a helper function need
  to be written for loading and saving the configuration file.
+* RK: I think that the instrumentserver.serialize() function is pretty easy to use. 
+It just saves to a JSON format 
 
 ### _Question and discussion:_
 * should we run this code at this step and later run the measurement code in
  the same kernel, or write this part and the measurement part in one file and
   run them together?
+    * RK: If we wrote a seperate module that had a function like "initialize" that took in the instruments, filename, and cwd 
+    (with the default being the console cwd that the script was created in) then it could handle this in a standard way by 
+    creating the right folder structure. The benefit of doing it this way is that it would be a standard import, but still explicitly 
+    have the line in the measurement code that would tell you exactly where and when everything was saved
   
   
 ## Monitor and configure the current instruments
@@ -60,6 +66,9 @@ Using the generated window to monitor all parameters changed and also make the n
 ### Notice and suggestions:
 * Always remember to refresh the current instrument status after control
  instrument by touching the physical device.
+    * RK: This is tricky with USB instruments, especially. Will we have to do periodic parameter.get() calls to make sure everything is in synch? 
+    For all of the parameters in an instrument, that is a lot of commands if you want it up to date within 100ms
+
  
  
 
@@ -79,6 +88,9 @@ Using the generated window to monitor all parameters changed and also make the n
  good to wire the measurement as a standard function, and also save setup
   parameters to a standard format. So that it will be easy to repeat the
    experiment and trace back what we did.  
+   * RK: I agree with this, the measurement function should just need a function with a cwd and the instruments you choose. 
+   * RK: If the measurement will essentially be its own class, should we make it a station? 
+   That way the sweep variables could be held as parameters in the station and we can use the validators etc.
  
  
 ## Save and plot the data
@@ -93,3 +105,13 @@ Using the generated window to monitor all parameters changed and also make the n
  * Should we save the data and setup parameters in the same file? I'm concerning
   that sometimes the data can be huge and takes long time to load, but we only
    want to see the setup parameter. 
+   * I think this depends on Wolfgang's file format. If it can support this, I would say we should use it. 
+
+## Possible File Structures
+Data:
+- date
+  - Project_name
+    - Run_name_person (incrementNumber_string_string)
+      - Instrument_settings.JSON
+      - Data.hdf5
+    
