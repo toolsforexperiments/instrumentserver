@@ -37,16 +37,16 @@ When start doing experiment, the following protocol should start by steps
  build a proxy for it. Later user can use these proxy instrument to write
   measurement codes.
 * An instrument GUI will popup, which will show instrument parameters, and
- give access to change parameters and call functions.   
+ give access to change parameters and call functions.
+    * Hatlab specific instrument GUI setups   
  
 ### Notice and suggestions:
-* For any given measurement, 
 
 ### _TODO:_
 * we need to define a format for saving instrument configuration at this stage
 , should we use the same format as the qcodes one? Also a helper function need
  to be written for loading and saving the configuration file.
-* RK: I think that the instrumentserver.serialize() function is pretty easy to use. 
+* RK: I think that the instrumentserver.serialize functions are pretty easy to use. 
 It just saves to a JSON format 
 
 ### _Question and discussion:_
@@ -57,7 +57,9 @@ It just saves to a JSON format
     (with the default being the console cwd that the script was created in) then it could handle this in a standard way by 
     creating the right folder structure. The benefit of doing it this way is that it would be a standard import, but still explicitly 
     have the line in the measurement code that would tell you exactly where and when everything was saved
-  
+
+  * Decision: In most cases just use a separate _init_ file with a list of instruments, but also build functionality to use a one line function to clean up and reinitialize
+      * Make the _init_ file able to take in a JSON file
   
 ## Monitor and configure the current instruments
 ### User need to:
@@ -66,8 +68,8 @@ Using the generated window to monitor all parameters changed and also make the n
 ### Notice and suggestions:
 * Always remember to refresh the current instrument status after control
  instrument by touching the physical device.
-    * RK: This is tricky with USB instruments, especially. Will we have to do periodic parameter.get() calls to make sure everything is in synch? 
-    For all of the parameters in an instrument, that is a lot of commands if you want it up to date within 100ms
+
+  * User has to manually refresh
 
  
  
@@ -80,6 +82,8 @@ Using the generated window to monitor all parameters changed and also make the n
     3. load the integrated measurement window.
     4. load a standardized measurement function (e.g. flux weep), and feed in
      setup parameters. 
+     1. def meas_class({Instrument_list}, cwd, name, kwargs: {parameter_dict, default to None, raise warning if omitted})
+     2. output: filepath+filename
 2. Run the command in kernel 2.
 3. Save measurement parameter.
 
@@ -89,8 +93,6 @@ Using the generated window to monitor all parameters changed and also make the n
   parameters to a standard format. So that it will be easy to repeat the
    experiment and trace back what we did.  
    * RK: I agree with this, the measurement function should just need a function with a cwd and the instruments you choose. 
-   * RK: If the measurement will essentially be its own class, should we make it a station? 
-   That way the sweep variables could be held as parameters in the station and we can use the validators etc.
  
  
 ## Save and plot the data
@@ -106,12 +108,31 @@ Using the generated window to monitor all parameters changed and also make the n
   that sometimes the data can be huge and takes long time to load, but we only
    want to see the setup parameter. 
    * I think this depends on Wolfgang's file format. If it can support this, I would say we should use it. 
+* How do we save and plot simultaneously?
+* How do we save non-grid data?
+
 
 ## Possible File Structures
-Data:
-- date
-  - Project_name
-    - Run_name_person (incrementNumber_string_string)
-      - Instrument_settings.JSON
-      - Data.hdf5
-    
+- Data 
+  - date
+    - Project_name
+      - Run_name_person (incrementNumber_string_string)
+        - Instrument_settings.JSON
+        - Data.hdf5
+Helper_Package (all stable code)  
+- initialization_module: 
+  - classes for initializing instruments for each measurement
+    - inputs -- JSON file for instruments and their parameters
+    - outputs -- instrument list
+
+- saving_module -- 
+  - keeps file structure/directories consistent
+  - uses standardized data format
+    - updates file for live plotting
+  - saves instrument states
+  - inputs -- instrument_list, data, directory
+
+- measurement_module 
+  - has multiple classes, one for each measurement template
+  - init for each class takes (instruments, cwd, name), {parameter kwargs}
+  - outputs -- filepath for saved data
