@@ -8,9 +8,8 @@ When start doing experiment, the following protocol should start by steps
  instruments will be created in the server and their initial conditions.
 2. Run "start_server.py" to initialize the main kernel. 
 
-### What will happen after user have done that:
-* The start_server program will load the YAML file and initialize the
- instruments.
+### The program will:
+* Load the YAML file and initialize the instruments.
 * A `zmq.REP` server socket will be created and wait for commands from clients.
 * A server GUI will popup, which will list the instruments on the server
 , show logging information and give access to some basic operation of the
@@ -33,15 +32,20 @@ When start doing experiment, the following protocol should start by steps
     1. write `my_instruemnt = InstrumentProxy('target_instruemnt_name')` manually
     2. load from JSON (/YAML?) file.
     
-### What will happen after user have done that:   
-* The program will look for instrument with name 'target_instruemnt_name' on
- the server and build a proxy for it. Later user can use these proxy
-  instrument to write measurement codes.
+### The program will:   
+* Look for instrument with name 'target_instruemnt_name' on the server and
+ build a proxy for it. Later user can use these proxy instrument to write
+  measurement codes.
 * An instrument GUI will popup, which will show instrument parameters, and
  give access to change parameters and call functions.   
  
 ### Notice and suggestions:
 *
+
+### _TODO:_
+* we need to define a format for saving instrument configuration at this stage
+, should we use the same format as the qcodes one? Also a helper function need
+ to be written for loading and saving the configuration file.
 
 ### _Question and discussion:_
 * should we run this code at this step and later run the measurement code in
