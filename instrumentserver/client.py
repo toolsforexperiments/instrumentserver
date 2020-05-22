@@ -1,16 +1,14 @@
 import logging
-import pickle
 import zmq
 
 from .base import send, recv
-
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
 class StationClient:
-    """Simple prototype client for the StationServer"""
+    """Simple client for the StationServer"""
 
     def __init__(self):
         self.connected = False
@@ -32,11 +30,15 @@ class StationClient:
         send(self.socket, message)
         reply = recv(self.socket)
         log.debug(f"Reply: {reply}")
+        return reply
 
     def disconnect(self):
         self.socket.close()
         self.connected = False
 
 
-
+def startClient(host='localhost', port=5555):
+    cli = StationClient()
+    cli.connect(host, port)
+    return cli
 

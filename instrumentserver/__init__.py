@@ -1,6 +1,8 @@
 import sys
 import os
 import logging
+import json
+
 from qtpy import QtGui, QtCore, QtWidgets
 
 
@@ -20,7 +22,13 @@ def getInstrumentserverPath(*subfolder: str) -> str:
 
 PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
                                   'parameters.json')
+INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+                                    'instruction_dict.json')
 
+with open(PARAMS_SCHEMA_PATH) as f:
+    paramDictSchema = json.load(f)
+with open(INSTRUCT_SCHEMA_PATH) as f:
+    serverInstructionSchema = json.load(f)
 
 from .log import setupLogging, logger
-from .server import start_server
+from .server import startServer

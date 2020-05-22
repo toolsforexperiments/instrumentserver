@@ -5,20 +5,15 @@ import random
 from typing import Union, Optional
 
 import zmq
-import json
-from jsonschema import validate as jsvalidate
 from qcodes import Parameter, Station, Instrument
 
-from . import resource, getInstrumentserverPath
-from .interpreters import instructionDict_to_instrumentCall
-from . import QtCore, QtWidgets, QtGui, serialize
-from .base import send, recv
-from .log import LogLevels, LogWidget, log, setupLogging
-from .serialize import toParamDict
-from .helpers import toHtml
+from instrumentserver.server.interpreter import executeServerInstruction, instructionFromJson
+from instrumentserver import QtCore, QtWidgets, QtGui, serialize, resource
+from instrumentserver.base import send, recv
+from instrumentserver.log import LogLevels, LogWidget, log, setupLogging
+from instrumentserver.serialize import toParamDict
+from instrumentserver.helpers import toHtml
 
-INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
-                                  'instruction_dict.json')
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +84,9 @@ class StationList(QtWidgets.QTreeWidget):
 
 
 class StationObjectInfo(QtWidgets.QTextEdit):
+
+    # TODO: make this a bit better looking
+    # TODO: add a TOC for the instrument?
 
     @staticmethod
     def htmlDoc(obj: Union[Parameter, Instrument]):
@@ -190,7 +188,7 @@ class ServerGui(QtWidgets.QMainWindow):
         # station tools
         self.toolBar.addWidget(QtWidgets.QLabel('Station:'))
         refreshStationAction = QtWidgets.QAction(
-            QtGui.QIcon(":/resource/icons/refresh.svg"), 'Refresh', self)
+            QtGui.QIcon(":/icons/refresh.svg"), 'Refresh', self)
         refreshStationAction.triggered.connect(self.refreshStationComponents)
         self.toolBar.addAction(refreshStationAction)
 
@@ -199,12 +197,12 @@ class ServerGui(QtWidgets.QMainWindow):
         self.toolBar.addWidget(QtWidgets.QLabel('Params:'))
 
         loadParamsAction = QtWidgets.QAction(
-            QtGui.QIcon(":/resource/icons/load.svg"), 'Load from file', self)
+            QtGui.QIcon(":/icons/load.svg"), 'Load from file', self)
         loadParamsAction.triggered.connect(self.loadParamsFromFile)
         self.toolBar.addAction(loadParamsAction)
 
         saveParamsAction = QtWidgets.QAction(
-            QtGui.QIcon(":/resource/icons/save.svg"), 'Save to file', self)
+            QtGui.QIcon(":/icons/save.svg"), 'Save to file', self)
         saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(saveParamsAction)
 
@@ -333,7 +331,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(obj)
 
 
-def start_server(station: Station, port: Optional[int] = 5555) -> "ServerGui":
+def startServer(station: Station, port: Optional[int] = 5555) -> "ServerGui":
     """Create a server gui window
 
     Can be used in an ipython kernel with Qt mainloop.
@@ -400,33 +398,46 @@ class StationServer(QtCore.QObject):
 
         while self.serverRunning:
             message = recv(socket)
-            show_message = message
+            message_ok = True
+            response_to_client = ''
+            response_log = ''
 
             # allow the test client from within the same process to make sure the
             # server shuts down. This is
             if message == self.SAFEWORD:
-                reply = 'As you command, server will now shut down.'
-                self.serverRunning = False
+                response_log = 'Server has received the safeword and will shut down.'
                 response_to_client = {'error': RuntimeError('Server closed by user')}
+                self.serverRunning = False
 
+            # if the message is a string we just echo it back.
+            # this is used for testing sometimes, but has no functionality.
             elif isinstance(message, str):
-                reply = 'Thank you for your message'
-                response_to_client = str(reply)
-            else: 
-                # check if the message is the instruction dictionary from proxy
-                with open(INSTRUCT_SCHEMA_PATH) as f:
-                    schema = json.load(f)
+                response_log = f"Server has received: {message}. No further action."
+                response_to_client = str(response_log)
+
+            # we assume this is a valid instruction set now.
+            elif isinstance(message, dict):
                 try:
-                    jsvalidate(message, schema)
-                except:
-                    raise
-                show_message = f"Command from proxy : {message['operation']}"
-                response_to_client = instructionDict_to_instrumentCall(self.station, message)
-                reply = 'a dictionary that contains the requested information'
-                # Is it necessary to show the explicit reply(a huge dictionary) here ?
+                    instruction = instructionFromJson(message)
+                except Exception as e:
+                    message_ok = False
+                    response_log = f'Received invalid message. Error raised: {str(e)}'
+                    response_to_client = dict(error=str(e))
+
+                if message_ok:
+                    # we don't need to use a try-block here, because
+                    # errors are already handled in executeServerInstruction
+                    response_to_client = executeServerInstruction(
+                        self.station, instruction
+                    )
+                    response_log = f"Response to client: {str(response_to_client)}"
+
+            else:
+                response_log = f"Invalid message type."
+                response_to_client = dict(error=response_log)
             
             send(socket, response_to_client)
-            self.messageReceived.emit(show_message, reply)
+            self.messageReceived.emit(str(message), response_log)
 
         socket.close()
         self.finished.emit()

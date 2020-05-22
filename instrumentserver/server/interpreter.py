@@ -9,7 +9,16 @@ import inspect
 import warnings
 from types import MethodType
 from typing import Dict, Any, Union, Optional
+from enum import Enum, unique, auto
+from dataclasses import dataclass
 
+# # as of python3.8, Literal and TypedDict are available in python.
+# try:
+#     from typing import Literal, TypedDict
+# except:
+#     from typing_extensions import Literal, TypedDict
+
+from jsonschema import validate as jsvalidate
 import jsonpickle
 import qcodes as qc
 from qcodes import (Station,
@@ -20,73 +29,82 @@ from qcodes import (Station,
                     Function)
 from qcodes.instrument import parameter
 from qcodes.utils.validators import Validator, Arrays
-from typing_extensions import Literal, TypedDict
+
+from instrumentserver import serverInstructionSchema
+
+
+# TODO: can we handle nested submodules right now?
+
 
 # for now, only these two types of parameter are supported, which should have
 # covered most of the cases)
 SUPPORTED_PARAMETER_CLASS = Union[Parameter, ParameterWithSetpoints]
 
 
-# ---------------- dictionary type definition -----------------------------------
-class InstrumentCreateDictType(TypedDict):
-    instrument_class: str
-    args: Optional[tuple]
-    kwargs: Optional[Dict]
+@unique
+class Operation(Enum):
+    """Valid operations for the server."""
+
+    #: get a list of instruments the server has instantiated
+    get_existing_instruments = 'get_existing_instruments'
+
+    #: create a new instrument
+    create_instrument = 'create_instrument'
+
+    #: get the blueprint of an instrument. The blueprint goes beyond a snapshot
+    #: and is useful for creating proxies.
+    get_instrument_blueprint = 'get_instrument_blueprint'
+
+    #: make a call to an object.
+    call = 'call'
 
 
-class ParamDictType(TypedDict):
-    name: str
-    value: Optional[Any]
+@dataclass
+class ServerInstruction:
+    operation: Operation
+    create_instrument_spec: Optional[Any] = None
+    call_spec: Optional[Any] = None
 
 
-class FuncDictType(TypedDict):
-    name: str
-    args: Optional[tuple]
-    kwargs: Optional[Dict]
+def instructionFromJson(d: Dict):
+    """Create an instruction object from a text-based json object.
+
+    Translates string instructions to other types:
+        - operation is converted to :class:`.Operations`
+    """
+    # TODO: validate json with schema?
+
+    d['operation'] = Operation(d['operation'])
+    return ServerInstruction(**d)
 
 
-class InstructionDictType(TypedDict):
-    operation: Literal["get_existing_instruments",
-                       'instrument_creation',
-                       'proxy_construction',
-                       'proxy_get_param',
-                       'proxy_set_param',
-                       'proxy_call_func',
-                       'proxy_write_raw',
-                       'proxy_ask_raw',
-                       'instrument_snapshot']
-
-    instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
-    submodule_name: Optional[
-        Union[str, None]]  # not needed for 'get_existing_instruments'
-    instrument_create: Optional[
-        InstrumentCreateDictType]  # for instrument creation
-    parameter: Optional[ParamDictType]  # for get/set_param
-    function: Optional[FuncDictType]  # for function call
-    cmd: Optional[str]  # for function call
-
-
-# ------------------------- interpreter function --------------------------------
-# TODO: i don't like this name. should generalize a bit.
-def instructionDict_to_instrumentCall(station: Station,
-                                      instructionDict:
-                                      InstructionDictType) -> Any:
+def executeServerInstruction(station: Station,
+                             instruction: ServerInstruction) -> Any:
     """
     This is the interpreter function that the server will call to translate the
     dictionary received from the proxy to instrument calls.
-    
-    :param station: qcodes.station object, the station that contains the 
+
+    :param station: qcodes.station object, the station that contains the
         instrument to call.
-    :param instructionDict:  The dictionary passed from the instrument proxy
-        that contains the information needed for the operation. 
+    :param instruction: The instruction object.
 
     :returns: the results returned from the instrument call
     """
     response = {'return_value': None,
                 'error': None}
+
+    # we call a helper function depending on the operation that is requested
+    if instruction.operation == Operation.get_existing_instruments:
+        func = _getExistingInstruments
+        args = [station]
+        kwargs = {}
+    else:
+        raise NotImplementedError
+
     try:
-        returns = _instructionProcessor(station, instructionDict)
+        returns = func(*args, **kwargs)
         response['return_value'] = returns
+
     except Exception as err:
         response['error'] = err
         warnings.simplefilter('always', UserWarning)  # since this runs in loop
@@ -94,10 +112,51 @@ def instructionDict_to_instrumentCall(station: Station,
 
     return response
 
+# ---------------- dictionary type definition -----------------------------------
+# TODO: migrate this to dataclasses?
+#   see: https://meeshkan.com/blog/typedict-vs-dataclasses-in-python/
+
+# class InstrumentCreateDictType(TypedDict):
+#     instrument_class: str
+#     args: Optional[tuple]
+#     kwargs: Optional[Dict]
+#
+#
+# class ParamDictType(TypedDict):
+#     name: str
+#     value: Optional[Any]
+#
+#
+# class FuncDictType(TypedDict):
+#     name: str
+#     args: Optional[tuple]
+#     kwargs: Optional[Dict]
+#
+#
+# class InstructionDictType(TypedDict):
+#     operation: Literal["get_existing_instruments",
+#                        'instrument_creation',  # TODO: rename
+#                        'proxy_construction',  # TODO: rename, clarify
+#                        'proxy_get_param',  # TODO: simplify -- only use callables
+#                        'proxy_set_param',  # TODO: simplify -- only use callables
+#                        'proxy_call_func',  # TODO: simplify -- only use callables
+#                        'proxy_write_raw',  #: TODO: needed?
+#                        'proxy_ask_raw',  # TODO: needed?
+#                        'instrument_snapshot']
+#
+#     instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
+#     submodule_name: Optional[Union[str, None]]  # not needed for 'get_existing_instruments'
+#     instrument_create: Optional[InstrumentCreateDictType]  # for instrument creation
+#     parameter: Optional[ParamDictType]  # for get/set_param
+#     function: Optional[FuncDictType]  # for function call
+#     cmd: Optional[str]  # for function call
+
+
+
 
 # ------------------ helper functions -------------------------------------------
-def _instructionProcessor(station: Station,
-                          instructionDict: InstructionDictType):
+def _processInstruction(station: Station,
+                        instructionDict: Dict):
     """
     process the operation instruction from the client and execute the operation.
     
@@ -111,12 +170,15 @@ def _instructionProcessor(station: Station,
     """
     operation = instructionDict['operation']
     returns = None
+
     if operation == 'get_existing_instruments':
         # usually this operation will be called before all the others to check
         # if the instrument already exists ont the server.
         returns = _getExistingInstruments(station)
+
     elif operation == 'instrument_creation':
         _instrumentCreation(station, instructionDict)
+
     else:  # doing operation on an existing instrument
         instrument = station[instructionDict['instrument_name']]
         if 'submodule_name' in instructionDict:
@@ -340,60 +402,60 @@ def _get_module_info(module: Instrument) -> Dict:
 
     return module_construct_dict
 
-
-def _proxyGetParam(instrument: Instrument, paramDict: ParamDictType) -> Any:
-    """
-    Get a parameter from the instrument.
-
-    :param paramDict: the dictionary that contains the parameter to change, the
-        'value' item will be omitted.
-    :returns : value of the parameter returned from instrument
-
-    """
-    paramName = paramDict['name']
-    return instrument[paramName]()
-
-
-def _proxySetParam(instrument: Instrument, paramDict: ParamDictType) -> None:
-    """
-    Set a parameter in the instrument.
-
-    :param paramDict:  the dictionary that contains the parameter to change, the
-        'value' item will be the set value.
-        e.g. {'ch1': {'value' : 10} }
-    """
-    paramName = paramDict['name']
-    instrument[paramName](paramDict['value'])
-
-
-def _proxyCallFunc(instrument: Instrument, funcDict: FuncDictType) -> Any:
-    """
-    Call an instrument function.
-
-    :param funcDict:  the dictionary that contains the name of the function to
-        call and the argument values
-
-    :returns : result returned from the instrument function
-    """
-    funcName = funcDict['name']
-
-    if ('kwargs' in funcDict) and ('args' in funcDict):
-        args = funcDict['args']
-        kwargs = funcDict['kwargs']
-        return getattr(instrument, funcName)(*args, **kwargs)
-    elif 'args' in funcDict:
-        args = funcDict['args']
-        return getattr(instrument, funcName)(*args)
-    elif 'kwargs' in funcDict:
-        kwargs = funcDict['kwargs']
-        return getattr(instrument, funcName)(**kwargs)
-    else:
-        return getattr(instrument, funcName)()
-
-
-def _proxyWriteRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
-    return instrument.write_raw(cmd)
-
-
-def _proxyAskRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
-    return instrument.ask_raw(cmd)
+#
+# def _proxyGetParam(instrument: Instrument, paramDict: ParamDictType) -> Any:
+#     """
+#     Get a parameter from the instrument.
+#
+#     :param paramDict: the dictionary that contains the parameter to change, the
+#         'value' item will be omitted.
+#     :returns : value of the parameter returned from instrument
+#
+#     """
+#     paramName = paramDict['name']
+#     return instrument[paramName]()
+#
+#
+# def _proxySetParam(instrument: Instrument, paramDict: ParamDictType) -> None:
+#     """
+#     Set a parameter in the instrument.
+#
+#     :param paramDict:  the dictionary that contains the parameter to change, the
+#         'value' item will be the set value.
+#         e.g. {'ch1': {'value' : 10} }
+#     """
+#     paramName = paramDict['name']
+#     instrument[paramName](paramDict['value'])
+#
+#
+# def _proxyCallFunc(instrument: Instrument, funcDict: FuncDictType) -> Any:
+#     """
+#     Call an instrument function.
+#
+#     :param funcDict:  the dictionary that contains the name of the function to
+#         call and the argument values
+#
+#     :returns : result returned from the instrument function
+#     """
+#     funcName = funcDict['name']
+#
+#     if ('kwargs' in funcDict) and ('args' in funcDict):
+#         args = funcDict['args']
+#         kwargs = funcDict['kwargs']
+#         return getattr(instrument, funcName)(*args, **kwargs)
+#     elif 'args' in funcDict:
+#         args = funcDict['args']
+#         return getattr(instrument, funcName)(*args)
+#     elif 'kwargs' in funcDict:
+#         kwargs = funcDict['kwargs']
+#         return getattr(instrument, funcName)(**kwargs)
+#     else:
+#         return getattr(instrument, funcName)()
+#
+#
+# def _proxyWriteRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
+#     return instrument.write_raw(cmd)
+#
+#
+# def _proxyAskRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
+#     return instrument.ask_raw(cmd)
