@@ -4,6 +4,7 @@ import json
 
 from instrumentserver import setupLogging, logger
 from instrumentserver.client import StationClient
+from instrumentserver.server.core import InstrumentCreationSpec, Operation
 
 
 setupLogging()
@@ -16,6 +17,9 @@ if __name__ == '__main__':
     parser.add_argument("--port", default=5555)
     parser.add_argument("--host", default='localhost')
     parser.add_argument("--operation")
+    parser.add_argument("--new_instrument_class")
+    parser.add_argument("--new_instrument_args")
+    parser.add_argument("--new_instrument_kwargs")
     args = parser.parse_args()
 
     if args.message is not None:
@@ -24,6 +28,12 @@ if __name__ == '__main__':
         msg = dict(
             operation=args.operation,
         )
+        if Operation(args.operation) == Operation.create_instrument:
+            msg['create_instrument_spec'] = InstrumentCreationSpec(
+                instrument_class=args.new_instrument_class,
+                args=eval(str(args.new_instrument_args)),
+                kwargs=eval(str(args.new_instrument_kwargs))
+            )
 
     cli = StationClient()
     cli.connect()
