@@ -4,14 +4,12 @@ import logging
 import random
 from typing import Union, Optional
 
-import zmq
-from qcodes import Parameter, Station, Instrument
-
 from instrumentserver import QtCore, QtWidgets, QtGui, serialize, resource
 from instrumentserver.base import send, recv
 from instrumentserver.log import LogLevels, LogWidget, log, setupLogging
 from instrumentserver.serialize import toParamDict
 from instrumentserver.helpers import toHtml
+from instrumentserver.client import sendRequest
 
 from .core import StationServer
 
@@ -88,14 +86,6 @@ class StationObjectInfo(QtWidgets.QTextEdit):
     # TODO: make this a bit better looking
     # TODO: add a TOC for the instrument?
 
-    @staticmethod
-    def htmlDoc(obj: Union[Parameter, Instrument]):
-        pass
-
-    @staticmethod
-    def parameterHtml(param: Parameter):
-        pass
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -153,12 +143,15 @@ class ServerGui(QtWidgets.QMainWindow):
 
     serverPortSet = QtCore.Signal(int)
 
-    def __init__(self, station, startServer: Optional[bool] = True,
+    def __init__(self,
+                 startServer: Optional[bool] = True,
                  serverPort: Optional[int] = 5555):
         super().__init__()
 
         self._paramValuesFile = os.path.join('.', 'parameters.json')
         self._serverPort = serverPort
+        self.stationServer = None
+        self.stationServerThread = None
 
         self.setWindowTitle('Instrument server')
 
@@ -206,7 +199,7 @@ class ServerGui(QtWidgets.QMainWindow):
         saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(saveParamsAction)
 
-        self.station = station
+        # FIXME this won't work yet
         self.refreshStationComponents()
 
         # A test client, just a simple helper object
@@ -231,8 +224,7 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def startServer(self):
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(station=self.station,
-                                           port=self._serverPort)
+        self.stationServer = StationServer(port=self._serverPort)
         self.stationServerThread = QtCore.QThread()
         self.stationServer.moveToThread(self.stationServerThread)
         self.stationServerThread.started.connect(self.stationServer.startServer)
@@ -252,6 +244,12 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer.instrumentCreated.connect(self.addStationComponent)
 
         self.stationServerThread.start()
+
+    def getServerIfRunning(self):
+        if self.stationServer is not None and self.stationServerThread.isRunning():
+            return self.stationServer
+        else:
+            return None
 
     @QtCore.Slot(str)
     def _setServerAddr(self, addr: str):
@@ -338,16 +336,12 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(obj)
 
 
-def startServer(station: Station, port: Optional[int] = 5555) -> "ServerGui":
+def startServerGuiApplication(port: Optional[int] = 5555) -> "ServerGui":
     """Create a server gui window
 
     Can be used in an ipython kernel with Qt mainloop.
     """
-
-    setupLogging(addStreamHandler=False,
-                 logFile=os.path.abspath('instrumentserver.log'))
-    logging.getLogger('instrumentserver').setLevel(logging.DEBUG)
-    window = ServerGui(station, startServer=True, serverPort=port)
+    window = ServerGui(startServer=True, serverPort=port)
     window.show()
     return window
 
@@ -365,16 +359,12 @@ class TestClient(QtCore.QObject):
 
     @QtCore.Slot(int)
     def setServerPort(self, port: int):
+        self.serverPort = port
         self.serverAddr = f"tcp://localhost:{port}"
         self.serverAddressSet.emit()
 
     @QtCore.Slot(str)
     def sendMessage(self, msg: str):
-        context = zmq.Context()
-        socket = context.socket(zmq.REQ)
-        socket.connect(self.serverAddr)
         self.log.emit(f"Test client sending request: {msg}", LogLevels.debug)
-        send(socket, msg)
-        reply = recv(socket)
+        reply = sendRequest(msg, port=self.serverPort)
         self.log.emit(f"Test client received reply: {reply}", LogLevels.debug)
-        socket.close()

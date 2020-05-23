@@ -1,1 +1,2 @@
-from .application import startServer
+# from .application import startServerGuiApplication
+from .core import startServer

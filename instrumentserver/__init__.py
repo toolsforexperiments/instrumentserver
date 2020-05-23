@@ -31,4 +31,4 @@ with open(INSTRUCT_SCHEMA_PATH) as f:
     serverInstructionSchema = json.load(f)
 
 from .log import setupLogging, logger
-from .server import startServer
+# from .server import startServerGuiApplication

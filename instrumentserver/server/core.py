@@ -70,6 +70,10 @@ class InstrumentCreationSpec:
 
 @dataclass
 class ServerInstruction:
+    """Instruction spec for the server.
+    """
+    #: This is the only mandatory item.
+    #: Which other fields are required depends on the operation.
     operation: Operation
     create_instrument_spec: Optional[InstrumentCreationSpec] = None
     call_spec: Optional[Any] = None
@@ -96,8 +100,8 @@ class StationServer(QtCore.QObject):
     # we use this to quit the server.
     # if this string is sent as message to the server, it'll shut down and close
     # the socket. Should only be used from within this module.
-    # it's randomized for a little bit of safety.
-    SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
+    # it's randomized in the instantiated server for a little bit of safety.
+    SAFEWORD = 'BANANA'
 
     #: signal to emit log messages
     log = QtCore.Signal(str, LogLevels)
@@ -114,24 +118,28 @@ class StationServer(QtCore.QObject):
     #: Signal() -- emitted when we shut down
     finished = QtCore.Signal()
 
-    #: Signal(Instrument) -- emitted when a new instrument was created
-    instrumentCreated = QtCore.Signal(Instrument)
+    #: Signal(Dict) -- emitted when a new instrument was created.
+    #: Argument is the snapshot of the instrument.
+    instrumentCreated = QtCore.Signal(dict)
 
     def __init__(self, station=None, parent=None, port=None):
         super().__init__(parent)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
-        self.station = station
         self.serverRunning = False
         self.port = port
         if self.port is None:
             self.port = 5555
 
+        if station is None:
+            station = Station()
+        self.station = station
+
     @QtCore.Slot()
     def startServer(self):
         addr = f"tcp://*:{self.port}"
-        self.log.emit(f"Starting server at {addr}", LogLevels.info)
-        self.log.emit(f"The safe word is: {self.SAFEWORD}", LogLevels.info)
+        logger.info(f"Starting server at {addr}")
+        logger.info(f"The safe word is: {self.SAFEWORD}")
         context = zmq.Context()
         socket = context.socket(zmq.REP)
         socket.bind(addr)
@@ -151,31 +159,45 @@ class StationServer(QtCore.QObject):
                 response_log = 'Server has received the safeword and will shut down.'
                 response_to_client = {'error': RuntimeError('Server closed by user')}
                 self.serverRunning = False
+                logger.warning(response_log)
 
             # if the message is a string we just echo it back.
             # this is used for testing sometimes, but has no functionality.
             elif isinstance(message, str):
                 response_log = f"Server has received: {message}. No further action."
                 response_to_client = str(response_log)
+                logger.info(response_log)
 
             # we assume this is a valid instruction set now.
             elif isinstance(message, dict):
                 try:
                     instruction = instructionFromJson(message)
+                    logger.info(f"Received request for operation: "
+                                f"{str(instruction.operation)}")
+                    logger.debug(f"Instruction received: "
+                                 f"{str(instruction)}")
                 except Exception as e:
                     message_ok = False
                     response_log = f'Received invalid message. Error raised: {str(e)}'
                     response_to_client = dict(error=str(e))
+                    logger.warning(response_log)
 
                 if message_ok:
                     # we don't need to use a try-block here, because
                     # errors are already handled in executeServerInstruction
                     response_to_client = self.executeServerInstruction(instruction)
                     response_log = f"Response to client: {str(response_to_client)}"
+                    if response_to_client['error'] is None:
+                        logger.info(f"Response sent to client.")
+                        logger.debug(response_log)
+                    else:
+                        logger.warning(response_log)
 
             else:
                 response_log = f"Invalid message type."
                 response_to_client = dict(error=response_log)
+                logger.warning(f"Invalid message type: {type(message)}.")
+                logger.debug(f"Invalid message received: {str(message)}")
 
             send(socket, response_to_client)
             self.messageReceived.emit(str(message), response_log)
@@ -255,7 +277,20 @@ class StationServer(QtCore.QObject):
         new_instrument = qc.find_or_create_instrument(
             cls, *args, **kwargs)
 
-        self.instrumentCreated.emit(new_instrument)
+        self.instrumentCreated.emit(new_instrument.snapshot())
+
+
+def startServer(port=5555) -> Tuple[StationServer, QtCore.QThread]:
+    """Create a server and run in a separate thread.
+    :returns: the server object and the thread it's running in.
+    """
+    server = StationServer(port=port)
+    thread = QtCore.QThread()
+    server.moveToThread(thread)
+    server.finished.connect(thread.quit)
+    thread.started.connect(server.startServer)
+    thread.start()
+    return server, thread
 
 
 # ---------------- dictionary type definition -----------------------------------

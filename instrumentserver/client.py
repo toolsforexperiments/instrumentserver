@@ -3,8 +3,8 @@ import zmq
 
 from .base import send, recv
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+
+logger = logging.getLogger(__name__)
 
 
 class StationClient:
@@ -17,7 +17,7 @@ class StationClient:
 
     def connect(self, host='localhost', port=5555):
         addr = f"tcp://{host}:{port}"
-        log.info(f"Connecting to {addr}")
+        logger.info(f"Connecting to {addr}")
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(addr)
@@ -29,7 +29,8 @@ class StationClient:
 
         send(self.socket, message)
         reply = recv(self.socket)
-        log.debug(f"Reply: {reply}")
+        logger.info(f"Response received.")
+        logger.debug(f"Response: {str(reply)}")
         return reply
 
     def disconnect(self):
@@ -41,4 +42,11 @@ def startClient(host='localhost', port=5555):
     cli = StationClient()
     cli.connect(host, port)
     return cli
+
+
+def sendRequest(message, host='localhost', port=5555):
+    cli = startClient(host, port)
+    ret = cli.ask(message)
+    cli.disconnect()
+    return ret
 

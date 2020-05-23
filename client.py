@@ -3,13 +3,14 @@ import logging
 import json
 
 from instrumentserver import setupLogging, logger
-from instrumentserver.client import StationClient
+from instrumentserver.client import sendRequest
 from instrumentserver.server.core import InstrumentCreationSpec, Operation
 
 
-setupLogging()
+setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)
 log = logger()
 log.setLevel(logging.DEBUG)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Testing the client')
@@ -35,6 +36,4 @@ if __name__ == '__main__':
                 kwargs=eval(str(args.new_instrument_kwargs))
             )
 
-    cli = StationClient()
-    cli.connect()
-    cli.ask(msg)
+    sendRequest(msg)

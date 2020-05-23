@@ -80,10 +80,10 @@ class LogWidget(QtWidgets.QWidget):
 
 
 def setupLogging(addStreamHandler=True, logFile=None,
-                 name='instrumentserver'):
+                 name='instrumentserver',
+                 streamHandlerLevel=logging.INFO):
     """Setting up logging, incl adding a custom handler"""
 
-    print(f'Setting up logging for {name} ...')
     logger = logging.getLogger(name)
 
     for h in logger.handlers:
@@ -107,7 +107,10 @@ def setupLogging(addStreamHandler=True, logFile=None,
         )
         streamHandler = logging.StreamHandler(sys.stderr)
         streamHandler.setFormatter(fmt)
+        streamHandler.setLevel(streamHandlerLevel)
         logger.addHandler(streamHandler)
+
+    logger.info(f"Logging set up for {name}.")
 
 
 def logger(name='instrumentserver'):
