@@ -13,10 +13,6 @@ setupLogging(addStreamHandler=True,
 logger = logging.getLogger('instrumentserver')
 logger.setLevel(logging.DEBUG)
 
-#
-# def showLogMessage(msg, level=LogLevels.info):
-#     log(logger, msg, level)
-
 
 def server(port, user_shutdown):
     app = QtCore.QCoreApplication([])
