@@ -18,9 +18,9 @@ logger.setLevel(logging.DEBUG)
 #     log(logger, msg, level)
 
 
-def server(port):
+def server(port, user_shutdown):
     app = QtCore.QCoreApplication([])
-    server, thread = startServer(port)
+    server, thread = startServer(port, user_shutdown)
     thread.finished.connect(app.quit)
     return app.exec_()
 
@@ -29,11 +29,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Starting the instrumentserver')
     parser.add_argument("--port", default=5555)
     parser.add_argument("--gui", default=False)
+    parser.add_argument("--allow_user_shutdown", default=False)
     args = parser.parse_args()
 
     if args.gui:
         raise NotImplementedError
     else:
-        server(args.port)
+        server(args.port, args.allow_user_shutdown)
 
 

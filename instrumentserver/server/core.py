@@ -6,19 +6,16 @@ Created on Mon Apr 20 15:57:23 2020
 """
 import importlib
 import inspect
-import warnings
-import random
 import logging
-from types import MethodType
-from typing import Dict, Any, Union, Optional, Tuple, List
-from enum import Enum, unique
+import random
 from dataclasses import dataclass
+from enum import Enum, unique
+from types import MethodType
+from typing import Dict, Any, Union, Optional, Tuple
 
-from jsonschema import validate as jsvalidate
-
-import zmq
 import jsonpickle
 import qcodes as qc
+import zmq
 from qcodes import (Station,
                     Instrument,
                     ChannelList,
@@ -28,11 +25,9 @@ from qcodes import (Station,
 from qcodes.instrument import parameter
 from qcodes.utils.validators import Validator, Arrays
 
-from instrumentserver import serverInstructionSchema
 from .. import QtCore
-from ..log import LogLevels
 from ..base import send, recv
-
+from ..log import LogLevels
 
 logger = logging.getLogger(__name__)
 
@@ -79,16 +74,12 @@ class ServerInstruction:
     call_spec: Optional[Any] = None
 
 
-def instructionFromJson(d: Dict):
-    """Create an instruction object from a text-based json object.
+@dataclass
+class ServerResponse:
+    """Spec for what the server can return."""
 
-    Translates string instructions to other types:
-        - operation is converted to :class:`.Operations`
-    """
-    # TODO: validate json with schema?
-
-    d['operation'] = Operation(d['operation'])
-    return ServerInstruction(**d)
+    message: Any
+    error: Optional[Union[None, str, Warning, Exception]] = None
 
 
 class StationServer(QtCore.QObject):
@@ -122,18 +113,14 @@ class StationServer(QtCore.QObject):
     #: Argument is the snapshot of the instrument.
     instrumentCreated = QtCore.Signal(dict)
 
-    def __init__(self, station=None, parent=None, port=None):
+    def __init__(self, parent=None, port=5555, allowUserShutdown=False):
         super().__init__(parent)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
         self.port = port
-        if self.port is None:
-            self.port = 5555
-
-        if station is None:
-            station = Station()
-        self.station = station
+        self.station = Station()
+        self.allowUserShutdown = allowUserShutdown
 
     @QtCore.Slot()
     def startServer(self):
@@ -150,14 +137,20 @@ class StationServer(QtCore.QObject):
         while self.serverRunning:
             message = recv(socket)
             message_ok = True
-            response_to_client = ''
-            response_log = ''
+            response_to_client = None
+            response_log = None
 
             # allow the test client from within the same process to make sure the
             # server shuts down. This is
             if message == self.SAFEWORD:
                 response_log = 'Server has received the safeword and will shut down.'
-                response_to_client = {'error': RuntimeError('Server closed by user')}
+                response_to_client = ServerResponse(message=response_log)
+                self.serverRunning = False
+                logger.warning(response_log)
+
+            elif self.allowUserShutdown and message == 'SHUTDOWN':
+                response_log = 'Server shutdown requested by client.'
+                response_to_client = ServerResponse(message=response_log)
                 self.serverRunning = False
                 logger.warning(response_log)
 
@@ -165,13 +158,13 @@ class StationServer(QtCore.QObject):
             # this is used for testing sometimes, but has no functionality.
             elif isinstance(message, str):
                 response_log = f"Server has received: {message}. No further action."
-                response_to_client = str(response_log)
+                response_to_client = ServerResponse(message=response_log)
                 logger.info(response_log)
 
             # we assume this is a valid instruction set now.
-            elif isinstance(message, dict):
+            elif isinstance(message, ServerInstruction):
+                instruction = message
                 try:
-                    instruction = instructionFromJson(message)
                     logger.info(f"Received request for operation: "
                                 f"{str(instruction.operation)}")
                     logger.debug(f"Instruction received: "
@@ -179,7 +172,7 @@ class StationServer(QtCore.QObject):
                 except Exception as e:
                     message_ok = False
                     response_log = f'Received invalid message. Error raised: {str(e)}'
-                    response_to_client = dict(error=str(e))
+                    response_to_client = ServerResponse(message=None, error=e)
                     logger.warning(response_log)
 
                 if message_ok:
@@ -187,7 +180,7 @@ class StationServer(QtCore.QObject):
                     # errors are already handled in executeServerInstruction
                     response_to_client = self.executeServerInstruction(instruction)
                     response_log = f"Response to client: {str(response_to_client)}"
-                    if response_to_client['error'] is None:
+                    if response_to_client.error is None:
                         logger.info(f"Response sent to client.")
                         logger.debug(response_log)
                     else:
@@ -195,7 +188,7 @@ class StationServer(QtCore.QObject):
 
             else:
                 response_log = f"Invalid message type."
-                response_to_client = dict(error=response_log)
+                response_to_client = ServerResponse(message=None, error=response_log)
                 logger.warning(f"Invalid message type: {type(message)}.")
                 logger.debug(f"Invalid message received: {str(message)}")
 
@@ -207,7 +200,7 @@ class StationServer(QtCore.QObject):
         return True
 
     def executeServerInstruction(self, instruction: ServerInstruction) \
-            -> Dict[str, Any]:
+            -> ServerResponse:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
@@ -218,9 +211,6 @@ class StationServer(QtCore.QObject):
 
         :returns: the results returned from the instrument call
         """
-        response = {'return_value': None,
-                    'error': None}
-
         args = []
         kwargs = {}
 
@@ -235,12 +225,10 @@ class StationServer(QtCore.QObject):
 
         try:
             returns = func(*args, **kwargs)
-            response['return_value'] = returns
+            response = ServerResponse(message=returns)
 
         except Exception as err:
-            response['error'] = err
-            warnings.simplefilter('always', UserWarning)  # since this runs in loop
-            warnings.warn(str(err))
+            response = ServerResponse(message=None, error=err)
 
         return response
 
@@ -251,19 +239,15 @@ class StationServer(QtCore.QObject):
         :returns : a dictionary that contains the instrument name and its identity
         """
         instrument_info = {}
-        list_instruments = list(self.station.snapshot()['instruments'].keys())
-        for instrument_name in list_instruments:
-            instrument_info[instrument_name] = {}
-            instrument_info[instrument_name]['name'] = instrument_name
-
-            # TODO: Do we need the IDN?
-            instrument_info[instrument_name]['IDN'] = self.station[instrument_name].IDN()
-        return instrument_info
+        snap_ins = self.station.snapshot()['instruments']
+        info = {k: snap_ins[k]['__class__'] for k in snap_ins.keys()}
+        return info
 
     def _createInstrument(self, spec: InstrumentCreationSpec) -> None:
         """Create a new instrument on the server"""
 
-        # TODO: Use the YAML configuration file for finding the correct package
+        if not isinstance(spec, InstrumentCreationSpec):
+            raise ValueError('Invalid specs for new instrument.')
 
         sep_class = spec.instrument_class.split('.')
         modName = '.'.join(sep_class[:-1])
@@ -276,15 +260,18 @@ class StationServer(QtCore.QObject):
 
         new_instrument = qc.find_or_create_instrument(
             cls, *args, **kwargs)
+        if new_instrument.name not in self.station.components:
+            self.station.add_component(new_instrument)
 
         self.instrumentCreated.emit(new_instrument.snapshot())
 
 
-def startServer(port=5555) -> Tuple[StationServer, QtCore.QThread]:
+def startServer(port=5555, allowUserShutdown=False) -> Tuple[
+    StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
     :returns: the server object and the thread it's running in.
     """
-    server = StationServer(port=port)
+    server = StationServer(port=port, allowUserShutdown=allowUserShutdown)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
