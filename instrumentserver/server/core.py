@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 20 15:57:23 2020
+instrumentserver.server.core
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-@author: Chao
+Core functionality of the instrument server.
+
 """
+
 import importlib
 import inspect
 import logging
@@ -26,8 +29,13 @@ from qcodes.instrument import parameter
 from qcodes.utils.validators import Validator, Arrays
 
 from .. import QtCore
+from ..helpers import nestedAttributeFromString
 from ..base import send, recv
-from ..log import LogLevels
+
+
+__author__ = 'Wolfgang Pfaff', 'Chao Zhou'
+__license__ = 'MIT'
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +43,6 @@ logger = logging.getLogger(__name__)
 # covered most of the cases)
 SUPPORTED_PARAMETER_CLASS = Union[Parameter, ParameterWithSetpoints]
 
-
-# TODO: can we handle nested submodules right now?
 
 @unique
 class Operation(Enum):
@@ -58,32 +64,96 @@ class Operation(Enum):
 
 @dataclass
 class InstrumentCreationSpec:
+    """Spec for creating an instrument instance."""
+
+    #: driver class as string, in the format "global.path.to.module.DriverClass"
     instrument_class: str
+
+    #: arguments to pass to the constructor
     args: Optional[Tuple] = None
+
+    #: kw args to pass to the constructor.
+    kwargs: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class CallSpec:
+    """Spec for executing a call on an object in the station."""
+
+    #: Full name of the callable object, as string, relative to the station object.
+    #: E.g.: "instrument.my_callable" refers to ``station.instrument.my_callable``.
+    target: str
+
+    #: positional arguments to pass.
+    args: Optional[Any] = None
+
+    #: kw args to pass
     kwargs: Optional[Dict[str, Any]] = None
 
 
 @dataclass
 class ServerInstruction:
     """Instruction spec for the server.
+
+    Valid operations:
+
+    - :attr:`Operation.get_existing_instruments` -- get the instruments currently
+      instantiated in the station.
+
+        - **Required options:** -
+        - **Return message:** dictionary with instrument name and class (as string)
+
+    - :attr:`Operation.create_instrument` -- create a new instrument in the station.
+
+        - **Required options:** :attr:`.create_instrument_spec`
+        - **Return message:** ``None``
+
+    - :attr:`Operation.call` -- make a call to an object in the station.
+
+        - **Required options:** :attr:`.call_spec`
+        - **Return message:** The return value of the call.
+
     """
+
     #: This is the only mandatory item.
     #: Which other fields are required depends on the operation.
     operation: Operation
+
+    #: Specification for creating an instrument
     create_instrument_spec: Optional[InstrumentCreationSpec] = None
-    call_spec: Optional[Any] = None
+
+    #: Specification for executing a call
+    call_spec: Optional[CallSpec] = None
+
+    def validate(self):
+        if self.operation is Operation.create_instrument:
+            if not isinstance(self.create_instrument_spec, InstrumentCreationSpec):
+                raise ValueError('Invalid instrument creation spec.')
+
+        if self.operation is Operation.call:
+            if not isinstance(self.call_spec, CallSpec):
+                raise ValueError('Invalid call spec.')
 
 
 @dataclass
 class ServerResponse:
-    """Spec for what the server can return."""
+    """Spec for what the server can return.
 
-    message: Any
+    if the requested operation succeeds, `message` will the return of that operation,
+    and `error` is None.
+    See :class:`ServerInstruction` for a documentation of the expected returns.
+    If an error occurs, `message` is typically ``None``, and `error` contains an
+    error message or object describing the error.
+    """
+    #: the return message
+    message: Optional[Any] = None
+
+    #: Any error message occured during execution of the instruction.
     error: Optional[Union[None, str, Warning, Exception]] = None
 
 
 class StationServer(QtCore.QObject):
-    """Prototype for a server object.
+    """The main server object.
 
     Encapsulated in a separate object so we can run it in a separate thread.
     """
@@ -93,9 +163,6 @@ class StationServer(QtCore.QObject):
     # the socket. Should only be used from within this module.
     # it's randomized in the instantiated server for a little bit of safety.
     SAFEWORD = 'BANANA'
-
-    #: signal to emit log messages
-    log = QtCore.Signal(str, LogLevels)
 
     #: Signal(str, str) -- emit messages for display in the gui (or other stuff the gui
     #: wants to do with it.
@@ -113,6 +180,18 @@ class StationServer(QtCore.QObject):
     #: Argument is the snapshot of the instrument.
     instrumentCreated = QtCore.Signal(dict)
 
+    #: Signal(str, Any) -- emitted when a parameter was set
+    #: Arguments: full parameter location as string, value
+    parameterSet = QtCore.Signal(str, object)
+
+    #: Signal(str, Any) -- emitted when a parameter was retrieved
+    #: Arguments: full parameter location as string, value
+    parameterGet = QtCore.Signal(str, object)
+
+    #: Signal(str, List[Any], Dict[str, Any], Any) -- emitted when a function was called
+    #: Arguments: full function location as string, arguments, kw arguments, return value
+    funcCalled = QtCore.Signal(str, object, object, object)
+
     def __init__(self, parent=None, port=5555, allowUserShutdown=False):
         super().__init__(parent)
 
@@ -122,8 +201,23 @@ class StationServer(QtCore.QObject):
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
 
+        self.parameterSet.connect(
+            lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
+        )
+        self.parameterGet.connect(
+            lambda n, v: logger.debug(f"Parameter '{n}' retrieved: {str(v)}")
+        )
+        self.funcCalled.connect(
+            lambda n, args, kw, ret: logger.debug(f"Function called:"
+                                                  f"'{n}({str(args), str(kw)})'."
+                                                  f"Returned: {ret}")
+        )
+
     @QtCore.Slot()
     def startServer(self):
+        """Start the server. This function does not return until the ZMQ server
+        has been shut down."""
+
         addr = f"tcp://*:{self.port}"
         logger.info(f"Starting server at {addr}")
         logger.info(f"The safe word is: {self.SAFEWORD}")
@@ -165,6 +259,7 @@ class StationServer(QtCore.QObject):
             elif isinstance(message, ServerInstruction):
                 instruction = message
                 try:
+                    instruction.validate()
                     logger.info(f"Received request for operation: "
                                 f"{str(instruction.operation)}")
                     logger.debug(f"Instruction received: "
@@ -205,11 +300,8 @@ class StationServer(QtCore.QObject):
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
 
-        :param station: qcodes.station object, the station that contains the
-            instrument to call.
         :param instruction: The instruction object.
-
-        :returns: the results returned from the instrument call
+        :returns: the results returned from performing the operation.
         """
         args = []
         kwargs = {}
@@ -220,6 +312,11 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.create_instrument:
             func = self._createInstrument
             args = [instruction.create_instrument_spec]
+        elif instruction.operation == Operation.call:
+            func = self._callObject
+            args = [instruction.call_spec]
+        elif instruction.operation == Operation.get_snapshot:
+            func = self._getSnap
         else:
             raise NotImplementedError
 
@@ -236,19 +333,14 @@ class StationServer(QtCore.QObject):
         """
         Get the existing instruments in the station,
 
-        :returns : a dictionary that contains the instrument name and its identity
+        :returns : a dictionary that contains the instrument name and its class name.
         """
-        instrument_info = {}
         snap_ins = self.station.snapshot()['instruments']
         info = {k: snap_ins[k]['__class__'] for k in snap_ins.keys()}
         return info
 
     def _createInstrument(self, spec: InstrumentCreationSpec) -> None:
         """Create a new instrument on the server"""
-
-        if not isinstance(spec, InstrumentCreationSpec):
-            raise ValueError('Invalid specs for new instrument.')
-
         sep_class = spec.instrument_class.split('.')
         modName = '.'.join(sep_class[:-1])
         clsName = sep_class[-1]
@@ -265,9 +357,29 @@ class StationServer(QtCore.QObject):
 
         self.instrumentCreated.emit(new_instrument.snapshot())
 
+    def _callObject(self, spec: CallSpec) -> Any:
+        """call some callable found in the station."""
+        obj = nestedAttributeFromString(self.station, spec.target)
+        args = spec.args if spec.args is not None else []
+        kwargs = spec.kwargs if spec.kwargs is not None else {}
+        ret = obj(*args, **kwargs)
 
-def startServer(port=5555, allowUserShutdown=False) -> Tuple[
-    StationServer, QtCore.QThread]:
+        if isinstance(obj, Parameter):
+            if len(args) > 0:
+                self.parameterSet.emit(spec.target, args[0])
+            else:
+                self.parameterGet.emit(spec.target, ret)
+        else:
+            self.funcCalled.emit(spec.target, args, kwargs, ret)
+
+        return ret
+
+    def _getSnap(self) -> Dict[str, Any]:
+        return self.station.snapshot()
+
+
+def startServer(port=5555, allowUserShutdown=False) -> \
+        Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
     :returns: the server object and the thread it's running in.
     """
@@ -278,6 +390,9 @@ def startServer(port=5555, allowUserShutdown=False) -> Tuple[
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
+
+
+
 
 
 # ---------------- dictionary type definition -----------------------------------

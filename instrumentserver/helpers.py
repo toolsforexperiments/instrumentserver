@@ -7,6 +7,20 @@ from qcodes import Instrument, Parameter
 from .serialize import toParamDict
 
 
+def nestedAttributeFromString(root: Any, loc: str) -> Any:
+    """return a sub-object. Example::
+
+        >>> nestedAttributeFromString(parent_object, 'foo.bar.spam.bacon')
+
+    returns the object than can be found at parent_object.foo.bar.spam.bacon.
+    """
+    mods = loc.split('.')
+    obj = root
+    for m in mods:
+        obj = getattr(obj, m)
+    return obj
+
+
 def getInstrumentParameters(ins: Instrument) -> Dict[str, Dict[str, str]]:
     """return the parameters of an instrument.
 

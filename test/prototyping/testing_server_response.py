@@ -2,11 +2,12 @@
 
 import logging
 from pprint import pprint
+import dataclasses
 
 from qcodes import Station, Instrument
 
 from instrumentserver.server.core import (
-    Operation, ServerInstruction, InstrumentCreationSpec)
+    Operation, ServerInstruction, InstrumentCreationSpec, CallSpec)
 
 from instrumentserver.client import sendRequest
 from instrumentserver import log
@@ -25,11 +26,15 @@ flux = FluxControl('flux', vna)
 
 station = Station(vna, flux)
 
+#%% shut down the server
+sendRequest('SHUTDOWN')
+
+
 #%% get instruments from server
 req = ServerInstruction(
     operation=Operation.get_existing_instruments,
     )
-sendRequest(req)
+ret = sendRequest(req)
 
 
 #%% create vna instrument in server
@@ -40,4 +45,34 @@ req = ServerInstruction(
             args=('dummy_vna',)
         )
     )
-sendRequest(req)
+ret = sendRequest(req)
+
+
+#%% set an instrument parameter
+req = ServerInstruction(
+    operation=Operation.call,
+    call_spec=CallSpec(
+            target="dummy_vna.start_frequency",
+            args=(4e9,)
+        )
+    )
+ret = sendRequest(req)
+
+
+#%% get an instrument parameter
+req = ServerInstruction(
+    operation=Operation.call,
+    call_spec=CallSpec(
+            target="dummy_vna.start_frequency",
+        )
+    )
+ret = sendRequest(req)
+
+#%% get the snapshot from the station
+req = ServerInstruction(
+    operation=Operation.call,
+    call_spec=CallSpec(
+            target="snapshot",
+        )
+    )
+ret = sendRequest(req)
