@@ -2,24 +2,21 @@ import os
 import time
 import logging
 import random
-from typing import Union
+from typing import Union, Optional
 
-import zmq
-from qcodes import Parameter, Station, Instrument
+from instrumentserver import QtCore, QtWidgets, QtGui, serialize, resource
+from instrumentserver.base import send, recv
+from instrumentserver.log import LogLevels, LogWidget, log, setupLogging
+from instrumentserver.serialize import toParamDict
+from instrumentserver.helpers import toHtml
+from instrumentserver.client import sendRequest
 
-from . import resource
-from . import QtCore, QtWidgets, QtGui, serialize
-from .base import send, recv
-from .log import LogLevels, LogWidget, log, setupLogging
-from .serialize import toParamDict
-from .helpers import getInstrumentMethods, getInstrumentParameters, toHtml
-
+from .core import StationServer
 
 logger = logging.getLogger(__name__)
 
 
 # TODO: parameter file location should be optionally configurable
-# TODO: should be possible to look at all parameters in an instrument
 # TODO: add an option to save one file per station component
 
 
@@ -86,13 +83,8 @@ class StationList(QtWidgets.QTreeWidget):
 
 class StationObjectInfo(QtWidgets.QTextEdit):
 
-    @staticmethod
-    def htmlDoc(obj: Union[Parameter, Instrument]):
-        pass
-
-    @staticmethod
-    def parameterHtml(param: Parameter):
-        pass
+    # TODO: make this a bit better looking
+    # TODO: add a TOC for the instrument?
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -151,11 +143,15 @@ class ServerGui(QtWidgets.QMainWindow):
 
     serverPortSet = QtCore.Signal(int)
 
-    def __init__(self, station, startServer=True):
+    def __init__(self,
+                 startServer: Optional[bool] = True,
+                 serverPort: Optional[int] = 5555):
         super().__init__()
 
         self._paramValuesFile = os.path.join('.', 'parameters.json')
-        self._serverPort = None
+        self._serverPort = serverPort
+        self.stationServer = None
+        self.stationServerThread = None
 
         self.setWindowTitle('Instrument server')
 
@@ -203,7 +199,7 @@ class ServerGui(QtWidgets.QMainWindow):
         saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(saveParamsAction)
 
-        self.station = station
+        # FIXME this won't work yet
         self.refreshStationComponents()
 
         # A test client, just a simple helper object
@@ -228,7 +224,7 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def startServer(self):
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(station=self.station)
+        self.stationServer = StationServer(port=self._serverPort)
         self.stationServerThread = QtCore.QThread()
         self.stationServer.moveToThread(self.stationServerThread)
         self.stationServerThread.started.connect(self.stationServer.startServer)
@@ -243,8 +239,17 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer.finished.connect(
             lambda: self.log('Server thread finished.', LogLevels.info)
         )
+
         self.stationServer.messageReceived.connect(self._messageReceived)
+        self.stationServer.instrumentCreated.connect(self.addStationComponent)
+
         self.stationServerThread.start()
+
+    def getServerIfRunning(self):
+        if self.stationServer is not None and self.stationServerThread.isRunning():
+            return self.stationServer
+        else:
+            return None
 
     @QtCore.Slot(str)
     def _setServerAddr(self, addr: str):
@@ -256,7 +261,11 @@ class ServerGui(QtWidgets.QMainWindow):
     def _messageReceived(self, message: str, reply: str):
         maxLen = 80
         messageSummary = message[:maxLen]
+        if len(message) > maxLen:
+            messageSummary += " [...]"
         replySummary = reply[:maxLen]
+        if len(reply) > maxLen:
+            replySummary += " [...]"
         self.log(f"Server received: {message}", LogLevels.debug)
         self.log(f"Server replied: {reply}", LogLevels.debug)
         self.serverStatus.addMessageAndReply(messageSummary, replySummary)
@@ -327,85 +336,14 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(obj)
 
 
-def servergui(station: Station) -> "ServerGui":
+def startServerGuiApplication(port: Optional[int] = 5555) -> "ServerGui":
     """Create a server gui window
 
     Can be used in an ipython kernel with Qt mainloop.
     """
-
-    setupLogging(addStreamHandler=False,
-                 logFile=os.path.abspath('instrumentserver.log'))
-    logging.getLogger('instrumentserver').setLevel(logging.DEBUG)
-    window = ServerGui(station, startServer=True)
+    window = ServerGui(startServer=True, serverPort=port)
     window.show()
     return window
-
-
-# initial prototype for server functionality below.
-
-class StationServer(QtCore.QObject):
-    """Prototype for a server object.
-
-    Encapsulated in a separate object so we can run it in a separate thread.
-    """
-
-    # we use this to quit the server.
-    # if this string is sent as message to the server, it'll shut down and close
-    # the socket. Should only be used from within this module.
-    # it's randomized for a little bit of safety.
-    SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
-
-    #: signal to emit log messages
-    log = QtCore.Signal(str, LogLevels)
-
-    #: Signal(str, str) -- emit messages for display in the gui (or other stuff the gui
-    #: wants to do with it.
-    #: Arguments: the message received, and the reply sent.
-    messageReceived = QtCore.Signal(str, str)
-
-    #: Signal(int) -- emitted when the server is started.
-    #: Arguments: the port.
-    serverStarted = QtCore.Signal(str)
-
-    #: Signal() -- emitted when we shut down
-    finished = QtCore.Signal()
-
-    def __init__(self, station=None, parent=None, port=None):
-        super().__init__(parent)
-
-        self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
-        self.station = station
-        self.serverRunning = False
-        self.port = port
-        if self.port is None:
-            self.port = 5555
-
-    @QtCore.Slot()
-    def startServer(self):
-        addr = f"tcp://*:{self.port}"
-        self.log.emit(f"Starting server at {addr}", LogLevels.info)
-        context = zmq.Context()
-        socket = context.socket(zmq.REP)
-        socket.bind(addr)
-
-        self.serverRunning = True
-        self.serverStarted.emit(addr)
-
-        while self.serverRunning:
-            message = recv(socket)
-
-            if message == self.SAFEWORD:
-                reply = 'As you command, server will now shut down.'
-                self.serverRunning = False
-            else:
-                reply = 'Thank you for your message.'
-
-            send(socket, str(reply))
-            self.messageReceived.emit(message, reply)
-
-        socket.close()
-        self.finished.emit()
-        return True
 
 
 class TestClient(QtCore.QObject):
@@ -421,16 +359,12 @@ class TestClient(QtCore.QObject):
 
     @QtCore.Slot(int)
     def setServerPort(self, port: int):
+        self.serverPort = port
         self.serverAddr = f"tcp://localhost:{port}"
         self.serverAddressSet.emit()
 
     @QtCore.Slot(str)
     def sendMessage(self, msg: str):
-        context = zmq.Context()
-        socket = context.socket(zmq.REQ)
-        socket.connect(self.serverAddr)
         self.log.emit(f"Test client sending request: {msg}", LogLevels.debug)
-        send(socket, msg)
-        reply = recv(socket)
+        reply = sendRequest(msg, port=self.serverPort)
         self.log.emit(f"Test client received reply: {reply}", LogLevels.debug)
-        socket.close()
