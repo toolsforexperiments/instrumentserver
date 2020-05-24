@@ -7,7 +7,9 @@ import dataclasses
 from qcodes import Station, Instrument
 
 from instrumentserver.server.core import (
-    Operation, ServerInstruction, InstrumentCreationSpec, CallSpec)
+    Operation, ServerInstruction, InstrumentCreationSpec, CallSpec,
+    ParameterBluePrint, bluePrintFromParameter,
+    InstrumentModuleBluePrint, bluePrintFromInstrumentModule)
 
 from instrumentserver.client import sendRequest
 from instrumentserver import log
@@ -18,13 +20,18 @@ logger = log.logger('instrumentserver')
 logger.setLevel(logging.DEBUG)
 
 
-#%% set up a simple station
+#%% TEST: set up a simple station
 Instrument.close_all()
 from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse, FluxControl
 vna = ResonatorResponse('vna')
 flux = FluxControl('flux', vna)
 
 station = Station(vna, flux)
+
+#%% TEST: get the blueprint of a local instrument
+bp = bluePrintFromInstrumentModule('vna', vna)
+print(bp)
+
 
 #%% shut down the server
 sendRequest('SHUTDOWN')

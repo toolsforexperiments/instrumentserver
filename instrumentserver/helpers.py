@@ -7,6 +7,14 @@ from qcodes import Instrument, Parameter
 from .serialize import toParamDict
 
 
+def typeClassPath(t) -> str:
+    return f"{t.__module__}.{t.__qualname__}"
+
+
+def objectClassPath(o) -> str:
+    return f"{o.__class__.__module__}.{o.__class__.__qualname__}"
+
+
 def nestedAttributeFromString(root: Any, loc: str) -> Any:
     """return a sub-object. Example::
 

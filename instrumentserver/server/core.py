@@ -14,24 +14,20 @@ import random
 from dataclasses import dataclass
 from enum import Enum, unique
 from types import MethodType
-from typing import Dict, Any, Union, Optional, Tuple
+from typing import Dict, Any, Union, Optional, Tuple, List, Callable
 
 import jsonpickle
 import qcodes as qc
 import zmq
-from qcodes import (Station,
-                    Instrument,
-                    ChannelList,
-                    Parameter,
-                    ParameterWithSetpoints,
-                    Function)
+from qcodes import (
+    Station, Instrument, InstrumentChannel, ChannelList,
+    Parameter, ParameterWithSetpoints, Function)
 from qcodes.instrument import parameter
 from qcodes.utils.validators import Validator, Arrays
 
 from .. import QtCore
-from ..helpers import nestedAttributeFromString
 from ..base import send, recv
-
+from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
 __license__ = 'MIT'
@@ -39,9 +35,15 @@ __license__ = 'MIT'
 
 logger = logging.getLogger(__name__)
 
-# for now, only these two types of parameter are supported, which should have
-# covered most of the cases)
-SUPPORTED_PARAMETER_CLASS = Union[Parameter, ParameterWithSetpoints]
+INSTRUMENT_MODULE_BASE_CLASSES = [
+    Instrument, InstrumentChannel
+]
+InstrumentModuleType = Union[Instrument, InstrumentChannel]
+
+PARAMETER_BASE_CLASSES = [
+    Parameter, ParameterWithSetpoints
+]
+ParameterType = Union[Parameter, ParameterWithSetpoints]
 
 
 @unique
@@ -89,6 +91,191 @@ class CallSpec:
 
     #: kw args to pass
     kwargs: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class ParameterBluePrint:
+    """Spec necessary for creating parameter proxies."""
+    name: str
+    path: str
+    base_class: str
+    parameter_class: str
+    gettable: bool = True
+    settable: bool = True
+    unit: str = ''
+    validator: Optional[Validator] = None
+    doc: str = ''
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return self.tostr()
+
+    def tostr(self, indent=0):
+        i = indent * ' '
+        ret = f"""{self.name}: {self.parameter_class}
+{i}- unit: {self.unit}
+{i}- path: {self.path}
+{i}- base class: {self.base_class}
+{i}- gettable: {self.gettable}
+{i}- settable: {self.settable}
+{i}- validator: {self.validator}
+"""
+        return ret
+
+
+def bluePrintFromParameter(path: str, param: ParameterType) -> \
+        Union[ParameterBluePrint, None]:
+
+    base_class = None
+    for bc in PARAMETER_BASE_CLASSES:
+        if isinstance(param, bc):
+            base_class = bc
+            break
+    if base_class is None:
+        logger.warning(f"Blueprints for parameter base type of {param} are "
+                       f"currently not supported.")
+        return None
+
+    bp = ParameterBluePrint(
+        name=param.name,
+        path=path,
+        base_class=typeClassPath(base_class),
+        parameter_class=objectClassPath(param),
+        gettable=True if hasattr(param, 'get') else False,
+        settable=True if hasattr(param, 'set') else False,
+        unit=param.unit,
+        doc=param.__doc__,
+    )
+    if hasattr(param, 'set'):
+        bp.validator = param.vals
+
+    return bp
+
+
+@dataclass
+class MethodBluePrint:
+    """Spec necessary for creating method proxies."""
+    name: str
+    path: str
+    call_signature: inspect.Signature
+    doc: str = ''
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.tostr()
+
+    def tostr(self, indent=0):
+        i = indent * ' '
+        ret = f"""{self.name}{str(self.call_signature)}
+{i}- path: {self.path}
+"""
+        return ret
+
+
+def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
+    sig = inspect.signature(method)
+    bp = MethodBluePrint(
+        name=path.split('.')[-1],
+        path=path,
+        call_signature=sig,
+        doc=method.__doc__,
+    )
+    return bp
+
+
+@dataclass
+class InstrumentModuleBluePrint:
+    """Spec necessary for creating instrument proxies."""
+    name: str
+    path: str
+    base_class: str
+    instrument_module_class: str
+    doc: str = ''
+    parameters: Optional[List[ParameterBluePrint]] = None
+    methods: Optional[List[MethodBluePrint]] = None
+    submodules: Optional[List["InstrumentModuleBluePrint"]] = None
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        return self.tostr()
+
+    def tostr(self, indent=0):
+        i = indent * ' '
+        ret = f"""{i}{self.name}: {self.instrument_module_class}
+{i}- path: {self.path}
+{i}- base class: {self.base_class}
+"""
+        ret += f"{i}- Parameters:\n{i}  -----------\n"
+        for p in self.parameters:
+            ret += f"{i}  - " + p.tostr(indent+4)
+
+        ret += f"{i}- Methods:\n{i}  --------\n"
+        for m in self.methods:
+            ret += f"{i}  - " + m.tostr(indent+4)
+
+        ret += f"{i}- Submodules:\n{i}  -----------\n"
+        for s in self.submodules:
+            ret += f"{i}  - " + s.tostr(indent+4)
+
+        return ret
+
+
+def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
+        Union[InstrumentModuleBluePrint, None]:
+
+    base_class = None
+    for bc in INSTRUMENT_MODULE_BASE_CLASSES:
+        if isinstance(ins, bc):
+            base_class = bc
+            break
+    if base_class is None:
+        logger.warning(f"Blueprints for instrument base type of {ins} are "
+                       f"currently not supported.")
+        return None
+
+    bp = InstrumentModuleBluePrint(
+        name=ins.name,
+        path=path,
+        base_class=typeClassPath(base_class),
+        instrument_module_class=objectClassPath(ins),
+        doc=ins.__doc__
+    )
+    bp.parameters = []
+    bp.methods = []
+    bp.submodules = []
+
+    for pn, p in ins.parameters.items():
+        param_path = f"{path}.{p.name}"
+        param_bp = bluePrintFromParameter(param_path, p)
+        if param_bp is not None:
+            bp.parameters.append(param_bp)
+
+    for elt in dir(ins):
+        # don't include private methods, or methods that belong to the qcodes
+        # base classes.
+        if elt[0] == '_' or hasattr(base_class, elt):
+            continue
+        o = getattr(ins, elt)
+        if callable(o) and not isinstance(o, tuple(PARAMETER_BASE_CLASSES)):
+            meth_path = f"{path}.{elt}"
+            meth_bp = bluePrintFromMethod(meth_path, o)
+            if meth_bp is not None:
+                bp.methods.append(meth_bp)
+
+    for sn, s in ins.submodules.items():
+        sub_path = f"{path}.{sn}"
+        sub_bp = bluePrintFromInstrumentModule(sub_path, s)
+        if sub_bp is not None:
+            bp.submodules.append(sub_bp)
+
+    return bp
+
 
 
 @dataclass
@@ -209,8 +396,7 @@ class StationServer(QtCore.QObject):
         )
         self.funcCalled.connect(
             lambda n, args, kw, ret: logger.debug(f"Function called:"
-                                                  f"'{n}({str(args), str(kw)})'."
-                                                  f"Returned: {ret}")
+                                                  f"'{n}({str(args), str(kw)})'.")
         )
 
     @QtCore.Slot()
@@ -315,8 +501,6 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
-        elif instruction.operation == Operation.get_snapshot:
-            func = self._getSnap
         else:
             raise NotImplementedError
 
@@ -374,9 +558,6 @@ class StationServer(QtCore.QObject):
 
         return ret
 
-    def _getSnap(self) -> Dict[str, Any]:
-        return self.station.snapshot()
-
 
 def startServer(port=5555, allowUserShutdown=False) -> \
         Tuple[StationServer, QtCore.QThread]:
@@ -390,108 +571,6 @@ def startServer(port=5555, allowUserShutdown=False) -> \
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
-
-
-
-
-
-# ---------------- dictionary type definition -----------------------------------
-# TODO: migrate this to dataclasses?
-#   see: https://meeshkan.com/blog/typedict-vs-dataclasses-in-python/
-
-# class InstrumentCreateDictType(TypedDict):
-#     instrument_class: str
-#     args: Optional[tuple]
-#     kwargs: Optional[Dict]
-#
-#
-# class ParamDictType(TypedDict):
-#     name: str
-#     value: Optional[Any]
-#
-#
-# class FuncDictType(TypedDict):
-#     name: str
-#     args: Optional[tuple]
-#     kwargs: Optional[Dict]
-#
-#
-# class InstructionDictType(TypedDict):
-#     operation: Literal["get_existing_instruments",
-#                        'instrument_creation',  # TODO: rename
-#                        'proxy_construction',  # TODO: rename, clarify
-#                        'proxy_get_param',  # TODO: simplify -- only use callables
-#                        'proxy_set_param',  # TODO: simplify -- only use callables
-#                        'proxy_call_func',  # TODO: simplify -- only use callables
-#                        'proxy_write_raw',  #: TODO: needed?
-#                        'proxy_ask_raw',  # TODO: needed?
-#                        'instrument_snapshot']
-#
-#     instrument_name: Optional[str]  # not needed for 'get_existing_instruments'
-#     submodule_name: Optional[Union[str, None]]  # not needed for 'get_existing_instruments'
-#     instrument_create: Optional[InstrumentCreateDictType]  # for instrument creation
-#     parameter: Optional[ParamDictType]  # for get/set_param
-#     function: Optional[FuncDictType]  # for function call
-#     cmd: Optional[str]  # for function call
-
-
-
-
-# ------------------ helper functions -------------------------------------------
-def _processInstruction(station: Station,
-                        instructionDict: Dict):
-    """
-    process the operation instruction from the client and execute the operation.
-    
-    :param station: qcodes.station object, the station that contains the 
-        instrument to call.
-    :param instructionDict:  The dictionary passed from the instrument proxy
-        that contains the information needed for the operation. 
-
-    :returns: the results returned from the instrument call
-
-    """
-    operation = instructionDict['operation']
-    returns = None
-
-    if operation == 'get_existing_instruments':
-        # usually this operation will be called before all the others to check
-        # if the instrument already exists ont the server.
-        returns = _getExistingInstruments(station)
-
-    elif operation == 'instrument_creation':
-        _instrumentCreation(station, instructionDict)
-
-    else:  # doing operation on an existing instrument
-        instrument = station[instructionDict['instrument_name']]
-        if 'submodule_name' in instructionDict:
-            submodule_name = instructionDict['submodule_name']
-            if submodule_name is not None:
-                # do operation on an instrument submodule
-                instrument = getattr(instrument, submodule_name)
-
-        if operation == 'proxy_construction':
-            returns = _proxyConstruction(instrument)
-        elif operation == 'proxy_get_param':
-            returns = _proxyGetParam(instrument, instructionDict['parameter'])
-        elif operation == 'proxy_set_param':
-            _proxySetParam(instrument, instructionDict['parameter'])
-        elif operation == 'proxy_call_func':
-            returns = _proxyCallFunc(instrument, instructionDict['function'])
-        elif operation == 'proxy_write_raw':
-            returns = _proxyWriteRaw(instrument, instructionDict['cmd'])
-        elif operation == 'proxy_ask_raw':
-            returns = _proxyAskRaw(instrument, instructionDict['cmd'])
-        elif operation == 'instrument_snapshot':
-            returns = instrument.snapshot()
-        else:
-            # the instructionDict will be checked in the proxy before sent to
-            # here, so in principle this error should not happen.
-            raise TypeError('operation type not supported')
-    return returns
-
-
-
 
 
 def _proxyConstruction(instrument: Instrument) -> Dict:
