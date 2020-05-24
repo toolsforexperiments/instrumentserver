@@ -105,7 +105,7 @@ class ParameterBluePrint:
         return str(self)
 
     def __str__(self) -> str:
-        return self.tostr()
+        return f"{self.name}: {self.parameter_class}"
 
     def tostr(self, indent=0):
         i = indent * ' '
@@ -160,7 +160,7 @@ class MethodBluePrint:
         return str(self)
 
     def __str__(self):
-        return self.tostr()
+        return f"{self.name}{str(self.call_signature)}"
 
     def tostr(self, indent=0):
         i = indent * ' '
@@ -197,7 +197,7 @@ class InstrumentModuleBluePrint:
         return str(self)
 
     def __str__(self) -> str:
-        return self.tostr()
+        return f"{self.name}: {self.instrument_module_class}"
 
     def tostr(self, indent=0):
         i = indent * ' '
