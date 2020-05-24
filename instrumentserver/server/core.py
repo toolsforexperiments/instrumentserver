@@ -13,17 +13,13 @@ import logging
 import random
 from dataclasses import dataclass
 from enum import Enum, unique
-from types import MethodType
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
 
-import jsonpickle
 import qcodes as qc
 import zmq
 from qcodes import (
-    Station, Instrument, InstrumentChannel, ChannelList,
-    Parameter, ParameterWithSetpoints, Function)
-from qcodes.instrument import parameter
-from qcodes.utils.validators import Validator, Arrays
+    Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
+from qcodes.utils.validators import Validator
 
 from .. import QtCore
 from ..base import send, recv
@@ -31,7 +27,6 @@ from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
 __license__ = 'MIT'
-
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +122,6 @@ class ParameterBluePrint:
 
 def bluePrintFromParameter(path: str, param: ParameterType) -> \
         Union[ParameterBluePrint, None]:
-
     base_class = None
     for bc in PARAMETER_BASE_CLASSES:
         if isinstance(param, bc):
@@ -213,22 +207,21 @@ class InstrumentModuleBluePrint:
 """
         ret += f"{i}- Parameters:\n{i}  -----------\n"
         for p in self.parameters:
-            ret += f"{i}  - " + p.tostr(indent+4)
+            ret += f"{i}  - " + p.tostr(indent + 4)
 
         ret += f"{i}- Methods:\n{i}  --------\n"
         for m in self.methods:
-            ret += f"{i}  - " + m.tostr(indent+4)
+            ret += f"{i}  - " + m.tostr(indent + 4)
 
         ret += f"{i}- Submodules:\n{i}  -----------\n"
         for s in self.submodules:
-            ret += f"{i}  - " + s.tostr(indent+4)
+            ret += f"{i}  - " + s.tostr(indent + 4)
 
         return ret
 
 
 def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         Union[InstrumentModuleBluePrint, None]:
-
     base_class = None
     for bc in INSTRUMENT_MODULE_BASE_CLASSES:
         if isinstance(ins, bc):
@@ -277,7 +270,6 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
     return bp
 
 
-
 @dataclass
 class ServerInstruction:
     """Instruction spec for the server.
@@ -300,6 +292,11 @@ class ServerInstruction:
         - **Required options:** :attr:`.call_spec`
         - **Return message:** The return value of the call.
 
+    - :attr:`Operation.get_instrument_blueprint` -- request the blueprint of an instrument
+
+        - **Required options:** :attr:`.requested_instrument`
+        - **Return message:** The blueprint of the instrument
+
     """
 
     #: This is the only mandatory item.
@@ -311,6 +308,9 @@ class ServerInstruction:
 
     #: Specification for executing a call
     call_spec: Optional[CallSpec] = None
+
+    #: name of the instrument for which we want the blueprint
+    requested_instrument: Optional[str] = None
 
     def validate(self):
         if self.operation is Operation.create_instrument:
@@ -501,6 +501,9 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
+        elif instruction.operation == Operation.get_instrument_blueprint:
+            func = self._getInstrumentBluePrint
+            args = [instruction.requested_instrument]
         else:
             raise NotImplementedError
 
@@ -558,6 +561,10 @@ class StationServer(QtCore.QObject):
 
         return ret
 
+    def _getInstrumentBluePrint(self, insName: str) -> InstrumentModuleBluePrint:
+        ins = self.station.components[insName]
+        return bluePrintFromInstrumentModule(insName, ins)
+
 
 def startServer(port=5555, allowUserShutdown=False) -> \
         Tuple[StationServer, QtCore.QThread]:
@@ -571,211 +578,3 @@ def startServer(port=5555, allowUserShutdown=False) -> \
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
-
-
-def _proxyConstruction(instrument: Instrument) -> Dict:
-    """
-    Get the dictionary that describes the instrument.
-    This parameter part is similar to the qcodes snapshot of the instrument,
-    but with less information, also the string that describes the validator of
-    each parameter/argument is replaced with a jsonpickle encoded form so that
-    it is easier to reproduce the validator object in the proxy.
-    The functions are directly extracted from the instrument class.
-
-    :returns : a dictionary that describes the instrument
-
-    """
-    # get functions and parameters belong to the top instrument
-    construct_dict = _get_module_info(instrument)
-    # get functions and parameters belong to the submodule
-    try:
-        submodules = list(instrument.submodules.keys())
-    except AttributeError:
-        submodules = []
-
-    submodule_dict = {}
-    for module_name in submodules:
-        submodule = getattr(instrument, module_name)
-        # the ChannelList is not supported yet
-        if submodule.__class__ != ChannelList:
-            submodule_dict[module_name] = _get_module_info(submodule)
-
-    construct_dict['submodule_dict'] = submodule_dict
-    return construct_dict
-
-
-def _encodeArrayVals(param_vals: Arrays) -> Dict:
-    """ encode the array validators to a serializable format. This function is
-    necessary when the shape of the array validator contains a callable (another
-    parameter or a function) who belongs to an instrument class, which should
-    not be directly pickled.
-
-    :param param_vals: array validator of a parameter
-
-    :returns: A dictionary contains the encoded validator
-    """
-    encode_val = {"min_value": param_vals._min_value,
-                  "max_value": param_vals._max_value,
-                  "valid_types": param_vals.valid_types
-                  }
-    encode_val_shape = []
-    for dim in param_vals._shape:
-        # some possible ways of defining array validator shape in drivers.
-        # only parameters or functions of the same instrument are supported
-        if type(dim) is int:
-            encode_val_shape.append(dim)
-        elif isinstance(dim, Parameter) or isinstance(dim, parameter.GetLatest):
-            encode_val_shape.append(dim.name)
-        elif isinstance(dim, parameter._Cache):
-            encode_val_shape.append(dim._parameter.name)
-        elif type(dim) is MethodType:  # instrument function
-            encode_val_shape.append(dim.__name__)
-        else:
-            raise TypeError('Unsupported way of defining the shape of array '
-                            'validator, try to use one of the followings:\n'
-                            '1) a constant int\n'
-                            '2) a parameter in the same instrument\n'
-                            '   2a) self.parameter\n'
-                            '   2b) self.parameter.get_latest\n'
-                            '   2c) self.parameter.cache\n'
-                            '3) a function in the same instrument\n'
-                            )
-        encode_val['shape'] = encode_val_shape
-    return encode_val
-
-
-def _get_module_info(module: Instrument) -> Dict:
-    """ Get the parameters and functions of an instrument (sub)module and put
-    them a dictionary.
-    """
-    # get parameters
-    param_names = list(module.__dict__['parameters'].keys())
-    module_param_dict = {}
-    for param_name in param_names:
-        param: SUPPORTED_PARAMETER_CLASS = module[param_name]
-        param_dict_temp = {'name': param_name}
-        param_class = param.__class__
-        if param_class not in SUPPORTED_PARAMETER_CLASS.__args__:
-            raise TypeError(f"{param} is not supported yet, the current "
-                            f"supported parameter classes are "
-                            f"{SUPPORTED_PARAMETER_CLASS.__args__}")
-
-        if param_class is ParameterWithSetpoints:
-            param_dict_temp['setpoints'] = [setpoint.name for setpoint in
-                                            param.setpoints]
-
-        param_vals: Union[Validator, Arrays] = param.vals
-        try:  # directly pickle
-            param_dict_temp['vals'] = jsonpickle.encode(param_vals)
-        except RuntimeError:  # contains instrument class which cannot be pickled
-            if type(param_vals) is Arrays:
-                # Array validator is necessary for ParameterWithSetpoints
-                param_dict_temp['vals'] = _encodeArrayVals(param_vals)
-            else:  # otherwise, give up validation on proxy parameters
-                param_dict_temp['vals'] = jsonpickle.encode(None)
-
-        # some extra items are added here to support the snapshot in the proxy
-        # instrument class
-        param_dict_temp['class'] = param_class
-        param_dict_temp['unit'] = param.unit
-        param_dict_temp['snapshot_value'] = param._snapshot_value
-        param_dict_temp['snapshot_exclude'] = param.snapshot_exclude
-        param_dict_temp['max_val_age'] = param.cache._max_val_age
-        param_dict_temp['docstring'] = param.__doc__
-        module_param_dict[param_name] = param_dict_temp
-
-    # get functions
-    methods = set(dir(module))
-    base_methods = (dir(base) for base in module.__class__.__bases__)
-    unique_methods = methods.difference(*base_methods)
-    func_names = []
-    for method in unique_methods:
-        if callable(
-                getattr(module, method)) and method not in module_param_dict:
-            func_names.append(method)
-
-    module_func_dict = {}
-    for func_name in func_names:
-        func_dict_temp = {'name': func_name}
-        func = getattr(module, func_name)
-        func_dict_temp['docstring'] = func.__doc__
-
-        if func.__class__ == Function:
-            # for functions added using the old 'instrument.add_function'
-            # method, (the functions only have positional arguments, and each
-            # argument has a validator). In this case, the list of validators
-            # is pickled
-            func_dict_temp['arg_vals'] = jsonpickle.encode(func._args)
-        else:
-            # for functions added directly to instrument class as bound
-            # methods, the fullargspec and signature is stored in the
-            # dictionary(will be pickled when sending to proxy)(
-            # jsonpickle.en/decode has some bugs that don't worked for some
-            # function signatures)
-            jp_fullargspec = inspect.getfullargspec(func)
-            jp_signature = inspect.signature(func)
-            func_dict_temp['fullargspec'] = jp_fullargspec
-            func_dict_temp['signature'] = jp_signature
-        module_func_dict[func_name] = func_dict_temp
-    module_construct_dict = {'functions': module_func_dict,
-                             'parameters': module_param_dict}
-
-    return module_construct_dict
-
-#
-# def _proxyGetParam(instrument: Instrument, paramDict: ParamDictType) -> Any:
-#     """
-#     Get a parameter from the instrument.
-#
-#     :param paramDict: the dictionary that contains the parameter to change, the
-#         'value' item will be omitted.
-#     :returns : value of the parameter returned from instrument
-#
-#     """
-#     paramName = paramDict['name']
-#     return instrument[paramName]()
-#
-#
-# def _proxySetParam(instrument: Instrument, paramDict: ParamDictType) -> None:
-#     """
-#     Set a parameter in the instrument.
-#
-#     :param paramDict:  the dictionary that contains the parameter to change, the
-#         'value' item will be the set value.
-#         e.g. {'ch1': {'value' : 10} }
-#     """
-#     paramName = paramDict['name']
-#     instrument[paramName](paramDict['value'])
-#
-#
-# def _proxyCallFunc(instrument: Instrument, funcDict: FuncDictType) -> Any:
-#     """
-#     Call an instrument function.
-#
-#     :param funcDict:  the dictionary that contains the name of the function to
-#         call and the argument values
-#
-#     :returns : result returned from the instrument function
-#     """
-#     funcName = funcDict['name']
-#
-#     if ('kwargs' in funcDict) and ('args' in funcDict):
-#         args = funcDict['args']
-#         kwargs = funcDict['kwargs']
-#         return getattr(instrument, funcName)(*args, **kwargs)
-#     elif 'args' in funcDict:
-#         args = funcDict['args']
-#         return getattr(instrument, funcName)(*args)
-#     elif 'kwargs' in funcDict:
-#         kwargs = funcDict['kwargs']
-#         return getattr(instrument, funcName)(**kwargs)
-#     else:
-#         return getattr(instrument, funcName)()
-#
-#
-# def _proxyWriteRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
-#     return instrument.write_raw(cmd)
-#
-#
-# def _proxyAskRaw(instrument: Instrument, cmd: str) -> Union[str, None]:
-#     return instrument.ask_raw(cmd)

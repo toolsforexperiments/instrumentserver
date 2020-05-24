@@ -37,12 +37,6 @@ print(bp)
 sendRequest('SHUTDOWN')
 
 
-#%% get instruments from server
-req = ServerInstruction(
-    operation=Operation.get_existing_instruments,
-    )
-ret = sendRequest(req)
-
 
 #%% create vna instrument in server
 req = ServerInstruction(
@@ -51,6 +45,13 @@ req = ServerInstruction(
             instrument_class='instrumentserver.testing.dummy_instruments.rf.ResonatorResponse',
             args=('dummy_vna',)
         )
+    )
+ret = sendRequest(req)
+
+
+#%% get instruments from server
+req = ServerInstruction(
+    operation=Operation.get_existing_instruments,
     )
 ret = sendRequest(req)
 
@@ -81,5 +82,13 @@ req = ServerInstruction(
     call_spec=CallSpec(
             target="snapshot",
         )
+    )
+ret = sendRequest(req)
+
+
+#%% get an instrument blueprint from the server
+req = ServerInstruction(
+    operation=Operation.get_instrument_blueprint,
+    requested_instrument='dummy_vna'
     )
 ret = sendRequest(req)
