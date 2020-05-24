@@ -14,6 +14,7 @@ import random
 from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
+from functools import partial
 
 import qcodes as qc
 import zmq
@@ -23,6 +24,7 @@ from qcodes.utils.validators import Validator
 
 from .. import QtCore
 from ..base import send, recv
+from ..client import sendRequest
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -189,9 +191,9 @@ class InstrumentModuleBluePrint:
     base_class: str
     instrument_module_class: str
     doc: str = ''
-    parameters: Optional[List[ParameterBluePrint]] = None
-    methods: Optional[List[MethodBluePrint]] = None
-    submodules: Optional[List["InstrumentModuleBluePrint"]] = None
+    parameters: Optional[Dict[str,ParameterBluePrint]] = None
+    methods: Optional[Dict[str, MethodBluePrint]] = None
+    submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None
 
     def __repr__(self) -> str:
         return str(self)
@@ -206,15 +208,15 @@ class InstrumentModuleBluePrint:
 {i}- base class: {self.base_class}
 """
         ret += f"{i}- Parameters:\n{i}  -----------\n"
-        for p in self.parameters:
+        for pn, p in self.parameters.items():
             ret += f"{i}  - " + p.tostr(indent + 4)
 
         ret += f"{i}- Methods:\n{i}  --------\n"
-        for m in self.methods:
+        for mn, m in self.methods.items():
             ret += f"{i}  - " + m.tostr(indent + 4)
 
         ret += f"{i}- Submodules:\n{i}  -----------\n"
-        for s in self.submodules:
+        for sn, s in self.submodules.items():
             ret += f"{i}  - " + s.tostr(indent + 4)
 
         return ret
@@ -239,15 +241,15 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         instrument_module_class=objectClassPath(ins),
         doc=ins.__doc__
     )
-    bp.parameters = []
-    bp.methods = []
-    bp.submodules = []
+    bp.parameters = {}
+    bp.methods = {}
+    bp.submodules = {}
 
     for pn, p in ins.parameters.items():
         param_path = f"{path}.{p.name}"
         param_bp = bluePrintFromParameter(param_path, p)
         if param_bp is not None:
-            bp.parameters.append(param_bp)
+            bp.parameters[pn] = param_bp
 
     for elt in dir(ins):
         # don't include private methods, or methods that belong to the qcodes
@@ -259,13 +261,13 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
             meth_path = f"{path}.{elt}"
             meth_bp = bluePrintFromMethod(meth_path, o)
             if meth_bp is not None:
-                bp.methods.append(meth_bp)
+                bp.methods[elt] = meth_bp
 
     for sn, s in ins.submodules.items():
         sub_path = f"{path}.{sn}"
         sub_bp = bluePrintFromInstrumentModule(sub_path, s)
         if sub_bp is not None:
-            bp.submodules.append(sub_bp)
+            bp.submodules[sn] = sub_bp
 
     return bp
 
@@ -578,3 +580,42 @@ def startServer(port=5555, allowUserShutdown=False) -> \
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
+
+
+class ProxyParameter(Parameter):
+
+    def __init__(self, bp: ParameterBluePrint, *args,
+                 host='localhost', port=5555, **kwargs):
+        self.path = bp.path
+        self.serverPort = port
+        self.serverHost = host
+        self.askServer = partial(sendRequest, host=self.serverHost, port=self.serverPort)
+
+        if bp.settable:
+            set_cmd = self._remoteSet
+        else:
+            set_cmd = False
+        if bp.gettable:
+            get_cmd = self._remoteGet
+        else:
+            get_cmd = False
+        super().__init__(bp.name, set_cmd=set_cmd, get_cmd=get_cmd, *args, **kwargs)
+
+    def _remoteSet(self, value: Any):
+        msg = ServerInstruction(
+            operation=Operation.call,
+            call_spec=CallSpec(
+                target=self.path,
+                args=(value,)
+            )
+        )
+        return self.askServer(msg).message
+
+    def _remoteGet(self):
+        msg = ServerInstruction(
+            operation=Operation.call,
+            call_spec=CallSpec(
+                target=self.path,
+            )
+        )
+        return self.askServer(msg).message

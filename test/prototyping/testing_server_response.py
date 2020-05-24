@@ -9,7 +9,8 @@ from qcodes import Station, Instrument
 from instrumentserver.server.core import (
     Operation, ServerInstruction, InstrumentCreationSpec, CallSpec,
     ParameterBluePrint, bluePrintFromParameter,
-    InstrumentModuleBluePrint, bluePrintFromInstrumentModule)
+    InstrumentModuleBluePrint, bluePrintFromInstrumentModule,
+    ProxyParameter)
 
 from instrumentserver.client import sendRequest
 from instrumentserver import log
@@ -35,7 +36,6 @@ print(bp)
 
 #%% shut down the server
 sendRequest('SHUTDOWN')
-
 
 
 #%% create vna instrument in server
@@ -92,3 +92,13 @@ req = ServerInstruction(
     requested_instrument='dummy_vna'
     )
 ret = sendRequest(req)
+
+
+#%% make a proxy parameter
+req = ServerInstruction(
+    operation=Operation.get_instrument_blueprint,
+    requested_instrument='dummy_vna'
+    )
+ret = sendRequest(req)
+param_bp = ret.message.parameters['power']
+power_proxy = ProxyParameter(param_bp)
