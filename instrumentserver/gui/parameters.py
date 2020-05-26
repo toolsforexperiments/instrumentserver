@@ -13,6 +13,9 @@ from ..params import ParameterTypes, paramTypeFromVals
 logger = logging.getLogger(__name__)
 
 
+# TODO: do all styling with a global style sheet
+
+
 class ParameterWidget(QtWidgets.QWidget):
     """A widget that allows editing and/or displaying a parameter value."""
 
@@ -36,7 +39,7 @@ class ParameterWidget(QtWidgets.QWidget):
 
         super().__init__(parent)
 
-        self.setAutoFillBackground(False)
+        self.setAutoFillBackground(True)
 
         self._parameter = parameter
         self._getMethod = lambda: None

@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file alias="style.css">resource/style.css</file>
     <file alias="icons/save.svg">resource/icons/save.svg</file>
     <file alias="icons/load.svg">resource/icons/load.svg</file>
     <file alias="icons/refresh.svg">resource/icons/refresh.svg</file>
@@ -10,5 +11,7 @@
     <file alias="icons/code.svg">resource/icons/code.svg</file>
     <file alias="icons/delete.svg">resource/icons/delete.svg</file>
     <file alias="icons/plus-square.svg">resource/icons/plus-square.svg</file>
+    <file alias="icons/collapse.svg">resource/icons/collapse.svg</file>
+    <file alias="icons/expand.svg">resource/icons/expand.svg</file>
 </qresource>
 </RCC>

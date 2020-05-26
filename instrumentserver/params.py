@@ -1,8 +1,11 @@
 from typing import Any, Dict, Union, List
 from enum import Enum, unique, auto
 
+import json
 from qcodes import Instrument, Parameter
 from qcodes.utils import validators
+
+from . import serialize
 
 @unique
 class ParameterTypes(Enum):
@@ -68,6 +71,17 @@ class ParameterManager(Instrument):
         super().__init__(name)
         self.parameters.pop('IDN')
 
+    @staticmethod
+    def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
+        """Create a new ParameterManager instance from a paramDict.
+
+        :param paramDict: the paramDict object.
+        :param name: name of the instrument in the paramDict (each entry in the
+            paramDict starts with <instrumentName>.[...])
+        :returns: new ParameterManager instance.
+        """
+        raise NotImplementedError
+
     @classmethod
     def _to_tree(cls, pm: 'ParameterManager') -> Dict:
         ret = {}
@@ -82,7 +96,11 @@ class ParameterManager(Instrument):
 
     def _get_param(self, param_name: str) -> Parameter:
         parent = self._get_parent(param_name)
-        return parent.parameters[param_name.split('.')[-1]]
+        try:
+            param = parent.parameters[param_name.split('.')[-1]]
+            return param
+        except KeyError:
+            raise ValueError(f"Parameter '{param_name}' does not exist")
 
     def _get_parent(self, param_name: str, create_parent: bool = False) \
             -> 'ParameterManager':
@@ -101,6 +119,13 @@ class ParameterManager(Instrument):
                     raise ValueError(f'{n} does not exist.')
             parent = parent.submodules[n]
         return parent
+
+    def has_param(self, param_name: str):
+        try:
+            param = self._get_param(param_name)
+            return True
+        except ValueError:
+            return False
 
     def add(self, param_name: str, value: Any, **kw: Any) -> None:
         """Add a parameter.
@@ -174,7 +199,6 @@ class ParameterManager(Instrument):
 
     def list(self) -> List[str]:
         """return a list of all parameters."""
-        ret = []
         tree = self.to_tree()
 
         def tolist(x):
@@ -187,3 +211,51 @@ class ParameterManager(Instrument):
             return ret_
 
         return tolist(tree)
+
+    def fromFile(self, filePath: str, deleteMissing: bool = True):
+        """load parameters from a parameter json file
+        (see :mod:`.serialize`).
+
+        :param filePath: path to the json file
+        :param deleteMissing: if ``True``, delete parameters currently in the
+            ParameterManager that are not listed in the file.
+        """
+        with open(filePath, 'r') as f:
+            pd = json.load(f)
+        self.fromParamDict(pd)
+
+    def fromParamDict(self, paramDict: Dict[str, Any],
+                      deleteMissing: bool = True):
+        """load parameters from a parameter dictionary (see :mod:`.serialize`).
+
+        :param paramDict: parameter dictionary
+        :param deleteMissing: if ``True``, delete parameters currently in the
+            ParameterManager that are not listed in the file.
+        """
+        serialize.validateParamDict(paramDict)
+        if serialize.isSimpleFormat(paramDict):
+            simple = True
+        else:
+            simple = False
+
+        currentParams = self.list()
+        fileParams = ['.'.join(k.split('.')[1:]) for k in paramDict.keys()
+                      if k.split('.')[0] == self.name]
+
+        for pn in fileParams:
+            if simple:
+                val = paramDict[f"{self.name}.{pn}"]
+                unit = ''
+            else:
+                val = paramDict[f"{self.name}.{pn}"]['value']
+                unit = paramDict[f"{self.name}.{pn}"].get('unit', '')
+
+            if self.has_param(pn):
+                self.parameter(pn)(val)
+            else:
+                self.add(pn, val, unit=unit)
+
+        for pn in currentParams:
+            if pn not in fileParams and deleteMissing:
+                self.remove(pn)
+
