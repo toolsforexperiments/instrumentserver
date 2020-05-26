@@ -5,18 +5,27 @@ Created on Sat Apr 18 22:12:05 2020
 @author: Chao
 """
 
-from instrumentserver.proxy import InstrumentProxy, create_instrument, get_existing_instruments
-
-# rf_src = InstrumentProxy('rf_src')
-# dummy_vna = InstrumentProxy('dummy_vna')
+from instrumentserver.proxy import ProxyInstrument, create_instrument, get_existing_instruments
 
 test_src = create_instrument(instrument_class = 'instrumentserver.testing.dummy_instruments.rf.Generator',                          
                             name = 'test_src')
 
 dummy_vna = create_instrument(instrument_class = 'instrumentserver.testing.dummy_instruments.rf.ResonatorResponse',
-                            name = 'dummy_vna1')
+                            name = 'dummy_vna')
+print(dummy_vna.data.setpoints[0])
 
-# InstrumentProxy("instrument_that_doesn't_exit")
-# rf_src.frequency(10)
+dummy_channels = create_instrument(instrument_class = 'instrumentserver.testing.dummy_instruments.rf.DummyInstrumentWithSubmodule',
+                            name = 'dummy_channels')
 
-test_src.test_func(1,2,3,d=4)
+dummy_channels.test_func(1,2,3,4,c=4,d=5)
+
+def dummy_multiply(self,a,b):
+    return a*b*self.ch0()
+dummy_channels.ChanA.add_function(dummy_multiply,override=1)
+dummy_channels.ChanA.ch0(0.5)
+dummy_channels.ChanA.dummy_multiply(1,2)
+
+
+# -------------Error cases-------------------------------
+# ProxyInstrument("instrument_that_doesn't_exit") # no instrument
+# test_src.frequency(10) # invalid set value
