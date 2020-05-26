@@ -1,7 +1,9 @@
 import logging
+import warnings
 import zmq
 
 from .base import send, recv
+from .server.core import ServerResponse
 
 
 logger = logging.getLogger(__name__)
@@ -48,5 +50,16 @@ def sendRequest(message, host='localhost', port=5555):
     cli = startClient(host, port)
     ret = cli.ask(message)
     cli.disconnect()
+    if isinstance(ret, ServerResponse):
+        err = ret.error
+        if err is not None:
+            if isinstance(err,str):
+                print(err)
+            elif isinstance(err, Warning):
+                warnings.warn(err)
+            elif isinstance(err, Exception):
+                raise err
+            else:
+                raise TypeError('Wrong Error Type')
     return ret
 

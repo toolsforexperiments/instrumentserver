@@ -24,7 +24,6 @@ from qcodes.utils.validators import Validator
 
 from .. import QtCore
 from ..base import send, recv
-from ..client import sendRequest
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -68,6 +67,10 @@ class InstrumentCreationSpec:
     #: driver class as string, in the format "global.path.to.module.DriverClass"
     instrument_class: str
 
+    #: name of the new instrument, I separate this from args and kwargs to
+    # make it easier to be found
+    name: str = ''
+
     #: arguments to pass to the constructor
     args: Optional[Tuple] = None
 
@@ -100,8 +103,15 @@ class ParameterBluePrint:
     gettable: bool = True
     settable: bool = True
     unit: str = ''
-    validator: Optional[Validator] = None
-    doc: str = ''
+    # I changed the names here to the same name as in Parameter.__init__,
+    # so that later it's easier to transform them to constructor kwargs
+    vals: Optional[Validator] = None
+    docstring: str = ''
+    setpoints: Optional[List[str]]= None
+    # I think these are necessary for proxy snapshot?
+    snapshot_value: bool = True
+    snapshot_exclude: bool = False
+    max_val_age: Optional[float] = None
 
     def __repr__(self) -> str:
         return str(self)
@@ -117,7 +127,8 @@ class ParameterBluePrint:
 {i}- base class: {self.base_class}
 {i}- gettable: {self.gettable}
 {i}- settable: {self.settable}
-{i}- validator: {self.validator}
+{i}- validator: {self.vlas}
+{i}- setpoints: {self.setpoints}
 """
         return ret
 
@@ -142,10 +153,15 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
         gettable=True if hasattr(param, 'get') else False,
         settable=True if hasattr(param, 'set') else False,
         unit=param.unit,
-        doc=param.__doc__,
+        docstring=param.__doc__,
+        snapshot_value=param._snapshot_value,
+        snapshot_exclude=param.snapshot_exclude,
+        max_val_age=param.cache._max_val_age
     )
     if hasattr(param, 'set'):
-        bp.validator = param.vals
+        bp.vals = param.vals
+    if hasattr(param, 'setpoints'):
+        bp.setpoints = [setpoint.name for setpoint in param.setpoints]
 
     return bp
 
@@ -156,6 +172,8 @@ class MethodBluePrint:
     name: str
     path: str
     call_signature: inspect.Signature
+    full_arg_spec: inspect.FullArgSpec # this is added for easier construction
+    # of proxy function
     doc: str = ''
 
     def __repr__(self):
@@ -174,10 +192,12 @@ class MethodBluePrint:
 
 def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
     sig = inspect.signature(method)
+    spec = inspect.getfullargspec(method)
     bp = MethodBluePrint(
         name=path.split('.')[-1],
         path=path,
         call_signature=sig,
+        full_arg_spec=spec,
         doc=method.__doc__,
     )
     return bp
@@ -540,7 +560,7 @@ class StationServer(QtCore.QObject):
         kwargs = dict() if spec.kwargs is None else spec.kwargs
 
         new_instrument = qc.find_or_create_instrument(
-            cls, *args, **kwargs)
+            cls, name =spec.name, *args, **kwargs)
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 
@@ -580,42 +600,3 @@ def startServer(port=5555, allowUserShutdown=False) -> \
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
-
-
-class ProxyParameter(Parameter):
-
-    def __init__(self, bp: ParameterBluePrint, *args,
-                 host='localhost', port=5555, **kwargs):
-        self.path = bp.path
-        self.serverPort = port
-        self.serverHost = host
-        self.askServer = partial(sendRequest, host=self.serverHost, port=self.serverPort)
-
-        if bp.settable:
-            set_cmd = self._remoteSet
-        else:
-            set_cmd = False
-        if bp.gettable:
-            get_cmd = self._remoteGet
-        else:
-            get_cmd = False
-        super().__init__(bp.name, set_cmd=set_cmd, get_cmd=get_cmd, *args, **kwargs)
-
-    def _remoteSet(self, value: Any):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.path,
-                args=(value,)
-            )
-        )
-        return self.askServer(msg).message
-
-    def _remoteGet(self):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.path,
-            )
-        )
-        return self.askServer(msg).message
