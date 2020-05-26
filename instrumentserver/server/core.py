@@ -366,8 +366,8 @@ class StationServer(QtCore.QObject):
     finished = QtCore.Signal()
 
     #: Signal(Dict) -- emitted when a new instrument was created.
-    #: Argument is the snapshot of the instrument.
-    instrumentCreated = QtCore.Signal(dict)
+    #: Argument is the blueprint of the instrument
+    instrumentCreated = QtCore.Signal(object)
 
     #: Signal(str, Any) -- emitted when a parameter was set
     #: Arguments: full parameter location as string, value
@@ -544,7 +544,10 @@ class StationServer(QtCore.QObject):
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 
-        self.instrumentCreated.emit(new_instrument.snapshot())
+            self.instrumentCreated.emit(
+                bluePrintFromInstrumentModule(new_instrument.name,
+                                              new_instrument)
+            )
 
     def _callObject(self, spec: CallSpec) -> Any:
         """call some callable found in the station."""

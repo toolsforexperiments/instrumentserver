@@ -11,7 +11,8 @@ from instrumentserver.serialize import toParamDict
 from instrumentserver.helpers import toHtml
 from instrumentserver.client import sendRequest
 
-from .core import StationServer
+from .core import (StationServer, InstrumentModuleBluePrint, ParameterBluePrint,
+                   MethodBluePrint)
 
 logger = logging.getLogger(__name__)
 
@@ -20,80 +21,80 @@ logger = logging.getLogger(__name__)
 # TODO: add an option to save one file per station component
 
 
-class StationList(QtWidgets.QTreeWidget):
-    """A widget that displays all objects in a qcodes station"""
-
-    cols = ['Name', 'Info']
-
-    #: Signal(str) --
-    #: emitted when a parameter or Instrument is selected
-    componentSelected = QtCore.Signal(str)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.setColumnCount(len(self.cols))
-        self.setHeaderLabels(self.cols)
-        self.setSortingEnabled(True)
-        self.clear()
-
-        self.itemSelectionChanged.connect(self._processSelection)
-
-    def clear(self):
-        super().clear()
-        self.instrumentsItem = QtWidgets.QTreeWidgetItem(['Instruments', ''])
-        self.paramsItem = QtWidgets.QTreeWidgetItem(['Parameters', ''])
-        self.addTopLevelItem(self.paramsItem)
-        self.addTopLevelItem(self.instrumentsItem)
-
-    def _addParameterTo(self, parent, obj):
-        lst = [obj.name]
-        info = toParamDict([obj], includeMeta=['vals', 'unit'])[obj.name]
-        infoString = f"{str(obj.__class__.__name__)}"
-        lst.append(infoString)
-        paramItem = QtWidgets.QTreeWidgetItem(lst)
-        parent.addChild(paramItem)
-
-    def addObject(self, obj: Union[Instrument, Parameter]):
-        lst = [obj.name, f"{str(obj.__class__.__name__)}"]
-        if isinstance(obj, Instrument):
-            insItem = QtWidgets.QTreeWidgetItem(lst)
-            self.instrumentsItem.addChild(insItem)
-
-        elif isinstance(obj, Parameter):
-            paramItem = QtWidgets.QTreeWidgetItem(lst)
-            self.paramsItem.addChild(paramItem)
-
-    def removeObject(self, name: str):
-        items = self.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-        for i in items:
-            if i not in [self.instrumentsItem, self.paramsItem]:
-                parent = i.parent()
-                parent.removeChild(i)
-                del i
-
-    def _processSelection(self):
-        items = self.selectedItems()
-        if len(items) == 0:
-            return
-        item = items[0]
-        if item not in [self.instrumentsItem, self.paramsItem]:
-            self.componentSelected.emit(item.text(0))
-
-
-class StationObjectInfo(QtWidgets.QTextEdit):
-
-    # TODO: make this a bit better looking
-    # TODO: add a TOC for the instrument?
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.setReadOnly(True)
-
-    @QtCore.Slot(object)
-    def setObject(self, obj: Union[Instrument, Parameter]):
-        self.setHtml(toHtml(obj))
+# class StationList(QtWidgets.QTreeWidget):
+#     """A widget that displays all objects in a qcodes station"""
+#
+#     cols = ['Name', 'Info']
+#
+#     #: Signal(str) --
+#     #: emitted when a parameter or Instrument is selected
+#     componentSelected = QtCore.Signal(str)
+#
+#     def __init__(self, parent=None):
+#         super().__init__(parent)
+#
+#         self.setColumnCount(len(self.cols))
+#         self.setHeaderLabels(self.cols)
+#         self.setSortingEnabled(True)
+#         self.clear()
+#
+#         self.itemSelectionChanged.connect(self._processSelection)
+#
+#     def clear(self):
+#         super().clear()
+#         self.instrumentsItem = QtWidgets.QTreeWidgetItem(['Instruments', ''])
+#         self.paramsItem = QtWidgets.QTreeWidgetItem(['Parameters', ''])
+#         self.addTopLevelItem(self.paramsItem)
+#         self.addTopLevelItem(self.instrumentsItem)
+#
+#     def _addParameterTo(self, parent, obj):
+#         lst = [obj.name]
+#         info = toParamDict([obj], includeMeta=['vals', 'unit'])[obj.name]
+#         infoString = f"{str(obj.__class__.__name__)}"
+#         lst.append(infoString)
+#         paramItem = QtWidgets.QTreeWidgetItem(lst)
+#         parent.addChild(paramItem)
+#
+#     def addObject(self, obj: Union[Instrument, Parameter]):
+#         lst = [obj.name, f"{str(obj.__class__.__name__)}"]
+#         if isinstance(obj, Instrument):
+#             insItem = QtWidgets.QTreeWidgetItem(lst)
+#             self.instrumentsItem.addChild(insItem)
+#
+#         elif isinstance(obj, Parameter):
+#             paramItem = QtWidgets.QTreeWidgetItem(lst)
+#             self.paramsItem.addChild(paramItem)
+#
+#     def removeObject(self, name: str):
+#         items = self.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+#         for i in items:
+#             if i not in [self.instrumentsItem, self.paramsItem]:
+#                 parent = i.parent()
+#                 parent.removeChild(i)
+#                 del i
+#
+#     def _processSelection(self):
+#         items = self.selectedItems()
+#         if len(items) == 0:
+#             return
+#         item = items[0]
+#         if item not in [self.instrumentsItem, self.paramsItem]:
+#             self.componentSelected.emit(item.text(0))
+#
+#
+# class StationObjectInfo(QtWidgets.QTextEdit):
+#
+#     # TODO: make this a bit better looking
+#     # TODO: add a TOC for the instrument?
+#
+#     def __init__(self, parent=None):
+#         super().__init__(parent)
+#
+#         self.setReadOnly(True)
+#
+#     @QtCore.Slot(object)
+#     def setObject(self, obj: Union[Instrument, Parameter]):
+#         self.setHtml(toHtml(obj))
 
 
 class ServerStatus(QtWidgets.QWidget):
@@ -159,15 +160,15 @@ class ServerGui(QtWidgets.QMainWindow):
         self.tabs = QtWidgets.QTabWidget(self)
         self.setCentralWidget(self.tabs)
 
-        self.stationList = StationList()
-        self.stationObjInfo = StationObjectInfo()
-        self.stationList.componentSelected.connect(self.displayComponentInfo)
+        # self.stationList = StationList()
+        # self.stationObjInfo = StationObjectInfo()
+        # self.stationList.componentSelected.connect(self.displayComponentInfo)
 
-        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        stationWidgets.addWidget(self.stationList)
-        stationWidgets.addWidget(self.stationObjInfo)
-        stationWidgets.setSizes([300, 700])
-        self.tabs.addTab(stationWidgets, 'Station')
+        # stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        # stationWidgets.addWidget(self.stationList)
+        # stationWidgets.addWidget(self.stationObjInfo)
+        # stationWidgets.setSizes([300, 700])
+        # self.tabs.addTab(stationWidgets, 'Station')
 
         self.tabs.addTab(LogWidget(level=logging.INFO), 'Log')
 
@@ -239,7 +240,6 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer.finished.connect(
             lambda: self.log('Server thread finished.', LogLevels.info)
         )
-
         self.stationServer.messageReceived.connect(self._messageReceived)
         self.stationServer.instrumentCreated.connect(self.addStationComponent)
 
@@ -347,7 +347,8 @@ def startServerGuiApplication(port: Optional[int] = 5555) -> "ServerGui":
 
 
 class TestClient(QtCore.QObject):
-    """A simple client we can use to test if the server replies."""
+    """A simple client we can use to communicate with the server object
+    inside the server application."""
 
     #: signal to emit log messages
     log = QtCore.Signal(str, LogLevels)
