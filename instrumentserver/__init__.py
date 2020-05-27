@@ -22,13 +22,16 @@ def getInstrumentserverPath(*subfolder: str) -> str:
 
 PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
                                   'parameters.json')
-INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
-                                    'instruction_dict.json')
+
+DEFAULT_PORT = 5555
+
+# INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+#                                     'instruction_dict.json')
 
 with open(PARAMS_SCHEMA_PATH) as f:
     paramDictSchema = json.load(f)
-with open(INSTRUCT_SCHEMA_PATH) as f:
-    serverInstructionSchema = json.load(f)
+# with open(INSTRUCT_SCHEMA_PATH) as f:
+#     serverInstructionSchema = json.load(f)
 
 from .log import setupLogging, logger
 # from .server import startServerGuiApplication

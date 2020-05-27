@@ -5,7 +5,7 @@ Created on Sat Apr 18 22:12:05 2020
 @author: Chao
 """
 
-from instrumentserver.proxy import ProxyInstrument, create_instrument, get_existing_instruments
+from instrumentserver.client.proxy import create_instrument
 
 test_src = create_instrument(instrument_class = 'instrumentserver.testing.dummy_instruments.rf.Generator',                          
                             name = 'test_src')
