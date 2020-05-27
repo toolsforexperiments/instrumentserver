@@ -14,10 +14,10 @@ import random
 from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
-from functools import partial
+
+import zmq
 
 import qcodes as qc
-import zmq
 from qcodes import (
     Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
 from qcodes.utils.validators import Validator
@@ -106,11 +106,6 @@ class ParameterBluePrint:
     docstring: str = ''
     setpoints: Optional[List[str]] = None
 
-    # # I think these are necessary for proxy snapshot?
-    # snapshot_value: bool = True
-    # snapshot_exclude: bool = False
-    # max_val_age: Optional[float] = None
-
     def __repr__(self) -> str:
         return str(self)
 
@@ -152,9 +147,6 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
         settable=True if hasattr(param, 'set') else False,
         unit=param.unit,
         docstring=param.__doc__,
-        # snapshot_value=param._snapshot_value,
-        # snapshot_exclude=param.snapshot_exclude,
-        # max_val_age=param.cache._max_val_age
     )
     if hasattr(param, 'set'):
         bp.vals = param.vals
@@ -170,8 +162,6 @@ class MethodBluePrint:
     name: str
     path: str
     call_signature: inspect.Signature
-    full_arg_spec: inspect.FullArgSpec  # this is added for easier construction
-                                        # of proxy function
     docstring: str = ''
 
     def __repr__(self):
@@ -190,12 +180,10 @@ class MethodBluePrint:
 
 def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
     sig = inspect.signature(method)
-    spec = inspect.getfullargspec(method)
     bp = MethodBluePrint(
         name=path.split('.')[-1],
         path=path,
         call_signature=sig,
-        full_arg_spec=spec,
         docstring=method.__doc__,
     )
     return bp
@@ -416,7 +404,8 @@ class StationServer(QtCore.QObject):
         )
         self.funcCalled.connect(
             lambda n, args, kw, ret: logger.debug(f"Function called:"
-                                                  f"'{n}({str(args), str(kw)})'.")
+                                                  f"'{n}', args: {str(args)}, "
+                                                  f"kwargs: {str(kw)})'.")
         )
 
     @QtCore.Slot()
