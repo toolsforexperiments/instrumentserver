@@ -1,10 +1,70 @@
 import inspect
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Tuple
 import html
 
 from qcodes import Instrument, Parameter
 
 from .serialize import toParamDict
+
+
+def stringToArgsAndKwargs(value: str) -> Tuple[List[Any], Dict[str, Any]]:
+    """create argument list and kwarg dict from a string.
+
+    Example::
+        >>> stringToArgsAndKwargs("1, True, abc=12.3")
+        [1, True], {'abc': 12.3}
+
+    :returns: list of arguments and dictionary with keyword arguments.
+
+    :raises: ``ValueError`` if:
+        - kwargs are not in the right format (i.e. not``key=value``)
+        - args or kwarg values cannot be evaluated with ``eval``.
+    """
+    value = value.strip()
+    if value == '':
+        return [], {}
+
+    args = []
+    kwargs = {}
+    elts = [v.strip() for v in value.split(',')]
+    for elt in elts:
+        if '=' in elt:
+            keyandval = elt.split('=')
+            if len(keyandval) != 2:
+                raise ValueError(f"{elt} cannot be interpreted as kwarg")
+            try:
+                kwargs[keyandval[0].strip()] = eval(keyandval[1].strip())
+            except Exception as e:
+                raise ValueError(f"Cannot evaluate '{keyandval[1]}', {type(e)} raised.")
+        else:
+            try:
+                args.append(eval(elt))
+            except Exception as e:
+                raise ValueError(f"Cannot evaluate '{elt}', {type(e)} raised.")
+
+    return args, kwargs
+
+
+def typeClassPath(t) -> str:
+    return f"{t.__module__}.{t.__qualname__}"
+
+
+def objectClassPath(o) -> str:
+    return f"{o.__class__.__module__}.{o.__class__.__qualname__}"
+
+
+def nestedAttributeFromString(root: Any, loc: str) -> Any:
+    """return a sub-object. Example::
+
+        >>> nestedAttributeFromString(parent_object, 'foo.bar.spam.bacon')
+
+    returns the object than can be found at parent_object.foo.bar.spam.bacon.
+    """
+    mods = loc.split('.')
+    obj = root
+    for m in mods:
+        obj = getattr(obj, m)
+    return obj
 
 
 def getInstrumentParameters(ins: Instrument) -> Dict[str, Dict[str, str]]:

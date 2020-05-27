@@ -59,6 +59,10 @@ This format is sufficient to store/load parameter values, but not to create
 parameters that are not present yet.
 """
 
+# TODO: would be good to have a serialization format the also captures validators,
+#  for example. But that would mean we need to use either binary, or come up with
+#  something that allows recreation from text.
+
 import json
 import logging
 import os
@@ -132,8 +136,6 @@ def fromParamDict(paramDict: Dict[str, Any],
         simple or regular format)
     :param target: object(s) holding the parameters to load.
     """
-
-    # TODO: should we also give a list of stuff we did not set?
 
     validateParamDict(paramDict)
     simple = isSimpleFormat(paramDict)

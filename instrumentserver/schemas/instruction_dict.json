@@ -1,0 +1,226 @@
+{
+  "type": "object",
+  "title": "Instruction Dictionary",
+  "description": "This schema helps us validate json files that store instructions to the server.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "operation": {
+      "enum": ["get_existing_instruments",
+        "instrument_creation",
+        "proxy_construction",
+        "proxy_get_param",
+        "proxy_set_param",
+        "proxy_call_func",
+        "instrument_snapshot",
+        "proxy_write_raw",
+        "proxy_ask_raw"],
+      "description": "the operation to perform on the server"      
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "operation": { "const": "instrument_creation" } }
+      },
+      "then": {
+        "properties": { 
+          "instrument_name": { 
+            "description": "name of the instrument",
+            "type": "string"  
+          },
+          "instrument_create": {
+            "description": "Information needed for creating the new instrument",
+            "type": "object",
+            "properties" : {
+              "instrument_class": {
+                "type" : "string",
+                "description": "class path of the instrument"
+              },
+              "args": {
+                "description": "tuple of positional arguments"
+              },
+              "kwargs": {
+                "description": "dict of keyword arguments"
+              }
+            },
+            "required": ["instrument_class"]
+          }
+        },
+        "required": ["instrument_name", "instrument_create"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_construction" } }
+      },
+      "then": {
+        "properties": { 
+          "instrument_name": { 
+            "description": "name of the instrument",
+            "type": "string"  
+          }
+        },
+        "required": ["instrument_name"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_get_param" } }
+      },
+      "then": {
+        "properties": { 
+          "instrument_name": { 
+            "description": "name of the instrument",
+            "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
+          },
+          "parameter": {
+            "type": "object",
+            "description": "dictionary contains the parameter to set or get",
+            "properties" : {
+              "name": {
+                "type" : "string",
+                "description": "name of the the parameter to set or get"
+              }
+            },
+          "required": ["name"]       
+          }
+        },       
+        "required": ["instrument_name", "parameter"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_set_param" } }
+      },
+      "then": {
+        "properties": { 
+          "instrument_name": { 
+            "description": "name of the instrument",
+            "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
+          },
+          "parameter": {
+            "type": "object",
+            "description": "dictionary contains the parameter to set or get",
+            "properties" : {
+              "name": {
+                "type" : "string",
+                "description": "name of the the parameter to set or get"
+              },
+              "value": {
+                "description": "value of the the parameter to set"
+              }
+            },
+          "required": ["name", "value"]       
+          }
+        },       
+        "required": ["instrument_name", "parameter"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_call_func" } }
+      },
+      "then": {
+        "properties": { 
+          "instrument_name": { 
+            "description": "name of the instrument",
+            "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
+          },
+          "function": {
+            "type": "object",
+            "description": "dictionary describes the function to call",
+            "properties" : {
+              "name": {
+                "type" : "string",
+                "description": "name of the the function to call"
+              },
+              "args": {
+                "description": "positional arguments for the function"
+              },
+              "kwargs": {
+                "description": "keyword arguments for the function"
+              }
+            },
+          "required": ["name"]       
+          }
+        },       
+        "required": ["instrument_name", "function"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_write_raw" } }
+      },
+      "then": {
+        "properties": {
+          "instrument_name": {
+            "description": "name of the instrument",
+            "type": "string"
+          },
+          "submodule_name": {
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"]
+          },
+          "cmd": {
+            "type": "string",
+            "description": "The string to send to the instrument"
+          }
+        },
+        "required": ["instrument_name", "cmd"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "proxy_ask_raw" } }
+      },
+      "then": {
+        "properties": {
+          "instrument_name": {
+            "description": "name of the instrument",
+            "type": "string"
+          },
+          "submodule_name": {
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"]
+          },
+          "cmd": {
+            "type": "string",
+            "description": "The string to send to the instrument"
+          }
+        },
+        "required": ["instrument_name", "cmd"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "operation": { "const": "instrument_snapshot" } }
+      },
+      "then": {
+        "properties": { 
+          "instrument_name": { 
+            "description": "name of the instrument",
+            "type": "string"  
+          },
+          "submodule_name": { 
+            "description": "name of the instrument submodule",
+            "type": ["string" , "null"] 
+          }
+        },       
+        "required": ["instrument_name"]
+      }
+    }        
+  ],
+  "required": ["operation"]
+}

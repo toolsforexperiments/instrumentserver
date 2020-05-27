@@ -17,6 +17,9 @@ class ResonatorResponse(Instrument):
     def __init__(self, name, f0=5e9, df=1e6, **kw):
         super().__init__(name, **kw)
 
+        self._frq_mod = 0.0
+        self._frq_mod_multiply = False
+
         # add params of the resonator and the virtual detection chain
         self.add_parameter('resonator_frequency', set_cmd=None, unit='Hz',
                            vals=validators.Numbers(1, 50e9),
@@ -59,27 +62,30 @@ class ResonatorResponse(Instrument):
                            ),
                            get_cmd=self._get_data, )
 
-    def calibrate(self) -> Dict[str, Union[tuple, Any]]:
-        """perform a calibration of some sort."""
-        return True
+    def modulate_frequency(self, delta: float = 0, multiply=False) -> None:
+        """add an offset to the resonance frequency.
 
-    def setup_stuff(self, a_parameter: int, another_parameter: float = 5.0,
-                    *arg, **kw: Any) -> bool:
-        """setting up."""
-        return True
-
-    def poorly_annotated_function(self, x, y, *, z=5, **kwargs):
-        return 10
+        If `multiply` is ``True``, the change in frequency is the product of `delta`
+        and the set frequency. if ``False``, then `delta` is added.
+        """
+        self._frq_mod = delta
+        self._frq_mod_multiply = multiply
 
     # private utility methods
     def _frequency_vals(self):
         return np.linspace(self.start_frequency(), self.stop_frequency(), self.npoints())
 
     def _get_data(self):
+        f0 = self.resonator_frequency()
+        if self._frq_mod_multiply:
+            f0 *= self._frq_mod
+        else:
+            f0 += self._frq_mod
+
         fvals = self._frequency_vals()
         data = self._resonator_reflection_signal(
             fvals,
-            self.resonator_frequency(),
+            f0,
             self.resonator_linewidth(),
             self.power() - self.input_attenuation(),
             self.bandwidth(),
@@ -110,6 +116,7 @@ class ResonatorResponse(Instrument):
 
 
 class Generator(Instrument):
+    """A simple dummy that mocks an RF generator."""
 
     def __init__(self, name, *arg, **kw):
         super().__init__(name, *arg, **kw)
@@ -127,3 +134,28 @@ class Generator(Instrument):
         self.add_parameter('rf_on', set_cmd=None,
                            vals=validators.Bool(),
                            initial_value=False)
+
+
+class FluxControl(Instrument):
+    """A dummy that hooks to :class:`.ResonatorResponse` and modifies its
+    resonance frequency as if the resonator were a squid."""
+
+    def __init__(self, name: str, resonator_instrument: ResonatorResponse,
+                 *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+        self._resonator = resonator_instrument
+
+        self.add_parameter('inductive_participation_ratio',
+                           set_cmd=None,
+                           vals=validators.Numbers(0, 1),
+                           initial_value=0.05)
+
+        self.add_parameter('flux', unit='Phi_0',
+                           set_cmd=self._set_flux,
+                           vals=validators.Numbers(-1, 1),
+                           initial_value=0)
+
+    def _set_flux(self, flux):
+        mod = 1./(1. + self.inductive_participation_ratio() / np.abs(np.cos(np.pi*flux)))
+        self._resonator.modulate_frequency(mod, True)
