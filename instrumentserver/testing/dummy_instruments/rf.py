@@ -4,7 +4,7 @@ from scipy import constants
 
 from qcodes import Instrument, ParameterWithSetpoints, InstrumentChannel
 from qcodes.utils import validators
-
+from typing import List
 
 class ResonatorResponse(Instrument):
     """A dummy instrument that generates the response of a resonator measured in
@@ -194,5 +194,5 @@ class DummyInstrumentWithSubmodule(Instrument):
             channel = DummyChannel('Chan{}'.format(chan_name))
             self.add_submodule(chan_name, channel)
 
-    def test_func(self, a, b, *args, c=10, **kwargs):
+    def test_func(self, a, b, *args, c:List=[10,11], **kwargs):
         return a, b, args[0], c, kwargs['d'], self.param0()

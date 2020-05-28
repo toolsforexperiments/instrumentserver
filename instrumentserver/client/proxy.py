@@ -5,7 +5,7 @@ Created on Sat Apr 18 16:13:40 2020
 @author: Chao
 """
 
-from typing import *
+from typing import Any, Union, Optional
 import logging
 import inspect
 from types import MethodType
@@ -98,7 +98,7 @@ class ProxyParameter(ProxyMixin, Parameter):
     :param host: the name of the host where the server lives
     :param port: the port number of the server
     :param remotePath: path of the remote object on the server.
-    :param bp: The blue print to construct the proxy parameter.
+    :param bluePrint: The blue print to construct the proxy parameter.
         if `remotePath` and `bluePrint` are both supplied, the blue print takes
         priority.
     """
@@ -161,7 +161,7 @@ class ProxyInstrumentModule(ProxyMixin, Instrument):
     instantiation represents a virtual module (instrument of submodule of
     instrument).
 
-    :param module_blue_print: The blue print that the describes the module
+    :param bluePrint: The blue print that the describes the module
     :param host: the name of the host where the server lives
     :param port: the port number of the server
     """
@@ -230,7 +230,7 @@ class ProxyInstrumentModule(ProxyMixin, Instrument):
         # method of the instrument instance.
         sig_str = str(sig)
         sig_str = sig_str[0] + 'self, ' + sig_str[1:]
-        new_func_str = f"""def {bp.name}{sig_str}:
+        new_func_str = f"""from typing import *\ndef {bp.name}{sig_str}:
         return wrap({', '.join(args)})"""
 
         # make sure the method knows the wrap function.
