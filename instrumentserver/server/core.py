@@ -14,17 +14,16 @@ import random
 from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
-from functools import partial
+
+import zmq
 
 import qcodes as qc
-import zmq
 from qcodes import (
     Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
 from qcodes.utils.validators import Validator
 
 from .. import QtCore
 from ..base import send, recv
-from ..client import sendRequest
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -53,9 +52,8 @@ class Operation(Enum):
     #: create a new instrument
     create_instrument = 'create_instrument'
 
-    #: get the blueprint of an instrument. The blueprint goes beyond a snapshot
-    #: and is useful for creating proxies.
-    get_instrument_blueprint = 'get_instrument_blueprint'
+    #: get the blueprint of an object
+    get_blueprint = 'get_blueprint'
 
     #: make a call to an object.
     call = 'call'
@@ -67,6 +65,10 @@ class InstrumentCreationSpec:
 
     #: driver class as string, in the format "global.path.to.module.DriverClass"
     instrument_class: str
+
+    #: name of the new instrument, I separate this from args and kwargs to
+    # make it easier to be found
+    name: str = ''
 
     #: arguments to pass to the constructor
     args: Optional[Tuple] = None
@@ -100,8 +102,9 @@ class ParameterBluePrint:
     gettable: bool = True
     settable: bool = True
     unit: str = ''
-    validator: Optional[Validator] = None
-    doc: str = ''
+    vals: Optional[Validator] = None
+    docstring: str = ''
+    setpoints: Optional[List[str]] = None
 
     def __repr__(self) -> str:
         return str(self)
@@ -117,7 +120,8 @@ class ParameterBluePrint:
 {i}- base class: {self.base_class}
 {i}- gettable: {self.gettable}
 {i}- settable: {self.settable}
-{i}- validator: {self.validator}
+{i}- validator: {self.vals}
+{i}- setpoints: {self.setpoints}
 """
         return ret
 
@@ -142,10 +146,12 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
         gettable=True if hasattr(param, 'get') else False,
         settable=True if hasattr(param, 'set') else False,
         unit=param.unit,
-        doc=param.__doc__,
+        docstring=param.__doc__,
     )
     if hasattr(param, 'set'):
-        bp.validator = param.vals
+        bp.vals = param.vals
+    if hasattr(param, 'setpoints'):
+        bp.setpoints = [setpoint.name for setpoint in param.setpoints]
 
     return bp
 
@@ -156,7 +162,7 @@ class MethodBluePrint:
     name: str
     path: str
     call_signature: inspect.Signature
-    doc: str = ''
+    docstring: str = ''
 
     def __repr__(self):
         return str(self)
@@ -178,7 +184,7 @@ def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, N
         name=path.split('.')[-1],
         path=path,
         call_signature=sig,
-        doc=method.__doc__,
+        docstring=method.__doc__,
     )
     return bp
 
@@ -190,7 +196,7 @@ class InstrumentModuleBluePrint:
     path: str
     base_class: str
     instrument_module_class: str
-    doc: str = ''
+    docstring: str = ''
     parameters: Optional[Dict[str,ParameterBluePrint]] = None
     methods: Optional[Dict[str, MethodBluePrint]] = None
     submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None
@@ -239,7 +245,7 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         path=path,
         base_class=typeClassPath(base_class),
         instrument_module_class=objectClassPath(ins),
-        doc=ins.__doc__
+        docstring=ins.__doc__
     )
     bp.parameters = {}
     bp.methods = {}
@@ -294,10 +300,10 @@ class ServerInstruction:
         - **Required options:** :attr:`.call_spec`
         - **Return message:** The return value of the call.
 
-    - :attr:`Operation.get_instrument_blueprint` -- request the blueprint of an instrument
+    - :attr:`Operation.get_blueprint` -- request the blueprint of an object
 
-        - **Required options:** :attr:`.requested_instrument`
-        - **Return message:** The blueprint of the instrument
+        - **Required options:** :attr:`.requested_path`
+        - **Return message:** The blueprint of the object
 
     """
 
@@ -312,7 +318,7 @@ class ServerInstruction:
     call_spec: Optional[CallSpec] = None
 
     #: name of the instrument for which we want the blueprint
-    requested_instrument: Optional[str] = None
+    requested_path: Optional[str] = None
 
     def validate(self):
         if self.operation is Operation.create_instrument:
@@ -398,7 +404,8 @@ class StationServer(QtCore.QObject):
         )
         self.funcCalled.connect(
             lambda n, args, kw, ret: logger.debug(f"Function called:"
-                                                  f"'{n}({str(args), str(kw)})'.")
+                                                  f"'{n}', args: {str(args)}, "
+                                                  f"kwargs: {str(kw)})'.")
         )
 
     @QtCore.Slot()
@@ -503,9 +510,9 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
-        elif instruction.operation == Operation.get_instrument_blueprint:
-            func = self._getInstrumentBluePrint
-            args = [instruction.requested_instrument]
+        elif instruction.operation == Operation.get_blueprint:
+            func = self._getBluePrint
+            args = [instruction.requested_path]
         else:
             raise NotImplementedError
 
@@ -540,7 +547,7 @@ class StationServer(QtCore.QObject):
         kwargs = dict() if spec.kwargs is None else spec.kwargs
 
         new_instrument = qc.find_or_create_instrument(
-            cls, *args, **kwargs)
+            cls, name=spec.name, *args, **kwargs)
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 
@@ -563,9 +570,18 @@ class StationServer(QtCore.QObject):
 
         return ret
 
-    def _getInstrumentBluePrint(self, insName: str) -> InstrumentModuleBluePrint:
-        ins = self.station.components[insName]
-        return bluePrintFromInstrumentModule(insName, ins)
+    def _getBluePrint(self, path: str) -> Union[InstrumentModuleBluePrint,
+                                                ParameterBluePrint,
+                                                MethodBluePrint]:
+        obj = nestedAttributeFromString(self.station, path)
+        if isinstance(obj, Instrument):
+            return bluePrintFromInstrumentModule(path, obj)
+        elif isinstance(obj, Parameter):
+            return bluePrintFromParameter(path, obj)
+        elif callable(obj):
+            return bluePrintFromMethod(path, obj)
+        else:
+            raise ValueError(f'Cannot create a blueprint for {type(obj)}')
 
 
 def startServer(port=5555, allowUserShutdown=False) -> \
@@ -580,42 +596,3 @@ def startServer(port=5555, allowUserShutdown=False) -> \
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
-
-
-class ProxyParameter(Parameter):
-
-    def __init__(self, bp: ParameterBluePrint, *args,
-                 host='localhost', port=5555, **kwargs):
-        self.path = bp.path
-        self.serverPort = port
-        self.serverHost = host
-        self.askServer = partial(sendRequest, host=self.serverHost, port=self.serverPort)
-
-        if bp.settable:
-            set_cmd = self._remoteSet
-        else:
-            set_cmd = False
-        if bp.gettable:
-            get_cmd = self._remoteGet
-        else:
-            get_cmd = False
-        super().__init__(bp.name, set_cmd=set_cmd, get_cmd=get_cmd, *args, **kwargs)
-
-    def _remoteSet(self, value: Any):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.path,
-                args=(value,)
-            )
-        )
-        return self.askServer(msg).message
-
-    def _remoteGet(self):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.path,
-            )
-        )
-        return self.askServer(msg).message
