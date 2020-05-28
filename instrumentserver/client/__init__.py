@@ -1,2 +1,2 @@
 from .core import sendRequest
-from .proxy import ProxyInstrument, Client
+from .proxy import ProxyInstrument, Client, QtClient

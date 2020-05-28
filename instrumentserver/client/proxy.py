@@ -12,7 +12,7 @@ from types import MethodType
 
 from qcodes import Instrument, Parameter
 
-from instrumentserver import DEFAULT_PORT
+from instrumentserver import QtCore, DEFAULT_PORT
 from instrumentserver.server.core import (
     ServerInstruction,
     InstrumentModuleBluePrint,
@@ -304,3 +304,20 @@ class Client(BaseClient):
 
     def get_instrument(self, name):
         return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
+
+    def getBluePrint(self, path):
+        msg = ServerInstruction(
+            operation=Operation.get_blueprint,
+            requested_path=path,
+        )
+        return self.ask(msg)
+
+
+class _QtAdapter(QtCore.QObject):
+    def __init__(self, parent, *arg, **kw):
+        super().__init__(parent)
+
+
+class QtClient(_QtAdapter, Client):
+    def __init__(self, parent=None, host='localhost', port=DEFAULT_PORT, connect=True):
+        super().__init__(parent, host, port, connect)

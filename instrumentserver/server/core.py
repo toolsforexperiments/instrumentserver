@@ -7,6 +7,9 @@ Core functionality of the instrument server.
 
 """
 
+# TODO: add a signal for when instruments are closed?
+# TODO: methods for saving to file should be in here.
+
 import importlib
 import inspect
 import logging

@@ -1,10 +1,12 @@
 import inspect
 from typing import Dict, Any, List, Union, Tuple
-import html
 
 from qcodes import Instrument, Parameter
 
 from .serialize import toParamDict
+
+
+# TODO: check for usage of get params / methods functions -- might not be needed
 
 
 def stringToArgsAndKwargs(value: str) -> Tuple[List[Any], Dict[str, Any]]:
@@ -108,60 +110,3 @@ def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List
     return funcs
 
 
-def toHtml(obj: Union[Parameter, Instrument]):
-    if isinstance(obj, Parameter):
-        return parameterToHtml(obj, headerLevel=1)
-    else:
-        return instrumentToHtml(obj)
-
-
-def parameterToHtml(param: Parameter, headerLevel=None):
-    ret = ""
-    if headerLevel is not None:
-        ret = f"<h{headerLevel}>{param.name}</h{headerLevel}>"
-
-    ret += f"""
-<ul>
-    <li><b>Type:</b> {html.escape(str(type(param)))}
-    <li><b>Unit:</b> {param.unit}
-    <li><b>Validator:</b> {html.escape(str(param.vals))}
-    <li><b>Doc:</b> {html.escape(param.__doc__)}
-</ul>
-    """
-    return ret
-
-
-def instrumentToHtml(ins: Instrument):
-    ret = f"""
-<h1>{ins.name}</h1>
-<ul>
-    <li><b>Type:</b> {html.escape(str(type(ins)))}
-    <li><b>Doc:</b> {html.escape(str(ins.__doc__))}
-</ul>
-"""
-
-    ret += """<h2>Parameters:</h2>
-<ul>
-    """
-    for pn in sorted(ins.parameters):
-        p = ins.parameters[pn]
-        ret += f"<li>{parameterToHtml(p, 2)}</li>"
-    ret += "</ul>"
-
-    ret += """<h2>Methods:</h2>
-<ul>
-"""
-    for meth, desc in getInstrumentMethods(ins).items():
-        ret += f"""
-<li>
-    <h3>{meth}</h3>
-    <ul>
-        <li><b>Call parameters:</b> {html.escape(str(desc['parameters']))}</li>
-        <li><b>Return type:</b> {html.escape(str(desc['return']))}</li>
-        <li><b>Doc:</b> {html.escape(str(desc['doc']))}</li>
-    </ul>
-</li>
-"""
-    ret += "</ul>"
-
-    return ret

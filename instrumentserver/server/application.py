@@ -1,100 +1,81 @@
+import html
 import os
 import time
 import logging
-import random
 from typing import Union, Optional
 
-from instrumentserver import QtCore, QtWidgets, QtGui, serialize, resource
-from instrumentserver.base import send, recv
+from .. import QtCore, QtWidgets, QtGui, DEFAULT_PORT, serialize, resource
 from instrumentserver.log import LogLevels, LogWidget, log, setupLogging
-from instrumentserver.serialize import toParamDict
-from instrumentserver.helpers import toHtml
-from instrumentserver.client import sendRequest
+from instrumentserver.client import QtClient
 
-from .core import (StationServer, InstrumentModuleBluePrint, ParameterBluePrint,
-                   MethodBluePrint)
+from .core import (
+    StationServer,
+    InstrumentModuleBluePrint, ParameterBluePrint, MethodBluePrint
+)
 
 logger = logging.getLogger(__name__)
 
 
 # TODO: parameter file location should be optionally configurable
 # TODO: add an option to save one file per station component
+# TODO: allow for user shutdown of the server.
+# TODO: use the safeword approach to configure the server on the fly
+#   allowing users to shut down, etc, set other internal properties of
+#   of the server object.
 
 
-# class StationList(QtWidgets.QTreeWidget):
-#     """A widget that displays all objects in a qcodes station"""
-#
-#     cols = ['Name', 'Info']
-#
-#     #: Signal(str) --
-#     #: emitted when a parameter or Instrument is selected
-#     componentSelected = QtCore.Signal(str)
-#
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-#
-#         self.setColumnCount(len(self.cols))
-#         self.setHeaderLabels(self.cols)
-#         self.setSortingEnabled(True)
-#         self.clear()
-#
-#         self.itemSelectionChanged.connect(self._processSelection)
-#
-#     def clear(self):
-#         super().clear()
-#         self.instrumentsItem = QtWidgets.QTreeWidgetItem(['Instruments', ''])
-#         self.paramsItem = QtWidgets.QTreeWidgetItem(['Parameters', ''])
-#         self.addTopLevelItem(self.paramsItem)
-#         self.addTopLevelItem(self.instrumentsItem)
-#
-#     def _addParameterTo(self, parent, obj):
-#         lst = [obj.name]
-#         info = toParamDict([obj], includeMeta=['vals', 'unit'])[obj.name]
-#         infoString = f"{str(obj.__class__.__name__)}"
-#         lst.append(infoString)
-#         paramItem = QtWidgets.QTreeWidgetItem(lst)
-#         parent.addChild(paramItem)
-#
-#     def addObject(self, obj: Union[Instrument, Parameter]):
-#         lst = [obj.name, f"{str(obj.__class__.__name__)}"]
-#         if isinstance(obj, Instrument):
-#             insItem = QtWidgets.QTreeWidgetItem(lst)
-#             self.instrumentsItem.addChild(insItem)
-#
-#         elif isinstance(obj, Parameter):
-#             paramItem = QtWidgets.QTreeWidgetItem(lst)
-#             self.paramsItem.addChild(paramItem)
-#
-#     def removeObject(self, name: str):
-#         items = self.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-#         for i in items:
-#             if i not in [self.instrumentsItem, self.paramsItem]:
-#                 parent = i.parent()
-#                 parent.removeChild(i)
-#                 del i
-#
-#     def _processSelection(self):
-#         items = self.selectedItems()
-#         if len(items) == 0:
-#             return
-#         item = items[0]
-#         if item not in [self.instrumentsItem, self.paramsItem]:
-#             self.componentSelected.emit(item.text(0))
-#
-#
-# class StationObjectInfo(QtWidgets.QTextEdit):
-#
-#     # TODO: make this a bit better looking
-#     # TODO: add a TOC for the instrument?
-#
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-#
-#         self.setReadOnly(True)
-#
-#     @QtCore.Slot(object)
-#     def setObject(self, obj: Union[Instrument, Parameter]):
-#         self.setHtml(toHtml(obj))
+class StationList(QtWidgets.QTreeWidget):
+    """A widget that displays all objects in a qcodes station"""
+
+    cols = ['Name', 'Type']
+
+    #: Signal(str) --
+    #: emitted when a parameter or Instrument is selected
+    componentSelected = QtCore.Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setColumnCount(len(self.cols))
+        self.setHeaderLabels(self.cols)
+        self.setSortingEnabled(True)
+        self.clear()
+
+        self.itemSelectionChanged.connect(self._processSelection)
+
+    def addInstrument(self, bp: InstrumentModuleBluePrint):
+        lst = [bp.name, f"{bp.instrument_module_class}"]
+        self.addTopLevelItem(QtWidgets.QTreeWidgetItem(lst))
+
+    def removeObject(self, name: str):
+        items = self.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+        if len(items) > 0:
+            item = items[0]
+            idx = self.indexOfTopLevelItem(item)
+            self.takeTopLevelItem(idx)
+            del item
+
+    def _processSelection(self):
+        items = self.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        self.componentSelected.emit(item.text(0))
+
+
+class StationObjectInfo(QtWidgets.QTextEdit):
+
+    # TODO: make this a bit better looking
+    # TODO: add a TOC for the instrument?
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setReadOnly(True)
+
+    @QtCore.Slot(object)
+    def setObject(self, obj: InstrumentModuleBluePrint):
+        self.setHtml(bluePrintToHtml(obj))
 
 
 class ServerStatus(QtWidgets.QWidget):
@@ -146,7 +127,7 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def __init__(self,
                  startServer: Optional[bool] = True,
-                 serverPort: Optional[int] = 5555):
+                 serverPort: Optional[int] = DEFAULT_PORT):
         super().__init__()
 
         self._paramValuesFile = os.path.join('.', 'parameters.json')
@@ -160,15 +141,15 @@ class ServerGui(QtWidgets.QMainWindow):
         self.tabs = QtWidgets.QTabWidget(self)
         self.setCentralWidget(self.tabs)
 
-        # self.stationList = StationList()
-        # self.stationObjInfo = StationObjectInfo()
-        # self.stationList.componentSelected.connect(self.displayComponentInfo)
+        self.stationList = StationList()
+        self.stationObjInfo = StationObjectInfo()
+        self.stationList.componentSelected.connect(self.displayComponentInfo)
 
-        # stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        # stationWidgets.addWidget(self.stationList)
-        # stationWidgets.addWidget(self.stationObjInfo)
-        # stationWidgets.setSizes([300, 700])
-        # self.tabs.addTab(stationWidgets, 'Station')
+        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        stationWidgets.addWidget(self.stationList)
+        stationWidgets.addWidget(self.stationObjInfo)
+        stationWidgets.setSizes([300, 700])
+        self.tabs.addTab(stationWidgets, 'Station')
 
         self.tabs.addTab(LogWidget(level=logging.INFO), 'Log')
 
@@ -204,13 +185,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self.refreshStationComponents()
 
         # A test client, just a simple helper object
-        self.testClient = TestClient()
-        self.testClient.log.connect(self.log)
-        self.serverPortSet.connect(self.testClient.setServerPort)
+        self.client = EmbeddedClient()
         self.serverStatus.testButton.clicked.connect(
-            lambda x: self.testClient.sendMessage("Ping server.")
+            lambda x: self.client.ask("Ping server.")
         )
-
         if startServer:
             self.startServer()
 
@@ -220,7 +198,7 @@ class ServerGui(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         if hasattr(self, 'stationServerThread'):
             if self.stationServerThread.isRunning():
-                self.testClient.sendMessage(self.stationServer.SAFEWORD)
+                self.client.sendMessage(self.stationServer.SAFEWORD)
         event.accept()
 
     def startServer(self):
@@ -234,14 +212,13 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer.finished.connect(self.stationServer.deleteLater)
 
         # connecting some additional things for messages
-        self.stationServer.log.connect(self.log)
         self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
-        self.stationServer.serverStarted.connect(self._setServerAddr)
+        self.stationServer.serverStarted.connect(self.client.start)
         self.stationServer.finished.connect(
             lambda: self.log('Server thread finished.', LogLevels.info)
         )
         self.stationServer.messageReceived.connect(self._messageReceived)
-        self.stationServer.instrumentCreated.connect(self.addStationComponent)
+        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)
 
         self.stationServerThread.start()
 
@@ -250,12 +227,6 @@ class ServerGui(QtWidgets.QMainWindow):
             return self.stationServer
         else:
             return None
-
-    @QtCore.Slot(str)
-    def _setServerAddr(self, addr: str):
-        port = int(addr.split(":")[-1])
-        self._serverPort = port
-        self.serverPortSet.emit(port)
 
     @QtCore.Slot(str, str)
     def _messageReceived(self, message: str, reply: str):
@@ -270,102 +241,133 @@ class ServerGui(QtWidgets.QMainWindow):
         self.log(f"Server replied: {reply}", LogLevels.debug)
         self.serverStatus.addMessageAndReply(messageSummary, replySummary)
 
-    def addStationComponent(self, obj: Union[Parameter, Instrument]):
-        """Add an object (instrument or unbound parameter) to the station.
+    def addInstrumentToGui(self, instrumentBluePrint: InstrumentModuleBluePrint):
+        """Add an instrument to the station list."""
+        self.stationList.addInstrument(instrumentBluePrint)
 
-        Will add the object also to the widget listing the station components.
-        """
-        self.station.add_component(obj)
-        self.log(f"Added to station: {obj}", LogLevels.info)
-        if isinstance(obj, Instrument) or isinstance(obj, Parameter):
-            self.stationList.addObject(obj)
-        else:
-            self.log(f"Cannot add <{obj}> to list of objects (unknown type).",
-                     LogLevels.warn)
-
-    def removeStationComponent(self, name: str):
-        """Remove an object from the station, and also from the widget showing
-        the station contents.
-
-        If the object is an instrument, we make sure to close it.
-        """
-        obj = self.station.components[name]
-        if isinstance(obj, Instrument):
-            self.station.close_and_remove_instrument(obj)
-        else:
-            self.station.remove_component(name)
+    def removeInstrumentFromGui(self, name: str):
+        """Remove an instrument from the station list."""
         self.stationList.removeObject(name)
-        self.log(f"Removed from station: {obj}", LogLevels.info)
 
     def refreshStationComponents(self):
         """clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         self.stationList.clear()
-        for _, obj in self.station.components.items():
-            self.stationList.addObject(obj)
 
-        for i in range(self.stationList.topLevelItemCount()):
-            item = self.stationList.topLevelItem(i)
-            self.stationList.expandItem(item)
 
-        for i, _ in enumerate(self.stationList.cols):
-            self.stationList.resizeColumnToContents(i)
+        # for _, obj in self.station.components.items():
+        #     self.stationList.addObject(obj)
+        #
+        # for i in range(self.stationList.topLevelItemCount()):
+        #     item = self.stationList.topLevelItem(i)
+        #     self.stationList.expandItem(item)
+        #
+        # for i, _ in enumerate(self.stationList.cols):
+        #     self.stationList.resizeColumnToContents(i)
 
     def loadParamsFromFile(self):
         """load the values of all parameters present in the server's params json file
         to parameters registered in the station (incl those in instruments)."""
 
-        self.log(f"Loading parameters from file: "
-                 f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
-        serialize.loadParamsFromFile(self._paramValuesFile, self.station)
+        # self.log(f"Loading parameters from file: "
+        #          f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
+        # serialize.loadParamsFromFile(self._paramValuesFile, self.station)
 
     def saveParamsToFile(self):
         """save the values of all parameters registered in the station (incl
          those in instruments) to the server's param json file."""
 
-        self.log(f"Saving parameters to file: "
-                 f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
-        serialize.saveParamsToFile(self.station, self._paramValuesFile)
+        # self.log(f"Saving parameters to file: "
+        #          f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
+        # serialize.saveParamsToFile(self.station, self._paramValuesFile)
 
     @QtCore.Slot(str)
     def displayComponentInfo(self, name: Union[str, None]):
         if name is not None:
-            obj = self.station.components[name]
+            bp = self.client.getBluePrint(name)
         else:
-            obj = None
-        self.stationObjInfo.setObject(obj)
+            bp = None
+        self.stationObjInfo.setObject(bp)
 
 
-def startServerGuiApplication(port: Optional[int] = 5555) -> "ServerGui":
-    """Create a server gui window
-
-    Can be used in an ipython kernel with Qt mainloop.
+def startServerGuiApplication(port: int = DEFAULT_PORT) -> "ServerGui":
+    """Create a server gui window.
     """
     window = ServerGui(startServer=True, serverPort=port)
     window.show()
     return window
 
 
-class TestClient(QtCore.QObject):
+class EmbeddedClient(QtClient):
     """A simple client we can use to communicate with the server object
     inside the server application."""
 
-    #: signal to emit log messages
-    log = QtCore.Signal(str, LogLevels)
-    serverAddressSet = QtCore.Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.serverAddr = None
-
-    @QtCore.Slot(int)
-    def setServerPort(self, port: int):
-        self.serverPort = port
-        self.serverAddr = f"tcp://localhost:{port}"
-        self.serverAddressSet.emit()
+    @QtCore.Slot(str)
+    def start(self, addr: str):
+        self.addr = "tcp://localhost:" + addr.split(':')[-1]
+        self.connect()
 
     @QtCore.Slot(str)
     def sendMessage(self, msg: str):
-        self.log.emit(f"Test client sending request: {msg}", LogLevels.debug)
-        reply = sendRequest(msg, port=self.serverPort)
-        self.log.emit(f"Test client received reply: {reply}", LogLevels.debug)
+        logger.debug(f"Test client sending request: {msg}")
+        reply = self.ask(msg)
+        logger.debug(f"Test client received reply: {reply}")
+
+
+def bluePrintToHtml(bp: Union[ParameterBluePrint, InstrumentModuleBluePrint]):
+    if isinstance(bp, ParameterBluePrint):
+        return parameterToHtml(bp, headerLevel=1)
+    else:
+        return instrumentToHtml(bp)
+
+
+def parameterToHtml(bp: ParameterBluePrint, headerLevel=None):
+    ret = ""
+    if headerLevel is not None:
+        ret = f"<h{headerLevel}>{bp.name}</h{headerLevel}>"
+
+    ret += f"""
+<ul>
+    <li><b>Type:</b> {bp.parameter_class} ({bp.base_class})</li>
+    <li><b>Unit:</b> {bp.unit}</li>
+    <li><b>Validator:</b> {html.escape(str(bp.vals))}</li>
+    <li><b>Doc:</b> {html.escape(bp.docstring)}</li>
+</ul>
+    """
+    return ret
+
+
+def instrumentToHtml(bp: InstrumentModuleBluePrint):
+    ret = f"""
+<h1>{bp.name}</h1>
+<ul>
+    <li><b>Type:</b> {bp.instrument_module_class} ({bp.base_class}) </li>
+    <li><b>Doc:</b> {html.escape(bp.docstring)}</li>
+</ul>
+"""
+
+    ret += """<h2>Parameters:</h2>
+<ul>
+    """
+    for pn in sorted(bp.parameters):
+        pbp = bp.parameters[pn]
+        ret += f"<li>{parameterToHtml(pbp, 2)}</li>"
+    ret += "</ul>"
+
+    ret += """<h2>Methods:</h2>
+<ul>
+"""
+    for pn in sorted(bp.methods):
+        mbp = bp.methods[pn]
+        ret += f"""
+<li>
+    <h3>{mbp.name}</h3>
+    <ul>
+        <li><b>Call signature:</b> {html.escape(str(mbp.call_signature))}</li>
+        <li><b>Doc:</b> {html.escape(mbp.docstring)}</li>
+    </ul>
+</li>
+"""
+    ret += "</ul>"
+
+    return ret
