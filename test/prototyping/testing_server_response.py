@@ -23,11 +23,16 @@ with Client() as cli:
 
 #%% create vna instrument in server
 Instrument.close_all()
-with Client() as cli:
-    dummy_vna = cli.create_instrument(
-        'instrumentserver.testing.dummy_instruments.rf.ResonatorResponse',
-        'dummy_vna'
-    )
+ins_cli = Client()
+dummy_vna = ins_cli.create_instrument(
+    'instrumentserver.testing.dummy_instruments.rf.ResonatorResponse',
+    'dummy_vna'
+)
+
+dummy_multichan = ins_cli.create_instrument(
+    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule',
+    'dummy_multichan',
+)
 
 
 #%% Close an instrument
@@ -44,16 +49,3 @@ with Client() as cli:
 with Client() as cli:
     snap = cli.call('snapshot')
 pprint(snap)
-
-
-#%% multichannel instrument
-
-# with this construction we can keep the connection open.
-# probably this is something to run in an init script if we want to keep
-# the connection open.
-Instrument.close_all()
-cli = Client()
-dummy_multichan = cli.create_instrument(
-    'instrumentserver.testing.dummy_instruments.rf.DummyInstrumentWithSubmodule',
-    'dummy_multichan',
-)
