@@ -250,6 +250,7 @@ class ProxyInstrumentModule(ProxyMixin, Instrument):
                     s.name, cli=self.cli, host=self.host, port=self.port, bluePrint=s)
                 self.add_submodule(sn, submodule)
 
+
 ProxyInstrument = ProxyInstrumentModule
 
 
