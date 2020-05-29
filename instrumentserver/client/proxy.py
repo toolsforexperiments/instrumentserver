@@ -11,6 +11,7 @@ import inspect
 from types import MethodType
 
 import json
+import qcodes as qc
 from qcodes import Instrument, Parameter
 
 from instrumentserver import QtCore, DEFAULT_PORT, serialize
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 # TODO: enable creation of instruments through yaml files/station configurator.
 # TODO: support for channel lists
 # TODO: support for other parameter classes.
+# FIXME: need to generally find the imports we need for type annotations!
 
 
 class ProxyMixin:
@@ -236,7 +238,8 @@ class ProxyInstrumentModule(ProxyMixin, Instrument):
         return wrap({', '.join(args)})"""
 
         # make sure the method knows the wrap function.
-        globs = {'wrap': wrap}
+        # TODO: this is not complete!
+        globs = {'wrap': wrap, 'qcodes': qc}
         exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
