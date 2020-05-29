@@ -7,24 +7,26 @@ Core functionality of the instrument server.
 
 """
 
+# TODO: add a signal for when instruments are closed?
+# TODO: validator only when the parameter is settable?
+
 import importlib
 import inspect
 import logging
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
-from functools import partial
+
+import zmq
 
 import qcodes as qc
-import zmq
 from qcodes import (
     Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
 from qcodes.utils.validators import Validator
 
-from .. import QtCore
+from .. import QtCore, serialize
 from ..base import send, recv
-from ..client import sendRequest
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -53,12 +55,17 @@ class Operation(Enum):
     #: create a new instrument
     create_instrument = 'create_instrument'
 
-    #: get the blueprint of an instrument. The blueprint goes beyond a snapshot
-    #: and is useful for creating proxies.
-    get_instrument_blueprint = 'get_instrument_blueprint'
+    #: get the blueprint of an object
+    get_blueprint = 'get_blueprint'
 
     #: make a call to an object.
     call = 'call'
+
+    #: get the station contents as parameter dict
+    get_param_dict = 'get_param_dict'
+
+    #: set station parameters from a dictionary
+    set_params = 'set_params'
 
 
 @dataclass
@@ -67,6 +74,10 @@ class InstrumentCreationSpec:
 
     #: driver class as string, in the format "global.path.to.module.DriverClass"
     instrument_class: str
+
+    #: name of the new instrument, I separate this from args and kwargs to
+    # make it easier to be found
+    name: str = ''
 
     #: arguments to pass to the constructor
     args: Optional[Tuple] = None
@@ -100,8 +111,9 @@ class ParameterBluePrint:
     gettable: bool = True
     settable: bool = True
     unit: str = ''
-    validator: Optional[Validator] = None
-    doc: str = ''
+    vals: Optional[Validator] = None
+    docstring: str = ''
+    setpoints: Optional[List[str]] = None
 
     def __repr__(self) -> str:
         return str(self)
@@ -117,7 +129,8 @@ class ParameterBluePrint:
 {i}- base class: {self.base_class}
 {i}- gettable: {self.gettable}
 {i}- settable: {self.settable}
-{i}- validator: {self.validator}
+{i}- validator: {self.vals}
+{i}- setpoints: {self.setpoints}
 """
         return ret
 
@@ -142,10 +155,12 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
         gettable=True if hasattr(param, 'get') else False,
         settable=True if hasattr(param, 'set') else False,
         unit=param.unit,
-        doc=param.__doc__,
+        docstring=param.__doc__,
     )
     if hasattr(param, 'set'):
-        bp.validator = param.vals
+        bp.vals = param.vals
+    if hasattr(param, 'setpoints'):
+        bp.setpoints = [setpoint.name for setpoint in param.setpoints]
 
     return bp
 
@@ -156,7 +171,7 @@ class MethodBluePrint:
     name: str
     path: str
     call_signature: inspect.Signature
-    doc: str = ''
+    docstring: str = ''
 
     def __repr__(self):
         return str(self)
@@ -178,7 +193,7 @@ def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, N
         name=path.split('.')[-1],
         path=path,
         call_signature=sig,
-        doc=method.__doc__,
+        docstring=method.__doc__,
     )
     return bp
 
@@ -190,7 +205,7 @@ class InstrumentModuleBluePrint:
     path: str
     base_class: str
     instrument_module_class: str
-    doc: str = ''
+    docstring: str = ''
     parameters: Optional[Dict[str,ParameterBluePrint]] = None
     methods: Optional[Dict[str, MethodBluePrint]] = None
     submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None
@@ -239,7 +254,7 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         path=path,
         base_class=typeClassPath(base_class),
         instrument_module_class=objectClassPath(ins),
-        doc=ins.__doc__
+        docstring=ins.__doc__
     )
     bp.parameters = {}
     bp.methods = {}
@@ -273,6 +288,25 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
 
 
 @dataclass
+class ParameterSerializeSpec:
+
+    #: path of the object to serialize. ``None`` refers to the station as a whole.
+    path: Optional[str] = None
+
+    #: which attributes to include for each parameter. Default is ['values']
+    attrs: List[str] = field(default_factory=lambda: ['values'])
+
+    #: additional arguments to pass to the serialization function
+    #: :func:`.serialize.toParamDict`
+    args: Optional[Any] = field(default_factory=list)
+
+    #: additional kw arguments to pass to the serialization function
+    #: :func:`.serialize.toParamDict`
+    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+
+
+@dataclass
 class ServerInstruction:
     """Instruction spec for the server.
 
@@ -294,10 +328,18 @@ class ServerInstruction:
         - **Required options:** :attr:`.call_spec`
         - **Return message:** The return value of the call.
 
-    - :attr:`Operation.get_instrument_blueprint` -- request the blueprint of an instrument
+    - :attr:`Operation.get_blueprint` -- request the blueprint of an object
 
-        - **Required options:** :attr:`.requested_instrument`
-        - **Return message:** The blueprint of the instrument
+        - **Required options:** :attr:`.requested_path`
+        - **Return message:** The blueprint of the object
+
+    - :attr:`Operation.get_param_dict` -- request parameters as dictionary
+      Get the parameters of either the full station or a single object.
+
+        - **Options:** :attr:`.serialization_opts`
+          Defaults to
+
+        - **Return message:** param dict
 
     """
 
@@ -312,7 +354,13 @@ class ServerInstruction:
     call_spec: Optional[CallSpec] = None
 
     #: name of the instrument for which we want the blueprint
-    requested_instrument: Optional[str] = None
+    requested_path: Optional[str] = None
+
+    #: options for serialization
+    serialization_opts: Optional[ParameterSerializeSpec] = None
+
+    #: setting parameters in bulk with a paramDict
+    set_parameters: Optional[Dict[str, Any]] = field(default_factory=dict)
 
     def validate(self):
         if self.operation is Operation.create_instrument:
@@ -366,8 +414,8 @@ class StationServer(QtCore.QObject):
     finished = QtCore.Signal()
 
     #: Signal(Dict) -- emitted when a new instrument was created.
-    #: Argument is the snapshot of the instrument.
-    instrumentCreated = QtCore.Signal(dict)
+    #: Argument is the blueprint of the instrument
+    instrumentCreated = QtCore.Signal(object)
 
     #: Signal(str, Any) -- emitted when a parameter was set
     #: Arguments: full parameter location as string, value
@@ -398,7 +446,8 @@ class StationServer(QtCore.QObject):
         )
         self.funcCalled.connect(
             lambda n, args, kw, ret: logger.debug(f"Function called:"
-                                                  f"'{n}({str(args), str(kw)})'.")
+                                                  f"'{n}', args: {str(args)}, "
+                                                  f"kwargs: {str(kw)})'.")
         )
 
     @QtCore.Slot()
@@ -503,9 +552,15 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
-        elif instruction.operation == Operation.get_instrument_blueprint:
-            func = self._getInstrumentBluePrint
-            args = [instruction.requested_instrument]
+        elif instruction.operation == Operation.get_blueprint:
+            func = self._getBluePrint
+            args = [instruction.requested_path]
+        elif instruction.operation == Operation.get_param_dict:
+            func = self._toParamDict
+            args = [instruction.serialization_opts]
+        elif instruction.operation == Operation.set_params:
+            func = self._fromParamDict
+            args = [instruction.set_parameters]
         else:
             raise NotImplementedError
 
@@ -540,11 +595,14 @@ class StationServer(QtCore.QObject):
         kwargs = dict() if spec.kwargs is None else spec.kwargs
 
         new_instrument = qc.find_or_create_instrument(
-            cls, *args, **kwargs)
+            cls, name=spec.name, *args, **kwargs)
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 
-        self.instrumentCreated.emit(new_instrument.snapshot())
+            self.instrumentCreated.emit(
+                bluePrintFromInstrumentModule(new_instrument.name,
+                                              new_instrument)
+            )
 
     def _callObject(self, spec: CallSpec) -> Any:
         """call some callable found in the station."""
@@ -563,9 +621,31 @@ class StationServer(QtCore.QObject):
 
         return ret
 
-    def _getInstrumentBluePrint(self, insName: str) -> InstrumentModuleBluePrint:
-        ins = self.station.components[insName]
-        return bluePrintFromInstrumentModule(insName, ins)
+    def _getBluePrint(self, path: str) -> Union[InstrumentModuleBluePrint,
+                                                ParameterBluePrint,
+                                                MethodBluePrint]:
+        obj = nestedAttributeFromString(self.station, path)
+        if isinstance(obj, Instrument):
+            return bluePrintFromInstrumentModule(path, obj)
+        elif isinstance(obj, Parameter):
+            return bluePrintFromParameter(path, obj)
+        elif callable(obj):
+            return bluePrintFromMethod(path, obj)
+        else:
+            raise ValueError(f'Cannot create a blueprint for {type(obj)}')
+
+    def _toParamDict(self, opts: ParameterSerializeSpec) -> Dict[str, Any]:
+        if opts.path is None:
+            obj = self.station
+        else:
+            obj = [nestedAttributeFromString(self.station, opts.path)]
+
+        includeMeta = [k for k in opts.attrs if k != 'value']
+        return serialize.toParamDict(obj, *opts.args, includeMeta=includeMeta,
+                                     **opts.kwargs)
+
+    def _fromParamDict(self, params: Dict[str, Any]):
+        return serialize.fromParamDict(params, self.station)
 
 
 def startServer(port=5555, allowUserShutdown=False) -> \
@@ -580,42 +660,3 @@ def startServer(port=5555, allowUserShutdown=False) -> \
     thread.started.connect(server.startServer)
     thread.start()
     return server, thread
-
-
-class ProxyParameter(Parameter):
-
-    def __init__(self, bp: ParameterBluePrint, *args,
-                 host='localhost', port=5555, **kwargs):
-        self.path = bp.path
-        self.serverPort = port
-        self.serverHost = host
-        self.askServer = partial(sendRequest, host=self.serverHost, port=self.serverPort)
-
-        if bp.settable:
-            set_cmd = self._remoteSet
-        else:
-            set_cmd = False
-        if bp.gettable:
-            get_cmd = self._remoteGet
-        else:
-            get_cmd = False
-        super().__init__(bp.name, set_cmd=set_cmd, get_cmd=get_cmd, *args, **kwargs)
-
-    def _remoteSet(self, value: Any):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.path,
-                args=(value,)
-            )
-        )
-        return self.askServer(msg).message
-
-    def _remoteGet(self):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.path,
-            )
-        )
-        return self.askServer(msg).message
