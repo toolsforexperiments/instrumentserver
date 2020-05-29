@@ -7,11 +7,14 @@ Core functionality of the instrument server.
 
 """
 
+# TODO: add a signal for when instruments are closed?
+# TODO: validator only when the parameter is settable?
+
 import importlib
 import inspect
 import logging
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
 
@@ -22,7 +25,7 @@ from qcodes import (
     Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
 from qcodes.utils.validators import Validator
 
-from .. import QtCore
+from .. import QtCore, serialize
 from ..base import send, recv
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
@@ -57,6 +60,12 @@ class Operation(Enum):
 
     #: make a call to an object.
     call = 'call'
+
+    #: get the station contents as parameter dict
+    get_param_dict = 'get_param_dict'
+
+    #: set station parameters from a dictionary
+    set_params = 'set_params'
 
 
 @dataclass
@@ -279,6 +288,25 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
 
 
 @dataclass
+class ParameterSerializeSpec:
+
+    #: path of the object to serialize. ``None`` refers to the station as a whole.
+    path: Optional[str] = None
+
+    #: which attributes to include for each parameter. Default is ['values']
+    attrs: List[str] = field(default_factory=lambda: ['values'])
+
+    #: additional arguments to pass to the serialization function
+    #: :func:`.serialize.toParamDict`
+    args: Optional[Any] = field(default_factory=list)
+
+    #: additional kw arguments to pass to the serialization function
+    #: :func:`.serialize.toParamDict`
+    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+
+
+@dataclass
 class ServerInstruction:
     """Instruction spec for the server.
 
@@ -305,6 +333,14 @@ class ServerInstruction:
         - **Required options:** :attr:`.requested_path`
         - **Return message:** The blueprint of the object
 
+    - :attr:`Operation.get_param_dict` -- request parameters as dictionary
+      Get the parameters of either the full station or a single object.
+
+        - **Options:** :attr:`.serialization_opts`
+          Defaults to
+
+        - **Return message:** param dict
+
     """
 
     #: This is the only mandatory item.
@@ -319,6 +355,12 @@ class ServerInstruction:
 
     #: name of the instrument for which we want the blueprint
     requested_path: Optional[str] = None
+
+    #: options for serialization
+    serialization_opts: Optional[ParameterSerializeSpec] = None
+
+    #: setting parameters in bulk with a paramDict
+    set_parameters: Optional[Dict[str, Any]] = field(default_factory=dict)
 
     def validate(self):
         if self.operation is Operation.create_instrument:
@@ -372,8 +414,8 @@ class StationServer(QtCore.QObject):
     finished = QtCore.Signal()
 
     #: Signal(Dict) -- emitted when a new instrument was created.
-    #: Argument is the snapshot of the instrument.
-    instrumentCreated = QtCore.Signal(dict)
+    #: Argument is the blueprint of the instrument
+    instrumentCreated = QtCore.Signal(object)
 
     #: Signal(str, Any) -- emitted when a parameter was set
     #: Arguments: full parameter location as string, value
@@ -513,6 +555,12 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.get_blueprint:
             func = self._getBluePrint
             args = [instruction.requested_path]
+        elif instruction.operation == Operation.get_param_dict:
+            func = self._toParamDict
+            args = [instruction.serialization_opts]
+        elif instruction.operation == Operation.set_params:
+            func = self._fromParamDict
+            args = [instruction.set_parameters]
         else:
             raise NotImplementedError
 
@@ -551,7 +599,10 @@ class StationServer(QtCore.QObject):
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 
-        self.instrumentCreated.emit(new_instrument.snapshot())
+            self.instrumentCreated.emit(
+                bluePrintFromInstrumentModule(new_instrument.name,
+                                              new_instrument)
+            )
 
     def _callObject(self, spec: CallSpec) -> Any:
         """call some callable found in the station."""
@@ -582,6 +633,19 @@ class StationServer(QtCore.QObject):
             return bluePrintFromMethod(path, obj)
         else:
             raise ValueError(f'Cannot create a blueprint for {type(obj)}')
+
+    def _toParamDict(self, opts: ParameterSerializeSpec) -> Dict[str, Any]:
+        if opts.path is None:
+            obj = self.station
+        else:
+            obj = [nestedAttributeFromString(self.station, opts.path)]
+
+        includeMeta = [k for k in opts.attrs if k != 'value']
+        return serialize.toParamDict(obj, *opts.args, includeMeta=includeMeta,
+                                     **opts.kwargs)
+
+    def _fromParamDict(self, params: Dict[str, Any]):
+        return serialize.fromParamDict(params, self.station)
 
 
 def startServer(port=5555, allowUserShutdown=False) -> \

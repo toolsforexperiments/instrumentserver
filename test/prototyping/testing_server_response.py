@@ -47,5 +47,5 @@ with Client() as cli:
 
 #%% get the snapshot from the station
 with Client() as cli:
-    snap = cli.call('snapshot')
+    snap = cli.snapshot()
 pprint(snap)

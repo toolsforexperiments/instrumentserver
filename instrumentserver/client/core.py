@@ -2,7 +2,7 @@ import logging
 import warnings
 import zmq
 
-from instrumentserver import DEFAULT_PORT
+from instrumentserver import DEFAULT_PORT, QtCore
 from instrumentserver.base import send, recv
 from instrumentserver.server.core import ServerResponse
 
@@ -23,6 +23,10 @@ class BaseClient:
         self.host = host
         self.port = port
         self.addr = f"tcp://{host}:{port}"
+
+        #: timeout for server replies.
+        self.recv_timeout = 5000
+
         if connect:
             self.connect()
 
@@ -38,6 +42,7 @@ class BaseClient:
         logger.info(f"Connecting to {self.addr}")
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
+        self.socket.setsockopt(zmq.RCVTIMEO, self.recv_timeout)
         self.socket.connect(self.addr)
         self.connected = True
 

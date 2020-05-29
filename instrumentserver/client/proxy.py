@@ -4,15 +4,16 @@ Created on Sat Apr 18 16:13:40 2020
 
 @author: Chao
 """
-
-from typing import Any, Union, Optional
+import os
+from typing import Any, Union, Optional, Dict, List
 import logging
 import inspect
 from types import MethodType
 
+import json
 from qcodes import Instrument, Parameter
 
-from instrumentserver import DEFAULT_PORT
+from instrumentserver import QtCore, DEFAULT_PORT, serialize
 from instrumentserver.server.core import (
     ServerInstruction,
     InstrumentModuleBluePrint,
@@ -20,7 +21,8 @@ from instrumentserver.server.core import (
     MethodBluePrint,
     CallSpec,
     Operation,
-    InstrumentCreationSpec
+    InstrumentCreationSpec,
+    ParameterSerializeSpec,
 )
 from .core import sendRequest, BaseClient
 
@@ -257,7 +259,7 @@ ProxyInstrument = ProxyInstrumentModule
 class Client(BaseClient):
     """Client with common server requests as convenience functions."""
 
-    def list_instruments(self):
+    def list_instruments(self) -> Dict[str, str]:
         """ Get the existing instruments on the server
         """
         msg = ServerInstruction(operation=Operation.get_existing_instruments)
@@ -304,3 +306,66 @@ class Client(BaseClient):
 
     def get_instrument(self, name):
         return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
+
+    def getBluePrint(self, path):
+        msg = ServerInstruction(
+            operation=Operation.get_blueprint,
+            requested_path=path,
+        )
+        return self.ask(msg)
+
+    def snapshot(self, instrument: str = None, *args, **kwargs):
+        msg = ServerInstruction(
+            operation=Operation.call,
+            call_spec=CallSpec(
+                target='snapshot' if instrument is None else f"{instrument}.snapshot",
+                args=args,
+                kwargs=kwargs,
+            )
+        )
+        return self.ask(msg)
+
+    def getParamDict(self, instrument: str = None,
+                     attrs: List[str] = ['value'], *args, **kwargs):
+        msg = ServerInstruction(
+            operation=Operation.get_param_dict,
+            serialization_opts=ParameterSerializeSpec(
+                path=instrument,
+                attrs=attrs,
+                args=args,
+                kwargs=kwargs,
+            )
+        )
+        return self.ask(msg)
+
+    def paramsToFile(self, filePath: str, *args, **kwargs):
+        filePath = os.path.abspath(filePath)
+        folder, file = os.path.split(filePath)
+        params = self.getParamDict(*args, **kwargs)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        with open(filePath, 'w') as f:
+            json.dump(params, f, indent=2, sort_keys=True)
+
+    def setParameters(self, parameters: Dict[str, Any]):
+        msg = ServerInstruction(
+            operation=Operation.set_params,
+            set_parameters=parameters,
+        )
+        return self.ask(msg)
+
+    def paramsFromFile(self, filePath: str):
+        params = None
+        with open(filePath, 'r') as f:
+            params = json.load(f)
+        self.setParameters(params)
+
+
+class _QtAdapter(QtCore.QObject):
+    def __init__(self, parent, *arg, **kw):
+        super().__init__(parent)
+
+
+class QtClient(_QtAdapter, Client):
+    def __init__(self, parent=None, host='localhost', port=DEFAULT_PORT, connect=True):
+        super().__init__(parent, host, port, connect)
