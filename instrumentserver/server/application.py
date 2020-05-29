@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 # TODO: use the safeword approach to configure the server on the fly
 #   allowing users to shut down, etc, set other internal properties of
 #   of the server object.
+# TODO: add a monitor that refreshes the station now and then and pings the server
+# TODO: keep the blueprints in the app instead of reloading all the time
 
 
 class StationList(QtWidgets.QTreeWidget):
@@ -44,8 +46,9 @@ class StationList(QtWidgets.QTreeWidget):
         self.itemSelectionChanged.connect(self._processSelection)
 
     def addInstrument(self, bp: InstrumentModuleBluePrint):
-        lst = [bp.name, f"{bp.instrument_module_class}"]
+        lst = [bp.name, f"{bp.instrument_module_class.split('.')[-1]}"]
         self.addTopLevelItem(QtWidgets.QTreeWidgetItem(lst))
+        self.resizeColumnToContents(0)
 
     def removeObject(self, name: str):
         items = self.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
@@ -65,17 +68,14 @@ class StationList(QtWidgets.QTreeWidget):
 
 class StationObjectInfo(QtWidgets.QTextEdit):
 
-    # TODO: make this a bit better looking
-    # TODO: add a TOC for the instrument?
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setReadOnly(True)
 
     @QtCore.Slot(object)
-    def setObject(self, obj: InstrumentModuleBluePrint):
-        self.setHtml(bluePrintToHtml(obj))
+    def setObject(self, bp: InstrumentModuleBluePrint):
+        self.setHtml(bluePrintToHtml(bp))
 
 
 class ServerStatus(QtWidgets.QWidget):
@@ -130,8 +130,10 @@ class ServerGui(QtWidgets.QMainWindow):
                  serverPort: Optional[int] = DEFAULT_PORT):
         super().__init__()
 
-        self._paramValuesFile = os.path.join('.', 'parameters.json')
+        self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
         self._serverPort = serverPort
+        self._bluePrints = {}
+
         self.stationServer = None
         self.stationServerThread = None
 
@@ -148,7 +150,7 @@ class ServerGui(QtWidgets.QMainWindow):
         stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         stationWidgets.addWidget(self.stationList)
         stationWidgets.addWidget(self.stationObjInfo)
-        stationWidgets.setSizes([300, 700])
+        stationWidgets.setSizes([300, 500])
         self.tabs.addTab(stationWidgets, 'Station')
 
         self.tabs.addTab(LogWidget(level=logging.INFO), 'Log')
@@ -181,9 +183,6 @@ class ServerGui(QtWidgets.QMainWindow):
         saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(saveParamsAction)
 
-        # FIXME this won't work yet
-        self.refreshStationComponents()
-
         # A test client, just a simple helper object
         self.client = EmbeddedClient()
         self.serverStatus.testButton.clicked.connect(
@@ -192,13 +191,15 @@ class ServerGui(QtWidgets.QMainWindow):
         if startServer:
             self.startServer()
 
+        self.refreshStationComponents()
+
     def log(self, message, level=LogLevels.info):
         log(logger, message, level)
 
     def closeEvent(self, event):
         if hasattr(self, 'stationServerThread'):
             if self.stationServerThread.isRunning():
-                self.client.sendMessage(self.stationServer.SAFEWORD)
+                self.client.ask(self.stationServer.SAFEWORD)
         event.accept()
 
     def startServer(self):
@@ -244,47 +245,49 @@ class ServerGui(QtWidgets.QMainWindow):
     def addInstrumentToGui(self, instrumentBluePrint: InstrumentModuleBluePrint):
         """Add an instrument to the station list."""
         self.stationList.addInstrument(instrumentBluePrint)
+        self._bluePrints[instrumentBluePrint.name] = instrumentBluePrint
 
     def removeInstrumentFromGui(self, name: str):
         """Remove an instrument from the station list."""
         self.stationList.removeObject(name)
+        del self._bluePrints[name]
 
     def refreshStationComponents(self):
         """clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         self.stationList.clear()
-
-
-        # for _, obj in self.station.components.items():
-        #     self.stationList.addObject(obj)
-        #
-        # for i in range(self.stationList.topLevelItemCount()):
-        #     item = self.stationList.topLevelItem(i)
-        #     self.stationList.expandItem(item)
-        #
-        # for i, _ in enumerate(self.stationList.cols):
-        #     self.stationList.resizeColumnToContents(i)
+        for k, v in self.client.list_instruments().items():
+            bp = self.client.getBluePrint(k)
+            self.stationList.addInstrument(bp)
+            self._bluePrints[k] = bp
+        self.stationList.resizeColumnToContents(0)
 
     def loadParamsFromFile(self):
         """load the values of all parameters present in the server's params json file
         to parameters registered in the station (incl those in instruments)."""
 
-        # self.log(f"Loading parameters from file: "
-        #          f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
-        # serialize.loadParamsFromFile(self._paramValuesFile, self.station)
+        logger.info(f"Loading parameters from file: "
+                    f"{os.path.abspath(self._paramValuesFile)}")
+        try:
+            self.client.paramsFromFile(self._paramValuesFile)
+        except Exception as e:
+            logger.error(f"Loading failed. {type(e)}: {e.args}")
 
     def saveParamsToFile(self):
         """save the values of all parameters registered in the station (incl
          those in instruments) to the server's param json file."""
 
-        # self.log(f"Saving parameters to file: "
-        #          f"{os.path.abspath(self._paramValuesFile)}", LogLevels.info)
-        # serialize.saveParamsToFile(self.station, self._paramValuesFile)
+        logger.info(f"Saving parameters to file: "
+                  f"{os.path.abspath(self._paramValuesFile)}")
+        try:
+            self.client.paramsToFile(self._paramValuesFile)
+        except Exception as e:
+            logger.error(f"Saving failed. {type(e)}: {e.args}")
 
     @QtCore.Slot(str)
     def displayComponentInfo(self, name: Union[str, None]):
-        if name is not None:
-            bp = self.client.getBluePrint(name)
+        if name is not None and name in self._bluePrints:
+            bp = self._bluePrints[name]
         else:
             bp = None
         self.stationObjInfo.setObject(bp)
@@ -308,45 +311,68 @@ class EmbeddedClient(QtClient):
         self.connect()
 
     @QtCore.Slot(str)
-    def sendMessage(self, msg: str):
+    def ask(self, msg: str):
         logger.debug(f"Test client sending request: {msg}")
-        reply = self.ask(msg)
+        reply = super().ask(msg)
         logger.debug(f"Test client received reply: {reply}")
+        return reply
 
 
 def bluePrintToHtml(bp: Union[ParameterBluePrint, InstrumentModuleBluePrint]):
+    header = f"""<html>
+<head>
+<style type="text/css">{bpHtmlStyle}</style>
+</head>
+<body>
+    """
+
+    footer = """
+</body>
+</html>
+    """
     if isinstance(bp, ParameterBluePrint):
-        return parameterToHtml(bp, headerLevel=1)
+        return header + parameterToHtml(bp, headerLevel=1) + footer
     else:
-        return instrumentToHtml(bp)
+        return header + instrumentToHtml(bp) + footer
 
 
 def parameterToHtml(bp: ParameterBluePrint, headerLevel=None):
+    setget = []
+    setgetstr = ''
+    if bp.gettable:
+        setget.append('get')
+    if bp.settable:
+        setget.append('set')
+    if len(setget) > 0:
+        setgetstr = f"[{', '.join(setget)}]"
+
     ret = ""
     if headerLevel is not None:
-        ret = f"<h{headerLevel}>{bp.name}</h{headerLevel}>"
+        ret = f"""<div class="param_container">
+<div class="object_name">{bp.name} {setgetstr}</div>"""
 
     ret += f"""
 <ul>
     <li><b>Type:</b> {bp.parameter_class} ({bp.base_class})</li>
     <li><b>Unit:</b> {bp.unit}</li>
     <li><b>Validator:</b> {html.escape(str(bp.vals))}</li>
-    <li><b>Doc:</b> {html.escape(bp.docstring)}</li>
+    <li><b>Doc:</b> {html.escape(str(bp.docstring))}</li>
 </ul>
+</div>
     """
     return ret
 
 
 def instrumentToHtml(bp: InstrumentModuleBluePrint):
-    ret = f"""
-<h1>{bp.name}</h1>
+    ret = f"""<div class="instrument_container">
+<div class='instrument_name'>{bp.name}</div>
 <ul>
     <li><b>Type:</b> {bp.instrument_module_class} ({bp.base_class}) </li>
-    <li><b>Doc:</b> {html.escape(bp.docstring)}</li>
+    <li><b>Doc:</b> {html.escape(str(bp.docstring))}</li>
 </ul>
 """
 
-    ret += """<h2>Parameters:</h2>
+    ret += """<div class='category_name'>Parameters</div>
 <ul>
     """
     for pn in sorted(bp.parameters):
@@ -354,20 +380,56 @@ def instrumentToHtml(bp: InstrumentModuleBluePrint):
         ret += f"<li>{parameterToHtml(pbp, 2)}</li>"
     ret += "</ul>"
 
-    ret += """<h2>Methods:</h2>
+    ret += """<div class='category_name'>Methods</div>
 <ul>
 """
-    for pn in sorted(bp.methods):
-        mbp = bp.methods[pn]
+    for mn in sorted(bp.methods):
+        mbp = bp.methods[mn]
         ret += f"""
 <li>
-    <h3>{mbp.name}</h3>
+    <div class="method_container">
+    <div class='object_name'>{mbp.name}</div>
     <ul>
         <li><b>Call signature:</b> {html.escape(str(mbp.call_signature))}</li>
-        <li><b>Doc:</b> {html.escape(mbp.docstring)}</li>
+        <li><b>Doc:</b> {html.escape(str(mbp.docstring))}</li>
     </ul>
-</li>
-"""
+    </div>
+</li>"""
     ret += "</ul>"
 
+    ret += """
+    <div class='category_name'>Submodules</div>
+    <ul>
+    """
+    for sn in sorted(bp.submodules):
+        sbp = bp.submodules[sn]
+        ret += "<li>" + instrumentToHtml(sbp) + "</li>"
+    ret += """
+    </ul>
+    </div>
+    """
     return ret
+
+
+bpHtmlStyle = """
+div.object_name, div.instrument_name, div.category_name { 
+    font-weight: bold;
+}
+
+div.object_name, div.instrument_name {
+    font-family: monospace;
+    background: aquamarine;
+}
+
+div.instrument_name {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: white;
+    background: darkblue;
+    padding: 10px;
+}
+
+div.instrument_container {
+    padding: 10px;
+}
+"""

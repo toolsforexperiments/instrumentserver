@@ -62,6 +62,7 @@ parameters that are not present yet.
 # TODO: would be good to have a serialization format the also captures validators,
 #  for example. But that would mean we need to use either binary, or come up with
 #  something that allows recreation from text.
+# TODO: make a proper type from the paramdict?
 
 import json
 import logging
@@ -171,8 +172,7 @@ def fromParamDict(paramDict: Dict[str, Any],
 
 # Tools
 
-def saveParamsToFile(input: Union[Station,
-                                  List[Union[Instrument, Parameter]]],
+def saveParamsToFile(input: Union[Station, List[Union[Instrument, Parameter]]],
                      filePath: str, **kw: Any) -> None:
     """Save (instrument) parameters to file.
 
