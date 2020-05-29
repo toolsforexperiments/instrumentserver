@@ -6,6 +6,7 @@ from qcodes import Instrument, Parameter
 from qcodes.utils import validators
 
 from . import serialize
+from .server.core import ParameterBluePrint, bluePrintFromParameter
 
 @unique
 class ParameterTypes(Enum):
@@ -69,7 +70,6 @@ class ParameterManager(Instrument):
 
     def __init__(self, name):
         super().__init__(name)
-        self.parameters.pop('IDN')
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
@@ -189,7 +189,7 @@ class ParameterManager(Instrument):
 
         purge(self)
 
-    def parameter(self, name: str) -> Parameter:
+    def parameter(self, name: str) -> "Parameter":
         """get a parameter object from the manager.
 
         :param name: the full name
