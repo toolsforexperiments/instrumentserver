@@ -9,6 +9,7 @@ Core functionality of the instrument server.
 
 # TODO: add a signal for when instruments are closed?
 # TODO: validator only when the parameter is settable?
+# TODO: the BluePrints should probably go into the serialization module.
 
 import importlib
 import inspect
