@@ -1,10 +1,9 @@
 import sys
 import os
 import logging
-from qtpy import QtGui, QtCore, QtWidgets
+import json
 
-from .log import setupLogging, logger
-from .server import servergui
+from qtpy import QtGui, QtCore, QtWidgets
 
 
 def getInstrumentserverPath(*subfolder: str) -> str:
@@ -19,3 +18,20 @@ def getInstrumentserverPath(*subfolder: str) -> str:
     """
     path = os.path.split(__file__)[0]
     return os.path.join(path, *subfolder)
+
+
+PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+                                  'parameters.json')
+
+DEFAULT_PORT = 5555
+
+# INSTRUCT_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
+#                                     'instruction_dict.json')
+
+with open(PARAMS_SCHEMA_PATH) as f:
+    paramDictSchema = json.load(f)
+# with open(INSTRUCT_SCHEMA_PATH) as f:
+#     serverInstructionSchema = json.load(f)
+
+from .log import setupLogging, logger
+# from .server import startServerGuiApplication
