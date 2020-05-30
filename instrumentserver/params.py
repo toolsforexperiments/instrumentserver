@@ -255,9 +255,9 @@ class ParameterManager(InstrumentBase):
             if self.has_param(pn):
                 self.parameter(pn)(val)
             else:
-                self.add(pn, val, unit=unit)
+                self.add_parameter(pn, initial_value=val, unit=unit)
 
         for pn in currentParams:
             if pn not in fileParams and deleteMissing:
-                self.remove(pn)
+                self.remove_parameter(pn)
 

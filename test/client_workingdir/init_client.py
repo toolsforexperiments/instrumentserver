@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #%% Imports
+import os
 
 from qcodes import Instrument
 from instrumentserver.client import Client
@@ -27,8 +28,8 @@ pm = ins_cli.create_instrument(
 
 
 #%% save the state
-saveParamsToFile([pm], './parameters.json')
+saveParamsToFile([pm], os.path.abspath('./parameters.json'))
 
 
 #%% load pm settings from file
-pm.fromFile('./parameters.json')
+pm.fromFile(os.path.abspath('./parameters.json'))

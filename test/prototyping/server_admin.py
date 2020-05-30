@@ -3,16 +3,11 @@
 import logging
 
 #%% imports
-from pprint import pprint
-
 from qcodes import Instrument
-
 from instrumentserver.server import *
-from instrumentserver.server.core import InstrumentCreationSpec
 from instrumentserver.client import *
-from instrumentserver import log
 
-
+# from instrumentserver import log
 # log.setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)
 # logger = log.logger('instrumentserver')
 # logger.setLevel(logging.DEBUG)
