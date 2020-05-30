@@ -11,7 +11,9 @@ import inspect
 from types import MethodType
 
 import json
+import qcodes as qc
 from qcodes import Instrument, Parameter
+from qcodes.instrument.base import InstrumentBase
 
 from instrumentserver import QtCore, DEFAULT_PORT, serialize
 from instrumentserver.server.core import (
@@ -23,6 +25,8 @@ from instrumentserver.server.core import (
     Operation,
     InstrumentCreationSpec,
     ParameterSerializeSpec,
+    INSTRUMENT_MODULE_BASE_CLASSES,
+    PARAMETER_BASE_CLASSES,
 )
 from .core import sendRequest, BaseClient
 
@@ -33,6 +37,7 @@ logger = logging.getLogger(__name__)
 # TODO: enable creation of instruments through yaml files/station configurator.
 # TODO: support for channel lists
 # TODO: support for other parameter classes.
+# FIXME: need to generally find the imports we need for type annotations!
 
 
 class ProxyMixin:
@@ -158,7 +163,7 @@ class ProxyParameter(ProxyMixin, Parameter):
         return self.askServer(msg)
 
 
-class ProxyInstrumentModule(ProxyMixin, Instrument):
+class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
     """Construct a proxy module using the given blue print. Each proxy
     instantiation represents a virtual module (instrument of submodule of
     instrument).
@@ -179,33 +184,71 @@ class ProxyInstrumentModule(ProxyMixin, Instrument):
         super().__init__(name, *args, cli=cli, host=host, port=port,
                          remotePath=remotePath, bluePrint=bluePrint, **kwargs)
 
-        self.parameters.pop('IDN')  # we will redefine this later
-        self._addProxyParameters()
-        self._addProxyMethods()
-        self._addProxySubmodules()
+        for mn in self.bp.methods.keys():
+            if mn == 'remove_parameter':
+                def remove_parameter(obj, name: str):
+                    obj.cli.call(f'{obj.remotePath}.remove_parameter', name)
+                    obj.update()
+                self.remove_parameter = MethodType(remove_parameter, self)
+
+        self.parameters.pop('IDN', None)  # we will redefine this later
+        self.update()
 
     def initKwargsFromBluePrint(self, bp):
         return {}
 
-    def _addProxyParameters(self) -> None:
+    def update(self):
+        self.bp = self.cli.getBluePrint(self.remotePath)
+        self._getProxyParameters()
+        self._getProxyMethods()
+        self._getProxySubmodules()
+
+    def add_parameter(self, name: str, *arg, **kw):
+        """Add a parameter to the proxy instrument.
+
+        If a parameter of that name already exists in the server-side instrument,
+        we only add the proxy parameter.
+        If not, we first add the parameter to the server-side instrument, and
+        then the proxy here.
+        """
+
+        if name in self.parameters:
+            raise ValueError(f'Parameter: {name} already present in the proxy.')
+
+        bp: InstrumentModuleBluePrint
+        bp = self.cli.getBluePrint(self.name)
+        self.cli.call(self.name+".add_parameter", name, *arg, **kw)
+        self.update()
+
+    def _getProxyParameters(self) -> None:
         """Based on the parameter blueprint replied from server, add the
         instrument parameters to the proxy instrument class"""
 
         # note: we can always provide setpoints_instruments, because in case
         # the parameter doesn't, `setpoints` will just be `None`.
         for pn, p in self.bp.parameters.items():
-            self.parameters[pn] = ProxyParameter(
-                pn, cli=self.cli, host=self.host, port=self.port,
-                bluePrint=p, setpoints_instrument=self)
+            if pn not in self.parameters:
+                pbp = self.cli.getBluePrint(f"{self.remotePath}.{pn}")
+                super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
+                                      port=self.port, bluePrint=pbp, setpoints_instrument=self)
 
-    def _addProxyMethods(self):
+        delKeys = []
+        for pn in self.parameters.keys():
+            if pn not in self.bp.parameters:
+                delKeys.append(pn)
+
+        for k in delKeys:
+            del self.parameters[pn]
+
+    def _getProxyMethods(self):
         """Based on the method blue print replied from server, add the
         instrument functions to the proxy instrument class
         """
         for n, m in self.bp.methods.items():
-            fun = self._makeProxyMethod(m)
-            setattr(self, n, MethodType(fun, self))
-            self.functions[n] = getattr(self, n)
+            if not hasattr(self, n):
+                fun = self._makeProxyMethod(m)
+                setattr(self, n, MethodType(fun, self))
+                self.functions[n] = getattr(self, n)
 
     def _makeProxyMethod(self, bp: MethodBluePrint):
         def wrap(*a, **k):
@@ -236,21 +279,31 @@ class ProxyInstrumentModule(ProxyMixin, Instrument):
         return wrap({', '.join(args)})"""
 
         # make sure the method knows the wrap function.
-        globs = {'wrap': wrap}
+        # TODO: this is not complete!
+        globs = {'wrap': wrap, 'qcodes': qc}
         exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
         return globs[bp.name]
 
-    def _addProxySubmodules(self):
+    def _getProxySubmodules(self):
         """Based on the submodule blue print replied from server, add the proxy
         submodules to the proxy module class
         """
-        if self.bp.submodules is not None:
-            for sn, s in self.bp.submodules.items():
+        for sn, s in self.bp.submodules.items():
+            if sn not in self.submodules:
                 submodule = ProxyInstrumentModule(
                     s.name, cli=self.cli, host=self.host, port=self.port, bluePrint=s)
                 self.add_submodule(sn, submodule)
+            else:
+                self.submodules[sn].update()
+
+        delKeys = []
+        for sn, s in self.submodules.items():
+            if sn not in self.bp.submodules:
+                delKeys.append(sn)
+        for k in delKeys:
+            del self.submodules[sn]
 
 
 ProxyInstrument = ProxyInstrumentModule

@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from pprint import pprint
 
+#%% imports
 from qcodes import Instrument
-
 from instrumentserver.server import *
-from instrumentserver.server.core import InstrumentCreationSpec
 from instrumentserver.client import *
-from instrumentserver import log
 
-
+# from instrumentserver import log
 # log.setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)
 # logger = log.logger('instrumentserver')
 # logger.setLevel(logging.DEBUG)
@@ -32,6 +29,11 @@ dummy_vna = ins_cli.create_instrument(
 dummy_multichan = ins_cli.create_instrument(
     'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule',
     'dummy_multichan',
+)
+
+pm = ins_cli.create_instrument(
+    'instrumentserver.params.ParameterManager',
+    'pm',
 )
 
 
