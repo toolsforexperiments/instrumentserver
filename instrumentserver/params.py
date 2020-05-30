@@ -3,6 +3,7 @@ from enum import Enum, unique, auto
 
 import json
 from qcodes import Instrument, Parameter
+from qcodes.instrument.base import InstrumentBase
 from qcodes.utils import validators
 
 from . import serialize
@@ -58,7 +59,7 @@ def paramTypeFromName(name: str) -> Union[ParameterTypes, None]:
     return None
 
 
-class ParameterManager(Instrument):
+class ParameterManager(InstrumentBase):
     """
     A virtual instrument that acts as a manager for a collection of
     arbitrary parameters and groups of parameters.
@@ -108,13 +109,14 @@ class ParameterManager(Instrument):
         split_names = param_name.split('.')
         parent = self
         full_name = self.name
+
         for i, n in enumerate(split_names[:-1]):
             full_name += f'.{n}'
             if n in parent.parameters:
                 raise ValueError(f"{n} is a parameter, and cannot have child parameters.")
             if n not in parent.submodules:
                 if create_parent:
-                    parent.add_submodule(n, ParameterManager(full_name))
+                    parent.add_submodule(n, ParameterManager(n))
                 else:
                     raise ValueError(f'{n} does not exist.')
             parent = parent.submodules[n]
@@ -127,16 +129,15 @@ class ParameterManager(Instrument):
         except ValueError:
             return False
 
-    def add(self, param_name: str, value: Any, **kw: Any) -> None:
+    def add_parameter(self, name: str, **kw: Any) -> None:
         """Add a parameter.
 
-        :param param_name: name of the parameter.
+        :param name: name of the parameter.
             if the name contains `.`s, then an element before a dot is interpreted
             as a submodule. multiple dots represent nested submodules. I.e., when
             we supply ``foo.bar.foo2`` we have a top-level submodule ``foo``,
             containing a submodule ``bar``, containing the parameter ``foo2``.
             Submodules are generated on demand.
-        :param value: the initial value of the parameter
         :param kw: Any keyword arguments will be passed on to
             qcodes.Instrument.add_parameter, except:
             - ``set_cmd`` is always set to ``None``
@@ -148,12 +149,14 @@ class ParameterManager(Instrument):
         if 'vals' not in kw:
             kw['vals'] = validators.Anything()
         kw['set_cmd'] = None
-        kw['initial_value'] = value
 
-        parent = self._get_parent(param_name, create_parent=True)
-        parent.add_parameter(param_name.split('.')[-1], **kw)
+        parent = self._get_parent(name, create_parent=True)
+        if parent is self:
+            super().add_parameter(name.split('.')[-1], **kw)
+        else:
+            parent.add_parameter(name.split('.')[-1], **kw)
 
-    def remove(self, param_name: str, cleanup: bool = True):
+    def remove_parameter(self, param_name: str, cleanup: bool = True):
         parent = self._get_parent(param_name)
         pname = param_name.split('.')[-1]
         del parent.parameters[pname]
@@ -184,7 +187,6 @@ class ParameterManager(Instrument):
                 if is_empty(s):
                     mark_for_deletion.append(n)
             for n in mark_for_deletion:
-                parent.submodules[n].close()
                 del parent.submodules[n]
 
         purge(self)
