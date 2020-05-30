@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 #   allowing users to shut down, etc, set other internal properties of
 #   of the server object.
 # TODO: add a monitor that refreshes the station now and then and pings the server
-# TODO: keep the blueprints in the app instead of reloading all the time
+# TODO: the station info should be collapsable (tree?) and searchable.
 
 
 class StationList(QtWidgets.QTreeWidget):
