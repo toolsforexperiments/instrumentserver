@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
+
+#%% imports
 from pprint import pprint
 
 from qcodes import Instrument
@@ -32,6 +34,11 @@ dummy_vna = ins_cli.create_instrument(
 dummy_multichan = ins_cli.create_instrument(
     'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule',
     'dummy_multichan',
+)
+
+pm = ins_cli.create_instrument(
+    'instrumentserver.params.ParameterManager',
+    'pm',
 )
 
 
