@@ -1,11 +1,12 @@
 from typing import Optional, Any, Dict, List, Tuple, Union
 
-from qcodes import Parameter
+from qcodes import Instrument, Parameter
 
 from .. import QtWidgets, QtCore, QtGui
 from ..serialize import toParamDict
 from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
-from ..helpers import stringToArgsAndKwargs
+from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
+from ..client import ProxyInstrument
 
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
@@ -24,7 +25,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
     #  emitted when a parameter was created successfully
     parameterCreated = QtCore.Signal()
 
-    def __init__(self, ins: ParameterManager,
+    def __init__(self, ins: Union[ParameterManager, ProxyInstrument],
                  parent: Optional[QtWidgets.QWidget] = None,
                  makeAvailable: Optional[List[Tuple[str, Any]]] = []):
 
@@ -64,7 +65,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
     def _makeToolbar(self):
         toolbar = QtWidgets.QToolBar(self)
         toolbar.setIconSize(QtCore.QSize(16, 16))
-        # self.toolbar.addWidget(QtWidgets.QLabel('Tools:'))
 
         refreshAction = toolbar.addAction(
             QtGui.QIcon(":/icons/refresh.svg"),
@@ -95,10 +95,14 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         return toolbar
 
+    def getParameter(self, fullName: str):
+        param = nestedAttributeFromString(self._instrument, fullName)
+        return param
+
     def populateList(self):
         for pname in sorted(toParamDict([self._instrument])):
             fullName = '.'.join(pname.split('.')[1:])
-            param = self._instrument.parameter(fullName)
+            param = self.getParameter(fullName)
             self.addParameterWidget(fullName, param)
 
         self.plist.expandAll()
@@ -135,20 +139,19 @@ class ParameterManagerGui(QtWidgets.QWidget):
                 value = eval(value)
             except Exception as e:
                 value = str(value)
-                # self.parameterCreationError.emit(f"Cannot create parameter."
-                #                                  f"Value cannot be evaluated, raised"
-                #                                  f"{type(e)}: {e.args}")
-                # return
 
         try:
-            self._instrument.add(fullName, value, unit=unit, vals=vals)
-            param = self._instrument.parameter(fullName)
+            self._instrument.add_parameter(fullName, initial_value=value,
+                                           unit=unit, vals=vals)
         except Exception as e:
             self.parameterCreationError.emit(f"Could not create parameter."
                                              f"Adding parameter raised"
                                              f"{type(e)}: {e.args}")
             return
 
+        # we cannot get the real instrument .parameter() function because we
+        # want the proxy parameter, of course.
+        param = self.getParameter(fullName)
         self.addParameterWidget(fullName, param)
         self.parameterCreated.emit()
 
@@ -198,7 +201,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
             del self._removeWidgets[fullName]
 
         if self._instrument.has_param(fullName):
-            self._instrument.remove(fullName)
+            self._instrument.remove_parameter(fullName)
 
         self.plist.removeEmptyContainers()
 
@@ -209,7 +212,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
             items = self.plist.findItems(
                 n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
-                self.addParameterWidget(n, self._instrument.parameter(n))
+                self.addParameterWidget(n, self.getParameter(n))
             else:
                 w = self.plist.itemWidget(items[0], 2)
                 w.setWidgetFromParameter()
@@ -358,6 +361,8 @@ class AddParameterWidget(QtWidgets.QWidget):
                  typeInput: bool = False):
         super().__init__(parent)
 
+        self.typeInput = typeInput
+
         layout = QtWidgets.QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -408,10 +413,7 @@ class AddParameterWidget(QtWidgets.QWidget):
             QtGui.QIcon(":/icons/plus-square.svg"),
             ' Add',
             parent=self)
-        # self.addButton.setSizePolicy(
-        #     QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-        #                           QtWidgets.QSizePolicy.MinimumExpanding)
-        # )
+
         self.addButton.clicked.connect(self.requestNewParameter)
         layout.addWidget(self.addButton, 0, 6, 1, 1)
 
@@ -419,10 +421,7 @@ class AddParameterWidget(QtWidgets.QWidget):
             QtGui.QIcon(":/icons/delete.svg"),
             ' Clear',
             parent=self)
-        # self.clearButton.setSizePolicy(
-        #     QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
-        #                           QtWidgets.QSizePolicy.MinimumExpanding)
-        # )
+
         self.clearButton.clicked.connect(self.clear)
         layout.addWidget(self.clearButton, 0, 7, 1, 1)
 
@@ -435,8 +434,9 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.nameEdit.setText('')
         self.valueEdit.setText('')
         self.unitEdit.setText('')
-        self.typeSelect.setCurrentText(parameterTypes[ParameterTypes.numeric]['name'])
-        self.valsArgsEdit.setText('')
+        if self.typeInput:
+            self.typeSelect.setCurrentText(parameterTypes[ParameterTypes.numeric]['name'])
+            self.valsArgsEdit.setText('')
 
     @QtCore.Slot(bool)
     def requestNewParameter(self, _):

@@ -9,6 +9,10 @@ Core functionality of the instrument server.
 
 # TODO: add a signal for when instruments are closed?
 # TODO: validator only when the parameter is settable?
+# TODO: the BluePrints should probably go into the serialization module.
+# TODO: for full functionality in the proxy, we probably need to introduce
+#   operations for adding parameters/submodules/functions
+# TODO: can we also create methods remotely?
 
 import importlib
 import inspect
@@ -23,6 +27,7 @@ import zmq
 import qcodes as qc
 from qcodes import (
     Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
+from qcodes.instrument.base import InstrumentBase
 from qcodes.utils.validators import Validator
 
 from .. import QtCore, serialize
@@ -35,9 +40,9 @@ __license__ = 'MIT'
 logger = logging.getLogger(__name__)
 
 INSTRUMENT_MODULE_BASE_CLASSES = [
-    Instrument, InstrumentChannel
+    Instrument, InstrumentChannel, InstrumentBase
 ]
-InstrumentModuleType = Union[Instrument, InstrumentChannel]
+InstrumentModuleType = Union[Instrument, InstrumentChannel, InstrumentBase]
 
 PARAMETER_BASE_CLASSES = [
     Parameter, ParameterWithSetpoints
@@ -206,9 +211,9 @@ class InstrumentModuleBluePrint:
     base_class: str
     instrument_module_class: str
     docstring: str = ''
-    parameters: Optional[Dict[str,ParameterBluePrint]] = None
-    methods: Optional[Dict[str, MethodBluePrint]] = None
-    submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None
+    parameters: Optional[Dict[str, ParameterBluePrint]] = field(default_factory=dict)
+    methods: Optional[Dict[str, MethodBluePrint]] = field(default_factory=dict)
+    submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = field(default_factory=dict)
 
     def __repr__(self) -> str:
         return str(self)
@@ -337,8 +342,6 @@ class ServerInstruction:
       Get the parameters of either the full station or a single object.
 
         - **Options:** :attr:`.serialization_opts`
-          Defaults to
-
         - **Return message:** param dict
 
     """
@@ -361,6 +364,12 @@ class ServerInstruction:
 
     #: setting parameters in bulk with a paramDict
     set_parameters: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+    #: generic arguments
+    args: Optional[List[Any]] = field(default_factory=list)
+
+    #: generic keyword arguments
+    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
 
     def validate(self):
         if self.operation is Operation.create_instrument:
@@ -579,8 +588,8 @@ class StationServer(QtCore.QObject):
 
         :returns : a dictionary that contains the instrument name and its class name.
         """
-        snap_ins = self.station.snapshot()['instruments']
-        info = {k: snap_ins[k]['__class__'] for k in snap_ins.keys()}
+        comps = self.station.components
+        info = {k: v.__class__ for k, v in comps.items()}
         return info
 
     def _createInstrument(self, spec: InstrumentCreationSpec) -> None:
@@ -625,9 +634,9 @@ class StationServer(QtCore.QObject):
                                                 ParameterBluePrint,
                                                 MethodBluePrint]:
         obj = nestedAttributeFromString(self.station, path)
-        if isinstance(obj, Instrument):
+        if isinstance(obj, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
             return bluePrintFromInstrumentModule(path, obj)
-        elif isinstance(obj, Parameter):
+        elif isinstance(obj, tuple(PARAMETER_BASE_CLASSES)):
             return bluePrintFromParameter(path, obj)
         elif callable(obj):
             return bluePrintFromMethod(path, obj)
