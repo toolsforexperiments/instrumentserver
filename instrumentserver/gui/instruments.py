@@ -361,6 +361,8 @@ class AddParameterWidget(QtWidgets.QWidget):
                  typeInput: bool = False):
         super().__init__(parent)
 
+        self.typeInput = typeInput
+
         layout = QtWidgets.QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -432,8 +434,9 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.nameEdit.setText('')
         self.valueEdit.setText('')
         self.unitEdit.setText('')
-        self.typeSelect.setCurrentText(parameterTypes[ParameterTypes.numeric]['name'])
-        self.valsArgsEdit.setText('')
+        if self.typeInput:
+            self.typeSelect.setCurrentText(parameterTypes[ParameterTypes.numeric]['name'])
+            self.valsArgsEdit.setText('')
 
     @QtCore.Slot(bool)
     def requestNewParameter(self, _):

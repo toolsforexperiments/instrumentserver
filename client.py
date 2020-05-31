@@ -1,39 +1,51 @@
+import os
 import argparse
 import logging
-import json
 
-from instrumentserver import setupLogging, logger
-from instrumentserver.client import sendRequest
-from instrumentserver.server.core import InstrumentCreationSpec, Operation
+from instrumentserver import setupLogging, logger, QtWidgets
+from instrumentserver.log import LogWidget
+from instrumentserver.client import QtClient
+from instrumentserver.client.application import InstrumentClientMainWindow
+from instrumentserver.gui.instruments import ParameterManagerGui
 
 
-setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)
+setupLogging(addStreamHandler=True,
+             logFile=os.path.abspath('instrumentclient.log'))
 log = logger()
 log.setLevel(logging.DEBUG)
 
 
+def setup_log(win: InstrumentClientMainWindow):
+    w = LogWidget()
+    win.addWidget(w, 'Log', visible=False)
+
+
+def setup_pm(win: InstrumentClientMainWindow):
+    pm = win.client.create_instrument(
+        'instrumentserver.params.ParameterManager',
+        'pm',
+    )
+    w = ParameterManagerGui(pm)
+    win.addWidget(w, name="PM: "+pm.name)
+
+
+def main():
+    app = QtWidgets.QApplication([])
+    cli = QtClient()
+    mainwindow = InstrumentClientMainWindow(cli)
+
+    setup_pm(mainwindow)
+    setup_log(mainwindow)
+
+    mainwindow.show()
+    return app.exec_()
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Testing the client')
-    parser.add_argument("--message", help="message to send")
-    parser.add_argument("--port", default=5555)
-    parser.add_argument("--host", default='localhost')
-    parser.add_argument("--operation")
-    parser.add_argument("--new_instrument_class")
-    parser.add_argument("--new_instrument_args")
-    parser.add_argument("--new_instrument_kwargs")
+    parser = argparse.ArgumentParser(description='Client options')
     args = parser.parse_args()
+    main()
 
-    if args.message is not None:
-        msg = args.message
-    else:
-        msg = dict(
-            operation=args.operation,
-        )
-        if Operation(args.operation) == Operation.create_instrument:
-            msg['create_instrument_spec'] = InstrumentCreationSpec(
-                instrument_class=args.new_instrument_class,
-                args=eval(str(args.new_instrument_args)),
-                kwargs=eval(str(args.new_instrument_kwargs))
-            )
 
-    sendRequest(msg)
+
+
