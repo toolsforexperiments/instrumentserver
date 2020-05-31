@@ -5,7 +5,7 @@ import logging
 from typing import Union, Optional
 
 from .. import QtCore, QtWidgets, QtGui, DEFAULT_PORT, serialize, resource
-from instrumentserver.log import LogLevels, LogWidget, log, setupLogging
+from instrumentserver.log import LogLevels, LogWidget, log
 from instrumentserver.client import QtClient
 
 from .core import (
