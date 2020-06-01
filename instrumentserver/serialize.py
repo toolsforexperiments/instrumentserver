@@ -62,6 +62,7 @@ parameters that are not present yet.
 # TODO: would be good to have a serialization format the also captures validators,
 #  for example. But that would mean we need to use either binary, or come up with
 #  something that allows recreation from text.
+# TODO: make a proper type from the paramdict?
 
 import json
 import logging
@@ -71,14 +72,16 @@ from typing import Dict, List, Any, Union
 from jsonschema import validate
 import pandas as pd
 from qcodes import Instrument, Station, Parameter
+from qcodes.instrument.base import InstrumentBase
 
 from . import PARAMS_SCHEMA_PATH
 
 logger = logging.getLogger(__name__)
 
+SerializableType = Union[Station, List[Union[InstrumentBase, Parameter]]]
 
-def toParamDict(input: Union[Station,
-                             List[Union[Instrument, Parameter]]],
+
+def toParamDict(input: SerializableType,
                 get: bool = False,
                 includeMeta: List[str] = [],
                 excludeParameters: List[str] = [],
@@ -104,11 +107,12 @@ def toParamDict(input: Union[Station,
     if isinstance(input, Station):
         snap = input.snapshot()
         input = [getattr(input, k) for k in snap['instruments'].keys()] \
-            + [getattr(input, k) for k in snap['parameters'].keys()]
+            + [getattr(input, k) for k in snap['parameters'].keys()] \
+            + [getattr(input, k) for k in snap['components'].keys()]
 
     ret = {}
     for obj in input:
-        if isinstance(obj, Instrument):
+        if isinstance(obj, InstrumentBase):
             ret.update(_singleInstrumentParametersToJson(
                 obj, get=get, addPrefix=f"{obj.name}.",
                 includeMeta=includeMeta,
@@ -128,8 +132,7 @@ def toParamDict(input: Union[Station,
 
 
 def fromParamDict(paramDict: Dict[str, Any],
-                  target: Union[Station,
-                                List[Union[Instrument, Parameter]]]) -> None:
+                  target: SerializableType) -> None:
     """Load parameter values from JSON
 
     :param paramDict: the parameter dictionary in a valid JSON format (may be
@@ -171,8 +174,7 @@ def fromParamDict(paramDict: Dict[str, Any],
 
 # Tools
 
-def saveParamsToFile(input: Union[Station,
-                                  List[Union[Instrument, Parameter]]],
+def saveParamsToFile(input: SerializableType,
                      filePath: str, **kw: Any) -> None:
     """Save (instrument) parameters to file.
 
@@ -193,8 +195,7 @@ def saveParamsToFile(input: Union[Station,
 
 
 def loadParamsFromFile(filePath: str,
-                       target: Union[Station,
-                                     List[Union[Instrument, Parameter]]]) -> None:
+                       target: SerializableType) -> None:
     """Load (instrument) parameters from file.
 
     Loads the json from file, then tries to restore the state into the target,
@@ -231,7 +232,7 @@ def validateParamDict(params: Dict[str, Any]):
         raise
 
 
-def toDataFrame(input: Union[Station, List[Union[Instrument, Parameter]]]):
+def toDataFrame(input: SerializableType):
     """Make a pandas data frame from the parameters. mainly useful for 
     printing overviews in notebooks."""
     params = toParamDict(input, includeMeta=['unit', 'vals'])
@@ -258,7 +259,7 @@ def _singleParameterToJson(parameter: Parameter,
     return ret
 
 
-def _singleInstrumentParametersToJson(instrument: Instrument,
+def _singleInstrumentParametersToJson(instrument: InstrumentBase,
                                       get: bool = False,
                                       addPrefix: str = '',
                                       includeMeta: List[str] = [],

@@ -2,10 +2,11 @@ import os
 import argparse
 import logging
 
+
 from instrumentserver import QtWidgets, QtCore
 from instrumentserver.log import setupLogging, log, LogLevels
 from instrumentserver.server import startServer
-# from instrumentserver.server.application import startServerGuiApplication
+from instrumentserver.server.application import startServerGuiApplication
 
 
 setupLogging(addStreamHandler=True,
@@ -21,6 +22,12 @@ def server(port, user_shutdown):
     return app.exec_()
 
 
+def serverWithGui(port):
+    app = QtWidgets.QApplication([])
+    window = startServerGuiApplication(port)
+    return app.exec_()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Starting the instrumentserver')
     parser.add_argument("--port", default=5555)
@@ -29,7 +36,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.gui:
-        raise NotImplementedError
+        serverWithGui(args.port)
     else:
         server(args.port, args.allow_user_shutdown)
 

@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from pprint import pprint
 
+#%% imports
 from qcodes import Instrument
-
 from instrumentserver.server import *
-from instrumentserver.server.core import InstrumentCreationSpec
 from instrumentserver.client import *
-from instrumentserver import log
 
-
+# from instrumentserver import log
 # log.setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)
 # logger = log.logger('instrumentserver')
 # logger.setLevel(logging.DEBUG)
@@ -34,6 +31,11 @@ dummy_multichan = ins_cli.create_instrument(
     'dummy_multichan',
 )
 
+pm = ins_cli.create_instrument(
+    'instrumentserver.params.ParameterManager',
+    'pm',
+)
+
 
 #%% Close an instrument
 with Client() as cli:
@@ -47,5 +49,5 @@ with Client() as cli:
 
 #%% get the snapshot from the station
 with Client() as cli:
-    snap = cli.call('snapshot')
+    snap = cli.snapshot()
 pprint(snap)
