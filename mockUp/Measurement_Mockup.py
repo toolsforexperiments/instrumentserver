@@ -19,15 +19,21 @@ current settings
 Questions: 
     -how to get around appending path?
 '''
-
-import sys
-sys.path.append(r'C:\Users\Ryan K\Documents\GitHub\instrumentserver')
-
 from instrumentserver import serialize
-from fakeVNA import fakeVNA
-from fakeCS import fakeCS
-from processData import dataProcess
+import os
+import argparse
+import logging
 
+from instrumentserver import setupLogging, logger, QtWidgets
+from instrumentserver.log import LogWidget
+from instrumentserver.client import QtClient
+from instrumentserver.client.application import InstrumentClientMainWindow
+from instrumentserver.gui.instruments import ParameterManagerGui
+from instrumentserver import client
+from instrumentserver.client.proxy import Client
+from qcodes import Instrument
+import instrumentserver
+import _thread
 from time import sleep, time
 import numpy as np
 import qcodes as qc
@@ -36,11 +42,7 @@ from qcodes import (Instrument, VisaInstrument,
                     validators as vals)
 from qcodes.instrument.channel import InstrumentChannel
 
-
-mockup = qc.Station()
-
-VNA = fakeVNA("VNA")
-CS = fakeCS("CS")
+from ini
 
 mockup.add_component(VNA)
 mockup.add_component(CS)

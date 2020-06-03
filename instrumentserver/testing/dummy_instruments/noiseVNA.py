@@ -15,8 +15,6 @@ from qcodes import (Instrument, VisaInstrument,
                     validators as vals)
 from qcodes.instrument.channel import InstrumentChannel
 
-from virtualParameter import instrumentSetting
-
 class fakeVNA(Instrument): 
     
     def __init__(self, name: str, **kwargs) -> None:
@@ -44,5 +42,5 @@ class fakeVNA(Instrument):
     
     def get_Trace(self): 
         num_points = 100
-        return(np.random.random(100))
+        return(np.random.random(num_points))
         

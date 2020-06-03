@@ -16,8 +16,6 @@ from qcodes import (Instrument, VisaInstrument,
                     validators as vals)
 from qcodes.instrument.channel import InstrumentChannel
 
-from virtualParameter import instrumentSetting
-
 class fakeCS(Instrument): 
     
     def __init__(self, name: str, **kwargs) -> None:
