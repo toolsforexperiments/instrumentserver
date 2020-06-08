@@ -23,14 +23,16 @@ def setup_log(win: InstrumentClientMainWindow):
 def setup_pm(win: InstrumentClientMainWindow):
     pm = win.client.create_instrument(
         'instrumentserver.params.ParameterManager',
-        'pm',b
+        'pm',
     )
     w = ParameterManagerGui(pm)
     win.addWidget(w, name="PM: "+pm.name)
 
+
 def setup_gen(win: InstrumentClientMainWindow):
     w = GeneraotrControlWidget()    
     win.addWidget(w, name="gen")
+
 
 def main():
     app = QtWidgets.QApplication([])
@@ -49,7 +51,3 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Client options')
     args = parser.parse_args()
     main()
-
-
-
-
