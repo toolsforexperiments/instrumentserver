@@ -1,0 +1,47 @@
+{
+  "Fluxsweep": [
+    {
+      "Name": "SHARC000",
+      "Instruments": [
+        "VNA",
+        "Current Source"
+      ],
+      "Default": {
+        "VNA": {
+          "IFBW": "3000",
+          "Avg": true
+        },
+        "Current Source": {
+          "rampMode": true
+        }
+      },
+      "Parameters": {
+        "VNA": {
+          "freqStart": "4e9",
+          "freqEnd": "5e9",
+          "sweepPoints": "1601",
+          "RFPower": "-70",
+          "AvgNum": "10"
+        },
+        "Current Source": {
+          "Range": "10"
+        }
+      },
+      "Sweeping varaibles": {
+        "Current Source": {
+          "current": {
+            "start": "1",
+            "end": "10",
+            "step": "0.01"
+          }
+        }
+      }
+    },
+    {
+      "Name": "SHARC001",
+      "Parameters": {
+
+      }
+    }
+  ]
+}

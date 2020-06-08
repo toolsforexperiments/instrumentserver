@@ -7,7 +7,7 @@ from instrumentserver.log import LogWidget
 from instrumentserver.client import QtClient
 from instrumentserver.client.application import InstrumentClientMainWindow
 from instrumentserver.gui.instruments import ParameterManagerGui
-
+from instrumentGUI.gui.generators import GeneraotrControlWidget
 
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentclient.log'))
@@ -23,19 +23,23 @@ def setup_log(win: InstrumentClientMainWindow):
 def setup_pm(win: InstrumentClientMainWindow):
     pm = win.client.create_instrument(
         'instrumentserver.params.ParameterManager',
-        'pm',
+        'pm',b
     )
     w = ParameterManagerGui(pm)
     win.addWidget(w, name="PM: "+pm.name)
 
+def setup_gen(win: InstrumentClientMainWindow):
+    w = GeneraotrControlWidget()    
+    win.addWidget(w, name="gen")
 
 def main():
     app = QtWidgets.QApplication([])
     cli = QtClient()
     mainwindow = InstrumentClientMainWindow(cli)
 
-    setup_pm(mainwindow)
-    setup_log(mainwindow)
+    setup_gen(mainwindow)
+    # setup_pm(mainwindow)
+    # setup_log(mainwindow)
 
     mainwindow.show()
     return app.exec_()

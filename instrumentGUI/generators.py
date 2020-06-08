@@ -48,7 +48,7 @@ class UI_Gens(object):
         # genGridLayoutWidget = hW.gridLayoutWithTitle(self.frameGen)
         # genGridLayout = genGridLayoutWidget.gridLayout()
         # genGridLayoutWidget.title('Generators')
-
+        '''
         genGridLayoutWidget = QtWidgets.QWidget(self.frameGen)
         genGridLayout = QtWidgets.QGridLayout(genGridLayoutWidget)
         genGridLayout.setContentsMargins(0, 0, 0, 0)
@@ -115,7 +115,7 @@ class UI_Gens(object):
 
         self.listView = QtWidgets.QListView(self.frameGen)
         self.listView.setGeometry(QtCore.QRect(1100, 50, 300, 600))
-        
+        '''
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
