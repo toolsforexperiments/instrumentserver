@@ -24,23 +24,29 @@ class fakeVNA(Instrument):
         self.add_parameter("fstart", 
                            set_cmd = None,
                            get_cmd = None,
+                           initial_value = 6e9,
                            unit = 'Hz'
                            )
         self.add_parameter("fstop", 
                            set_cmd = None,
                            get_cmd = None,
+                           initial_value = 8e9,
                            unit = 'Hz'
                            )
         self.add_parameter("IFBW", 
                            set_cmd = None,
                            get_cmd = None,
+                           initial_value = 3e3,
                            unit = 'Hz'
                            )
-        self.fstart.set(6e9)
-        self.fstop.set(8e9)
-        self.IFBW.set(3e3)
+        self.add_parameter("num_points", 
+                           set_cmd = None, 
+                           get_cmd = None, 
+                           initial_value = 1609
+                           )
+    def frequency(self): 
+        return(np.linspace(self.fstart(),self.fstop(),self.num_points()))
     
-    def get_Trace(self): 
-        num_points = 100
-        return(np.random.random(num_points))
+    def get_trace(self): 
+        return(np.random.random(self.num_points()))
         

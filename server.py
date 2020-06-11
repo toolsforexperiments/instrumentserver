@@ -29,6 +29,7 @@ def serverWithGui(port):
 
 
 if __name__ == "__main__":
+    
     parser = argparse.ArgumentParser(description='Starting the instrumentserver')
     parser.add_argument("--port", default=5555)
     parser.add_argument("--gui", default=False)
