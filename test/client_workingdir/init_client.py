@@ -6,6 +6,7 @@ import os
 from qcodes import Instrument
 from instrumentserver.client import Client
 from instrumentserver.serialize import saveParamsToFile
+from instrumentserver.client import ProxyInstrument
 
 
 #%% Create all my instruments

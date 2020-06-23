@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # TODO: support for channel lists
 # TODO: support for other parameter classes.
 # FIXME: need to generally find the imports we need for type annotations!
+# TODO: convenience function to refresh from server.
 
 
 class ProxyMixin:
