@@ -7,6 +7,7 @@ from instrumentserver import QtWidgets, QtCore
 from instrumentserver.log import setupLogging, log, LogLevels
 from instrumentserver.server import startServer
 from instrumentserver.server.application import startServerGuiApplication
+import hatdrivers
 
 
 setupLogging(addStreamHandler=True,
