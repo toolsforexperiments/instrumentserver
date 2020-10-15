@@ -27,8 +27,7 @@ def serverWithGui(port):
     window = startServerGuiApplication(port)
     return app.exec_()
 
-
-if __name__ == "__main__":
+def script() -> None:
     parser = argparse.ArgumentParser(description='Starting the instrumentserver')
     parser.add_argument("--port", default=5555)
     parser.add_argument("--gui", default=False)
@@ -39,5 +38,8 @@ if __name__ == "__main__":
         serverWithGui(args.port)
     else:
         server(args.port, args.allow_user_shutdown)
+    
+if __name__ == "__main__":
+    script()
 
 
