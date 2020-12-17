@@ -8,4 +8,7 @@ setup(name='instrumentserver',
       author_email='wolfgangpfff@gmail.com',
       license='MIT',
       packages=['instrumentserver'],
-      zip_safe=False)
+      zip_safe=False,
+      entry_points={"console_scripts": ["server_start = server:script"]}
+      )
+    
