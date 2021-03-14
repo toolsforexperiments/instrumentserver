@@ -206,8 +206,12 @@ class ParameterManagerGui(QtWidgets.QWidget):
         self.plist.removeEmptyContainers()
 
     def refreshAll(self):
-        insParams = self._instrument.list()
+        # first, we need to make sure we update the proxy instrument (if using one)
+        if isinstance(self._instrument, ProxyInstrument):
+            self._instrument.update()
 
+        # next, we can parse through the parameters and update the GUI.
+        insParams = self._instrument.list()
         for n in insParams:
             items = self.plist.findItems(
                 n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
