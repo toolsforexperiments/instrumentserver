@@ -410,9 +410,12 @@ class Client(BaseClient):
 
     def paramsFromFile(self, filePath: str):
         params = None
-        with open(filePath, 'r') as f:
-            params = json.load(f)
-        self.setParameters(params)
+        if os.path.exists(filePath):
+            with open(filePath, 'r') as f:
+                params = json.load(f)
+            self.setParameters(params)
+        else:
+            logger.warn(f"File {filePath} does not exist. No params loaded.")
 
 
 class _QtAdapter(QtCore.QObject):
