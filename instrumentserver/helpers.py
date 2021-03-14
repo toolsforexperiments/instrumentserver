@@ -60,7 +60,7 @@ def nestedAttributeFromString(root: Any, loc: str) -> Any:
 
         >>> nestedAttributeFromString(parent_object, 'foo.bar.spam.bacon')
 
-    returns the object than can be found at parent_object.foo.bar.spam.bacon.
+    returns the object that can be found at parent_object.foo.bar.spam.bacon.
     """
     mods = loc.split('.')
     obj = root
