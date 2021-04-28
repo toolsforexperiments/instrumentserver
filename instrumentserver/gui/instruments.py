@@ -3,13 +3,18 @@ from typing import Optional, Any, Dict, List, Tuple, Union
 from qcodes import Instrument, Parameter
 
 from .. import QtWidgets, QtCore, QtGui
-from ..serialize import toParamDict
+from ..serialize import toParamDict, saveParamsToFile
 from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
-from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
+from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString, getInstrumentParameters
 from ..client import ProxyInstrument
 
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
+
+import os
+import json
+
+
 
 
 # TODO: all styles set through a global style sheet.
@@ -61,6 +66,9 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.setLayout(layout)
         self.populateList()
+
+        self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
+
         
     def _makeToolbar(self):
         toolbar = QtWidgets.QToolBar(self)
@@ -71,6 +79,13 @@ class ParameterManagerGui(QtWidgets.QWidget):
             "refresh all parameters from the instrument",
         )
         refreshAction.triggered.connect(lambda x: self.refreshAll())
+
+
+        saveParamAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/save.svg"),
+            "Save parameters to file",
+        )
+        saveParamAction.triggered.connect(lambda x: self.saveToFile(self._paramValuesFile))
 
         toolbar.addSeparator()
 
@@ -214,7 +229,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
         insParams = self._instrument.list()
         for n in insParams:
             items = self.plist.findItems(
-                n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+                    n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
                 self.addParameterWidget(n, self.getParameter(n))
             else:
@@ -230,6 +245,15 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
     def filterParameters(self, filterString: str):
         self.plist.filterItems(filterString)
+
+    def saveToFile(self, filePath: str):
+        filePath = os.path.abspath(filePath)
+        folder, file = os.path.split(filePath)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        with open(filePath, 'w') as f:
+            json.dump(toParamDict([self._instrument]), f, indent=2, sort_keys=True)
+
 
 
 class ParameterList(QtWidgets.QTreeWidget):
