@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import constants
 
-from qcodes import Instrument, ParameterWithSetpoints
+from qcodes import Instrument, ParameterWithSetpoints, find_or_create_instrument
 from qcodes.utils import validators
 
 
@@ -140,11 +140,12 @@ class FluxControl(Instrument):
     """A dummy that hooks to :class:`.ResonatorResponse` and modifies its
     resonance frequency as if the resonator were a squid."""
 
-    def __init__(self, name: str, resonator_instrument: ResonatorResponse,
+    def __init__(self, name: str, resonator_instrument: str,
                  *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
-        self._resonator = resonator_instrument
+        self._resonator = find_or_create_instrument(instrument_class=ResonatorResponse,
+                                                    name=resonator_instrument)
 
         self.add_parameter('inductive_participation_ratio',
                            set_cmd=None,
