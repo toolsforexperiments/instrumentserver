@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, Union, List
 from enum import Enum, unique, auto
 
@@ -71,6 +72,8 @@ class ParameterManager(InstrumentBase):
 
     def __init__(self, name):
         super().__init__(name)
+
+        self._paramValuesFile = os.path.abspath(os.path.join('.', 'parametermanager_parameters.json'))
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
@@ -214,7 +217,7 @@ class ParameterManager(InstrumentBase):
 
         return tolist(tree)
 
-    def fromFile(self, filePath: str, deleteMissing: bool = True):
+    def fromFile(self, filePath: str = None, deleteMissing: bool = True):
         """load parameters from a parameter json file
         (see :mod:`.serialize`).
 
@@ -222,6 +225,9 @@ class ParameterManager(InstrumentBase):
         :param deleteMissing: if ``True``, delete parameters currently in the
             ParameterManager that are not listed in the file.
         """
+        if filePath is None:
+            filePath = self._paramValuesFile
+
         with open(filePath, 'r') as f:
             pd = json.load(f)
         self.fromParamDict(pd)
@@ -260,4 +266,16 @@ class ParameterManager(InstrumentBase):
         for pn in currentParams:
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
+
+    def paramManToFile(self, filePath : str = None):
+        if filePath is None:
+            filePath = self._paramValuesFile
+
+        folder, file = os.path.split(filePath)
+        params = serialize.toParamDict([self], simpleFormat=False, includeMeta=['unit'])
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        with open(filePath, 'w') as f:
+            json.dump(params, f, indent=2, sort_keys=True)
+
 

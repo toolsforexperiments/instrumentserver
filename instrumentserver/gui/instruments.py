@@ -11,8 +11,6 @@ from ..client import ProxyInstrument
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
 
-import os
-import json
 
 
 
@@ -67,7 +65,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
         self.setLayout(layout)
         self.populateList()
 
-        self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
 
         
     def _makeToolbar(self):
@@ -85,7 +82,13 @@ class ParameterManagerGui(QtWidgets.QWidget):
             QtGui.QIcon(":/icons/save.svg"),
             "Save parameters to file",
         )
-        saveParamAction.triggered.connect(lambda x: self.saveToFile(self._paramValuesFile))
+        saveParamAction.triggered.connect(lambda x: self.saveToFile())
+
+        loadParamAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/load.svg"),
+            "Load parameters from file",
+        )
+        loadParamAction.triggered.connect(lambda x: self.loadFromFile())
 
         toolbar.addSeparator()
 
@@ -246,13 +249,11 @@ class ParameterManagerGui(QtWidgets.QWidget):
     def filterParameters(self, filterString: str):
         self.plist.filterItems(filterString)
 
-    def saveToFile(self, filePath: str):
-        filePath = os.path.abspath(filePath)
-        folder, file = os.path.split(filePath)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        with open(filePath, 'w') as f:
-            json.dump(toParamDict([self._instrument]), f, indent=2, sort_keys=True)
+    def saveToFile(self, filePath: str = None):
+        self._instrument.paramManToFile()
+
+    def loadFromFile(self, filePath: str = None):
+        self._instrument.fromFile()
 
 
 
