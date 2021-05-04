@@ -73,6 +73,7 @@ class ParameterManager(InstrumentBase):
     def __init__(self, name):
         super().__init__(name)
 
+        #: default location and name of the parameters save file.
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parametermanager_parameters.json'))
 
     @staticmethod
@@ -221,7 +222,8 @@ class ParameterManager(InstrumentBase):
         """load parameters from a parameter json file
         (see :mod:`.serialize`).
 
-        :param filePath: path to the json file
+        :param filePath: path to the json file. If ``None`` it looks in the instrument current location
+                         directory for a file called "parametermanager_parameters.json"
         :param deleteMissing: if ``True``, delete parameters currently in the
             ParameterManager that are not listed in the file.
         """
@@ -268,6 +270,14 @@ class ParameterManager(InstrumentBase):
                 self.remove_parameter(pn)
 
     def paramManToFile(self, filePath : str = None):
+
+        """Save parameters from the instrument into a json file.
+
+        :param filePath: path to the json file. 
+                         If ``None`` it looks in the instrument current location
+                         directory for a file called "parametermanager_parameters.json"
+        """
+
         if filePath is None:
             filePath = self._paramValuesFile
 
