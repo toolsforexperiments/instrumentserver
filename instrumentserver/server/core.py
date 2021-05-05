@@ -438,7 +438,7 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False):
+    def __init__(self, parent=None, port=5555, allowUserShutdown=False, publisher_port=5554):
         super().__init__(parent)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
@@ -446,6 +446,8 @@ class StationServer(QtCore.QObject):
         self.port = port
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
+
+        self.publisher_port = publisher_port
 
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
@@ -470,6 +472,12 @@ class StationServer(QtCore.QObject):
         context = zmq.Context()
         socket = context.socket(zmq.REP)
         socket.bind(addr)
+
+        #creating and binding publishing socket
+        publisher_addr = f"tcp://*:{self.publisher_port}"
+        publisher_socket = context.socket(zmq.PUB)
+        publisher_socket.bind(publisher_addr)
+
 
         self.serverRunning = True
         self.serverStarted.emit(addr)
@@ -534,8 +542,13 @@ class StationServer(QtCore.QObject):
                 logger.debug(f"Invalid message received: {str(message)}")
 
             send(socket, response_to_client)
+
+            print("sending message")
+            publisher_socket.send_string("Anyone copy?")
+
             self.messageReceived.emit(str(message), response_log)
 
+        publisher_socket.close()
         socket.close()
         self.finished.emit()
         return True

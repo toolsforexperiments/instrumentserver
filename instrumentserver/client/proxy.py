@@ -12,6 +12,7 @@ from types import MethodType
 
 import json
 import qcodes as qc
+import zmq
 from qcodes import Instrument, Parameter
 from qcodes.instrument.base import InstrumentBase
 
@@ -307,6 +308,23 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             del self.submodules[sn]
 
 
+    def _refreshProxySubmodules(self):
+        delKeys = []
+        for sn, s in self.submodules.items():
+            if sn in self.bp.submodules:
+                delKeys.append(sn)
+        for k in delKeys:
+            del self.submodules[sn]
+
+        for sn, s in self.bp.submodules.items():
+            if sn not in self.submodules:
+                submodule = ProxyInstrumentModule(
+                    s.name, cli=self.cli, host=self.host, port=self.port, bluePrint=s)
+                self.add_submodule(sn, submodule)
+            else:
+                self.submodules[sn].update()
+
+
 ProxyInstrument = ProxyInstrumentModule
 
 
@@ -416,6 +434,36 @@ class Client(BaseClient):
             self.setParameters(params)
         else:
             logger.warn(f"File {filePath} does not exist. No params loaded.")
+
+class SubClient():
+    """Test client to test PUB-SUB"""
+
+    def __init__(self, host='localhost', port=5554, id=1):
+        self.host = host
+        self.port = port
+        self.addr = f"tcp://{host}:{port}"
+        self.id = id
+
+        print("I am working")
+
+    def startClient(self):
+        context = zmq.Context()
+        socket = context.socket(zmq.SUB)
+        print("Connecting to server")
+        socket.connect(self.addr)
+        socket.subscribe("")
+        self.clientRunning = True
+
+        while self.clientRunning:
+
+            message = socket.recv_string()
+            print(str(self.id)+" the message is: " + message)
+
+
+        print("closing connection")
+        socket.close()
+        return True
+
 
 
 class _QtAdapter(QtCore.QObject):

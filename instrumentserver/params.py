@@ -262,6 +262,9 @@ class ParameterManager(InstrumentBase):
 
             if self.has_param(pn):
                 self.parameter(pn)(val)
+                if unit is not None:
+                    self.parameter(pn).unit = unit
+
             else:
                 self.add_parameter(pn, initial_value=val, unit=unit)
 
