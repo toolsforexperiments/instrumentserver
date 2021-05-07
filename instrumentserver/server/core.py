@@ -313,6 +313,7 @@ class ParameterSerializeSpec:
 
 @dataclass
 class ServerInstruction:
+    #TODO: include set parameters in documentation.
     """Instruction spec for the server.
 
     Valid operations:
@@ -447,6 +448,13 @@ class StationServer(QtCore.QObject):
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
 
+<<<<<<< Updated upstream
+=======
+        self.publisher_port = publisher_port
+
+        self.publisher_socket = None
+
+>>>>>>> Stashed changes
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
         )
@@ -471,6 +479,16 @@ class StationServer(QtCore.QObject):
         socket = context.socket(zmq.REP)
         socket.bind(addr)
 
+<<<<<<< Updated upstream
+=======
+        # creating and binding publishing socket
+        publisher_addr = f"tcp://*:{self.publisher_port}"
+        logger.info(f"Starting publishing server at {addr}")
+        publisher_socket = context.socket(zmq.PUB)
+        publisher_socket.bind(publisher_addr)
+
+
+>>>>>>> Stashed changes
         self.serverRunning = True
         self.serverStarted.emit(addr)
 
@@ -519,7 +537,7 @@ class StationServer(QtCore.QObject):
                 if message_ok:
                     # we don't need to use a try-block here, because
                     # errors are already handled in executeServerInstruction
-                    response_to_client = self.executeServerInstruction(instruction)
+                    response_to_client, pub_type = self.executeServerInstruction(instruction)
                     response_log = f"Response to client: {str(response_to_client)}"
                     if response_to_client.error is None:
                         logger.info(f"Response sent to client.")
@@ -533,7 +551,12 @@ class StationServer(QtCore.QObject):
                 logger.warning(f"Invalid message type: {type(message)}.")
                 logger.debug(f"Invalid message received: {str(message)}")
 
+            self.publishChange(publisher_socket, pub_type)
             send(socket, response_to_client)
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
             self.messageReceived.emit(str(message), response_log)
 
         socket.close()
@@ -541,16 +564,16 @@ class StationServer(QtCore.QObject):
         return True
 
     def executeServerInstruction(self, instruction: ServerInstruction) \
-            -> ServerResponse:
+            -> Tuple[ServerResponse, str]:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
 
-        :param instruction: The instruction object.
-        :returns: the results returned from performing the operation.
+        :returns: the results returned from performing the operation and the type of operation
         """
         args = []
         kwargs = {}
+        action_type = ''
 
         # we call a helper function depending on the operation that is requested
         if instruction.operation == Operation.get_existing_instruments:
@@ -558,9 +581,11 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.create_instrument:
             func = self._createInstrument
             args = [instruction.create_instrument_spec]
+            action_type = 'CREATE_INS'
         elif instruction.operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
+            action_type = 'CALL'
         elif instruction.operation == Operation.get_blueprint:
             func = self._getBluePrint
             args = [instruction.requested_path]
@@ -570,6 +595,7 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.set_params:
             func = self._fromParamDict
             args = [instruction.set_parameters]
+            action_type = 'SET_PARAM'
         else:
             raise NotImplementedError
 
@@ -580,7 +606,7 @@ class StationServer(QtCore.QObject):
         except Exception as err:
             response = ServerResponse(message=None, error=err)
 
-        return response
+        return response, action_type
 
     def _getExistingInstruments(self) -> Dict:
         """
@@ -655,6 +681,32 @@ class StationServer(QtCore.QObject):
 
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
+
+    def publishChange(self, pub_socket, pub_type: str):
+        """
+        Publishes the change in the server so clients can update.
+
+        if pub_type CALL, an object was called
+
+        pub_type CREATE_INS, an instrument was created
+
+        pub_type SET_PARAM, a parameter was set
+        """
+        publisher_socket = pub_socket
+        pub_type = pub_type
+        if pub_type == '':
+            return None
+        elif pub_type == 'CALL':
+            publisher_socket.send_string("CALL")
+            logger.info(f"{pub_type} update published.")
+        elif pub_type == 'CREATE_INS':
+            publisher_socket.send_string("CREATE_INS")
+            logger.info(f"{pub_type} update published.")
+
+
+
+
+
 
 
 def startServer(port=5555, allowUserShutdown=False) -> \
