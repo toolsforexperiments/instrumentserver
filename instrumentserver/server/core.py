@@ -313,7 +313,7 @@ class ParameterSerializeSpec:
 
 @dataclass
 class ServerInstruction:
-    #TODO: include set parameters in documentation.
+    #TODO: Remove set parameterr from the code.
     """Instruction spec for the server.
 
     Valid operations:
@@ -449,7 +449,6 @@ class StationServer(QtCore.QObject):
         self.allowUserShutdown = allowUserShutdown
 
         self.publisher_port = publisher_port
-
         self.publisher_socket = None
 
         self.parameterSet.connect(
@@ -479,8 +478,8 @@ class StationServer(QtCore.QObject):
         # creating and binding publishing socket
         publisher_addr = f"tcp://*:{self.publisher_port}"
         logger.info(f"Starting publishing server at {addr}")
-        publisher_socket = context.socket(zmq.PUB)
-        publisher_socket.bind(publisher_addr)
+        self.publisher_socket = context.socket(zmq.PUB)
+        self.publisher_socket.bind(publisher_addr)
 
 
         self.serverRunning = True
@@ -531,7 +530,7 @@ class StationServer(QtCore.QObject):
                 if message_ok:
                     # we don't need to use a try-block here, because
                     # errors are already handled in executeServerInstruction
-                    response_to_client, pub_type = self.executeServerInstruction(instruction)
+                    response_to_client = self.executeServerInstruction(instruction)
                     response_log = f"Response to client: {str(response_to_client)}"
                     if response_to_client.error is None:
                         logger.info(f"Response sent to client.")
@@ -545,12 +544,11 @@ class StationServer(QtCore.QObject):
                 logger.warning(f"Invalid message type: {type(message)}.")
                 logger.debug(f"Invalid message received: {str(message)}")
 
-            self.publishChange(publisher_socket, pub_type)
             send(socket, response_to_client)
 
             self.messageReceived.emit(str(message), response_log)
 
-        publisher_socket.close()
+        self.publisher_socket.close()
         socket.close()
         self.finished.emit()
         return True
@@ -574,11 +572,9 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.create_instrument:
             func = self._createInstrument
             args = [instruction.create_instrument_spec]
-            action_type = 'CREATE_INS'
         elif instruction.operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
-            action_type = 'CALL'
         elif instruction.operation == Operation.get_blueprint:
             func = self._getBluePrint
             args = [instruction.requested_path]
@@ -588,7 +584,6 @@ class StationServer(QtCore.QObject):
         elif instruction.operation == Operation.set_params:
             func = self._fromParamDict
             args = [instruction.set_parameters]
-            action_type = 'SET_PARAM'
         else:
             raise NotImplementedError
 
@@ -599,7 +594,7 @@ class StationServer(QtCore.QObject):
         except Exception as err:
             response = ServerResponse(message=None, error=err)
 
-        return response, action_type
+        return response
 
     def _getExistingInstruments(self) -> Dict:
         """
@@ -642,8 +637,10 @@ class StationServer(QtCore.QObject):
         if isinstance(obj, Parameter):
             if len(args) > 0:
                 self.parameterSet.emit(spec.target, args[0])
+                self.publishChange(spec.target, args[0])
             else:
                 self.parameterGet.emit(spec.target, ret)
+                self.publishChange(spec.target)
         else:
             self.funcCalled.emit(spec.target, args, kwargs, ret)
 
@@ -675,28 +672,17 @@ class StationServer(QtCore.QObject):
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
 
-    def publishChange(self, pub_socket, pub_type: str):
+    def publishChange(self, name: str, value: int = None):
         """
-        Publishes the change in the server so clients can update.
-
-        if pub_type CALL, an object was called
-
-        pub_type CREATE_INS, an instrument was created
-
-        pub_type SET_PARAM, a parameter was set
+        Publish just changes to parameters (for now) through the specified socket
         """
-        publisher_socket = pub_socket
-        pub_type = pub_type
-        if pub_type == '':
-            return None
-        elif pub_type == 'CALL':
-            publisher_socket.send_string("CALL")
-            logger.info(f"{pub_type} update published.")
-        elif pub_type == 'CREATE_INS':
-            publisher_socket.send_string("CREATE_INS")
-            logger.info(f"{pub_type} update published.")
-
-
+        if value is None:
+            if name is not None:
+                self.publisher_socket.send_string(f"{name} has been called")
+                logger.info(f"{name} has been called PUBLISHED")
+        else:
+            self.publisher_socket.send_string(f"{name} has a new value of: {value}")
+            logger.info(f"{name} has been changed to {value} PUBLISHED")
 
 
 
