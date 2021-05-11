@@ -1,15 +1,14 @@
-from typing import Optional, Any, Dict, List, Tuple, Union
+from typing import Optional, Any, List, Tuple, Union
 
-from qcodes import Instrument, Parameter
-
-from .. import QtWidgets, QtCore, QtGui
-from ..serialize import toParamDict
-from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
-from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
-from ..client import ProxyInstrument
+from qcodes import Parameter
 
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
+from .. import QtWidgets, QtCore, QtGui
+from ..client import ProxyInstrument
+from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
+from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
+from ..serialize import toParamDict
 
 
 # TODO: all styles set through a global style sheet.
@@ -61,7 +60,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.setLayout(layout)
         self.populateList()
-        
+
     def _makeToolbar(self):
         toolbar = QtWidgets.QToolBar(self)
         toolbar.setIconSize(QtCore.QSize(16, 16))
@@ -71,6 +70,18 @@ class ParameterManagerGui(QtWidgets.QWidget):
             "refresh all parameters from the instrument",
         )
         refreshAction.triggered.connect(lambda x: self.refreshAll())
+
+        loadParamAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/load.svg"),
+            "Load parameters from file",
+        )
+        loadParamAction.triggered.connect(lambda x: self.loadFromFile())
+
+        saveParamAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/save.svg"),
+            "Save parameters to file",
+        )
+        saveParamAction.triggered.connect(lambda x: self.saveToFile())
 
         toolbar.addSeparator()
 
@@ -205,31 +216,60 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.plist.removeEmptyContainers()
 
-    def refreshAll(self):
+    def refreshAll(self, delete=True, unitCheck=False):
+        """Refreshes the state of the GUI.
+
+        :param delete: Optional, If False, it will not delete parameters when it updates.
+        :param unitCheck:  If true, the refresh will check for changes in units, not only values
+
+        Encapsulated in a separate object so we can run it in a separate thread.
+        """
+
         # first, we need to make sure we update the proxy instrument (if using one)
         if isinstance(self._instrument, ProxyInstrument):
             self._instrument.update()
 
         # next, we can parse through the parameters and update the GUI.
         insParams = self._instrument.list()
+
         for n in insParams:
-            items = self.plist.findItems(
-                n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+            items = self.plist.findItems(n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
                 self.addParameterWidget(n, self.getParameter(n))
             else:
+                # this is grabbing the widget consisting of input and all the buttons
                 w = self.plist.itemWidget(items[0], 2)
                 w.setWidgetFromParameter()
 
-        deleteParams = []
-        for pn in self.plist.parameters:
-            if pn not in insParams:
-                deleteParams.append(pn)
-        for pn in deleteParams:
-            self.removeParameter(pn)
+                # also need to check the unit (doesn't happen often, but can!)
+                if unitCheck:
+                    newUnit = self.getParameter(n).unit
+                    items[0].setText(1, newUnit)
+
+        if delete:
+            deleteParams = []
+            for pn in self.plist.parameters:
+                if pn not in insParams:
+                    deleteParams.append(pn)
+            for pn in deleteParams:
+                self.removeParameter(pn)
 
     def filterParameters(self, filterString: str):
         self.plist.filterItems(filterString)
+
+    def saveToFile(self):
+        try:
+            self._instrument.paramManToFile()
+        except Exception as e:
+            print(f"Saving failed. {type(e)}: {e.args}")
+
+    def loadFromFile(self):
+        try:
+            self._instrument.fromFile()
+            self._instrument._refreshProxySubmodules()
+            self.refreshAll(delete=False, unitCheck=True)
+        except Exception as e:
+            print(f"Loading failed. {type(e)}: {e.args}")
 
 
 class ParameterList(QtWidgets.QTreeWidget):
@@ -472,4 +512,3 @@ class AddParameterWidget(QtWidgets.QWidget):
     def clearError(self):
         self.addButton.setStyleSheet("")
         self.addButton.setToolTip("")
-
