@@ -12,7 +12,7 @@ from types import MethodType
 
 import json
 import qcodes as qc
-import zmq
+# import zmq
 from qcodes import Instrument, Parameter
 from qcodes.instrument.base import InstrumentBase
 
@@ -433,36 +433,36 @@ class Client(BaseClient):
                 params = json.load(f)
             self.setParameters(params)
         else:
-            logger.warn(f"File {filePath} does not exist. No params loaded.")
+            logger.warning(f"File {filePath} does not exist. No params loaded.")
 
-class SubClient():
-    """Test client to test PUB-SUB"""
-
-    def __init__(self, host='localhost', port=5554, id=1):
-        self.host = host
-        self.port = port
-        self.addr = f"tcp://{host}:{port}"
-        self.id = id
-
-        print("I am working")
-
-    def startClient(self):
-        context = zmq.Context()
-        socket = context.socket(zmq.SUB)
-        print("Connecting to server")
-        socket.connect(self.addr)
-        socket.subscribe("")
-        self.clientRunning = True
-
-        while self.clientRunning:
-
-            message = socket.recv_string()
-            print(str(self.id)+" the message is: " + message)
-
-
-        print("closing connection")
-        socket.close()
-        return True
+# class SubClient():
+#     """Test client to test PUB-SUB"""
+#
+#     def __init__(self, host='localhost', port=5554, id=1):
+#         self.host = host
+#         self.port = port
+#         self.addr = f"tcp://{host}:{port}"
+#         self.id = id
+#
+#         print("I am working")
+#
+#     def startClient(self):
+#         context = zmq.Context()
+#         socket = context.socket(zmq.SUB)
+#         print("Connecting to server")
+#         socket.connect(self.addr)
+#         socket.subscribe("")
+#         self.clientRunning = True
+#
+#         while self.clientRunning:
+#
+#             message = socket.recv_string()
+#             print(str(self.id)+" the message is: " + message)
+#
+#
+#         print("closing connection")
+#         socket.close()
+#         return True
 
 
 
