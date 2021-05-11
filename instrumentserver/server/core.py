@@ -439,7 +439,7 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False):
+    def __init__(self, parent=None, port=5555, allowUserShutdown=False, publisher_port=5554):
         super().__init__(parent)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
@@ -448,13 +448,10 @@ class StationServer(QtCore.QObject):
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
 
-<<<<<<< Updated upstream
-=======
         self.publisher_port = publisher_port
 
         self.publisher_socket = None
 
->>>>>>> Stashed changes
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
         )
@@ -479,8 +476,6 @@ class StationServer(QtCore.QObject):
         socket = context.socket(zmq.REP)
         socket.bind(addr)
 
-<<<<<<< Updated upstream
-=======
         # creating and binding publishing socket
         publisher_addr = f"tcp://*:{self.publisher_port}"
         logger.info(f"Starting publishing server at {addr}")
@@ -488,7 +483,6 @@ class StationServer(QtCore.QObject):
         publisher_socket.bind(publisher_addr)
 
 
->>>>>>> Stashed changes
         self.serverRunning = True
         self.serverStarted.emit(addr)
 
@@ -553,12 +547,10 @@ class StationServer(QtCore.QObject):
 
             self.publishChange(publisher_socket, pub_type)
             send(socket, response_to_client)
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
             self.messageReceived.emit(str(message), response_log)
 
+        publisher_socket.close()
         socket.close()
         self.finished.emit()
         return True
@@ -569,7 +561,8 @@ class StationServer(QtCore.QObject):
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
 
-        :returns: the results returned from performing the operation and the type of operation
+        :param instruction: The instruction object.
+        :returns: the results returned from performing the operation.
         """
         args = []
         kwargs = {}

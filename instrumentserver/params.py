@@ -74,7 +74,7 @@ class ParameterManager(InstrumentBase):
         super().__init__(name)
 
         #: default location and name of the parameters save file.
-        self._paramValuesFile = os.path.abspath(os.path.join('.', 'parametermanager_parameters.json'))
+        self._paramValuesFile = os.path.join(os.getcwd(), f'parameter_manager_{self.name}.json')
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
@@ -262,6 +262,9 @@ class ParameterManager(InstrumentBase):
 
             if self.has_param(pn):
                 self.parameter(pn)(val)
+                if unit is not None:
+                    self.parameter(pn).unit = unit
+
             else:
                 self.add_parameter(pn, initial_value=val, unit=unit)
 
