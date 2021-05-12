@@ -291,6 +291,41 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
 
     return bp
 
+@dataclass
+class PublishingBluePrint:
+    """blueprint to publish parameter changes"""
+    name: str
+    value: int = None
+    unit: str = None
+    parameterBluePrint: str = None
+
+    def __init__(self, name: str, value: int = None, unit: str = None):
+        self.name = name
+        self.value = value
+        self.unit = unit
+
+    def __str__(self) -> str:
+        ret = f"""\"{self.name}\": {{"""
+        if self.value is not None:
+            ret = ret + f"\n    \"value\":\"{self.value}\""
+        if self.unit is not None:
+            ret = ret + f"\n    \"unit\":\"{self.unit}\""
+        ret = ret + f"""\n}}"""
+        return ret
+
+    def __repr__(self):
+        return str(self)
+
+    def tostr(self, indent = 0):
+
+        i = indent * ' '
+        ret = f"""name: {self.name}
+{i}- value: {self.value}
+{i}- unit: {self.unit}
+    """
+        return ret
+
+
 
 @dataclass
 class ParameterSerializeSpec:
@@ -439,7 +474,7 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False, publisher_port=5554):
+    def __init__(self, parent=None, port=5555, allowUserShutdown=False, publisherPort=5554):
         super().__init__(parent)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
@@ -448,8 +483,8 @@ class StationServer(QtCore.QObject):
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
 
-        self.publisher_port = publisher_port
-        self.publisher_socket = None
+        self.publisherPort = publisherPort
+        self.publisherSocket = None
 
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
@@ -476,10 +511,10 @@ class StationServer(QtCore.QObject):
         socket.bind(addr)
 
         # creating and binding publishing socket
-        publisher_addr = f"tcp://*:{self.publisher_port}"
+        publisherAddr = f"tcp://*:{self.publisherPort}"
         logger.info(f"Starting publishing server at {addr}")
-        self.publisher_socket = context.socket(zmq.PUB)
-        self.publisher_socket.bind(publisher_addr)
+        self.publisherSocket = context.socket(zmq.PUB)
+        self.publisherSocket.bind(publisherAddr)
 
 
         self.serverRunning = True
@@ -548,7 +583,7 @@ class StationServer(QtCore.QObject):
 
             self.messageReceived.emit(str(message), response_log)
 
-        self.publisher_socket.close()
+        self.publisherSocket.close()
         socket.close()
         self.finished.emit()
         return True
@@ -564,7 +599,6 @@ class StationServer(QtCore.QObject):
         """
         args = []
         kwargs = {}
-        action_type = ''
 
         # we call a helper function depending on the operation that is requested
         if instruction.operation == Operation.get_existing_instruments:
@@ -637,10 +671,10 @@ class StationServer(QtCore.QObject):
         if isinstance(obj, Parameter):
             if len(args) > 0:
                 self.parameterSet.emit(spec.target, args[0])
-                self.publishChange(spec.target, args[0])
+                self._publishChange(PublishingBluePrint(spec.target, args[0]))
             else:
                 self.parameterGet.emit(spec.target, ret)
-                self.publishChange(spec.target)
+                self._publishChange(PublishingBluePrint(spec.target))
         else:
             self.funcCalled.emit(spec.target, args, kwargs, ret)
 
@@ -672,17 +706,21 @@ class StationServer(QtCore.QObject):
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
 
-    def publishChange(self, name: str, value: int = None):
+    def _publishChange(self, bluePrint: PublishingBluePrint):
         """
         Publish just changes to parameters (for now) through the specified socket
         """
-        if value is None:
-            if name is not None:
-                self.publisher_socket.send_string(f"{name} has been called")
-                logger.info(f"{name} has been called PUBLISHED")
-        else:
-            self.publisher_socket.send_string(f"{name} has a new value of: {value}")
-            logger.info(f"{name} has been changed to {value} PUBLISHED")
+
+        self.publisherSocket.send_string(str(bluePrint))
+        logger.info(f"This blueprint has been published: {bluePrint}")
+
+        # if value is None:
+        #     if name is not None:
+        #         self.publisherSocket.send_string(f"{name} has been called")
+        #         logger.info(f"{name} has been called PUBLISHED")
+        # else:
+        #     self.publisherSocket.send_string(f"{name} has a new value of: {value}")
+        #     logger.info(f"{name} has been changed to {value} PUBLISHED")
 
 
 
