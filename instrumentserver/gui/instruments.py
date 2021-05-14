@@ -259,7 +259,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
     def saveToFile(self):
         try:
-            self._instrument.paramManToFile()
+            self._instrument.toFile()
         except Exception as e:
             print(f"Saving failed. {type(e)}: {e.args}")
 
@@ -283,6 +283,7 @@ class ParameterList(QtWidgets.QTreeWidget):
         self.setSortingEnabled(True)
         self.setAlternatingRowColors(True)
 
+        self.parameters = []
         self.parameters = []
         self.filterString = ''
 

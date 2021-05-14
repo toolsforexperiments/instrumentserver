@@ -272,7 +272,7 @@ class ParameterManager(InstrumentBase):
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
 
-    def paramManToFile(self, filePath : str = None):
+    def toFile(self, filePath : str = None):
 
         """Save parameters from the instrument into a json file.
 
