@@ -13,6 +13,7 @@ from typing import Any, Union, Optional, Dict, List
 
 import qcodes as qc
 import zmq
+from PyQt5.QtCore import QObject, pyqtSignal
 from qcodes import Instrument, Parameter
 from qcodes.instrument.base import InstrumentBase
 
@@ -432,6 +433,41 @@ class Client(BaseClient):
             self.setParameters(params)
         else:
             logger.warning(f"File {filePath} does not exist. No params loaded.")
+
+class SubClient(QObject):
+    """Test client to test PUB-SUB"""
+    #: Signal(str) --
+    #: emitted when the server broadcast either a new parameter or an update to an existing one
+    update = pyqtSignal(str)
+
+    def __init__(self, host='localhost', port=5556):
+        super(QObject, self).__init__()
+        self.host = host
+        self.port = port
+        self.addr = f"tcp://{host}:{port}"
+
+
+    def connect(self):
+        logger.info(f"Connecting to {self.addr}")
+        context = zmq.Context()
+        socket = context.socket(zmq.SUB)
+        socket.connect(self.addr)
+
+        # subscribe to changes in parameters and creating of parameters.
+        socket.setsockopt_string(zmq.SUBSCRIBE, 'set')
+        socket.setsockopt_string(zmq.SUBSCRIBE, 'create')
+        self.connected = True
+
+        while self.connected:
+
+            message = socket.recv_multipart()
+
+            #emmits the signals already decoded so python recognizes it a string instead of bytes
+            self.update.emit(message[1].decode("utf-8"))
+
+        self.disconnect()
+
+        return True
 
 class _QtAdapter(QtCore.QObject):
     def __init__(self, parent, *arg, **kw):

@@ -1,3 +1,5 @@
+import json
+import logging
 from typing import Optional, Any, List, Tuple, Union
 
 from qcodes import Parameter
@@ -5,14 +7,16 @@ from qcodes import Parameter
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
 from .. import QtWidgets, QtCore, QtGui
-from ..client import ProxyInstrument
+from ..client import ProxyInstrument, SubClient
 from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
 from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
 from ..serialize import toParamDict
-
+from ast import literal_eval
 
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
+
+logger = logging.getLogger(__name__)
 
 
 class ParameterManagerGui(QtWidgets.QWidget):
@@ -21,7 +25,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
     parameterCreationError = QtCore.Signal(str)
 
     #: Signal() --
-    #  emitted when a parameter was created successfully
+    #:  emitted when a parameter was created successfully
     parameterCreated = QtCore.Signal()
 
     def __init__(self, ins: Union[ParameterManager, ProxyInstrument],
@@ -60,6 +64,18 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.setLayout(layout)
         self.populateList()
+
+        # creating subscriber client and initializing it
+        self.thread = QtCore.QThread()
+        self.updateClient = SubClient()
+        self.updateClient.moveToThread(self.thread)
+
+        # connecting starting slot with the main loop of the subscriber client
+        self.thread.started.connect(self.updateClient.connect)
+        self.updateClient.update.connect(self.refreshParameter)
+
+        # starts the updateClient in a separate thread. The
+        self.thread.start()
 
     def _makeToolbar(self):
         toolbar = QtWidgets.QToolBar(self)
@@ -231,7 +247,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         # next, we can parse through the parameters and update the GUI.
         insParams = self._instrument.list()
-
         for n in insParams:
             items = self.plist.findItems(n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
@@ -270,6 +285,33 @@ class ParameterManagerGui(QtWidgets.QWidget):
             self.refreshAll(delete=False, unitCheck=True)
         except Exception as e:
             print(f"Loading failed. {type(e)}: {e.args}")
+
+    @QtCore.Slot(str)
+    def refreshParameter(self, message: str):
+        """
+        Refreshes the GUI to show real time updates of parameters.
+        """
+        # converting the blueprint into a dictionary
+        paramdict = literal_eval(message)
+        print(message)
+
+        # getting the name of the parameter
+        name = paramdict['name'][7:]
+
+        # check what kind of action is being broadcast
+        if paramdict['action'] == 'set':
+            item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+            # if the parameter does not exist refresh all the parameters
+            if len(item) == 0:
+                self.refreshAll()
+            else:
+                # get the corresponding itemwidget and update the value
+                w = self.plist.itemWidget(item[0], 2)
+                w.paramWidget.setValue(paramdict['value'])
+        # if a new parameter has been created, refresh all the parameters
+        elif paramdict['action'] == 'create':
+            self.refreshAll()
+
 
 
 class ParameterList(QtWidgets.QTreeWidget):

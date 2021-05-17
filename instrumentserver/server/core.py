@@ -306,7 +306,7 @@ class ParameterBroadcastBluePrint:
         self.action = action
 
     def __str__(self) -> str:
-        ret = f"""\"{self.name}\": {{    
+        ret = f"""\"name\":\"{self.name}\": {{    
     \"action\":\"{self.action}" """
         if self.value is not None:
             ret = ret + f"\n    \"value\":\"{self.value}\""
@@ -327,6 +327,19 @@ class ParameterBroadcastBluePrint:
 {i}- unit: {self.unit}
     """
         return ret
+
+    def toDictFormat(self):
+        """
+        Formats the blueprint for easy conversion to dictionary later.
+        """
+        ret = f"'name': '{self.name}'," \
+              f" 'action': '{self.action}'," \
+              f" 'value': '{self.value}'," \
+              f" 'unit': '{self.unit}'"
+        return "{"+ret+"}"
+
+
+
 
 
 
@@ -721,12 +734,15 @@ class StationServer(QtCore.QObject):
 
     def _broadcastParameterChange(self, bluePrint: ParameterBroadcastBluePrint):
         """
-        Broadcast just changes to parameters (for now) through the publisher socket
+        Broadcast any changes to parameters in the parametermanager instrument.
+        The message is composed of a 2 part array. The first item is the action of the blueprint,
+        with the second item being the string of the blueprint in dict format.
+        this is done to allow subscribers to subscribe to specific items.
 
         :param bluePrint: the parameter broadcast blueprint that is being broadcast
         """
-
-        self.broadcastSocket.send_string(str(bluePrint))
+        self.broadcastSocket.send_string(bluePrint.action, flags=zmq.SNDMORE)
+        self.broadcastSocket.send_string((bluePrint.toDictFormat()))
         logger.info(f"This blueprint has been Broadcasted: {bluePrint}")
 
     def _newParameterDetection(self, spec, args, kwargs):
