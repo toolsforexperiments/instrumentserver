@@ -695,12 +695,12 @@ class StationServer(QtCore.QObject):
                 self.parameterSet.emit(spec.target, args[0])
 
                 # broadcast changes in parameter values
-                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'set', args[0]))
+                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
             else:
                 self.parameterGet.emit(spec.target, ret)
 
                 # broadcast calls of parameters
-                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'get', ret))
+                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
         else:
             self.funcCalled.emit(spec.target, args, kwargs, ret)
 
@@ -757,7 +757,7 @@ class StationServer(QtCore.QObject):
 
         if spec.target.split('.')[-1] == 'add_parameter':
             pb = ParameterBroadcastBluePrint('params.'+args[0],
-                                             'create',
+                                             'parameter-creation',
                                              kwargs['initial_value'],
                                              kwargs['unit'])
             self._broadcastParameterChange(pb)

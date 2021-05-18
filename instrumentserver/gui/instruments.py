@@ -299,7 +299,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
         name = paramdict['name'][7:]
 
         # check what kind of action is being broadcast
-        if paramdict['action'] == 'set':
+        if paramdict['action'] == 'parameter-update':
             item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             # if the parameter does not exist refresh all the parameters
             if len(item) == 0:
@@ -309,7 +309,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
                 w = self.plist.itemWidget(item[0], 2)
                 w.paramWidget.setValue(paramdict['value'])
         # if a new parameter has been created, refresh all the parameters
-        elif paramdict['action'] == 'create':
+        elif paramdict['action'] == 'parameter-creation':
             self.refreshAll()
 
 
