@@ -739,7 +739,8 @@ class StationServer(QtCore.QObject):
         """
         self.broadcastSocket.send_string(bluePrint.action, flags=zmq.SNDMORE)
         self.broadcastSocket.send_string((bluePrint.toDictFormat()))
-        logger.info(f"This blueprint has been Broadcasted: {bluePrint}")
+        logger.info(f"Parameter {bluePrint.name} has an update of type {bluePrint.action},"
+                     f" with a value of {bluePrint.value}.")
 
     def _newParameterDetection(self, spec, args, kwargs):
         """
