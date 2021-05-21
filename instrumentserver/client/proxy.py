@@ -433,6 +433,7 @@ class Client(BaseClient):
         else:
             logger.warning(f"File {filePath} does not exist. No params loaded.")
 
+
 class SubClient(QtCore.QObject):
     """
     Specific subscription client used for real-time parameter updates.
@@ -441,17 +442,18 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one
     update = QtCore.Signal(str)
 
-    def __init__(self, host='localhost', port=DEFAULT_PORT+1):
+    def __init__(self, host: str = 'localhost', port: int = DEFAULT_PORT+1):
         """
         Creates a new subscription client.
 
         :param host: the host location of the updates
         :param port: it always is the servers normal port +1
         """
-        super(QtCore.QObject, self).__init__()
+        super().__init__()
         self.host = host
         self.port = port
         self.addr = f"tcp://{host}:{port}"
+        self.connected = False
 
     def connect(self):
         """
@@ -480,6 +482,7 @@ class SubClient(QtCore.QObject):
         self.disconnect()
 
         return True
+
 
 class _QtAdapter(QtCore.QObject):
     def __init__(self, parent, *arg, **kw):
