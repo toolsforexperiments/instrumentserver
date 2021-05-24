@@ -739,8 +739,8 @@ class StationServer(QtCore.QObject):
         """
         self.broadcastSocket.send_string(bluePrint.action, flags=zmq.SNDMORE)
         self.broadcastSocket.send_string((bluePrint.toDictFormat()))
-        logger.info(f"Parameter {bluePrint.name} has an update of type {bluePrint.action},"
-                     f" with a value of {bluePrint.value}.")
+        logger.info(f"Parameter {bluePrint.name} has broadcast an update of type: {bluePrint.action},"
+                     f" with a value: {bluePrint.value}.")
 
     def _newParameterDetection(self, spec, args, kwargs):
         """
@@ -757,6 +757,10 @@ class StationServer(QtCore.QObject):
                                              'parameter-creation',
                                              kwargs['initial_value'],
                                              kwargs['unit'])
+            self._broadcastParameterChange(pb)
+        elif spec.target.split('.')[-1] == 'remove_parameter':
+            pb = ParameterBroadcastBluePrint('params.' + args[0],
+                                             'parameter-deletion')
             self._broadcastParameterChange(pb)
 
 

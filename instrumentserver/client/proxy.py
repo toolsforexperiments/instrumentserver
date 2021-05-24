@@ -470,6 +470,7 @@ class SubClient(QtCore.QObject):
         # subscribe to changes in parameters and creating of parameters.
         socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-update')
         socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-creation')
+        socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-deletion')
         self.connected = True
 
         while self.connected:

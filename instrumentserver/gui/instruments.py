@@ -204,7 +204,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
         w.pressed.connect(lambda: self.removeParameter(fullName))
         return w
 
-    def removeParameter(self, fullName: str):
+    def removeParameter(self, fullName: str, deleteServerSide: bool = True):
         items = self.plist.findItems(
             fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
         if len(items) > 0:
@@ -226,9 +226,9 @@ class ParameterManagerGui(QtWidgets.QWidget):
         if fullName in self._removeWidgets:
             self._removeWidgets[fullName].deleteLater()
             del self._removeWidgets[fullName]
-
-        if self._instrument.has_param(fullName):
-            self._instrument.remove_parameter(fullName)
+        if deleteServerSide:
+            if self._instrument.has_param(fullName):
+                self._instrument.remove_parameter(fullName)
 
         self.plist.removeEmptyContainers()
 
@@ -276,7 +276,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
         try:
             self._instrument.toFile()
         except Exception as e:
-            print(f"Saving failed. {type(e)}: {e.args}")
+            logger.info(f"Saving failed. {type(e)}: {e.args}")
 
     def loadFromFile(self):
         try:
@@ -284,7 +284,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
             self._instrument._refreshProxySubmodules()
             self.refreshAll(delete=False, unitCheck=True)
         except Exception as e:
-            print(f"Loading failed. {type(e)}: {e.args}")
+            logger.info(f"Loading failed. {type(e)}: {e.args}")
 
     @QtCore.Slot(str)
     def refreshParameter(self, message: str):
@@ -293,7 +293,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
         """
         # converting the blueprint into a dictionary
         paramdict = literal_eval(message)
-        print(message)
 
         # getting the name of the parameter
         name = paramdict['name'][7:]
@@ -311,6 +310,9 @@ class ParameterManagerGui(QtWidgets.QWidget):
         # if a new parameter has been created, refresh all the parameters
         elif paramdict['action'] == 'parameter-creation':
             self.refreshAll()
+        # if a parameter has been deleted, removes the parameter just in the client side.
+        elif paramdict['action'] == 'parameter-deletion':
+            self.removeParameter(name, False)
 
 
 
