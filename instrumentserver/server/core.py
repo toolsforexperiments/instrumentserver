@@ -684,7 +684,7 @@ class StationServer(QtCore.QObject):
         ret = obj(*args, **kwargs)
 
         # check if a new parameter is being created
-        self._newParameterDetection(spec, args, kwargs)
+        self._newOrDeleteParameterDetection(spec, args, kwargs)
 
         if isinstance(obj, Parameter):
             if len(args) > 0:
@@ -742,10 +742,10 @@ class StationServer(QtCore.QObject):
         logger.info(f"Parameter {bluePrint.name} has broadcast an update of type: {bluePrint.action},"
                      f" with a value: {bluePrint.value}.")
 
-    def _newParameterDetection(self, spec, args, kwargs):
+    def _newOrDeleteParameterDetection(self, spec, args, kwargs):
         """
-        detects if the call action is being used to create a new parameter. If so it creates the parameter
-        broadcast blueprint and broadcast it.
+        detects if the call action is being used to create a new parameter or deletes an existing parameter.
+        If so, it creates the parameter broadcast blueprint and broadcast it.
 
         :param spec: CallSpec object being passed to the call method
         :param args: args being passed to the call method

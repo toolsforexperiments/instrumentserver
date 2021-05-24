@@ -442,35 +442,49 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one
     update = QtCore.Signal(str)
 
-    def __init__(self, host: str = 'localhost', port: int = DEFAULT_PORT+1):
+    def __init__(self, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
         """
         Creates a new subscription client.
 
         :param host: the host location of the updates
-        :param port: it always is the servers normal port +1
+        :param port: Should not be changed. it always is the server normal port +1
         """
         super().__init__()
-        self.host = host
-        self.port = port
-        self.addr = f"tcp://{host}:{port}"
+        self.host = sub_host
+        self.port = sub_port
+        self.addr = f"tcp://{self.host}:{self.port}"
         self.connected = False
 
-    def connect(self):
+    def connect(self, param_updates: Optional[bool] = True,
+                param_creation: Optional[bool] = True,
+                param_deletion: Optional[bool] = True,
+                param_call: Optional[bool] = False):
         """
         Connects the subscription client with the broadcast
         and runs an infinite loop to check for updates.
 
         It should always be run on a separate thread or the program will get stuck in the loop.
+
+        :param param_updates: If True, the client listens for parameter updates.
+        :param param_creation: If True, the client listens for parameter creations.
+        :param param_deletion: If True, the client listens for parameter deletions.
+        :param param_call: If True, the client listens for parameter calls.
         """
         logger.info(f"Connecting to {self.addr}")
         context = zmq.Context()
         socket = context.socket(zmq.SUB)
         socket.connect(self.addr)
 
-        # subscribe to changes in parameters and creating of parameters.
-        socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-update')
-        socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-creation')
-        socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-deletion')
+        # subscribe to the specified actions
+        if param_updates:
+            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-update')
+        if param_creation:
+            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-creation')
+        if param_deletion:
+            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-deletion')
+        if param_call:
+            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-call')
+
         self.connected = True
 
         while self.connected:

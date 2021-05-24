@@ -204,7 +204,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
         w.pressed.connect(lambda: self.removeParameter(fullName))
         return w
 
-    def removeParameter(self, fullName: str, deleteServerSide: bool = True):
+    def removeParameter(self, fullName: str, deleteServerSide: Optional[bool] = True):
         items = self.plist.findItems(
             fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
         if len(items) > 0:
@@ -232,7 +232,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.plist.removeEmptyContainers()
 
-    def refreshAll(self, delete=True, unitCheck=False):
+    def refreshAll(self, delete: Optional[bool]=True, unitCheck: Optional[bool]=False):
         """Refreshes the state of the GUI.
 
         :param delete: Optional, If False, it will not delete parameters when it updates.
