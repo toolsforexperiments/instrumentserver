@@ -278,7 +278,7 @@ class ParameterManager(InstrumentBase):
 
         :param filePath: path to the json file. 
                          If ``None`` it looks in the instrument current location
-                         directory for a file called "parametermanager_parameters.json"
+                         directory for a file called "parameter_manager_<parameter_manager_name>.json"
         """
 
         if filePath is None:

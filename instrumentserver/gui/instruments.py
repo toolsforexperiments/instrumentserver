@@ -167,6 +167,18 @@ class ParameterManagerGui(QtWidgets.QWidget):
             except Exception as e:
                 value = str(value)
 
+        # Checking that the new parameter is not an existing submodule.
+        length = len(fullName.split('.'))
+        for params in self._instrument.list():
+            params_submodules = params.split('.')
+            top_level = params_submodules[0]
+            for i in range(1, length):
+                top_level = top_level + '.' + params_submodules[i]
+            if fullName == top_level:
+                self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
+                                                     f"is a top-level submodule.")
+                return
+
         try:
             self._instrument.add_parameter(fullName, initial_value=value,
                                            unit=unit, vals=vals)
