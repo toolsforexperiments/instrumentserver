@@ -322,17 +322,13 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             else:
                 self.submodules[sn].update()
 
-    # trying to overwrite the method. this does not brake anything,
-    # however I could not figure out a way of differentiating when its crashing because
-    # the parameter does not exist or when it is working as intended
     def __getattr__(self, item):
+        self.bp = self.cli.getBluePrint(self.remotePath)
+        self._getProxySubmodules()
         try:
             return super().__getattr__(item)
-        except Exception as e:
-            print(f"{type(e)}: {e.args}")
-            # self.update throws a recursion error since it uses __getattr__
-            #self.update()
-            return super().__getattr__(item)
+        except AttributeError as e:
+            raise e
 
 
 ProxyInstrument = ProxyInstrumentModule
