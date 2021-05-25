@@ -11,7 +11,7 @@ from instrumentserver.client import ProxyInstrument
 
 #%% Create all my instruments
 Instrument.close_all()
-ins_cli = Client(,
+ins_cli = Client()
 dummy_vna = ins_cli.create_instrument(
     'instrumentserver.testing.dummy_instruments.rf.ResonatorResponse',
     'dummy_vna'
