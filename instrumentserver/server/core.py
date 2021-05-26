@@ -764,12 +764,6 @@ class StationServer(QtCore.QObject):
             self._broadcastParameterChange(pb)
 
 
-
-
-
-
-
-
 def startServer(port=5555, allowUserShutdown=False) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
