@@ -168,16 +168,45 @@ class ParameterManagerGui(QtWidgets.QWidget):
                 value = str(value)
 
         # Checking that the new parameter is not an existing submodule.
-        length = len(fullName.split('.'))
-        for params in self._instrument.list():
-            params_submodules = params.split('.')
-            top_level = params_submodules[0]
-            for i in range(1, length):
-                top_level = top_level + '.' + params_submodules[i]
+        fullName_submodules = fullName.split('.')
+        fullName_length = len(fullName_submodules)
+
+        equal = False
+
+        # we go through all of the parameters to see if the new parameter has the same name as an existing submodule
+        for param in self._instrument.list():
+            param_submodules = param.split('.')
+            param_length = len(param_submodules)
+            top_level = param_submodules[0]
+
+            # we check if either the new parameter or the existing parameter has
+            # more modules and use the smaller one to construct the top-level submodules
+            if fullName_length > param_length:
+                assembly_number = param_length
+
+            # this only happens when the new parameter has the same name as an existing parameter and not a submodule
+            # only used to display correct  error
+            elif fullName_length == param_length:
+                assembly_number = fullName_length
+                equal = True
+
+            else:
+                assembly_number = fullName_length
+
+            # construct the top level submodule
+            for i in range(1, assembly_number):
+                top_level = top_level + '.' + param_submodules[i]
+
             if fullName == top_level:
-                self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
-                                                     f"is a top-level submodule.")
-                return
+                if equal:
+                    self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
+                                                     f"is an existing parameter.")
+
+                    return
+                else:
+                    self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
+                                                     f"is an existing submodule.")
+                    return
 
         try:
             self._instrument.add_parameter(fullName, initial_value=value,
