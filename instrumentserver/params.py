@@ -232,7 +232,7 @@ class ParameterManager(InstrumentBase):
 
         with open(filePath, 'r') as f:
             pd = json.load(f)
-        self.fromParamDict(pd)
+        self.fromParamDict(pd, deleteMissing)
 
     def fromParamDict(self, paramDict: Dict[str, Any],
                       deleteMissing: bool = True):

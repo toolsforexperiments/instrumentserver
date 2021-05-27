@@ -321,9 +321,15 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
     def loadFromFile(self):
         try:
-            self._instrument.fromFile()
-            self._instrument._refreshProxySubmodules()
+            self._instrument.fromFile(deleteMissing=False)
             self.refreshAll(delete=False, unitCheck=True)
+
+            # creating a dummy parameter to trigger a parameter creation broadcast.
+            # this is done so that a different client knows when parameters have been loading.
+            self._instrument.add_parameter('creation_broadcast',
+                                           initial_value='', unit='')
+            self._instrument.remove_parameter('creation_broadcast')
+
         except Exception as e:
             logger.info(f"Loading failed. {type(e)}: {e.args}")
 
