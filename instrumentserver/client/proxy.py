@@ -324,14 +324,19 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
     def __getattr__(self, item):
         try:
-            current_bp = self.cli.getBluePrint(self.remotePath)
-            if item not in current_bp.parameters:
-                self.bp = current_bp
-                #self._getProxyParameters()
-                self._getProxySubmodules()
             return super().__getattr__(item)
         except Exception as e:
-            raise e
+            current_bp = self.cli.getBluePrint(self.remotePath)
+            if item in current_bp.parameters and item not in self.parameters:
+                self.bp = current_bp
+                self._getProxyParameters()
+                return getattr(self, item)
+            elif item in current_bp.submodules and item not in self.submodules:
+                self.bp = current_bp
+                self._getProxySubmodules()
+                return getattr(self, item)
+            else:
+                raise e
 
 
 ProxyInstrument = ProxyInstrumentModule
