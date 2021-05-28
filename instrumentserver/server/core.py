@@ -730,14 +730,14 @@ class StationServer(QtCore.QObject):
 
     def _broadcastParameterChange(self, bluePrint: ParameterBroadcastBluePrint):
         """
-        Broadcast any changes to parameters in the parametermanager instrument.
-        The message is composed of a 2 part array. The first item is the action of the blueprint,
+        Broadcast any changes to parameters in the server.
+        The message is composed of a 2 part array. The first item is the name of the instrument the parameter is from,
         with the second item being the string of the blueprint in dict format.
-        this is done to allow subscribers to subscribe to specific items.
+        this is done to allow subscribers to subscribe to specific instruments.
 
         :param bluePrint: the parameter broadcast blueprint that is being broadcast
         """
-        self.broadcastSocket.send_string(bluePrint.action, flags=zmq.SNDMORE)
+        self.broadcastSocket.send_string(bluePrint.name.split('.')[0], flags=zmq.SNDMORE)
         self.broadcastSocket.send_string((bluePrint.toDictFormat()))
         logger.info(f"Parameter {bluePrint.name} has broadcast an update of type: {bluePrint.action},"
                      f" with a value: {bluePrint.value}.")
@@ -753,13 +753,13 @@ class StationServer(QtCore.QObject):
         """
 
         if spec.target.split('.')[-1] == 'add_parameter':
-            pb = ParameterBroadcastBluePrint('params.'+args[0],
+            pb = ParameterBroadcastBluePrint(spec.target,
                                              'parameter-creation',
                                              kwargs['initial_value'],
                                              kwargs['unit'])
             self._broadcastParameterChange(pb)
         elif spec.target.split('.')[-1] == 'remove_parameter':
-            pb = ParameterBroadcastBluePrint('params.' + args[0],
+            pb = ParameterBroadcastBluePrint(spec.target,
                                              'parameter-deletion')
             self._broadcastParameterChange(pb)
 

@@ -458,10 +458,12 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one
     update = QtCore.Signal(str)
 
-    def __init__(self, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
+    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
         """
         Creates a new subscription client.
 
+        :param instruments: List of instruments the subclient will listen for.
+                            If empty it will listen to all broadcasts done by the server
         :param host: the host location of the updates
         :param port: Should not be changed. it always is the server normal port +1
         """
@@ -469,12 +471,12 @@ class SubClient(QtCore.QObject):
         self.host = sub_host
         self.port = sub_port
         self.addr = f"tcp://{self.host}:{self.port}"
+        self.instruments = instruments
+
         self.connected = False
 
-    def connect(self, param_updates: Optional[bool] = True,
-                param_creation: Optional[bool] = True,
-                param_deletion: Optional[bool] = True,
-                param_call: Optional[bool] = False):
+
+    def connect(self):
         """
         Connects the subscription client with the broadcast
         and runs an infinite loop to check for updates.
@@ -491,15 +493,12 @@ class SubClient(QtCore.QObject):
         socket = context.socket(zmq.SUB)
         socket.connect(self.addr)
 
-        # subscribe to the specified actions
-        if param_updates:
-            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-update')
-        if param_creation:
-            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-creation')
-        if param_deletion:
-            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-deletion')
-        if param_call:
-            socket.setsockopt_string(zmq.SUBSCRIBE, 'parameter-call')
+        # subscribe to the specified instruments
+        if self.instruments is None:
+            socket.setsockopt_string(zmq.SUBSCRIBE, '')
+        else:
+            for ins in self.instruments:
+                socket.setsockopt_string(zmq.SUBSCRIBE, ins)
 
         self.connected = True
 

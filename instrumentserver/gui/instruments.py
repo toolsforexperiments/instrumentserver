@@ -67,7 +67,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         # creating subscriber client and initializing it
         self.thread = QtCore.QThread()
-        self.updateClient = SubClient()
+        self.updateClient = SubClient(self._instrument.name)
         self.updateClient.moveToThread(self.thread)
 
         # connecting starting slot with the main loop of the subscriber client
@@ -338,28 +338,40 @@ class ParameterManagerGui(QtWidgets.QWidget):
         """
         Refreshes the GUI to show real time updates of parameters.
         """
+
         # converting the blueprint into a dictionary
         paramdict = literal_eval(message)
 
-        # getting the name of the parameter
-        name = paramdict['name'][7:]
+        # Check that the action broadcasted was not a call
+        if paramdict['action'] != 'parameter-call':
 
-        # check what kind of action is being broadcast
-        if paramdict['action'] == 'parameter-update':
-            item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-            # if the parameter does not exist refresh all the parameters
-            if len(item) == 0:
+            # getting the full name of the parameter and splitting it
+            named_submodules = paramdict['name'].split('.')
+            name = named_submodules[1]
+
+            # if a new parameter has been created, refresh all the parameters
+            if paramdict['action'] == 'parameter-creation':
                 self.refreshAll()
-            else:
-                # get the corresponding itemwidget and update the value
-                w = self.plist.itemWidget(item[0], 2)
-                w.paramWidget.setValue(paramdict['value'])
-        # if a new parameter has been created, refresh all the parameters
-        elif paramdict['action'] == 'parameter-creation':
-            self.refreshAll()
-        # if a parameter has been deleted, removes the parameter just in the client side.
-        elif paramdict['action'] == 'parameter-deletion':
-            self.removeParameter(name, False)
+
+            elif paramdict['action'] == 'parameter-deletion':
+                # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
+                for i in range(2, len(named_submodules)-1):
+                    name = name + '.' + named_submodules[i]
+                self.removeParameter(name, False)
+
+            # updates the changed parameter
+            elif paramdict['action'] == 'parameter-update':
+                # generates the name of the parameter as a string without the instrument name in it
+                for i in range(2, len(named_submodules)):
+                    name = name + '.' + named_submodules[i]
+                item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+                # if the parameter does not exist refresh all the parameters
+                if len(item) == 0:
+                    self.refreshAll()
+                else:
+                    # get the corresponding itemwidget and update the value
+                    w = self.plist.itemWidget(item[0], 2)
+                    w.paramWidget.setValue(paramdict['value'])
 
 
 
