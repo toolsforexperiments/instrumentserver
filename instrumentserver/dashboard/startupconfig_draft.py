@@ -18,6 +18,26 @@ config = {
             'options': {
                 'interval': 10
             },
+        },
+
+        'Still PLate': {
+            'source_type': 'parameter',
+            'parameter_path': 'triton.T3',
+            'server': 'localhost',
+            'port': 5555,
+            'options': {
+                'interval': 10
+            },
+        },
+
+        'Cold Plate': {
+            'source_type': 'parameter',
+            'parameter_path': 'triton.T4',
+            'server': 'localhost',
+            'port': 5555,
+            'options': {
+                'interval': 10
+            },
         }
     }
 }
