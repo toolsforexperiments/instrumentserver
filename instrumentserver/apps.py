@@ -6,6 +6,8 @@ from . import QtWidgets, QtCore
 from .log import setupLogging
 from .server.application import startServerGuiApplication
 from .server.core import startServer
+from bokeh.server.server import Server as BokehServer
+from .dashboard.core import dashboard as dash
 
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
@@ -37,3 +39,11 @@ def serverScript() -> None:
         serverWithGui(args.port)
     else:
         server(args.port, args.allow_user_shutdown)
+
+
+def bokehDashboard() -> None:
+    dashboard_server = BokehServer(dash)
+    dashboard_server.start()
+
+    dashboard_server.io_loop.add_callback(dashboard_server.show, "/")
+    dashboard_server.io_loop.start()

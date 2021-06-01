@@ -649,7 +649,7 @@ class StationServer(QtCore.QObject):
         """
         Get the existing instruments in the station,
 
-        :returns : a dictionary that contains the instrument name and its class name.
+        :returns: a dictionary that contains the instrument name and its class name.
         """
         comps = self.station.components
         info = {k: v.__class__ for k, v in comps.items()}
