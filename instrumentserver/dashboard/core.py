@@ -1,21 +1,17 @@
 from instrumentserver.client import Client as InstrumentClient
 from .startupconfig_draft import config
 
-from bokeh.io import curdoc
+
 from bokeh.layouts import column, row
-from bokeh.models.widgets import TextInput, Button, Paragraph
-from bokeh.models import ColumnDataSource, DataRange1d, Select, CheckboxGroup
+from bokeh.models.widgets import Button
+from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
-from typing import Optional, List, Dict
+from typing import Optional, List
 import itertools
-import numpy as np
 
-# To run, write on command line in this directory:
-# bokeh serve --show core.py
-
-# This will bechanged to be its own class and start from a startup script with a proper command.
+import datetime
 
 class PlotParameters:
 
@@ -24,8 +20,7 @@ class PlotParameters:
                  parameter_path: str,
                  server: Optional[str] = 'localhost',
                  port: Optional[int] = 5555,
-                 interval: Optional[int] = 10,
-                 data: Optional[List[int]] = []):
+                 interval: Optional[int] = 1000):
         self.name = name
         self.source_type = source_type
         self.parameter_path = parameter_path
@@ -33,7 +28,8 @@ class PlotParameters:
         self.port = port
         self.addr = f"tcp://{self.server}:{self.port}"
         self.interval = interval
-        self.data = data
+        self._data = []
+        self._time = []
 
         submodules = parameter_path.split('.')
 
@@ -47,39 +43,61 @@ class PlotParameters:
             parameter_name = parameter_name + submodules[i]
         self.parameter_name = parameter_name
 
-    def __str__(self, indent=0):
-        i = indent * ''
-        ret = f"""name: {self.name}
-{i}- source_type: {self.source_type}
-{i}- parameter_path: {self.parameter_path}
-{i}- addres: {self.addr}
-{i}- interval: {self.interval}
-{i}-data: {self.data}
-"""
-        return ret
-
-    # This currently only worrks for the fridge. Need to think of a way of generalizing this
+    # This currently only works for the fridge. Need to think of a way of generalizing this
     def update(self):
-        data = self.instrument.get(self.parameter_name)
-        self.data.append(data)
+        new_data = self.instrument.get(self.parameter_name)
+        current_time = datetime.datetime.now()
+        self._data.append(new_data)
+        self._time.append(current_time)
 
-        # print(f'data appended for {self.name}: {data}')
-        # print(f'total dict: {self.data}')
+        print(f'the time is: {current_time}. the new data is: {new_data}')
+
+    def load_new_data(self):
+        data = {
+            self.name : self._temporary_data,
+            f'{self.name}_time' : self._temporary_time
+        }
+        return data
+
+    def get_data(self):
+        return self._data
+
+    def get_time(self):
+        return self._time
 
 
 class Plots:
 
-    def __init__(self, name: str, plot_params: Optional[List[PlotParameters]] = []):
+    def __init__(self, name: str,
+                 plot_params: List[PlotParameters],
+                 data_source: ColumnDataSource,
+                 param_names: List[str]):
         self.name = name
         self.plot_params = plot_params
+        self.data_source = data_source
 
+        self.tools = 'pan,wheel_zoom,reset'
+        self.fig = figure(width=1000, height=1000, tools=self.tools, title=self.name, x_axis_type='datetime')
+        self.fig.xaxis[0].formatter = DatetimeTickFormatter(minsec = ['%H:%M:%S'])
 
-    def  __str__(self, indent=0):
-        i = indent * ''
-        ret = f"""name: {self.name}
-{i}- plot_params: {self.plot_params}
-"""
-        return ret
+        self.checkbox = CheckboxGroup(labels=param_names, active=list(range(len(param_names))))
+
+        self.all_button = Button(label='select all')
+        self.none_button = Button(label='deselect all')
+
+        colors = self.colors_gen()
+
+        self.lines = []
+        for params, c in zip(self.plot_params, colors):
+
+            self.lines.append(self.fig.line(x=f'{params.name}_time', y=params.name,
+                                            source=self.data_source, legend_label=f'{params.name}', color=c))
+
+        self.checkbox.on_click(self.update_lines)
+        self.all_button.on_click(self.all_selected_plot)
+        self.none_button.on_click(self.none_selected_plot)
+
+        self.layout = column(self.fig, self.checkbox, row(self.all_button, self.none_button))
 
     def get_instruments(self):
         instruments = []
@@ -88,35 +106,62 @@ class Plots:
                 instruments.append(params.instrument_name)
         return instruments
 
-def dashboard(doc):
-    # # Creating fake data
-    # x = np.linspace(-100, 100, 1000)
-    # y1 = x
-    # y2 = 0.1 * x**2
-    # y3 = 0.01 * x**3
-    # y4 = 1/x
-    #
-    # data = {
-    #     'x': x,
-    #     'linear': y1,
-    #     'quadratic': y2,
-    #     'cubed': y3,
-    #     'hyperbolic': y4
-    # }
-    # keys = list(data.keys())
+    def get_interval(self):
+        interval = None
+        for params in self.plot_params:
+            if interval is None:
+                interval = params.interval
+            else:
+                if params.interval < interval:
+                    interval = params.interval
+        return interval
 
-    #Getting data from the config file:
+    def update_data(self):
+        data = {}
+        for params in self.plot_params:
+            params.update()
+            appending_data = {params.name: params.get_data(),
+                              f'{params.name}_time': params.get_time()}
+            data.update(appending_data)
+        self.data_source.data = data
+
+    def colors_gen(self):
+        yield from itertools.cycle(Category10[10])
+
+    def update_lines(self, argument=None):
+        active = self.checkbox.active
+
+        for i in range(0, len(self.lines)):
+            if i in active:
+                self.lines[i].visible = True
+            else:
+                self.lines[i].visible = False
+
+    def all_selected_plot(self):
+        self.checkbox.active = list(range(len(self.lines)))
+        self.update_lines()
+
+    def none_selected_plot(self):
+        self.checkbox.active = []
+        self.update_lines()
+
+
+def dashboard(doc):
+
+    # Getting data from the config file:
     def read_config(config):
 
         plot_list: List[Plots] = []
 
         for plot in config.keys():
-            plt = Plots(plot)
+            param_list = []
+            data_source = ColumnDataSource(data={})
+            param_names = []
             for params in config[plot].keys():
                 # default configs. If they exist in config they will get overwritten. Used for constructor.
                 server_param = 'localhost'
                 port_param = 5555
-                interval = 10
+                interval_param = 1000
 
                 if 'server' in config[plot][params]:
                     server_param = config[plot][params]['server']
@@ -133,70 +178,35 @@ def dashboard(doc):
                                            port=port_param,
                                            interval=interval_param)
 
-                plt.plot_params.append(plt_param)
+                param_list.append(plt_param)
+                param_names.append(params)
+                data_source.data[params] = []
+                data_source.data[f'{params}_time'] = []
+
+            plt = Plots(name=plot, plot_params=param_list, data_source=data_source, param_names=param_names)
 
             plot_list.append(plt)
         return plot_list
 
-    # dealing with colors
-    def color_gen():
-        yield from itertools.cycle(Category10[10])
+    def callback_setup(plot_list, doc) -> None:
+        for plt in plot_list:
+            doc.add_periodic_callback(plt.update_data, plt.get_interval())
 
-    def update(argument=None):
-        active = data_checkbox.active
+            # This doens't work because the calling times get out of sync, so the data source starts having different
+            # values in each columns and that is not allowed
+            # for params in plt.plot_params:
+            #     if params.source_type == 'parameter':
+            #         print(f'the param is: {params}, the interval is: {params.interval}')
+            #         doc.add_periodic_callback(params.update, params.interval)
+            # print(f'{plt.data_source.data}')
 
-        for i in range(0, len(lines)):
-            if i in active:
-                lines[i].visible = True
-            else:
-                lines[i].visible = False
-
-    def all_selected():
-        data_checkbox.active = list(range(len(keys)))
-        update()
-
-    def none_selected():
-        data_checkbox.active = []
-        update()
-
-
-
+    # Starting the setup
     multiple_plots = read_config(config)
-    def update_temps():
-        for i in multiple_plots[0].plot_params:
-            i.update()
-    update_temps()
+    callback_setup(multiple_plots, doc)
 
-    colors = color_gen()
+    layout_row = []
+    for plt in multiple_plots:
+        layout_row.append(plt.layout)
 
-
-
-    # creating the objects
-    data_checkbox = CheckboxGroup(labels=keys[1:], active=[0])
-
-    all_button = Button(label='select all')
-    none_button = Button(label='deselect all')
-
-    source = ColumnDataSource(data=data)
-
-    tools = 'pan,wheel_zoom,reset'
-
-    main_fig = figure(width=1000, height=1000, tools=tools)
-
-    lines = []
-    for i, c in zip(range(1, len(keys)), colors):
-        lines.append(main_fig.line(x=keys[0], y=keys[i], source=source, legend_label=f'{keys[i]}', color=c))
-
-
-
-    all_button.on_click(all_selected)
-    none_button.on_click(none_selected)
-
-    data_checkbox.on_click(update)
-    update()
-
-    layout = column(data_checkbox, row(all_button, none_button), main_fig)
-
-    doc.add_root(layout)
-    doc.add_periodic_callback(update_temps,1000)
+    doc.add_root(row(layout_row))
 
