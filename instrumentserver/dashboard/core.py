@@ -30,6 +30,10 @@ class PlotParameters:
         self.interval = interval
         self._data = []
         self._time = []
+        self._source = ColumnDataSource(data={
+            self.name : self._data,
+            f'{self.name}_time' : self._time
+        })
 
         submodules = parameter_path.split('.')
 
@@ -49,6 +53,11 @@ class PlotParameters:
         current_time = datetime.datetime.now()
         self._data.append(new_data)
         self._time.append(current_time)
+        new_data_dict = {
+            self.name : [new_data],
+            f'{self.name}_time' : [current_time]
+        }
+        self._source.stream(new_data_dict)
 
         print(f'the time is: {current_time}. the new data is: {new_data}')
 
@@ -64,6 +73,11 @@ class PlotParameters:
 
     def get_time(self):
         return self._time
+
+    def create_line(self, fig: figure, color):
+        return fig.line(x=f'{self.name}_time', y=self.name,
+                              source=self._source, legend_label=self.name, color=color)
+
 
 
 class Plots:
@@ -104,9 +118,7 @@ class Plots:
 
         self.lines = []
         for params, c in zip(self.plot_params, colors):
-
-            self.lines.append(self.fig.line(x=f'{params.name}_time', y=params.name,
-                                            source=self.data_source, legend_label=f'{params.name}', color=c))
+            self.lines.append(params.create_line(fig=self.fig,color=c))
 
         self.checkbox.on_click(self.update_lines)
         self.all_button.on_click(self.all_selected_plot)
@@ -205,15 +217,10 @@ def dashboard(doc):
 
     def callback_setup(plot_list, doc) -> None:
         for plt in plot_list:
-            doc.add_periodic_callback(plt.update_data, plt.get_interval())
-
-            # This doens't work because the calling times get out of sync, so the data source starts having different
-            # values in each columns and that is not allowed
-            # for params in plt.plot_params:
-            #     if params.source_type == 'parameter':
-            #         print(f'the param is: {params}, the interval is: {params.interval}')
-            #         doc.add_periodic_callback(params.update, params.interval)
-            # print(f'{plt.data_source.data}')
+            for params in plt.plot_params:
+                if params.source_type == 'parameter':
+                    print(f'the param is: {params}, the interval is: {params.interval}')
+                    doc.add_periodic_callback(params.update, params.interval)
 
     # Starting the setup
     multiple_plots = read_config(config)
