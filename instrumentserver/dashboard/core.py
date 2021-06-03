@@ -4,7 +4,7 @@ from .startupconfig_draft import config
 
 from bokeh.layouts import column, row
 from bokeh.models.widgets import Button
-from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter
+from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter, HoverTool
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
@@ -76,8 +76,23 @@ class Plots:
         self.plot_params = plot_params
         self.data_source = data_source
 
-        self.tools = 'pan,wheel_zoom,reset'
-        self.fig = figure(width=1000, height=1000, tools=self.tools, title=self.name, x_axis_type='datetime')
+        self.tools = 'pan,wheel_zoom,box_zoom,reset,save'
+
+        self.fig = figure(width=1000, height=1000,
+                          tools=self.tools, title=self.name,
+                          x_axis_type='datetime')
+
+        self.fig.add_tools(HoverTool(
+            tooltips = [
+                ('value', '$y'),
+                ('time', '$x{%H:%M:%S}')
+            ],
+            formatters = {
+                '$x': 'datetime'
+            },
+
+            mode='mouse'
+        ))
         self.fig.xaxis[0].formatter = DatetimeTickFormatter(minsec = ['%H:%M:%S'])
 
         self.checkbox = CheckboxGroup(labels=param_names, active=list(range(len(param_names))))
