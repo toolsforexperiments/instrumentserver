@@ -1,12 +1,12 @@
 config = {
-    'fridge temps 1' : {
+    'Fridge temps 1' : {
         'PT2 Head': {
             'source_type': 'parameter',
             'parameter_path': 'triton.T1',
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 5000
+                'interval': 1000
             },
         },
 
@@ -16,7 +16,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 4000
+                'interval': 1000
             },
         },
 
@@ -26,7 +26,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 3000
+                'interval': 1000
             },
         },
 
@@ -39,55 +39,50 @@ config = {
                 'interval': 1000
             },
         },
+    },
+
+    'Fridge temps 2': {
+        'MC Plate Cernox': {
+            'source_type': 'parameter',
+            'parameter_path': 'triton.T5',
+            'server': 'localhost',
+            'port': 5555,
+            'options': {
+                'interval': 1000
+            },
+        },
+
+        'PT1 Head': {
+            'source_type': 'parameter',
+            'parameter_path': 'triton.T6',
+            'server': 'localhost',
+            'port': 5555,
+            'options': {
+                'interval': 1000
+            },
+        },
+
+        'PT1 Plate': {
+            'source_type': 'parameter',
+            'parameter_path': 'triton.T7',
+            'server': 'localhost',
+            'port': 5555,
+            'options': {
+                'interval': 1000
+            },
+        },
+
+        'MC Plate RuO2': {
+            'source_type': 'parameter',
+            'parameter_path': 'triton.T8',
+            'server': 'localhost',
+            'port': 5555,
+            'options': {
+                'interval': 1000
+            },
+        },
     }
-    #
-    # 'fridge temps 2': {
-    #     'MC Plate Cernox': {
-    #         'source_type': 'parameter',
-    #         'parameter_path': 'triton.T5',
-    #         'server': 'localhost',
-    #         'port': 5555,
-    #         'options': {
-    #             'interval': 1000
-    #         },
-    #     },
-    #
-    #     'PT1 Head': {
-    #         'source_type': 'parameter',
-    #         'parameter_path': 'triton.T6',
-    #         'server': 'localhost',
-    #         'port': 5555,
-    #         'options': {
-    #             'interval': 1000
-    #         },
-    #     },
-    #
-    #     'PT1 Plate': {
-    #         'source_type': 'parameter',
-    #         'parameter_path': 'triton.T7',
-    #         'server': 'localhost',
-    #         'port': 5555,
-    #         'options': {
-    #             'interval': 1000
-    #         },
-    #     },
-    #
-    #     'MC Plate RuO2': {
-    #         'source_type': 'parameter',
-    #         'parameter_path': 'triton.T8',
-    #         'server': 'localhost',
-    #         'port': 5555,
-    #         'options': {
-    #             'interval': 1000
-    #         },
-    #     },
-    # }
 }
-
-
-
-
-
 
 
 
