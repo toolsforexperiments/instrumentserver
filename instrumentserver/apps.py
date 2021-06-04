@@ -8,8 +8,10 @@ from .server.application import startServerGuiApplication
 from .server.core import startServer
 from bokeh.server.server import Server as BokehServer
 from .dashboard.core import dashboard as dash
+from .dashboard.core import running_server
 
 from .client import Client as InstrumentClient
+from tornado.ioloop import PeriodicCallback
 
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
@@ -46,16 +48,7 @@ def serverScript() -> None:
 def bokehDashboard() -> None:
     # This is just for developing purposes. Once its implemented, either run a script before to create the instrument,
     # or develop it as a feature to create the instrument if its not found (would need to specify where and what kind).
-    cli = InstrumentClient()
-
-    if 'triton' in cli.list_instruments():
-        fridge = cli.get_instrument('triton')
-    else:
-        fridge = cli.create_instrument(
-            'qcodes.instrument_drivers.oxford.triton.Triton',
-            'triton',
-            address='128.174.249.18',
-            port=33576)
+    plots = running_server()
 
     dashboard_server = BokehServer(dash)
     dashboard_server.start()
