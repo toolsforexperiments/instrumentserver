@@ -1,3 +1,5 @@
+import json
+import logging
 from typing import Optional, Any, List, Tuple, Union
 
 from qcodes import Parameter
@@ -5,14 +7,16 @@ from qcodes import Parameter
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
 from .. import QtWidgets, QtCore, QtGui
-from ..client import ProxyInstrument
+from ..client import ProxyInstrument, SubClient
 from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
 from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
 from ..serialize import toParamDict
-
+from ast import literal_eval
 
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
+
+logger = logging.getLogger(__name__)
 
 
 class ParameterManagerGui(QtWidgets.QWidget):
@@ -21,7 +25,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
     parameterCreationError = QtCore.Signal(str)
 
     #: Signal() --
-    #  emitted when a parameter was created successfully
+    #:  emitted when a parameter was created successfully
     parameterCreated = QtCore.Signal()
 
     def __init__(self, ins: Union[ParameterManager, ProxyInstrument],
@@ -60,6 +64,18 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.setLayout(layout)
         self.populateList()
+
+        # creating subscriber client and initializing it
+        self.thread = QtCore.QThread()
+        self.updateClient = SubClient(self._instrument.name)
+        self.updateClient.moveToThread(self.thread)
+
+        # connecting starting slot with the main loop of the subscriber client
+        self.thread.started.connect(self.updateClient.connect)
+        self.updateClient.update.connect(self.refreshParameter)
+
+        # starts the updateClient in a separate thread. The
+        self.thread.start()
 
     def _makeToolbar(self):
         toolbar = QtWidgets.QToolBar(self)
@@ -151,6 +167,47 @@ class ParameterManagerGui(QtWidgets.QWidget):
             except Exception as e:
                 value = str(value)
 
+        # Checking that the new parameter is not an existing submodule.
+        fullName_submodules = fullName.split('.')
+        fullName_length = len(fullName_submodules)
+
+        equal = False
+
+        # we go through all of the parameters to see if the new parameter has the same name as an existing submodule
+        for param in self._instrument.list():
+            param_submodules = param.split('.')
+            param_length = len(param_submodules)
+            top_level = param_submodules[0]
+
+            # we check if either the new parameter or the existing parameter has
+            # more modules and use the smaller one to construct the top-level submodules
+            if fullName_length > param_length:
+                assembly_number = param_length
+
+            # this only happens when the new parameter has the same name as an existing parameter and not a submodule
+            # only used to display correct  error
+            elif fullName_length == param_length:
+                assembly_number = fullName_length
+                equal = True
+
+            else:
+                assembly_number = fullName_length
+
+            # construct the top level submodule
+            for i in range(1, assembly_number):
+                top_level = top_level + '.' + param_submodules[i]
+
+            if fullName == top_level:
+                if equal:
+                    self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
+                                                     f"is an existing parameter.")
+
+                    return
+                else:
+                    self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
+                                                     f"is an existing submodule.")
+                    return
+
         try:
             self._instrument.add_parameter(fullName, initial_value=value,
                                            unit=unit, vals=vals)
@@ -188,7 +245,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
         w.pressed.connect(lambda: self.removeParameter(fullName))
         return w
 
-    def removeParameter(self, fullName: str):
+    def removeParameter(self, fullName: str, deleteServerSide: Optional[bool] = True):
         items = self.plist.findItems(
             fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
         if len(items) > 0:
@@ -210,13 +267,13 @@ class ParameterManagerGui(QtWidgets.QWidget):
         if fullName in self._removeWidgets:
             self._removeWidgets[fullName].deleteLater()
             del self._removeWidgets[fullName]
-
-        if self._instrument.has_param(fullName):
-            self._instrument.remove_parameter(fullName)
+        if deleteServerSide:
+            if self._instrument.has_param(fullName):
+                self._instrument.remove_parameter(fullName)
 
         self.plist.removeEmptyContainers()
 
-    def refreshAll(self, delete=True, unitCheck=False):
+    def refreshAll(self, delete: Optional[bool]=True, unitCheck: Optional[bool]=False):
         """Refreshes the state of the GUI.
 
         :param delete: Optional, If False, it will not delete parameters when it updates.
@@ -231,7 +288,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         # next, we can parse through the parameters and update the GUI.
         insParams = self._instrument.list()
-
         for n in insParams:
             items = self.plist.findItems(n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
@@ -259,17 +315,64 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
     def saveToFile(self):
         try:
-            self._instrument.paramManToFile()
+            self._instrument.toFile()
         except Exception as e:
-            print(f"Saving failed. {type(e)}: {e.args}")
+            logger.info(f"Saving failed. {type(e)}: {e.args}")
 
     def loadFromFile(self):
         try:
-            self._instrument.fromFile()
-            self._instrument._refreshProxySubmodules()
+            self._instrument.fromFile(deleteMissing=False)
             self.refreshAll(delete=False, unitCheck=True)
+
+            # creating a dummy parameter to trigger a parameter creation broadcast.
+            # this is done so that a different client knows when parameters have been loading.
+            self._instrument.add_parameter('creation_broadcast',
+                                           initial_value='', unit='')
+            self._instrument.remove_parameter('creation_broadcast')
+
         except Exception as e:
-            print(f"Loading failed. {type(e)}: {e.args}")
+            logger.info(f"Loading failed. {type(e)}: {e.args}")
+
+    @QtCore.Slot(str)
+    def refreshParameter(self, message: str):
+        """
+        Refreshes the GUI to show real time updates of parameters.
+        """
+
+        # converting the blueprint into a dictionary
+        paramdict = literal_eval(message)
+
+        # Check that the action broadcasted was not a call
+        if paramdict['action'] != 'parameter-call':
+
+            # getting the full name of the parameter and splitting it
+            named_submodules = paramdict['name'].split('.')
+            name = named_submodules[1]
+
+            # if a new parameter has been created, refresh all the parameters
+            if paramdict['action'] == 'parameter-creation':
+                self.refreshAll()
+
+            elif paramdict['action'] == 'parameter-deletion':
+                # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
+                for i in range(2, len(named_submodules)-1):
+                    name = name + '.' + named_submodules[i]
+                self.removeParameter(name, False)
+
+            # updates the changed parameter
+            elif paramdict['action'] == 'parameter-update':
+                # generates the name of the parameter as a string without the instrument name in it
+                for i in range(2, len(named_submodules)):
+                    name = name + '.' + named_submodules[i]
+                item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+                # if the parameter does not exist refresh all the parameters
+                if len(item) == 0:
+                    self.refreshAll()
+                else:
+                    # get the corresponding itemwidget and update the value
+                    w = self.plist.itemWidget(item[0], 2)
+                    w.paramWidget.setValue(paramdict['value'])
+
 
 
 class ParameterList(QtWidgets.QTreeWidget):
@@ -283,6 +386,7 @@ class ParameterList(QtWidgets.QTreeWidget):
         self.setSortingEnabled(True)
         self.setAlternatingRowColors(True)
 
+        self.parameters = []
         self.parameters = []
         self.filterString = ''
 

@@ -12,7 +12,7 @@ from types import MethodType
 from typing import Any, Union, Optional, Dict, List
 
 import qcodes as qc
-# import zmq
+import zmq
 from qcodes import Instrument, Parameter
 from qcodes.instrument.base import InstrumentBase
 
@@ -322,6 +322,22 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             else:
                 self.submodules[sn].update()
 
+    def __getattr__(self, item):
+        try:
+            return super().__getattr__(item)
+        except Exception as e:
+            current_bp = self.cli.getBluePrint(self.remotePath)
+            if item in current_bp.parameters and item not in self.parameters:
+                self.bp = current_bp
+                self._getProxyParameters()
+                return getattr(self, item)
+            elif item in current_bp.submodules and item not in self.submodules:
+                self.bp = current_bp
+                self._getProxySubmodules()
+                return getattr(self, item)
+            else:
+                raise e
+
 
 ProxyInstrument = ProxyInstrumentModule
 
@@ -434,34 +450,68 @@ class Client(BaseClient):
             logger.warning(f"File {filePath} does not exist. No params loaded.")
 
 
-# class SubClient():
-#     """Test client to test PUB-SUB"""
-#
-#     def __init__(self, host='localhost', port=5554, id=1):
-#         self.host = host
-#         self.port = port
-#         self.addr = f"tcp://{host}:{port}"
-#         self.id = id
-#
-#         print("I am working")
-#
-#     def startClient(self):
-#         context = zmq.Context()
-#         socket = context.socket(zmq.SUB)
-#         print("Connecting to server")
-#         socket.connect(self.addr)
-#         socket.subscribe("")
-#         self.clientRunning = True
-#
-#         while self.clientRunning:
-#
-#             message = socket.recv_string()
-#             print(str(self.id)+" the message is: " + message)
-#
-#
-#         print("closing connection")
-#         socket.close()
-#         return True
+class SubClient(QtCore.QObject):
+    """
+    Specific subscription client used for real-time parameter updates.
+    """
+    #: Signal(str) --
+    #: emitted when the server broadcast either a new parameter or an update to an existing one
+    update = QtCore.Signal(str)
+
+    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
+        """
+        Creates a new subscription client.
+
+        :param instruments: List of instruments the subclient will listen for.
+                            If empty it will listen to all broadcasts done by the server
+        :param host: the host location of the updates
+        :param port: Should not be changed. it always is the server normal port +1
+        """
+        super().__init__()
+        self.host = sub_host
+        self.port = sub_port
+        self.addr = f"tcp://{self.host}:{self.port}"
+        self.instruments = instruments
+
+        self.connected = False
+
+
+    def connect(self):
+        """
+        Connects the subscription client with the broadcast
+        and runs an infinite loop to check for updates.
+
+        It should always be run on a separate thread or the program will get stuck in the loop.
+
+        :param param_updates: If True, the client listens for parameter updates.
+        :param param_creation: If True, the client listens for parameter creations.
+        :param param_deletion: If True, the client listens for parameter deletions.
+        :param param_call: If True, the client listens for parameter calls.
+        """
+        logger.info(f"Connecting to {self.addr}")
+        context = zmq.Context()
+        socket = context.socket(zmq.SUB)
+        socket.connect(self.addr)
+
+        # subscribe to the specified instruments
+        if self.instruments is None:
+            socket.setsockopt_string(zmq.SUBSCRIBE, '')
+        else:
+            for ins in self.instruments:
+                socket.setsockopt_string(zmq.SUBSCRIBE, ins)
+
+        self.connected = True
+
+        while self.connected:
+
+            message = socket.recv_multipart()
+
+            # emits the signals already decoded so python recognizes it a string instead of bytes
+            self.update.emit(message[1].decode("utf-8"))
+
+        self.disconnect()
+
+        return True
 
 
 class _QtAdapter(QtCore.QObject):

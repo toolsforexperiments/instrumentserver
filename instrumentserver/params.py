@@ -232,7 +232,7 @@ class ParameterManager(InstrumentBase):
 
         with open(filePath, 'r') as f:
             pd = json.load(f)
-        self.fromParamDict(pd)
+        self.fromParamDict(pd, deleteMissing)
 
     def fromParamDict(self, paramDict: Dict[str, Any],
                       deleteMissing: bool = True):
@@ -272,13 +272,13 @@ class ParameterManager(InstrumentBase):
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
 
-    def paramManToFile(self, filePath : str = None):
+    def toFile(self, filePath : str = None):
 
         """Save parameters from the instrument into a json file.
 
         :param filePath: path to the json file. 
                          If ``None`` it looks in the instrument current location
-                         directory for a file called "parametermanager_parameters.json"
+                         directory for a file called "parameter_manager_<parameter_manager_name>.json"
         """
 
         if filePath is None:
