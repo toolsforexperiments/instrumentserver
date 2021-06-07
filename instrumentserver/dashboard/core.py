@@ -3,8 +3,9 @@ from .startupconfig_draft import config
 
 
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter, HoverTool, DataRange1d
-from bokeh.models.widgets import Button
+from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter, HoverTool, DataRange1d,\
+                         RadioButtonGroup
+from bokeh.models.widgets import Button, Tabs, Panel, Paragraph
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
@@ -12,21 +13,6 @@ from typing import Optional, List
 import itertools
 
 import datetime
-
-
-# Global variables used to share information between sessions of the bokeh server.
-
-# List[Plots]
-# used only by the first bokeh session and every other one reads from that global variable
-multiple_plots = []
-
-# Boolean
-# used to see if its the first time creating the plots
-first = True
-
-# int
-# used to set the refresh rate for non-original sessions
-refresh = 1000
 
 
 class PlotParameters:
@@ -46,12 +32,11 @@ class PlotParameters:
     def __init__(self, name: str,
                  source_type: str,
                  parameter_path: str,
+                 first: bool,
                  server: Optional[str] = 'localhost',
                  port: Optional[int] = 5555,
                  interval: Optional[int] = 1000,
                  source: Optional[ColumnDataSource] = None):
-
-        global first
 
         # load values
         self.name = name
@@ -67,8 +52,8 @@ class PlotParameters:
             self._data = []
             self._time = []
             self.source = ColumnDataSource(data={
-                self.name : self._data,
-                f'{self.name}_time' : self._time
+                self.name: self._data,
+                f'{self.name}_time': self._time
             })
         else:
             self.source = ColumnDataSource(data=source.data)
@@ -146,7 +131,6 @@ class PlotParameters:
                         source=self.source, legend_label=self.name, color=color)
 
 
-
 class Plots:
     """
     Holds all the parameters that live inside this specific plot as well as all of the graphical elements for it.
@@ -164,16 +148,24 @@ class Plots:
         self.plot_params = plot_params
         self.param_names = param_names
 
+        self.title = Paragraph(text=self.name, width=1000, height=200,
+                               style={
+                                   'font-size': '40pt',
+                                   'font-weight': 'bold'
+                               })
+
         # set up the tools and the figure itself
         self.tools = 'pan,wheel_zoom,box_zoom,reset,save'
+        # iterator used to cycle through colors
+        self.colors = self.colors_gen()
 
-        self.fig = figure(width=1000, height=1000,
-                          tools=self.tools, title=self.name,
-                          x_axis_type='datetime')
-        self.fig.xaxis[0].formatter = DatetimeTickFormatter(minsec = ['%H:%M:%S'])
+        # setting up the linear figure
+        self.fig_linear = figure(width=1000, height=1000,
+                                 tools=self.tools, x_axis_type='datetime')
+        self.fig_linear.xaxis[0].formatter = DatetimeTickFormatter(minsec=['%H:%M:%S %m/%d'])
 
         # setup the hover formatter
-        self.fig.add_tools(HoverTool(
+        self.fig_linear.add_tools(HoverTool(
             tooltips=[
                 ('value', '$y'),
                 ('time', '$x{%H:%M:%S}')
@@ -185,7 +177,35 @@ class Plots:
             mode='mouse'
         ))
         # automatically updates the range of the y-axis to center only visible lines
-        self.fig.y_range = DataRange1d(only_visible=True)
+        self.fig_linear.y_range = DataRange1d(only_visible=True)
+
+        # setting up the log figure
+        self.fig_log = figure(width=1000, height=1000,
+                              tools=self.tools,
+                              x_axis_type='datetime', y_axis_type='log')
+        self.fig_log.xaxis[0].formatter = DatetimeTickFormatter(minsec=[f'%H:%M:%S %m/%d'])
+
+        # setup the hover formatter
+        self.fig_log.add_tools(HoverTool(
+            tooltips=[
+                ('value', '$y'),
+                ('time', '$x{%H:%M:%S}')
+            ],
+            formatters={
+                '$x': 'datetime'
+            },
+
+            mode='mouse'
+        ))
+        # automatically updates the range of the y-axis to center only visible lines
+        self.fig_log.y_range = DataRange1d(only_visible=True)
+
+        # creates the lines
+        self.lines_linear = []
+        self.lines_log = []
+        for params, c in zip(self.plot_params, self.colors):
+            self.lines_linear.append(params.create_line(fig=self.fig_linear, color=c))
+            self.lines_log.append(params.create_line(fig=self.fig_log, color=c))
 
         # Create the checkbox and the buttons and their respective triggers
         self.checkbox = CheckboxGroup(labels=self.param_names, active=list(range(len(self.param_names))))
@@ -196,16 +216,14 @@ class Plots:
         self.all_button.on_click(self.all_selected)
         self.none_button.on_click(self.none_selected)
 
-        # iterator used to cycle through colors
-        colors = self.colors_gen()
-
-        # creates the lines
-        self.lines = []
-        for params, c in zip(self.plot_params, colors):
-            self.lines.append(params.create_line(fig=self.fig, color=c))
+        # create the panels to switch from linear to log
+        panels = [Panel(child=self.fig_linear, title='linear'), Panel(child=self.fig_log, title='log')]
 
         # creates the layout with all of the elements of this plot GUI
-        self.layout = column(self.fig, self.checkbox, row(self.all_button, self.none_button))
+        self.layout = column(self.title,
+                             Tabs(tabs=panels),
+                             self.checkbox,
+                             row(self.all_button, self.none_button))
 
     def get_instruments(self) -> List:
         """
@@ -230,17 +248,19 @@ class Plots:
         :param active: List indicating what lines are visible.
         """
         # set each line to be visible or invisible depending on the checkboxes
-        for i in range(0, len(self.lines)):
+        for i in range(0, len(self.lines_linear)):
             if i in active:
-                self.lines[i].visible = True
+                self.lines_linear[i].visible = True
+                self.lines_log[i].visible = True
             else:
-                self.lines[i].visible = False
+                self.lines_linear[i].visible = False
+                self.lines_log[i].visible = False
 
     def all_selected(self):
         """
         Sets all the lines to be visible. Gets called when the select all button is clicked
         """
-        self.checkbox.active = list(range(len(self.lines)))
+        self.checkbox.active = list(range(len(self.lines_linear)))
         self.update_lines(self.checkbox.active)
 
     def none_selected(self):
@@ -255,36 +275,42 @@ class Plots:
         Used to update non-original sessions of the bokeh server
         """
         for params in self.plot_params:
-            params.update(params.source.data[params.name],  params.source.data[f'{params.name}_time'])
+            params.update(params.source.data[params.name], params.source.data[f'{params.name}_time'])
 
-def load_dashboard():
+
+class DashboardClass:
     """
-    Loads the information from the config file into the global variable multiple_plots to be used by the dashboard.
+    This class holds all of the information about the dashboard. It is primarily used to share data between different
+    sessions of the bokeh server.
+
+    :param multiple_plots: List of all of the Plots objects in the dashboard.
+                           These Plots objects hold PlotParameter where the data is stored
+    :param first: Flag to see if the this is the first running instance
+    :param refresh: Time interval in which different sessions refresh the dashboard (different from data gathering)
     """
-    global multiple_plots
 
-    # used for testing, the instruments should be already created for the dashboard to work
-    cli = InstrumentClient()
+    def __init__(self):
+        self.multiple_plots = []
+        self.first = True
+        self.refresh = 1000
 
-    if 'triton' in cli.list_instruments():
-        fridge = cli.get_instrument('triton')
-    else:
-        fridge = cli.create_instrument(
-            'qcodes.instrument_drivers.oxford.triton.Triton',
-            'triton',
-            address='128.174.249.18',
-            port=33576)
-
-    def read_config(config) -> [List, List]:
+    def load_dashboard(self):
         """
-        Reads the config file and creates all the PlotParameters and saves them in their respective Plots.
-        returns a list of the Plots, and a list of the allowed ip addresses.
-        Through this all of the GUI elements are also created in the Plots constructor.
-
-        :param config: The config dictionary located in the config file
+        Loads the information from the config file into multiple_plots to be used by the dashboard.
+        Returns the list of valid ips
         """
-        global multiple_plots
-        global refresh
+
+        # used for testing, the instruments should be already created for the dashboard to work
+        cli = InstrumentClient()
+
+        if 'triton' in cli.list_instruments():
+            fridge = cli.get_instrument('triton')
+        else:
+            fridge = cli.create_instrument(
+                'qcodes.instrument_drivers.oxford.triton.Triton',
+                'triton',
+                address='128.174.249.18',
+                port=33576)
 
         plot_list = []
 
@@ -297,7 +323,7 @@ def load_dashboard():
             if plot == 'options':
                 if 'refresh_rate' in config[plot]:
                     # default value 1000
-                    refresh = config[plot]['refresh_rate']
+                    self.refresh = config[plot]['refresh_rate']
                 if 'allowed_ip' in config[plot]:
                     ip_list = config[plot]['allowed_ip']
 
@@ -326,7 +352,8 @@ def load_dashboard():
                                                parameter_path=config[plot][params]['parameter_path'],
                                                server=server_param,
                                                port=port_param,
-                                               interval=interval_param)
+                                               interval=interval_param,
+                                               first=self.first)
                     # adds the parameter and its name to lists to pass to the Plot constructor.
                     param_list.append(plt_param)
                     param_names.append(params)
@@ -337,62 +364,56 @@ def load_dashboard():
                             param_names=param_names)
 
                 plot_list.append(plt)
-        return plot_list, ip_list
-    # load the values in the global variable and return the list of ip addresses
-    multiple_plots, ip_holder = read_config(config)
-    return ip_holder
+        # load the values in the global variable and return the list of ip addresses
+        self.multiple_plots = plot_list
+        return ip_list
 
+    def dashboard(self, doc):
+        """
+        Creates the document that bokeh uses for every session.
+        It also sets the necessary callbacks to update the dashboard and collect new data.
+        """
 
+        # check if  this is the first time running the dashboard
+        if self.first:
 
-def dashboard(doc):
-    """
-    Creates the document that bokeh uses for every session.
-    It also sets the necessary callbacks to update the dashboard and collect new data.
-    """
+            self.first = False
+            layout_row = []
 
-    global multiple_plots
-    global first
-    global refresh
+            # go through each parameter and add the necessary callback
+            # go through each plot and add the layout to the layout list
+            for plt in self.multiple_plots:
+                for params in plt.plot_params:
+                    if params.source_type == 'parameter':
+                        doc.add_periodic_callback(params.update, params.interval)
+                layout_row.append(plt.layout)
 
-    # check if  this is the first time running the dashboard
-    if first:
+            # add the layouts to the document
+            doc.add_root(row(layout_row))
+        else:
+            # if this is not the original session,
+            # creates a copy of every object with all of their values for the new session
+            plot_list = []
+            layout_row = []
+            for plt in self.multiple_plots:
+                param_list = []
+                name_list = []
+                for params in plt.plot_params:
+                    temp_param = PlotParameters(name=params.name,
+                                                source_type=params.source_type,
+                                                parameter_path=params.parameter_path,
+                                                server=params.server,
+                                                port=params.port,
+                                                interval=params.interval,
+                                                source=params.source,
+                                                first=self.first)
+                    name_list.append(params.name)
+                    param_list.append(temp_param)
+                # set the update parameters callback with the refresh value and append the layout to the list
+                plot_list.append(Plots(plt.name, param_list, name_list))
+                doc.add_periodic_callback(plot_list[-1].update_parameters, self.refresh)
+                layout_row.append(plot_list[-1].layout)
 
-        first = False
-        layout_row = []
-
-        # go through each parameter and add the necessary callback
-        # go through each plot and add the layout to the layout list
-        for plt in multiple_plots:
-            for params in plt.plot_params:
-                if params.source_type == 'parameter':
-                    doc.add_periodic_callback(params.update, params.interval)
-            layout_row.append(plt.layout)
-
-        # add the layouts to the document
-        doc.add_root(row(layout_row))
-    else:
-        # if this is not the original session,
-        # creates a copy of every object with all of their values for the new session
-        plot_list = []
-        layout_row = []
-        for plt in multiple_plots:
-            param_list = []
-            name_list = []
-            for params in plt.plot_params:
-                temp_param = PlotParameters(name=params.name,
-                                            source_type=params.source_type,
-                                            parameter_path=params.parameter_path,
-                                            server=params.server,
-                                            port=params.port,
-                                            interval=params.interval,
-                                            source=params.source)
-                name_list.append(params.name)
-                param_list.append(temp_param)
-            # set the update parameters callback with the refresh value and append the layout to the list
-            plot_list.append(Plots(plt.name, param_list, name_list))
-            doc.add_periodic_callback(plot_list[-1].update_parameters, refresh)
-            layout_row.append(plot_list[-1].layout)
-
-        # add that final layout to the bokeh document
-        doc.add_root(row(layout_row))
+            # add that final layout to the bokeh document
+            doc.add_root(row(layout_row))
 
