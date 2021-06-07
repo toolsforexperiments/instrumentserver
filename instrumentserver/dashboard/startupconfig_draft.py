@@ -1,5 +1,5 @@
 config = {
-    'Fridge temps 1' : {
+    'Fridge temps 1': {
         'PT2 Head': {
             'source_type': 'parameter',
             'parameter_path': 'triton.T1',
@@ -81,8 +81,14 @@ config = {
                 'interval': 1000
             },
         },
+    },
+
+    'options': {
+        'refresh_rate': 30000,
+        'allowed_ip': ['*']
+        }
     }
-}
+
 
 
 

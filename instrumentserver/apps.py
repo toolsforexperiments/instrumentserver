@@ -8,7 +8,7 @@ from .server.application import startServerGuiApplication
 from .server.core import startServer
 from bokeh.server.server import Server as BokehServer
 from .dashboard.core import dashboard as dash
-from .dashboard.core import running_server
+from .dashboard.core import load_dashboard
 
 from .client import Client as InstrumentClient
 from tornado.ioloop import PeriodicCallback
@@ -46,12 +46,13 @@ def serverScript() -> None:
 
 
 def bokehDashboard() -> None:
-    # This is just for developing purposes. Once its implemented, either run a script before to create the instrument,
-    # or develop it as a feature to create the instrument if its not found (would need to specify where and what kind).
-    plots = running_server()
+    # loading the global variables and getting the list of allowed addresses
+    ips = load_dashboard()
 
-    dashboard_server = BokehServer(dash)
+    # loading a bokeh Server object and starting it
+    dashboard_server = BokehServer(dash, allow_websocket_origin=ips)
     dashboard_server.start()
 
+    # actually starting the process
     dashboard_server.io_loop.add_callback(dashboard_server.show, "/")
     dashboard_server.io_loop.start()
