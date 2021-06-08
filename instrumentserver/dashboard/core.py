@@ -1,18 +1,20 @@
-from instrumentserver.client import Client as InstrumentClient
+from ..client import Client as InstrumentClient
 from .startupconfig_draft import config
-
 
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter, HoverTool, DataRange1d,\
                          RadioButtonGroup
-from bokeh.models.widgets import Button, Tabs, Panel, Paragraph
+from bokeh.models.widgets import Button, Tabs, Panel, Paragraph, FileInput
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
 from typing import Optional, List
-import itertools
 
+import os
+import pandas as pd
+import itertools
 import datetime
+
 
 
 class PlotParameters:
@@ -44,21 +46,21 @@ class PlotParameters:
         self.parameter_path = parameter_path
         self.server = server
         self.port = port
-        self.addr = f"tcp://{self.server}:{self.port}"
+        self.address = f"tcp://{self.server}:{self.port}"
         self.interval = interval
 
         # check if there is any data to load. If there is load it, if not create an empty ColumnDataSource
         if source is None:
-            self._data = []
-            self._time = []
+            self.data = []
+            self.time = []
             self.source = ColumnDataSource(data={
-                self.name: self._data,
-                f'{self.name}_time': self._time
+                self.name: self.data,
+                f'{self.name}_time': self.time
             })
         else:
             self.source = ColumnDataSource(data=source.data)
-            self._data = self.source.data[self.name]
-            self._time = self.source.data[f'{self.name}_time']
+            self.data = self.source.data[self.name]
+            self.time = self.source.data[f'{self.name}_time']
 
         # locate the instrument this parameter is located
         submodules = parameter_path.split('.')
@@ -93,8 +95,8 @@ class PlotParameters:
                 # gather new data and save it inside the class
                 new_data = self.instrument.get(self.parameter_name)
                 current_time = datetime.datetime.now()
-                self._data.append(new_data)
-                self._time.append(current_time)
+                self.data.append(new_data)
+                self.time.append(current_time)
 
                 # create new dictionary with new values to stream to the ColumnDataSource object and updates it.
                 new_data_dict = {
@@ -102,11 +104,10 @@ class PlotParameters:
                     f'{self.name}_time': [current_time]
                 }
                 self.source.stream(new_data_dict)
-
             else:
                 # update data
-                self._data = data
-                self._time = time
+                self.data = data
+                self.time = time
 
                 # create new dictionary with new data
                 data_dict = {
@@ -129,6 +130,15 @@ class PlotParameters:
         """
         return fig.line(x=f'{self.name}_time', y=self.name,
                         source=self.source, legend_label=self.name, color=color)
+
+    def update_from_data(self, data, time):
+        """
+        Only used to load data into the parameter.
+        It receives new data, adds it to the data and time variable and updates
+        """
+        self.data.extend(data)
+        self.time.extend(time)
+        self.update(self.data, self.time)
 
 
 class Plots:
@@ -294,6 +304,42 @@ class DashboardClass:
         self.first = True
         self.refresh = 1000
 
+    def save_data(self):
+        """
+        Saves all the data in the dashboard in a csv file of the name dashboard_data.csv.
+        The data is stored from the directory that the dashboard has been run in the command line.
+        """
+
+        plot_data_frame = []
+        for plt in self.multiple_plots:
+            params_data_frame = []
+            for params in plt.plot_params:
+                holder_data_frame = pd.DataFrame({'time': params.time,
+                                                  'value': params.data,
+                                                  'name': params.name,
+                                                  'parameter_path': params.parameter_path,
+                                                  'address': params.address,
+                                                  'plot': plt.name
+                                                  })
+                params_data_frame.append(holder_data_frame)
+            plot_data_frame.append(pd.concat(params_data_frame, ignore_index=True))
+        ret_data_frame = pd.concat(plot_data_frame, ignore_index=True)
+        ret_data_frame.to_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'))
+
+    def load_data(self):
+        """
+        Loads data from a csv file called dashboard_data.csv into the dashboard.
+        It will look for the file in the directory that the dashboard has been run in the command line.
+        """
+        load_data = pd.read_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'))
+        for plt in self.multiple_plots:
+            for params in plt.plot_params:
+                reduced_data_frame = load_data[load_data['name'] == params.name]
+                data = reduced_data_frame['value'].tolist()
+                time = reduced_data_frame['time'].tolist()
+
+                params.update_from_data(data, time)
+
     def load_dashboard(self):
         """
         Loads the information from the config file into multiple_plots to be used by the dashboard.
@@ -374,6 +420,12 @@ class DashboardClass:
         It also sets the necessary callbacks to update the dashboard and collect new data.
         """
 
+        save_button = Button(label='Save data')
+        load_button = Button(label='Load data')
+
+        save_button.on_click(self.save_data)
+        load_button.on_click(self.load_data)
+
         # check if  this is the first time running the dashboard
         if self.first:
 
@@ -389,7 +441,8 @@ class DashboardClass:
                 layout_row.append(plt.layout)
 
             # add the layouts to the document
-            doc.add_root(row(layout_row))
+            layout = column(row(layout_row), row(save_button, load_button))
+            doc.add_root(layout)
         else:
             # if this is not the original session,
             # creates a copy of every object with all of their values for the new session
@@ -415,5 +468,6 @@ class DashboardClass:
                 layout_row.append(plot_list[-1].layout)
 
             # add that final layout to the bokeh document
-            doc.add_root(row(layout_row))
+            layout = column(row(layout_row), row(save_button, load_button))
+            doc.add_root(layout)
 

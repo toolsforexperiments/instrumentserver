@@ -6,7 +6,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
 
@@ -16,7 +16,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
 
@@ -26,7 +26,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
 
@@ -36,7 +36,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
     },
@@ -48,7 +48,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
 
@@ -58,7 +58,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
 
@@ -68,7 +68,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
 
@@ -78,7 +78,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 10000
             },
         },
     },
