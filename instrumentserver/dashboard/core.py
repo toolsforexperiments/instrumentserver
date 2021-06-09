@@ -80,6 +80,8 @@ class PlotParameters:
         else:
             self.original = False
 
+        self.flag = True
+
     def update(self, data=None, time=None):
         """
         This method has 2 purposes. If it is being called by an original parameter it gathers new data.
@@ -92,6 +94,14 @@ class PlotParameters:
         # check that the source type is parameter
         if self.source_type == 'parameter':
             if self.original:
+
+                # just for development
+                if self.flag:
+                    self.instrument.generate_data(self.parameter_name)
+                    self.flag = False
+                elif not self.flag:
+                    self.flag = True
+
                 # gather new data and save it inside the class
                 new_data = self.instrument.get(self.parameter_name)
                 current_time = datetime.datetime.now()
@@ -349,14 +359,12 @@ class DashboardClass:
         # used for testing, the instruments should be already created for the dashboard to work
         cli = InstrumentClient()
 
-        if 'triton' in cli.list_instruments():
-            fridge = cli.get_instrument('triton')
+        if 'test' in cli.list_instruments():
+            fridge = cli.get_instrument('test')
         else:
             fridge = cli.create_instrument(
-                'qcodes.instrument_drivers.oxford.triton.Triton',
-                'triton',
-                address='128.174.249.18',
-                port=33576)
+                'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',
+                'test')
 
         plot_list = []
 
