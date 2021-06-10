@@ -328,6 +328,8 @@ class DashboardClass:
         self.multiple_plots = []
         self.first = True
         self.refresh = 1000
+        self.save_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
+        self.load_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
 
     def save_data(self):
         """
@@ -348,14 +350,14 @@ class DashboardClass:
                 params_data_frame.append(holder_data_frame)
             plot_data_frame.append(pd.concat(params_data_frame, ignore_index=True))
         ret_data_frame = pd.concat(plot_data_frame, ignore_index=True)
-        ret_data_frame.to_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'), index=False)
+        ret_data_frame.to_csv(self.save_directory, index=False)
 
     def load_data(self):
         """
         Loads data from a csv file called dashboard_data.csv into the dashboard.
         It will look for the file in the directory that the dashboard has been run in the command line.
         """
-        load_data = pd.read_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'), parse_dates=['time'])
+        load_data = pd.read_csv(self.load_directory, parse_dates=['time'])
         for plt in self.multiple_plots:
             for params in plt.plot_params:
                 reduced_data_frame = load_data[load_data['name'] == params.name]
@@ -394,7 +396,14 @@ class DashboardClass:
                     self.refresh = config[plot]['refresh_rate']
                 if 'allowed_ip' in config[plot]:
                     ip_list = config[plot]['allowed_ip']
-
+                if 'load_and_save' in config[plot]:
+                    self.load_directory = config[plot]['load_and_save']
+                    self.save_directory = config[plot]['load_and_save']
+                else:
+                    if 'save_directory' in config[plot]:
+                        self.save_directory = config[plot]['save_directory']
+                    if 'load_directory' in config[plot]:
+                        self.load_directory = config[plot]['load_directory']
             else:
                 param_list = []
                 param_names = []

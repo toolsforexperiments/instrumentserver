@@ -42,6 +42,22 @@ server:
 port:
     The port of the instrument server
 
+options:
+    This should be a dictionary at the same level of the plots in the dashboard.
+    In it you can specify some options for the dashboard itself.
+        refresh_rate
+            [int] Amount of time in ms for different sessions of the dashboard to update.
+        allowed_ip
+            [List[str]] List of the allowed ips that the server will show the dashboard
+            if [*], all ips are allowed and the server will show the dashboard to any browser that request it.
+        save_directory
+            [str] Directory of where the dashboard will save data. This should end with <name_of_file>.csv
+        load_directory
+            [str] Directory of where the dashboard will load data. This should end with <name_of_file>.csv
+        load_and_save
+            [str] Directory of where the dashboard will load and save data.
+            If this option is present, the dashboard will override save_directory and load_directory options.
+            This should end with <name_of_file>.csv
 
 Example:
 ^^^^^^^^
@@ -85,7 +101,8 @@ The following is an example dictionary::
 
         'options': {
             'refresh_rate': 30000,
-            'allowed_ip': [*]
+            'allowed_ip': [*],
+            'load_and_save': 'C:/Users/zpa/Desktop/dashboard_data.csv'
         }
     }
 
@@ -122,6 +139,10 @@ options
         allowed_ip
             list of allowed ip_addresses and ports that are allowed to see the website.
             For [*] all addresses are allowed
+        load_and_save
+            directory including the name of the file where the dashboard will save data too and load data from
+            using this command saves the same directory for both saving and loading
+
 
 
 """

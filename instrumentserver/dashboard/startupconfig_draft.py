@@ -49,8 +49,11 @@ config = {
 
     'options': {
         'refresh_rate': 10000,
-        'allowed_ip': ['*']
-    }
+        'allowed_ip': ['*'],
+        #'load_and_save': 'C:/Users/zpa/Desktop/dashboard_data.csv'
+        'load_directory': 'C:/Users/zpa/Desktop/dashboard_data.csv',
+        'save_directory': 'C:/Users/zpa/documents/dashboard_data.csv'
+        }
 }
 
 
