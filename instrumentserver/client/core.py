@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 class BaseClient:
     """Simple client for the StationServer.
+    When a timeout happens, a RunTimeError is being raised. This error is there just to warn the user that a timeout
+    has occurred. After that the client will restart the socket to continue the normal work.
 
     :param host: The host address of the server, defaults to localhost.
     :param port: The port of the server, defaults to the value of DEFAULT_PORT.
