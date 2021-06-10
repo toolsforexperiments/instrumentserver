@@ -6,16 +6,16 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 5000
+                'interval': 1000
             }
-        },
+         },
         'Param 1': {
             'source_type': 'parameter',
             'parameter_path': 'test.param1',
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 5000
+                'interval': 1000
             }
         },
         'Param 4': {
@@ -24,19 +24,16 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 5000
+                'interval': 1000
             }
-        }
-
-    },
-    'Random Numbers 2': {
+        },
         'Param 2': {
             'source_type': 'parameter',
             'parameter_path': 'test.param2',
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 5000
+                'interval': 1000
             }
         },
         'Param 3': {
@@ -45,21 +42,16 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 5000
+                'interval': 1000
             }
         }
+    },
+
+    'options': {
+        'refresh_rate': 10000,
+        'allowed_ip': ['*']
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 config_fridge_example = {

@@ -80,7 +80,7 @@ class PlotParameters:
         else:
             self.original = False
 
-        self.flag = True
+        self.color = None
 
     def update(self, data=None, time=None):
         """
@@ -96,11 +96,7 @@ class PlotParameters:
             if self.original:
 
                 # just for development
-                if self.flag:
-                    self.instrument.generate_data(self.parameter_name)
-                    self.flag = False
-                elif not self.flag:
-                    self.flag = True
+                self.instrument.generate_data(self.parameter_name)
 
                 # gather new data and save it inside the class
                 new_data = self.instrument.get(self.parameter_name)
@@ -108,12 +104,14 @@ class PlotParameters:
                 self.data.append(new_data)
                 self.time.append(current_time)
 
-                # create new dictionary with new values to stream to the ColumnDataSource object and updates it.
+                # create new dictionary with the new and old values and replaces the old data.
                 new_data_dict = {
-                    self.name: [new_data],
-                    f'{self.name}_time': [current_time]
+                    self.name: self.data,
+                    f'{self.name}_time': self.time
                 }
-                self.source.stream(new_data_dict)
+
+                self.source.data = new_data_dict
+
             else:
                 # update data
                 self.data = data
@@ -131,24 +129,41 @@ class PlotParameters:
         if self.source_type == 'broadcast':
             raise NotImplementedError
 
-    def create_line(self, fig: figure, color):
+    def create_line(self, fig: figure, color, load_data_line: ColumnDataSource = None):
         """
         Creates the line in the specified figure based on the ColumnDataSource of this parameter.
 
         :param fig: bokeh figure object where this line is going to live.
         :param color: used to cycle through the colors.
+        :param load_data_line: ColumnDataSource with the data that you are loading from a csv, defaults to None.
         """
-        return fig.line(x=f'{self.name}_time', y=self.name,
-                        source=self.source, legend_label=self.name, color=color)
+        self.color = color
 
-    def update_from_data(self, data, time):
+        if load_data_line is None:
+            return fig.line(x=f'{self.name}_time', y=self.name,
+                            source=self.source, legend_label=self.name, color=color)
+        else:
+            return fig.line(x=f'{self.name}_time', y=self.name,
+                            source=load_data_line, color=color)
+
+
+    def update_from_data(self, data, time, figures):
         """
         Only used to load data into the parameter.
         It receives new data, adds it to the data and time variable and updates
         """
-        self.data.extend(data)
-        self.time.extend(time)
-        self.update(self.data, self.time)
+        # if you extend the parameter own memory storage, graphical artifacts appear
+        # self.data.extend(data)
+        # self.time.extend(time)
+
+        new_data_dict = {
+            self.name: data,
+            f'{self.name}_time': time
+        }
+        load_data_source = ColumnDataSource(data=new_data_dict)
+
+        self.create_line(figures[0], self.color, load_data_source)
+        self.create_line(figures[1], self.color, load_data_source)
 
 
 class Plots:
@@ -241,7 +256,7 @@ class Plots:
 
         # creates the layout with all of the elements of this plot GUI
         self.layout = column(self.title,
-                             Tabs(tabs=panels),
+                             row(Tabs(tabs=panels)),
                              self.checkbox,
                              row(self.all_button, self.none_button))
 
@@ -329,26 +344,25 @@ class DashboardClass:
                                                   'name': params.name,
                                                   'parameter_path': params.parameter_path,
                                                   'address': params.address,
-                                                  'plot': plt.name
                                                   })
                 params_data_frame.append(holder_data_frame)
             plot_data_frame.append(pd.concat(params_data_frame, ignore_index=True))
         ret_data_frame = pd.concat(plot_data_frame, ignore_index=True)
-        ret_data_frame.to_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'))
+        ret_data_frame.to_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'), index=False)
 
     def load_data(self):
         """
         Loads data from a csv file called dashboard_data.csv into the dashboard.
         It will look for the file in the directory that the dashboard has been run in the command line.
         """
-        load_data = pd.read_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'))
+        load_data = pd.read_csv(os.path.join(os.getcwd(), 'dashboard_data.csv'), parse_dates=['time'])
         for plt in self.multiple_plots:
             for params in plt.plot_params:
                 reduced_data_frame = load_data[load_data['name'] == params.name]
                 data = reduced_data_frame['value'].tolist()
                 time = reduced_data_frame['time'].tolist()
 
-                params.update_from_data(data, time)
+                params.update_from_data(data, time, [plt.fig_linear, plt.fig_log])
 
     def load_dashboard(self):
         """
@@ -360,9 +374,9 @@ class DashboardClass:
         cli = InstrumentClient()
 
         if 'test' in cli.list_instruments():
-            fridge = cli.get_instrument('test')
+            instrument = cli.get_instrument('test')
         else:
-            fridge = cli.create_instrument(
+            instrument = cli.create_instrument(
                 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',
                 'test')
 
@@ -476,6 +490,6 @@ class DashboardClass:
                 layout_row.append(plot_list[-1].layout)
 
             # add that final layout to the bokeh document
-            layout = column(row(layout_row), row(save_button, load_button))
+            layout = column(row(layout_row), row(save_button))
             doc.add_root(layout)
 
