@@ -291,6 +291,53 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
 
     return bp
 
+@dataclass
+class ParameterBroadcastBluePrint:
+    """blueprint to broadcast parameter changes"""
+    name: str
+    action: str
+    value: int = None
+    unit: str = None
+
+    def __init__(self, name: str, action: str, value: int = None, unit: str = None):
+        self.name = name
+        self.value = value
+        self.unit = unit
+        self.action = action
+
+    def __str__(self) -> str:
+        ret = f"""\"name\":\"{self.name}\": {{    
+    \"action\":\"{self.action}" """
+        if self.value is not None:
+            ret = ret + f"\n    \"value\":\"{self.value}\""
+        if self.unit is not None:
+            ret = ret + f"\n    \"unit\":\"{self.unit}\""
+        ret = ret + f"""\n}}"""
+        return ret
+
+    def __repr__(self):
+        return str(self)
+
+    def pprint(self, indent=0):
+
+        i = indent * ' '
+        ret = f"""name: {self.name}
+{i}- action: {self.action}
+{i}- value: {self.value}
+{i}- unit: {self.unit}
+    """
+        return ret
+
+    def toDictFormat(self):
+        """
+        Formats the blueprint for easy conversion to dictionary later.
+        """
+        ret = f"'name': '{self.name}'," \
+              f" 'action': '{self.action}'," \
+              f" 'value': '{self.value}'," \
+              f" 'unit': '{self.unit}'"
+        return "{"+ret+"}"
+
 
 @dataclass
 class ParameterSerializeSpec:
@@ -313,6 +360,7 @@ class ParameterSerializeSpec:
 
 @dataclass
 class ServerInstruction:
+    #TODO: Remove set parameterr from the code.
     """Instruction spec for the server.
 
     Valid operations:
@@ -402,6 +450,9 @@ class StationServer(QtCore.QObject):
     """The main server object.
 
     Encapsulated in a separate object so we can run it in a separate thread.
+
+    port should always be an odd number to allow the next even number to be its corresponding
+    publishing port
     """
 
     # we use this to quit the server.
@@ -438,7 +489,7 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False):  # , publisher_port=5554):
+    def __init__(self, parent=None, port=5555, allowUserShutdown=False):
         super().__init__(parent)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
@@ -446,7 +497,9 @@ class StationServer(QtCore.QObject):
         self.port = port
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
-        # self.publisher_port = publisher_port
+
+        self.broadcastPort = port + 1
+        self.broadcastSocket = None
 
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
@@ -472,10 +525,12 @@ class StationServer(QtCore.QObject):
         socket = context.socket(zmq.REP)
         socket.bind(addr)
 
-        #creating and binding publishing socket
-        # publisher_addr = f"tcp://*:{self.publisher_port}"
-        # publisher_socket = context.socket(zmq.PUB)
-        # publisher_socket.bind(publisher_addr)
+        # creating and binding publishing socket to broadcast changes
+        broadcastAddr = f"tcp://*:{self.broadcastPort}"
+        logger.info(f"Starting publishing server at {addr}")
+        self.broadcastSocket = context.socket(zmq.PUB)
+        self.broadcastSocket.bind(broadcastAddr)
+
 
         self.serverRunning = True
         self.serverStarted.emit(addr)
@@ -541,18 +596,15 @@ class StationServer(QtCore.QObject):
 
             send(socket, response_to_client)
 
-            # print("sending message")
-            # publisher_socket.send_string("Anyone copy?")
-
             self.messageReceived.emit(str(message), response_log)
 
-        # publisher_socket.close()
+        self.broadcastSocket.close()
         socket.close()
         self.finished.emit()
         return True
 
     def executeServerInstruction(self, instruction: ServerInstruction) \
-            -> ServerResponse:
+            -> Tuple[ServerResponse, str]:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
@@ -631,11 +683,20 @@ class StationServer(QtCore.QObject):
         kwargs = spec.kwargs if spec.kwargs is not None else {}
         ret = obj(*args, **kwargs)
 
+        # check if a new parameter is being created
+        self._newOrDeleteParameterDetection(spec, args, kwargs)
+
         if isinstance(obj, Parameter):
             if len(args) > 0:
                 self.parameterSet.emit(spec.target, args[0])
+
+                # broadcast changes in parameter values
+                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
             else:
                 self.parameterGet.emit(spec.target, ret)
+
+                # broadcast calls of parameters
+                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
         else:
             self.funcCalled.emit(spec.target, args, kwargs, ret)
 
@@ -666,6 +727,41 @@ class StationServer(QtCore.QObject):
 
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
+
+    def _broadcastParameterChange(self, bluePrint: ParameterBroadcastBluePrint):
+        """
+        Broadcast any changes to parameters in the server.
+        The message is composed of a 2 part array. The first item is the name of the instrument the parameter is from,
+        with the second item being the string of the blueprint in dict format.
+        this is done to allow subscribers to subscribe to specific instruments.
+
+        :param bluePrint: the parameter broadcast blueprint that is being broadcast
+        """
+        self.broadcastSocket.send_string(bluePrint.name.split('.')[0], flags=zmq.SNDMORE)
+        self.broadcastSocket.send_string((bluePrint.toDictFormat()))
+        logger.info(f"Parameter {bluePrint.name} has broadcast an update of type: {bluePrint.action},"
+                     f" with a value: {bluePrint.value}.")
+
+    def _newOrDeleteParameterDetection(self, spec, args, kwargs):
+        """
+        detects if the call action is being used to create a new parameter or deletes an existing parameter.
+        If so, it creates the parameter broadcast blueprint and broadcast it.
+
+        :param spec: CallSpec object being passed to the call method
+        :param args: args being passed to the call method
+        :param kwargs: kwargs being passed to the call method
+        """
+
+        if spec.target.split('.')[-1] == 'add_parameter':
+            pb = ParameterBroadcastBluePrint(spec.target,
+                                             'parameter-creation',
+                                             kwargs['initial_value'],
+                                             kwargs['unit'])
+            self._broadcastParameterChange(pb)
+        elif spec.target.split('.')[-1] == 'remove_parameter':
+            pb = ParameterBroadcastBluePrint(spec.target,
+                                             'parameter-deletion')
+            self._broadcastParameterChange(pb)
 
 
 def startServer(port=5555, allowUserShutdown=False) -> \

@@ -14,9 +14,18 @@ logger = logging.getLogger(__name__)
 
 
 class BaseClient:
-    """Simple client for the StationServer"""
+    """Simple client for the StationServer.
+    When a timeout happens, a RunTimeError is being raised. This error is there just to warn the user that a timeout
+    has occurred. After that the client will restart the socket to continue the normal work.
 
-    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True):
+    :param host: The host address of the server, defaults to localhost.
+    :param port: The port of the server, defaults to the value of DEFAULT_PORT.
+    :param connect: If true, the server connects as it is being constructed, defaults to True.
+    :param timeout: Amount of time that the client waits for an answer before declaring timeout in ms.
+                    Defaults to 5000.
+    """
+
+    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=5000):
         self.connected = False
         self.context = None
         self.socket = None
@@ -25,7 +34,7 @@ class BaseClient:
         self.addr = f"tcp://{host}:{port}"
 
         #: timeout for server replies.
-        self.recv_timeout = 5000
+        self.recv_timeout = timeout
 
         if connect:
             self.connect()
@@ -50,23 +59,32 @@ class BaseClient:
         if not self.connected:
             raise RuntimeError("No connection yet.")
 
-        send(self.socket, message)
-        ret = recv(self.socket)
-        logger.info(f"Response received.")
-        logger.debug(f"Response: {str(ret)}")
+        # try so that if timeout happens, the client remains usable
+        try:
+            send(self.socket, message)
+            ret = recv(self.socket)
+            logger.info(f"Response received.")
+            logger.debug(f"Response: {str(ret)}")
 
-        if isinstance(ret, ServerResponse):
-            err = ret.error
-            if err is not None:
-                if isinstance(err, str):
-                    logger.error(err)
-                elif isinstance(err, Warning):
-                    warnings.warn(err)
-                elif isinstance(err, Exception):
-                    raise err
-                else:
-                    raise TypeError(f'Unknown Error Type: {str(err)}')
-        return ret.message
+            if isinstance(ret, ServerResponse):
+                err = ret.error
+                if err is not None:
+                    if isinstance(err, str):
+                        logger.error(err)
+                    elif isinstance(err, Warning):
+                        warnings.warn(err)
+                    elif isinstance(err, Exception):
+                        raise err
+                    else:
+                        raise TypeError(f'Unknown Error Type: {str(err)}')
+            return ret.message
+
+        except zmq.error.Again as e:
+            # if there is a timeout, close the socket and connect again
+            self.socket.close()
+            self.connect()
+            raise RuntimeError(f'Server did not reply before timeout.')
+
 
     def disconnect(self):
         self.socket.close()
