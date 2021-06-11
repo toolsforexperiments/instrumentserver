@@ -6,7 +6,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 1
             }
          },
         'Param 1': {
@@ -15,7 +15,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 1
             }
         },
         'Param 4': {
@@ -24,7 +24,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 1
             }
         },
         'Param 2': {
@@ -33,7 +33,7 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 1
             }
         },
         'Param 3': {
@@ -42,17 +42,17 @@ config = {
             'server': 'localhost',
             'port': 5555,
             'options': {
-                'interval': 1000
+                'interval': 1
             }
         }
     },
 
     'options': {
-        'refresh_rate': 10000,
+        'refresh_rate': 10,
         'allowed_ip': ['*'],
-        #'load_and_save': 'C:/Users/zpa/Desktop/dashboard_data.csv'
-        'load_directory': 'C:/Users/zpa/Desktop/dashboard_data.csv',
-        'save_directory': 'C:/Users/zpa/documents/dashboard_data.csv'
+        'load_and_save': 'C:/Users/Msmt/Documents/dashboard_data.csv'
+        # 'load_directory': 'C:/Users/zpa/Desktop/dashboard_data.csv',
+        # 'save_directory': 'C:/Users/zpa/documents/dashboard_data.csv'
         }
 }
 
