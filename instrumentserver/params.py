@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, Union, List
 from enum import Enum, unique, auto
+import logging
 
 import json
 from qcodes import Instrument, Parameter
@@ -9,6 +10,10 @@ from qcodes.utils import validators
 
 from . import serialize
 from .server.core import ParameterBluePrint, bluePrintFromParameter
+
+
+logger = logging.getLogger(__name__)
+
 
 @unique
 class ParameterTypes(Enum):
@@ -230,9 +235,12 @@ class ParameterManager(InstrumentBase):
         if filePath is None:
             filePath = self._paramValuesFile
 
-        with open(filePath, 'r') as f:
-            pd = json.load(f)
-        self.fromParamDict(pd)
+        if os.path.exists(filePath):
+            with open(filePath, 'r') as f:
+                pd = json.load(f)
+            self.fromParamDict(pd)
+        else:
+            logger.warning("parameter file not found, cannot load.")
 
     def fromParamDict(self, paramDict: Dict[str, Any],
                       deleteMissing: bool = True):

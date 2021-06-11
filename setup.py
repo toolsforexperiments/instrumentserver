@@ -9,5 +9,7 @@ setup(name='instrumentserver',
       license='MIT',
       packages=['instrumentserver'],
       zip_safe=False,
-      entry_points={"console_scripts": ["instrumentserver = instrumentserver.apps:serverScript"]}
+      entry_points={"console_scripts": [
+            "instrumentserver = instrumentserver.apps:serverScript",
+            "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",] }
       )
