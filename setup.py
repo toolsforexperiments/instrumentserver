@@ -10,5 +10,6 @@ setup(name='instrumentserver',
       packages=['instrumentserver'],
       zip_safe=False,
       entry_points={"console_scripts": ["instrumentserver = instrumentserver.apps:serverScript",
-                                        "dashboard = instrumentserver.apps:bokehDashboard"]}
+                                        "dashboard = instrumentserver.apps:bokehDashboard",
+                                        "parameterlogger = instrumentserver.apps:parameterLogger"]}
       )

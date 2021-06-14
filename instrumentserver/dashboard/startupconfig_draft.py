@@ -27,6 +27,7 @@ config = {
                 'interval': 1
             }
         },
+
         'Param 2': {
             'source_type': 'parameter',
             'parameter_path': 'test.param2',
@@ -51,8 +52,8 @@ config = {
         'refresh_rate': 10,
         'allowed_ip': ['*'],
         'load_and_save': 'C:/Users/Msmt/Documents/dashboard_data.csv'
-        # 'load_directory': 'C:/Users/zpa/Desktop/dashboard_data.csv',
-        # 'save_directory': 'C:/Users/zpa/documents/dashboard_data.csv'
+        # 'load_directory': 'C:/Users/Msmt/Documents/dashboard_data.csv',
+        # 'save_directory': 'C:/Users/Msmt/Documents/dashboard_data.csv'
         }
 }
 

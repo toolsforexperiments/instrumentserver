@@ -8,10 +8,8 @@ from .server.application import startServerGuiApplication
 from .server.core import startServer
 from bokeh.server.server import Server as BokehServer
 from .dashboard.core import DashboardClass
+from .dashboard.logger import ParameterLogger
 
-
-from .client import Client as InstrumentClient
-from tornado.ioloop import PeriodicCallback
 
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
@@ -49,12 +47,22 @@ def bokehDashboard() -> None:
     # loading the global variables and getting the list of allowed addresses
     dashboard = DashboardClass()
 
-    ips = dashboard.load_dashboard()
-
     # loading a bokeh Server object and starting it
-    dashboard_server = BokehServer(dashboard.dashboard, allow_websocket_origin=ips)
+    dashboard_server = BokehServer(dashboard.dashboard, allow_websocket_origin=dashboard.ips)
     dashboard_server.start()
 
     # actually starting the process
     dashboard_server.io_loop.add_callback(dashboard_server.show, "/")
     dashboard_server.io_loop.start()
+
+
+def parameterLogger() -> None:
+
+    # create the logger
+    parameter_logger = ParameterLogger()
+
+    # read the config dictionary
+    parameter_logger.read_config()
+
+    # run the logging
+    parameter_logger.run_logger()

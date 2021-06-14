@@ -2,32 +2,28 @@ import datetime
 import os
 from typing import Optional, List
 
-from bokeh.models import ColumnDataSource
 import pandas as pd
 
 from ..client import Client as InstrumentClient
 from .startupconfig_draft import config
 
 
-
-class PlotParameters:
+class LoggerParameters:
     """
-    Class that holds and individual parameter of the dashboard. It lives inside a Plots class.
+    Holds the different parameters the logger is tracking. It holds all of the metadata as well as fresh data
 
     :param name: Name of the parameter.
     :param source_type: Specifies how to gather the data for the parameter (parameter or broadcast).
     :param parameter_path: Full name with submodules of the qcodes parameter.
     :param server: Location of the server, defaults to 'localhost'.
-    :param port: Defaults to 5555.
+    :param port: Port of the server, defaults to 5555.
     :param interval: Interval of time to gather new updates in ms,
                      only impactful if source_type is of the parameter type. defaults to 1000.
-    :param source: ColumnDataSource object with the data that should be loaded in the parameter. Defaults to None.
     """
 
     def __init__(self, name: str,
                  source_type: str,
                  parameter_path: str,
-                 plot: str,
                  server: Optional[str] = 'localhost',
                  port: Optional[int] = 5555,
                  interval: Optional[int] = 1000):
@@ -40,9 +36,6 @@ class PlotParameters:
         self.port = port
         self.address = f"tcp://{self.server}:{self.port}"
         self.interval = interval
-        self.plot = plot
-
-        # check if there is any data to load. If there is load it, if not create an empty ColumnDataSource
 
         self.data = []
         self.time = []
@@ -59,16 +52,12 @@ class PlotParameters:
             parameter_name = parameter_name + submodules[i]
         self.parameter_name = parameter_name
 
-        self.color = None
+        # record the time the parameter was created
         self.last_saved_t = datetime.datetime.now()
 
-    def update(self, data=None, time=None):
+    def update(self):
         """
-        This method has 2 purposes. If it is being called by an original parameter it gathers new data.
-        if it is called by a non-original parameter, it updates its data with the parameters data and time.
-
-        :param data: all of the data from the original parameter
-        :param time: all of the time data from the original parameter
+        Updates the parameter and save a new data point in memory
         """
 
         # check that the source type is parameter
@@ -77,7 +66,7 @@ class PlotParameters:
             # just for development
             self.instrument.generate_data(self.parameter_name)
 
-            # gather new data and save it inside the class
+            # gather new data and save it in memory
             new_data = self.instrument.get(self.parameter_name)
             current_time = datetime.datetime.now()
             self.data.append(new_data)
@@ -86,22 +75,25 @@ class PlotParameters:
         if self.source_type == 'broadcast':
             raise NotImplementedError
 
-class ServerLogger:
 
+class ParameterLogger:
+    """
+    Main class of the logger. All of the parameters are saved inside this class
+    """
     def __init__(self):
+        # sets variables with their default values
         self.parameters = []
-        self.plots = {}
         self.first = True
         self.refresh = 10
         self.save_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
         self.load_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
         self.active = False
         self.last_saved_t = datetime.datetime.now()
+        self.ips = ['*']
 
     def read_config(self):
         """
-        Loads the information from the config file into multiple_plots to be used by the dashboard.
-        Returns the list of valid ips
+        Reads the config dictionary and load the parameters and settings.
         """
 
         # used for testing, the instruments should be already created for the dashboard to work
@@ -114,18 +106,15 @@ class ServerLogger:
                 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',
                 'test')
 
-        # default value
-        ip_list = ['*']
-        # goes through the config dictionary and constructs the classes
+        # goes through the config dictionary
         for plot in config.keys():
-
             # check if the key is options and load the specified settings.
             if plot == 'options':
                 if 'refresh_rate' in config[plot]:
                     # default value 1000
                     self.refresh = config[plot]['refresh_rate']
                 if 'allowed_ip' in config[plot]:
-                    ip_list = config[plot]['allowed_ip']
+                    self.ips = config[plot]['allowed_ip']
                 if 'load_and_save' in config[plot]:
                     self.load_directory = config[plot]['load_and_save']
                     self.save_directory = config[plot]['load_and_save']
@@ -135,7 +124,6 @@ class ServerLogger:
                     if 'load_directory' in config[plot]:
                         self.load_directory = config[plot]['load_directory']
             else:
-
                 param_names = []
                 for params in config[plot].keys():
 
@@ -153,24 +141,21 @@ class ServerLogger:
                         if 'interval' in config[plot][params]['options']:
                             interval_param = config[plot][params]['options']['interval']
 
-                    # creates the PlotParameter object with the specified parameters
-                    plt_param = PlotParameters(name=params,
-                                               source_type=config[plot][params]['source_type'],
-                                               parameter_path=config[plot][params]['parameter_path'],
-                                               server=server_param,
-                                               port=port_param,
-                                               interval=interval_param,
-                                               plot=plot)
-                    # adds the parameter and its name to lists to pass to the Plot constructor.
+                    # creates the LoggerParameter object with the specified parameters
+                    plt_param = LoggerParameters(name=params,
+                                                 source_type=config[plot][params]['source_type'],
+                                                 parameter_path=config[plot][params]['parameter_path'],
+                                                 server=server_param,
+                                                 port=port_param,
+                                                 interval=interval_param)
                     self.parameters.append(plt_param)
-                    param_names.append(params)
-
-                self.plots[plot] = param_names
-
-        return ip_list
 
     def save_data(self):
-
+        """
+        Saves the data in the specified file indicated in the config dictionary.
+        Deletes the data from memory once it has been saved to storage.
+        """
+        # go through the parameters and create DataFrames with their data
         df_list = []
         for params in self.parameters:
             holder_df = pd.DataFrame({'time': params.time,
@@ -180,27 +165,32 @@ class ServerLogger:
                                       'address': params.address
                                       })
             df_list.append(holder_df)
+            params.data = []
+            params.time = []
         ret = pd.concat(df_list, ignore_index=True)
-        ret.to_csv(self.save_directory, index=False, mode='a')
 
-    def dashboard_config(self):
-        """
-        Returns all of the configurations the dashboard needs.
-        first the refresh time and then the plot structure.
-        """
-
-        return self.refresh, self.plots
+        # check if the file already exist, if it does not include the header in the saving.
+        if not os.path.exists(self.save_directory):
+            ret.to_csv(self.save_directory, index=False, mode='a')
+        else:
+            ret.to_csv(self.save_directory, index=False, mode='a', header=False)
 
     def run_logger(self):
-
+        """
+        Main loop of the logger. Constantly running checking if its time to either save data or collect new data.
+        """
         self.active = True
 
         while self.active:
+            # checks what is the current time
             current_t = datetime.datetime.now()
+
+            # check if its time to save data
             if (current_t - self.last_saved_t).total_seconds() >= self.refresh:
                 self.save_data()
                 self.last_saved_t = current_t
 
+            # individually check if its time to collect data from each parameter
             for params in self.parameters:
                 if (current_t - params.last_saved_t).total_seconds() >= params.interval:
                     params.update()
