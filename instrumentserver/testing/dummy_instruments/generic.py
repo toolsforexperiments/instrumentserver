@@ -49,7 +49,7 @@ class DummyInstrumentRandomNumber(Instrument):
 
         self.add_parameter('param0',
                            set_cmd=None,
-                           vals=validators.Numbers(0, 10),
+                           vals=validators.Numbers(1, 10),
                            initial_value=1)
 
         self.add_parameter('param1',
@@ -75,8 +75,7 @@ class DummyInstrumentRandomNumber(Instrument):
     def generate_data(self, name: str):
 
         if name == 'param0':
-            random = np.random.randint(0, 10)
-            self.parameters[name].set(random)
+            self.parameters[name].set(np.random.randint(1, 10))
         if name == 'param1':
             self.parameters[name].set(np.random.randint(10, 20))
         if name == 'param2':

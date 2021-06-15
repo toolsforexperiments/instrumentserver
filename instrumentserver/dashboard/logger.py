@@ -3,9 +3,10 @@ import os
 from typing import Optional, List
 
 import pandas as pd
+from .. import QtCore
 
 from ..client import Client as InstrumentClient
-from .startupconfig_draft import config
+from .config import config
 
 
 class LoggerParameters:
@@ -17,8 +18,8 @@ class LoggerParameters:
     :param parameter_path: Full name with submodules of the qcodes parameter.
     :param server: Location of the server, defaults to 'localhost'.
     :param port: Port of the server, defaults to 5555.
-    :param interval: Interval of time to gather new updates in ms,
-                     only impactful if source_type is of the parameter type. defaults to 1000.
+    :param interval: Interval of time to gather new updates in seconds,
+                     only impactful if source_type is of the parameter type. defaults to 1.
     """
 
     def __init__(self, name: str,
@@ -26,7 +27,7 @@ class LoggerParameters:
                  parameter_path: str,
                  server: Optional[str] = 'localhost',
                  port: Optional[int] = 5555,
-                 interval: Optional[int] = 1000):
+                 interval: Optional[int] = 1):
 
         # load values
         self.name = name
@@ -76,11 +77,13 @@ class LoggerParameters:
             raise NotImplementedError
 
 
-class ParameterLogger:
+class ParameterLogger(QtCore.QObject):
     """
     Main class of the logger. All of the parameters are saved inside this class
     """
     def __init__(self):
+        super().__init__()
+
         # sets variables with their default values
         self.parameters = []
         self.first = True
@@ -130,7 +133,7 @@ class ParameterLogger:
                     # default configs. If they exist in config they will get overwritten. Used for constructor.
                     server_param = 'localhost'
                     port_param = 5555
-                    interval_param = 1000
+                    interval_param = 1
 
                     # check if the optional options exist in the dictionary and overwrites them if they do.
                     if 'server' in config[plot][params]:
@@ -196,3 +199,4 @@ class ParameterLogger:
                     params.update()
                     params.last_saved_t = current_t
 
+        return

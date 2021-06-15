@@ -9,7 +9,7 @@ from bokeh.models.widgets import Button, Tabs, Panel, Paragraph
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
-from .startupconfig_draft import config
+from .config import config
 
 
 class PlotParameter:

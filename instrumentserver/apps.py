@@ -7,7 +7,7 @@ from .log import setupLogging
 from .server.application import startServerGuiApplication
 from .server.core import startServer
 from bokeh.server.server import Server as BokehServer
-from .dashboard.core import DashboardClass
+from .dashboard.dashboard import DashboardClass
 from .dashboard.logger import ParameterLogger
 
 
@@ -66,3 +66,18 @@ def parameterLogger() -> None:
 
     # run the logging
     parameter_logger.run_logger()
+
+
+def loggerAndDashboard() -> None:
+    thread = QtCore.QThread()
+
+    # create the logger
+    parameter_logger = ParameterLogger()
+    parameter_logger.read_config()
+
+    parameter_logger.moveToThread(thread)
+
+    thread.started.connect(parameter_logger.run_logger)
+    thread.start()
+
+    bokehDashboard()
