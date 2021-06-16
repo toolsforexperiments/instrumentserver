@@ -6,7 +6,8 @@ import pandas as pd
 from .. import QtCore
 
 from ..client import Client as InstrumentClient
-from .config import config
+
+from .__init__ import read_config
 
 
 class LoggerParameters:
@@ -84,21 +85,6 @@ class ParameterLogger(QtCore.QObject):
     def __init__(self):
         super().__init__()
 
-        # sets variables with their default values
-        self.parameters = []
-        self.first = True
-        self.refresh = 10
-        self.save_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
-        self.load_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
-        self.active = False
-        self.last_saved_t = datetime.datetime.now()
-        self.ips = ['*']
-
-    def read_config(self):
-        """
-        Reads the config dictionary and load the parameters and settings.
-        """
-
         # used for testing, the instruments should be already created for the dashboard to work
         cli = InstrumentClient()
 
@@ -109,49 +95,36 @@ class ParameterLogger(QtCore.QObject):
                 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',
                 'test')
 
-        # goes through the config dictionary
-        for plot in config.keys():
-            # check if the key is options and load the specified settings.
-            if plot == 'options':
-                if 'refresh_rate' in config[plot]:
-                    # default value 1000
-                    self.refresh = config[plot]['refresh_rate']
-                if 'allowed_ip' in config[plot]:
-                    self.ips = config[plot]['allowed_ip']
-                if 'load_and_save' in config[plot]:
-                    self.load_directory = config[plot]['load_and_save']
-                    self.save_directory = config[plot]['load_and_save']
-                else:
-                    if 'save_directory' in config[plot]:
-                        self.save_directory = config[plot]['save_directory']
-                    if 'load_directory' in config[plot]:
-                        self.load_directory = config[plot]['load_directory']
-            else:
-                param_names = []
-                for params in config[plot].keys():
 
-                    # default configs. If they exist in config they will get overwritten. Used for constructor.
-                    server_param = 'localhost'
-                    port_param = 5555
-                    interval_param = 1
+        self.parameters = []
 
-                    # check if the optional options exist in the dictionary and overwrites them if they do.
-                    if 'server' in config[plot][params]:
-                        server_param = config[plot][params]['server']
-                    if 'port' in config[plot][params]:
-                        port_param = config[plot][params]['port']
-                    if 'options' in config[plot][params]:
-                        if 'interval' in config[plot][params]['options']:
-                            interval_param = config[plot][params]['options']['interval']
+        # read the config file
+        parameters, refresh, save_directory = read_config('logger')
 
-                    # creates the LoggerParameter object with the specified parameters
-                    plt_param = LoggerParameters(name=params,
-                                                 source_type=config[plot][params]['source_type'],
-                                                 parameter_path=config[plot][params]['parameter_path'],
-                                                 server=server_param,
-                                                 port=port_param,
-                                                 interval=interval_param)
-                    self.parameters.append(plt_param)
+
+        # create the LoggerParameters based on the config file
+        for params in parameters:
+            self.parameters.append(LoggerParameters(name=params[0],
+                                                    source_type=params[1],
+                                                    parameter_path=params[2],
+                                                    server=params[3],
+                                                    port=params[4],
+                                                    interval=params[5]))
+
+        # check if the values are none.
+        # if they are set the default one, if not, set the specified one in the config file
+        if refresh is not None:
+            self.refresh = refresh
+        else:
+            self.refresh = 10
+
+        if save_directory is not None:
+            self.save_directory = save_directory
+        else:
+            self.save_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
+
+        self.active = False
+        self.last_saved_t = datetime.datetime.now()
 
     def save_data(self):
         """

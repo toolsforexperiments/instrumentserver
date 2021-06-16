@@ -9,13 +9,14 @@ from bokeh.models.widgets import Button, Tabs, Panel, Paragraph
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
-from .config import config
+
+from .__init__ import read_config
 
 
 class PlotParameter:
     """
     PlotParameter is used to hold an individual parameter of the plot.
-    It saves the data of it as well as draws the lines for the figures.
+    It holds the data of it as well as draws the lines for the figures.
 
     :param name: The name of the parameter.
 
@@ -66,18 +67,15 @@ class Plots:
     :param name: Name of the plot.
     :param plot_params: List of PlotParameter containing the parameters of this plot.
     :param param_names: List of the names of the parameters.
-    :param load_directory: Directory of the csv file where the data is stored.
     """
 
     def __init__(self, name: str,
                  plot_params: List[PlotParameter],
-                 param_names: List[str],
-                 load_directory: str):
+                 param_names: List[str]):
         # load values
         self.name = name
         self.plot_params = plot_params
         self.param_names = param_names
-        self.load_directory = load_directory
 
         self.title = Paragraph(text=self.name, width=1000, height=200,
                                style={
@@ -204,45 +202,38 @@ class DashboardClass:
     """
 
     def __init__(self):
-        # set the default options
-        self.multiple_plots = []
-        self.refresh = 10
-        self.ips = ['*']
-        self.load_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
-
-        # read the config dictionary to change the defaults
-        self.load_config()
-
-    def load_config(self):
-        """
-        Reads the config dictionary and load the values and structure of the dashboard
-        """
 
         # read the config file
-        for plot in config.keys():
-            # load the options
-            if plot == 'options':
-                if 'refresh_rate' in config[plot]:
-                    # default value 1000
-                    self.refresh = config[plot]['refresh_rate']
-                if 'allowed_ip' in config[plot]:
-                    self.ips = config[plot]['allowed_ip']
-                if 'load_and_save' in config[plot]:
-                    self.load_directory = config[plot]['load_and_save']
-                else:
-                    if 'load_directory' in config[plot]:
-                        self.load_directory = config[plot]['load_directory']
-            else:
-                # create the plot and parameter structure
-                param_list = []
-                name_list = []
-                for params in config[plot]:
-                    param_list.append(PlotParameter(name=params))
-                    name_list.append(params)
-                self.multiple_plots.append(Plots(name=plot,
-                                                 plot_params=param_list,
-                                                 param_names=name_list,
-                                                 load_directory=self.load_directory))
+        multiple_plots, refresh, load_directory, ips = read_config('dashboard')
+
+        # create the plots with their parameters based on the config file
+        self.multiple_plots = []
+        for plots in multiple_plots:
+            params = []
+            params_name = []
+            for param in plots[1]:
+                params.append(PlotParameter(name=param))
+                params_name.append(param)
+            self.multiple_plots.append(Plots(name=plots[0],
+                                             plot_params=params,
+                                             param_names=params_name))
+
+        # check if the values are none.
+        # if they are set the default one, if not, set the specified one in the config file
+        if refresh is not None:
+            self.refresh = refresh
+        else:
+            self.refresh = 10
+
+        if load_directory is not None:
+            self.load_directory = load_directory
+        else:
+            self.load_directory = os.path.join(os.getcwd(), 'dashboard_data.csv')
+
+        if ips is not None:
+            self.ips = ips
+        else:
+            self.ips = ['*']
 
     def dashboard(self, doc):
         """
@@ -277,7 +268,7 @@ class DashboardClass:
                 temp_param = PlotParameter(name=params.name)
                 name_list.append(params.name)
                 param_list.append(temp_param)
-            plot_list.append(Plots(plt.name, param_list, name_list, self.load_directory))
+            plot_list.append(Plots(plt.name, param_list, name_list))
 
             # add the callback and update initially
             doc.add_periodic_callback(update_plots, self.refresh * 1000)

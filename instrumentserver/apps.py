@@ -61,22 +61,21 @@ def parameterLogger() -> None:
     # create the logger
     parameter_logger = ParameterLogger()
 
-    # read the config dictionary
-    parameter_logger.read_config()
-
-    # run the logging
+    # run the logger
     parameter_logger.run_logger()
 
 
 def loggerAndDashboard() -> None:
+    # create the separate thread
     thread = QtCore.QThread()
 
     # create the logger
     parameter_logger = ParameterLogger()
-    parameter_logger.read_config()
 
+    # move the logger into the new thread
     parameter_logger.moveToThread(thread)
 
+    # start the thread
     thread.started.connect(parameter_logger.run_logger)
     thread.start()
 

@@ -173,3 +173,85 @@ options
 
 
 """
+from .config import config
+
+
+def read_config(return_config):
+    """
+    Reads the config file and goes through the config dictionary to load all of the parameters.
+    Depending on wether return_config is dashboard or logger it returns the necessary information to create the
+    dashboard or the logger.
+    If any of the logger or dashboard options are not included in the config file, returns them as None.
+    The consructor handles default values if this happens.
+
+    :param return_config: String indicating what information I am asking for. It should only be 'logger' or 'dashboard'
+                          respectively.
+    """
+
+    lg_parameters = []
+    dash_plots = []
+    refresh = None
+    ips = None
+    load_directory = None
+    save_directory = None
+    for plot in config.keys():
+        # check if the key is options and load the specified settings.
+        if plot == 'options':
+            if 'refresh_rate' in config[plot]:
+                refresh = config[plot]['refresh_rate']
+            if 'allowed_ip' in config[plot]:
+                ips = config[plot]['allowed_ip']
+            if 'load_and_save' in config[plot]:
+                load_directory = config[plot]['load_and_save']
+                save_directory = config[plot]['load_and_save']
+            else:
+                if 'save_directory' in config[plot]:
+                    save_directory = config[plot]['save_directory']
+                if 'load_directory' in config[plot]:
+                    load_directory = config[plot]['load_directory']
+        else:
+            # check what information it needs
+            if return_config == 'logger':
+                for params in config[plot].keys():
+                    # default configs. If they exist in config they will get overwritten. Used for constructor.
+                    server_param = 'localhost'
+                    port_param = 5555
+                    interval_param = 1
+
+                    # check if the optional options exist in the dictionary and overwrites them if they do.
+                    if 'server' in config[plot][params]:
+                        server_param = config[plot][params]['server']
+                    if 'port' in config[plot][params]:
+                        port_param = config[plot][params]['port']
+                    if 'options' in config[plot][params]:
+                        if 'interval' in config[plot][params]['options']:
+                            interval_param = config[plot][params]['options']['interval']
+
+                    # a tuple with the specified parameters for the logger
+                    name=params
+                    source_type=config[plot][params]['source_type']
+                    parameter_path=config[plot][params]['parameter_path']
+
+                    # appends the tuple with the information for the parameters constructor
+                    lg_parameters.append((name,
+                                          source_type,
+                                          parameter_path,
+                                          server_param,
+                                          port_param,
+                                          interval_param))
+
+            elif return_config == 'dashboard':
+                name_list = []
+                for params in config[plot].keys():
+                    # append the names of the parameter
+                    name_list.append(params)
+
+                # append a touple with the plot and a list of the parameters.
+                dash_plots.append((plot, name_list))
+
+    # returns the correct information for each object
+    if return_config == 'logger':
+        return lg_parameters, refresh, save_directory
+    elif return_config == 'dashboard':
+        return dash_plots, refresh, load_directory, ips
+
