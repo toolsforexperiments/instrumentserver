@@ -79,7 +79,7 @@ class ParameterManager(InstrumentBase):
         super().__init__(name)
 
         #: default location and name of the parameters save file.
-        self._paramValuesFile = os.path.join(os.getcwd(), f'parameter_manager_{self.name}.json')
+        self._paramValuesFile = os.path.join(os.getcwd(), f'parameter_manager-{self.name}.json')
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
@@ -280,13 +280,13 @@ class ParameterManager(InstrumentBase):
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
 
-    def paramManToFile(self, filePath : str = None):
+    def toFile(self, filePath: str = None):
 
         """Save parameters from the instrument into a json file.
 
-        :param filePath: path to the json file. 
-                         If ``None`` it looks in the instrument current location
-                         directory for a file called "parametermanager_parameters.json"
+        :param filePath: path to the json file.
+            If ``None`` it looks in the instrument current working
+            directory for a file called "parameter_manager-<name_of_this_instrument>.json"
         """
 
         if filePath is None:
