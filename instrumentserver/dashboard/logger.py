@@ -82,17 +82,6 @@ class ParameterLogger(QtCore.QObject):
     def __init__(self, config: Dict):
         super().__init__()
 
-        # used for testing, the instruments should be already created for the dashboard to work
-        cli = InstrumentClient()
-
-        if 'test' in cli.list_instruments():
-            instrument = cli.get_instrument('test')
-        else:
-            instrument = cli.create_instrument(
-                'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',
-                'test')
-
-
         self.parameters = []
 
         # read the config file
