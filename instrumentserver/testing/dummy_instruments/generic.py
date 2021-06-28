@@ -3,6 +3,7 @@ from typing import List
 from qcodes import Instrument
 from qcodes.utils import validators
 import numpy as np
+import time
 
 
 class DummyChannel(Instrument):
@@ -40,6 +41,23 @@ class DummyInstrumentWithSubmodule(Instrument):
 
     def test_func(self, a, b, *args, c: List[int] = [10, 11], **kwargs):
         return a, b, args[0], c, kwargs['d'], self.param0()
+
+
+class DummyInstrumentTimeout(Instrument):
+    """A dummy instrument to test timeout situations"""
+    def __init__(self, name: str, *args,  **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+        self.random = np.random.randint(10000)
+
+    def get_random(self):
+        return self.random
+
+    def get_random_timeout(self):
+        time.sleep(10)
+        return self.random
+
+
 
 class DummyInstrumentRandomNumber(Instrument):
     """A dummy instrument with a few parameters that have random numbers generated on demand"""
@@ -87,4 +105,4 @@ class DummyInstrumentRandomNumber(Instrument):
 
     def get(self, param_name):
         self.generate_data(param_name)
-        super.get(param_name)
+        return self.parameters[param_name].get()

@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, Union, List
 from enum import Enum, unique, auto
+import logging
 
 import json
 from qcodes import Instrument, Parameter
@@ -9,6 +10,10 @@ from qcodes.utils import validators
 
 from . import serialize
 from .server.core import ParameterBluePrint, bluePrintFromParameter
+
+
+logger = logging.getLogger(__name__)
+
 
 @unique
 class ParameterTypes(Enum):
@@ -230,9 +235,12 @@ class ParameterManager(InstrumentBase):
         if filePath is None:
             filePath = self._paramValuesFile
 
-        with open(filePath, 'r') as f:
-            pd = json.load(f)
-        self.fromParamDict(pd, deleteMissing)
+        if os.path.exists(filePath):
+            with open(filePath, 'r') as f:
+                pd = json.load(f)
+            self.fromParamDict(pd)
+        else:
+            logger.warning("parameter file not found, cannot load.")
 
     def fromParamDict(self, paramDict: Dict[str, Any],
                       deleteMissing: bool = True):
@@ -272,13 +280,13 @@ class ParameterManager(InstrumentBase):
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
 
-    def toFile(self, filePath : str = None):
+    def paramManToFile(self, filePath : str = None):
 
         """Save parameters from the instrument into a json file.
 
         :param filePath: path to the json file. 
                          If ``None`` it looks in the instrument current location
-                         directory for a file called "parameter_manager_<parameter_manager_name>.json"
+                         directory for a file called "parametermanager_parameters.json"
         """
 
         if filePath is None:
