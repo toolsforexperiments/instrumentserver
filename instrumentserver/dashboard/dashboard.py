@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import itertools
-from typing import Optional, List
+from typing import Dict, List
 
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter, HoverTool, DataRange1d
@@ -199,12 +199,14 @@ class DashboardClass:
     Class used to share information between different sessions of the dashboard.
     It can load the config file to read for different specifications and
     has the function that creates the bokeh documents.
+
+    :param config: The dictionary from the config file.
     """
 
-    def __init__(self):
+    def __init__(self, config: Dict):
 
         # read the config file
-        multiple_plots, refresh, load_directory, ips = read_config('dashboard')
+        multiple_plots, refresh, load_directory, ips = read_config('dashboard', config)
 
         # create the plots with their parameters based on the config file
         self.multiple_plots = []

@@ -12,30 +12,34 @@ The dashboard is capable of creating multiple plots side by side and displaying 
 This can be used to display separately different categories of parameters like temperature in one,
 and pressure in another one.
 
-Both programs can be run simultaneously using the command 'dashboardlogger' or
-separately using the command 'parameterlogger' and 'dashboard' in the command line. It is important to remember that
-for the logger to work, the instrumentserver should already be running with the instruments already created.
+Both programs can be run simultaneously using the command 'instrumentserver-dashboardlogger' or
+separately using the command 'instrumentserver-parameterlogger' and 'instrumentserver-dashboard' in the command line.
+It is important to remember that for the logger to work,
+the instrumentserver should already be running with the instruments already created.
 
 The csv file has 5 different columns:
-    time: The time in which this data point has been logged.
+    * time: The time in which this data point has been logged.
 
-    value: The value of the parameter.
+    * value: The value of the parameter.
 
-    name: The name of the parameter.
+    * name: The name of the parameter.
 
-    parameter_path: Full name of the parameter, including all of its submodules, as it appears on the instrument driver.
+    * parameter_path: Full name of the parameter, including all of its submodules, as it appears on the instrument driver.
 
-    address: The address of the instrumentserver where the instrument of this parameters lives.
+    * address: The address of the instrumentserver where the instrument of this parameters lives.
 
 How to set up config file:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The file should be located in the dashboard folder inside of the instrumentserver package and should be called:
-'config.py'. The file should have a python dictionary named config, this is the dictionary that is being read.
+The file should be called 'instrumentserver-dashboard-cfg.py'. Both the dashboard and logger by default will look for
+a file with that name in the current running directory (including 'instrumentserver-dashboardlogger', that runs both).
+You can also specify the location of the config file by passing the argument --config_file <path> in the command line.
+Even on a different location, the file should still be named 'instrumentserver-dashboard-cfg.py'.
+The file should have a python dictionary named config, this is the dictionary that is being read.
 This dictionary is composed of multiple nested dictionaries.
 
-This first field represents individual plots (with the one exception for the options dictionary).
-There can be multiple of them, each representing an individual plot,
+config should have 2 different nested dictionaries: 'plots' and 'options'. Inside of plot, each dictionary represents a
+plot in the dashboard. There can be multiple dictionaries, each representing an individual plot,
 and they will be displayed in a row. Each plot will have its key as a name for it.
 Inside each plot there should be a dictionary for every parameter that should be displayed inside that specific plot.
 Each parameter will have its name as a key and must have a source_type and parameter_path.
@@ -64,7 +68,7 @@ server:
 port:
     The port of the instrument server
 
-The options dictionary at the same level of the plot are where the settings for both the logger and the dashboard
+The options dictionary at the same level as plots are where the settings for both the logger and the dashboard
 are located:
 
     options:
@@ -91,8 +95,9 @@ Example:
 
 The following is an example dictionary::
 
-    config = {
-        'Fridge temps 1' : {
+config = {
+    'plots': {
+        'Fridge temps 1': {
             'PT2 Head': {
                 'source_type': 'parameter',
                 'parameter_path': 'triton.T1',
@@ -124,40 +129,42 @@ The following is an example dictionary::
                     'interval': 3
                 },
             },
-        },
-
-        'options': {
-            'refresh_rate': 30,
-            'allowed_ip': ['*'],
-            'load_and_save': 'C:/Users/Msmt/Documents/dashboard_data.csv'
         }
+    },
+
+    'options': {
+        'refresh_rate': 30,
+        'allowed_ip': ['*'],
+        'load_and_save': 'C:/Users/Msmt/Documents/dashboard_data.csv'
     }
+}
 
-This dictionary would be creating 2 different plots in the dashboard: 'Fridge temps 1' and 'Fridge temps 2'.
 
-Fridge temps 1
-    This plot has 2 different parameters: 'PT2 Head' and 'PT2 Plate'.
-
-    PT2 Head
-        This parameter has a type 'parameter',
-        meaning that the logger will be asking the instrumentserver for updates.
-        It will look for updates for T1 inside the object triton in the instrumentserver located at localhost:5555
-        this will happen every 5 seconds.
-    PT2 Plate
-        This parameter has a type 'parameter',
-        meaning that the logger will be asking the instrumentserver for updates.
-        It will look for updates for T2 inside the object triton in the instrumentserver located at localhost:5555
-        this will happen every 1 second.
-
-Fridge temps 2
-    This plot has a single parameter: 'MC Plate RuO2'
-        MC Plate RuO2
+plots:
+    This dictionary would be creating 2 different plots in the dashboard: 'Fridge temps 1' and 'Fridge temps 2'.
+    Fridge temps 1
+        This plot has 2 different parameters: 'PT2 Head' and 'PT2 Plate'.
+    
+        PT2 Head
             This parameter has a type 'parameter',
             meaning that the logger will be asking the instrumentserver for updates.
-            It will look for updates for T8 inside the object triton in the instrumentserver located at localhost:5555
-            this will happen every 3 seconds.
+            It will look for updates for T1 inside the object triton in the instrumentserver located at localhost:5555
+            this will happen every 5 seconds.
+        PT2 Plate
+            This parameter has a type 'parameter',
+            meaning that the logger will be asking the instrumentserver for updates.
+            It will look for updates for T2 inside the object triton in the instrumentserver located at localhost:5555
+            this will happen every 1 second.
 
-options
+    Fridge temps 2
+        This plot has a single parameter: 'MC Plate RuO2'
+            MC Plate RuO2
+                This parameter has a type 'parameter',
+                meaning that the logger will be asking the instrumentserver for updates.
+                It will look for updates for T8 inside the object triton in the instrumentserver located at localhost:5555
+                this will happen every 3 seconds.
+
+options:
     These are the options for the logger and dashboard.
         refresh_rate
             How often the logger will save its data into storage and how often the dashboard will read the csv file
@@ -173,19 +180,22 @@ options
 
 
 """
-from .config import config
 
 
-def read_config(return_config):
+from typing import Dict
+
+
+def read_config(return_config: str, config: Dict):
     """
     Reads the config file and goes through the config dictionary to load all of the parameters.
-    Depending on wether return_config is dashboard or logger it returns the necessary information to create the
+    Depending on whether return_config is dashboard or logger it returns the necessary information to create the
     dashboard or the logger.
     If any of the logger or dashboard options are not included in the config file, returns them as None.
-    The consructor handles default values if this happens.
+    The constructor handles default values if this happens.
 
     :param return_config: String indicating what information I am asking for. It should only be 'logger' or 'dashboard'
                           respectively.
+    :param config: The dictionary that needs to be read.
     """
 
     lg_parameters = []
@@ -194,60 +204,61 @@ def read_config(return_config):
     ips = None
     load_directory = None
     save_directory = None
-    for plot in config.keys():
+    for key in config.keys():
         # check if the key is options and load the specified settings.
-        if plot == 'options':
-            if 'refresh_rate' in config[plot]:
-                refresh = config[plot]['refresh_rate']
-            if 'allowed_ip' in config[plot]:
-                ips = config[plot]['allowed_ip']
-            if 'load_and_save' in config[plot]:
-                load_directory = config[plot]['load_and_save']
-                save_directory = config[plot]['load_and_save']
+        if key == 'options':
+            if 'refresh_rate' in config[key]:
+                refresh = config[key]['refresh_rate']
+            if 'allowed_ip' in config[key]:
+                ips = config[key]['allowed_ip']
+            if 'load_and_save' in config[key]:
+                load_directory = config[key]['load_and_save']
+                save_directory = config[key]['load_and_save']
             else:
-                if 'save_directory' in config[plot]:
-                    save_directory = config[plot]['save_directory']
-                if 'load_directory' in config[plot]:
-                    load_directory = config[plot]['load_directory']
-        else:
-            # check what information it needs
-            if return_config == 'logger':
-                for params in config[plot].keys():
-                    # default configs. If they exist in config they will get overwritten. Used for constructor.
-                    server_param = 'localhost'
-                    port_param = 5555
-                    interval_param = 1
+                if 'save_directory' in config[key]:
+                    save_directory = config[key]['save_directory']
+                if 'load_directory' in config[key]:
+                    load_directory = config[key]['load_directory']
+        elif key == 'plots':
+            for plot in config[key].keys():
+                # check what information it needs
+                if return_config == 'logger':
+                    for params in config[key][plot].keys():
+                        # default configs. If they exist in config they will get overwritten. Used for constructor.
+                        server_param = 'localhost'
+                        port_param = 5555
+                        interval_param = 1
 
-                    # check if the optional options exist in the dictionary and overwrites them if they do.
-                    if 'server' in config[plot][params]:
-                        server_param = config[plot][params]['server']
-                    if 'port' in config[plot][params]:
-                        port_param = config[plot][params]['port']
-                    if 'options' in config[plot][params]:
-                        if 'interval' in config[plot][params]['options']:
-                            interval_param = config[plot][params]['options']['interval']
+                        # check if the optional options exist in the dictionary and overwrites them if they do.
+                        if 'server' in config[key][plot][params]:
+                            server_param = config[key][plot][params]['server']
+                        if 'port' in config[key][plot][params]:
+                            port_param = config[key][plot][params]['port']
+                        if 'options' in config[key][plot][params]:
+                            if 'interval' in config[key][plot][params]['options']:
+                                interval_param = config[key][plot][params]['options']['interval']
 
-                    # a tuple with the specified parameters for the logger
-                    name=params
-                    source_type=config[plot][params]['source_type']
-                    parameter_path=config[plot][params]['parameter_path']
+                        # a tuple with the specified parameters for the logger
+                        name = params
+                        source_type = config[key][plot][params]['source_type']
+                        parameter_path = config[key][plot][params]['parameter_path']
 
-                    # appends the tuple with the information for the parameters constructor
-                    lg_parameters.append((name,
-                                          source_type,
-                                          parameter_path,
-                                          server_param,
-                                          port_param,
-                                          interval_param))
+                        # appends the tuple with the information for the parameters constructor
+                        lg_parameters.append((name,
+                                              source_type,
+                                              parameter_path,
+                                              server_param,
+                                              port_param,
+                                              interval_param))
 
-            elif return_config == 'dashboard':
-                name_list = []
-                for params in config[plot].keys():
-                    # append the names of the parameter
-                    name_list.append(params)
+                elif return_config == 'dashboard':
+                    name_list = []
+                    for params in config[key][plot].keys():
+                        # append the names of the parameter
+                        name_list.append(params)
 
-                # append a touple with the plot and a list of the parameters.
-                dash_plots.append((plot, name_list))
+                    # append a touple with the plot and a list of the parameters.
+                    dash_plots.append((plot, name_list))
 
     # returns the correct information for each object
     if return_config == 'logger':

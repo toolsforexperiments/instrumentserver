@@ -85,3 +85,6 @@ class DummyInstrumentRandomNumber(Instrument):
         if name == 'param4':
             self.parameters[name].set(np.random.randint(40, 50))
 
+    def get(self, param_name):
+        self.generate_data(param_name)
+        super.get(param_name)

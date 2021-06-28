@@ -1,13 +1,12 @@
 import datetime
 import os
-from typing import Optional, List
+from typing import Optional, Dict
 
 import pandas as pd
 from .. import QtCore
 
 from ..client import Client as InstrumentClient
-
-from .__init__ import read_config
+from . import read_config
 
 
 class LoggerParameters:
@@ -47,7 +46,6 @@ class LoggerParameters:
         self.instrument_name = submodules[0]
         self.client = InstrumentClient(self.server, self.port)
         self.instrument = self.client.get_instrument(self.instrument_name)
-
         # get the name of the parameter with submodules
         parameter_name = ''
         for i in range(1, len(submodules)):
@@ -65,9 +63,6 @@ class LoggerParameters:
         # check that the source type is parameter
         if self.source_type == 'parameter':
 
-            # just for development
-            self.instrument.generate_data(self.parameter_name)
-
             # gather new data and save it in memory
             new_data = self.instrument.get(self.parameter_name)
             current_time = datetime.datetime.now()
@@ -81,8 +76,10 @@ class LoggerParameters:
 class ParameterLogger(QtCore.QObject):
     """
     Main class of the logger. All of the parameters are saved inside this class
+
+    :param config: The dictionary from the config file.
     """
-    def __init__(self):
+    def __init__(self, config: Dict):
         super().__init__()
 
         # used for testing, the instruments should be already created for the dashboard to work
@@ -99,8 +96,7 @@ class ParameterLogger(QtCore.QObject):
         self.parameters = []
 
         # read the config file
-        parameters, refresh, save_directory = read_config('logger')
-
+        parameters, refresh, save_directory = read_config('logger', config)
 
         # create the LoggerParameters based on the config file
         for params in parameters:
