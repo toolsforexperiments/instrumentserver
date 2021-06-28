@@ -10,7 +10,7 @@ from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
 
-from .__init__ import read_config
+from . import read_config
 
 
 class PlotParameter:
