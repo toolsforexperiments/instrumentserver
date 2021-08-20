@@ -728,19 +728,19 @@ class StationServer(QtCore.QObject):
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
 
-    def _broadcastParameterChange(self, bluePrint: ParameterBroadcastBluePrint):
+    def _broadcastParameterChange(self, blueprint: ParameterBroadcastBluePrint):
         """
         Broadcast any changes to parameters in the server.
         The message is composed of a 2 part array. The first item is the name of the instrument the parameter is from,
         with the second item being the string of the blueprint in dict format.
         this is done to allow subscribers to subscribe to specific instruments.
 
-        :param bluePrint: the parameter broadcast blueprint that is being broadcast
+        :param blueprint: the parameter broadcast blueprint that is being broadcast
         """
-        self.broadcastSocket.send_string(bluePrint.name.split('.')[0], flags=zmq.SNDMORE)
-        self.broadcastSocket.send_string((bluePrint.toDictFormat()))
-        logger.info(f"Parameter {bluePrint.name} has broadcast an update of type: {bluePrint.action},"
-                     f" with a value: {bluePrint.value}.")
+        self.broadcastSocket.send_string(blueprint.name.split('.')[0], flags=zmq.SNDMORE)
+        self.broadcastSocket.send_string((blueprint.toDictFormat()))
+        logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
+                     f" with a value: {blueprint.value}.")
 
     def _newOrDeleteParameterDetection(self, spec, args, kwargs):
         """
@@ -753,13 +753,15 @@ class StationServer(QtCore.QObject):
         """
 
         if spec.target.split('.')[-1] == 'add_parameter':
-            pb = ParameterBroadcastBluePrint(spec.target,
+            name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
+            pb = ParameterBroadcastBluePrint(name,
                                              'parameter-creation',
                                              kwargs['initial_value'],
                                              kwargs['unit'])
             self._broadcastParameterChange(pb)
         elif spec.target.split('.')[-1] == 'remove_parameter':
-            pb = ParameterBroadcastBluePrint(spec.target,
+            name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
+            pb = ParameterBroadcastBluePrint(name,
                                              'parameter-deletion')
             self._broadcastParameterChange(pb)
 

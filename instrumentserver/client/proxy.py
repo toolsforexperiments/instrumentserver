@@ -482,11 +482,6 @@ class SubClient(QtCore.QObject):
         and runs an infinite loop to check for updates.
 
         It should always be run on a separate thread or the program will get stuck in the loop.
-
-        :param param_updates: If True, the client listens for parameter updates.
-        :param param_creation: If True, the client listens for parameter creations.
-        :param param_deletion: If True, the client listens for parameter deletions.
-        :param param_call: If True, the client listens for parameter calls.
         """
         logger.info(f"Connecting to {self.addr}")
         context = zmq.Context()
@@ -505,7 +500,6 @@ class SubClient(QtCore.QObject):
         while self.connected:
 
             message = socket.recv_multipart()
-
             # emits the signals already decoded so python recognizes it a string instead of bytes
             self.update.emit(message[1].decode("utf-8"))
 

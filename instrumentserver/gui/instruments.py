@@ -67,7 +67,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         # creating subscriber client and initializing it
         self.thread = QtCore.QThread()
-        self.updateClient = SubClient(self._instrument.name)
+        self.updateClient = SubClient([self._instrument.name])
         self.updateClient.moveToThread(self.thread)
 
         # connecting starting slot with the main loop of the subscriber client
@@ -355,7 +355,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
             elif paramdict['action'] == 'parameter-deletion':
                 # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
-                for i in range(2, len(named_submodules)-1):
+                for i in range(2, len(named_submodules)):
                     name = name + '.' + named_submodules[i]
                 self.removeParameter(name, False)
 
