@@ -288,7 +288,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         # next, we can parse through the parameters and update the GUI.
         insParams = self._instrument.list()
-        print(f'this is the list of items inside of the refreshAll: {insParams}')
         for n in insParams:
             items = self.plist.findItems(n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
@@ -352,7 +351,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
             # if a new parameter has been created, refresh all the parameters
             if paramdict['action'] == 'parameter-creation':
-                print("HELLO HELLO I HAVE A CREATION CALL")
                 self.refreshAll()
 
             elif paramdict['action'] == 'parameter-deletion':

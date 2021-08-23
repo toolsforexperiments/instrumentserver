@@ -752,7 +752,6 @@ class StationServer(QtCore.QObject):
         :param kwargs: kwargs being passed to the call method
         """
 
-        print(f'entered new or delete parameter detection, with spec: {spec}, args: {args} and kwargs: {kwargs}')
         if spec.target.split('.')[-1] == 'add_parameter':
             name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
             pb = ParameterBroadcastBluePrint(name,
