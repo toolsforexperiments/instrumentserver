@@ -273,7 +273,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         self.plist.removeEmptyContainers()
 
-    def refreshAll(self, delete: Optional[bool]=True, unitCheck: Optional[bool]=False):
+    def refreshAll(self, delete: Optional[bool] = True, unitCheck: Optional[bool] = False):
         """Refreshes the state of the GUI.
 
         :param delete: Optional, If False, it will not delete parameters when it updates.
@@ -288,6 +288,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         # next, we can parse through the parameters and update the GUI.
         insParams = self._instrument.list()
+        print(f'this is the list of items inside of the refreshAll: {insParams}')
         for n in insParams:
             items = self.plist.findItems(n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(items) == 0:
@@ -326,9 +327,9 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
             # creating a dummy parameter to trigger a parameter creation broadcast.
             # this is done so that a different client knows when parameters have been loading.
-            self._instrument.add_parameter('creation_broadcast',
-                                           initial_value='', unit='')
-            self._instrument.remove_parameter('creation_broadcast')
+            # self._instrument.add_parameter('creation_broadcast',
+            #                                initial_value='', unit='')
+            # self._instrument.remove_parameter('creation_broadcast')
 
         except Exception as e:
             logger.info(f"Loading failed. {type(e)}: {e.args}")
@@ -351,6 +352,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
             # if a new parameter has been created, refresh all the parameters
             if paramdict['action'] == 'parameter-creation':
+                print("HELLO HELLO I HAVE A CREATION CALL")
                 self.refreshAll()
 
             elif paramdict['action'] == 'parameter-deletion':
