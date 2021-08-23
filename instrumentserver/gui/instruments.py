@@ -315,7 +315,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
     def saveToFile(self):
         try:
-            self._instrument.toFile()
+            self._instrument.paramManToFile()
         except Exception as e:
             logger.info(f"Saving failed. {type(e)}: {e.args}")
 
