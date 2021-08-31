@@ -63,10 +63,10 @@ class ResonatorResponse(Instrument):
                            get_cmd=self._get_data, )
 
     def modulate_frequency(self, delta: float = 0, multiply=False) -> None:
-        """add an offset to the resonance frequency.
+        """Add an offset to the resonance frequency.
 
         If `multiply` is ``True``, the change in frequency is the product of `delta`
-        and the set frequency. if ``False``, then `delta` is added.
+        and the set frequency. If ``False``, then `delta` is added.
         """
         self._frq_mod = delta
         self._frq_mod_multiply = multiply

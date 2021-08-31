@@ -1,5 +1,5 @@
 """
-instrumentserver.log : logging tools and defaults for instrumentserver.
+instrumentserver.log : Logging tools and defaults for instrumentserver.
 """
 
 import sys
@@ -82,7 +82,7 @@ class LogWidget(QtWidgets.QWidget):
 def setupLogging(addStreamHandler=True, logFile=None,
                  name='instrumentserver',
                  streamHandlerLevel=logging.INFO):
-    """Setting up logging, incl adding a custom handler"""
+    """Setting up logging, including adding a custom handler."""
 
     logger = logging.getLogger(name)
 
@@ -114,14 +114,14 @@ def setupLogging(addStreamHandler=True, logFile=None,
 
 
 def logger(name='instrumentserver'):
-    """get the (root) logger for the package"""
+    """Get the (root) logger for the package."""
     return logging.getLogger(name)
 
 
 def log(logger, message, level):
-    """simple wrapper to log messages.
+    """Simple wrapper to log messages.
 
-    useful when the log level is a variable.
+    Useful when the log level is a variable.
     """
     logFuncs = {
         LogLevels.error: logger.error,

@@ -97,15 +97,15 @@ class ProxyMixin:
 
 
 class ProxyParameter(ProxyMixin, Parameter):
-    """proxy for parameters.
+    """Proxy for parameters.
 
-    :param cli: instance of `Client`
-    :param name: the parameter name
-    :param host: the name of the host where the server lives
-    :param port: the port number of the server
-    :param remotePath: path of the remote object on the server.
+    :param cli: Instance of `Client`.
+    :param name: The parameter name.
+    :param host: The name of the host where the server lives.
+    :param port: The port number of the server.
+    :param remotePath: Path of the remote object on the server.
     :param bluePrint: The blue print to construct the proxy parameter.
-        if `remotePath` and `bluePrint` are both supplied, the blue print takes
+        If `remotePath` and `bluePrint` are both supplied, the blue print takes
         priority.
     """
 
@@ -168,9 +168,9 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
     instantiation represents a virtual module (instrument of submodule of
     instrument).
 
-    :param bluePrint: The blue print that the describes the module
-    :param host: the name of the host where the server lives
-    :param port: the port number of the server
+    :param bluePrint: The blue print that the describes the module.
+    :param host: The name of the host where the server lives.
+    :param port: The port number of the server.
     """
 
     def __init__(self, name: str, *args,
@@ -223,7 +223,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
     def _getProxyParameters(self) -> None:
         """Based on the parameter blueprint replied from server, add the
-        instrument parameters to the proxy instrument class"""
+        instrument parameters to the proxy instrument class."""
 
         # note: we can always provide setpoints_instruments, because in case
         # the parameter doesn't, `setpoints` will just be `None`.
@@ -243,7 +243,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
     def _getProxyMethods(self):
         """Based on the method blue print replied from server, add the
-        instrument functions to the proxy instrument class
+        instrument functions to the proxy instrument class.
         """
         for n, m in self.bp.methods.items():
             if not hasattr(self, n):
@@ -289,7 +289,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
     def _getProxySubmodules(self):
         """Based on the submodule blue print replied from server, add the proxy
-        submodules to the proxy module class
+        submodules to the proxy module class.
         """
         for sn, s in self.bp.submodules.items():
             if sn not in self.submodules:
@@ -346,23 +346,23 @@ class Client(BaseClient):
     """Client with common server requests as convenience functions."""
 
     def list_instruments(self) -> Dict[str, str]:
-        """ Get the existing instruments on the server
+        """ Get the existing instruments on the server.
         """
         msg = ServerInstruction(operation=Operation.get_existing_instruments)
         return self.ask(msg)
 
     def create_instrument(self, instrument_class: str, name: str,
                           *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
-        """ create a new instrument on the server and return a proxy for the new
+        """ Create a new instrument on the server and return a proxy for the new
         instrument.
 
         :param instrument_class: Class of the instrument to create or a string of
-            of the class
-        :param name: Name of the new instrument
-        :param args: Positional arguments for new instrument instantiation
-        :param kwargs: Keyword arguments for new instrument instantiation
+            of the class.
+        :param name: Name of the new instrument.
+        :param args: Positional arguments for new instrument instantiation.
+        :param kwargs: Keyword arguments for new instrument instantiation.
 
-        :returns: a new virtual instrument
+        :returns: A new virtual instrument.
         """
         req = ServerInstruction(
             operation=Operation.create_instrument,
@@ -455,7 +455,7 @@ class SubClient(QtCore.QObject):
     Specific subscription client used for real-time parameter updates.
     """
     #: Signal(str) --
-    #: emitted when the server broadcast either a new parameter or an update to an existing one
+    #: emitted when the server broadcast either a new parameter or an update to an existing one.
     update = QtCore.Signal(str)
 
     def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
@@ -463,9 +463,9 @@ class SubClient(QtCore.QObject):
         Creates a new subscription client.
 
         :param instruments: List of instruments the subclient will listen for.
-                            If empty it will listen to all broadcasts done by the server
-        :param host: the host location of the updates
-        :param port: Should not be changed. it always is the server normal port +1
+                            If empty it will listen to all broadcasts done by the server.
+        :param host: The host location of the updates.
+        :param port: Should not be changed. It always is the server normal port +1.
         """
         super().__init__()
         self.host = sub_host

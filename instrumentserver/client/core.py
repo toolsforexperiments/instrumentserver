@@ -33,7 +33,7 @@ class BaseClient:
         self.port = port
         self.addr = f"tcp://{host}:{port}"
 
-        #: timeout for server replies.
+        #: Timeout for server replies.
         self.recv_timeout = timeout
 
         if connect:

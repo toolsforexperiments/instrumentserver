@@ -10,7 +10,7 @@ from .serialize import toParamDict
 
 
 def stringToArgsAndKwargs(value: str) -> Tuple[List[Any], Dict[str, Any]]:
-    """create argument list and kwarg dict from a string.
+    """Create argument list and kwarg dict from a string.
 
     Example::
         >>> stringToArgsAndKwargs("1, True, abc=12.3")
@@ -56,7 +56,7 @@ def objectClassPath(o) -> str:
 
 
 def nestedAttributeFromString(root: Any, loc: str) -> Any:
-    """return a sub-object. Example::
+    """Return a sub-object. Example::
 
         >>> nestedAttributeFromString(parent_object, 'foo.bar.spam.bacon')
 
@@ -70,7 +70,7 @@ def nestedAttributeFromString(root: Any, loc: str) -> Any:
 
 
 def getInstrumentParameters(ins: Instrument) -> Dict[str, Dict[str, str]]:
-    """return the parameters of an instrument.
+    """Return the parameters of an instrument.
 
     :param ins: instrument instance
     :returns: a param dict with entries `unit`, `vals`, for each
@@ -83,7 +83,7 @@ def getInstrumentParameters(ins: Instrument) -> Dict[str, Dict[str, str]]:
 
 
 def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List[str]]]]:
-    """return the methods of an instrument.
+    """Return the methods of an instrument.
 
     :param ins: instrument instance
     :returns: a dictionary, with keys being the names of methods that are not private

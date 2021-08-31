@@ -21,7 +21,7 @@ class DummyChannel(Instrument):
 
 
 class DummyInstrumentWithSubmodule(Instrument):
-    """A dummy instrument with submodules"""
+    """A dummy instrument with submodules."""
 
     def __init__(self, name: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -44,7 +44,7 @@ class DummyInstrumentWithSubmodule(Instrument):
 
 
 class DummyInstrumentTimeout(Instrument):
-    """A dummy instrument to test timeout situations"""
+    """A dummy instrument to test timeout situations."""
     def __init__(self, name: str, *args,  **kwargs):
         super().__init__(name, *args, **kwargs)
 

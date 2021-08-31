@@ -27,12 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 class StationList(QtWidgets.QTreeWidget):
-    """A widget that displays all objects in a qcodes station"""
+    """A widget that displays all objects in a qcodes station."""
 
     cols = ['Name', 'Type']
 
     #: Signal(str) --
-    #: emitted when a parameter or Instrument is selected
+    #: emitted when a parameter or Instrument is selected.
     componentSelected = QtCore.Signal(str)
 
     def __init__(self, parent=None):
@@ -139,7 +139,7 @@ class ServerGui(QtWidgets.QMainWindow):
 
         self.setWindowTitle('Instrument server')
 
-        # central widget is simply a tab container
+        # Central widget is simply a tab container.
         self.tabs = QtWidgets.QTabWidget(self)
         self.setCentralWidget(self.tabs)
 
@@ -158,18 +158,18 @@ class ServerGui(QtWidgets.QMainWindow):
         self.serverStatus = ServerStatus()
         self.tabs.addTab(self.serverStatus, 'Server')
 
-        # toolbar
+        # Toolbar.
         self.toolBar = self.addToolBar('Tools')
         self.toolBar.setIconSize(QtCore.QSize(16, 16))
 
-        # station tools
+        # Station tools.
         self.toolBar.addWidget(QtWidgets.QLabel('Station:'))
         refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), 'Refresh', self)
         refreshStationAction.triggered.connect(self.refreshStationComponents)
         self.toolBar.addAction(refreshStationAction)
 
-        # parameter tools
+        # Parameter tools.
         self.toolBar.addSeparator()
         self.toolBar.addWidget(QtWidgets.QLabel('Params:'))
 
@@ -183,7 +183,7 @@ class ServerGui(QtWidgets.QMainWindow):
         saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(saveParamsAction)
 
-        # A test client, just a simple helper object
+        # A test client, just a simple helper object.
         self.client = EmbeddedClient()
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")
@@ -212,7 +212,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer.finished.connect(self.stationServerThread.quit)
         self.stationServer.finished.connect(self.stationServer.deleteLater)
 
-        # connecting some additional things for messages
+        # Connecting some additional things for messages.
         self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
         self.stationServer.serverStarted.connect(self.client.start)
         self.stationServer.finished.connect(
@@ -253,7 +253,7 @@ class ServerGui(QtWidgets.QMainWindow):
         del self._bluePrints[name]
 
     def refreshStationComponents(self):
-        """clear and re-populate the widget holding the station components, using
+        """Clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         self.stationList.clear()
         for k, v in self.client.list_instruments().items():
@@ -263,7 +263,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationList.resizeColumnToContents(0)
 
     def loadParamsFromFile(self):
-        """load the values of all parameters present in the server's params json file
+        """Load the values of all parameters present in the server's params json file
         to parameters registered in the station (incl those in instruments)."""
 
         logger.info(f"Loading parameters from file: "
@@ -274,7 +274,7 @@ class ServerGui(QtWidgets.QMainWindow):
             logger.error(f"Loading failed. {type(e)}: {e.args}")
 
     def saveParamsToFile(self):
-        """save the values of all parameters registered in the station (incl
+        """Save the values of all parameters registered in the station (incl
          those in instruments) to the server's param json file."""
 
         logger.info(f"Saving parameters to file: "
