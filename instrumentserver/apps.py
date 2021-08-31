@@ -44,10 +44,10 @@ def serverScript() -> None:
     parser.add_argument("--allow_user_shutdown", default=False)
     args = parser.parse_args()
 
-    if args.gui == 'True' or args.gui:
-        serverWithGui(args.port)
-    else:
+    if args.gui == 'False':
         server(args.port, args.allow_user_shutdown)
+    else:
+        serverWithGui(args.port)
 
 
 def parameterManagerScript() -> None:
