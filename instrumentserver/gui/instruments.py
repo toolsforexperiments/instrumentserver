@@ -315,7 +315,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
     def saveToFile(self):
         try:
-            self._instrument.paramManToFile()
+            self._instrument.toFile()
         except Exception as e:
             logger.info(f"Saving failed. {type(e)}: {e.args}")
 
@@ -348,7 +348,9 @@ class ParameterManagerGui(QtWidgets.QWidget):
             # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
             for i in range(2, len(named_submodules)):
                 name = name + '.' + named_submodules[i]
-            self.removeParameter(name, False)
+
+            if name in self.plist.parameters:
+                self.removeParameter(name, False)
 
         # updates the changed parameter
         elif paramdict['action'] == 'parameter-update' or paramdict['action'] == 'parameter-call':

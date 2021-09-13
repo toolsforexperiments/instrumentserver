@@ -238,8 +238,9 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             if pn not in self.bp.parameters:
                 delKeys.append(pn)
 
+        # Changing the argument for del self.parameters[pn] to del self.parameters[k]
         for k in delKeys:
-            del self.parameters[pn]
+            del self.parameters[k]
 
     def _getProxyMethods(self):
         """Based on the method blue print replied from server, add the
