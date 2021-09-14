@@ -67,6 +67,7 @@ def parameterManagerScript() -> None:
         pm = cli.create_instrument(
             'instrumentserver.params.ParameterManager', args.name)
         pm.fromFile()
+        pm.update()
 
     _ = widgetDialog(ParameterManagerGui(pm))
     app.exec_()
