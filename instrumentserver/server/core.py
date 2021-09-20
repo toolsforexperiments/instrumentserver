@@ -531,7 +531,6 @@ class StationServer(QtCore.QObject):
         self.broadcastSocket = context.socket(zmq.PUB)
         self.broadcastSocket.bind(broadcastAddr)
 
-
         self.serverRunning = True
         self.serverStarted.emit(addr)
 

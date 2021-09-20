@@ -2,7 +2,7 @@ import os
 import argparse
 import logging
 import importlib.util
-
+import signal
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
@@ -26,6 +26,10 @@ logger.setLevel(logging.DEBUG)
 
 def server(port, user_shutdown):
     app = QtCore.QCoreApplication([])
+
+    # this allows us to kill the server by KeyboardInterrupt
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     server, thread = startServer(port, user_shutdown)
     thread.finished.connect(app.quit)
     return app.exec_()
