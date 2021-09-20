@@ -2,7 +2,7 @@ import html
 import os
 import time
 import logging
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 from .. import QtCore, QtWidgets, QtGui, DEFAULT_PORT, serialize, resource
 from instrumentserver.log import LogLevels, LogWidget, log
@@ -127,13 +127,15 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def __init__(self,
                  startServer: Optional[bool] = True,
-                 serverPort: Optional[int] = DEFAULT_PORT):
+                 serverPort: Optional[int] = DEFAULT_PORT,
+                 addresses: List[str] = []):
         super().__init__()
 
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
         self._serverPort = serverPort
         self._bluePrints = {}
 
+        self.listenAddresses = addresses
         self.stationServer = None
         self.stationServerThread = None
 
@@ -204,7 +206,7 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def startServer(self):
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(port=self._serverPort)
+        self.stationServer = StationServer(port=self._serverPort, addresses=self.listenAddresses)
         self.stationServerThread = QtCore.QThread()
         self.stationServer.moveToThread(self.stationServerThread)
         self.stationServerThread.started.connect(self.stationServer.startServer)
@@ -293,10 +295,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(bp)
 
 
-def startServerGuiApplication(port: int = DEFAULT_PORT) -> "ServerGui":
+def startServerGuiApplication(port: int = DEFAULT_PORT, addresses: List[str] = []) -> "ServerGui":
     """Create a server gui window.
     """
-    window = ServerGui(startServer=True, serverPort=port)
+    window = ServerGui(startServer=True, serverPort=port, addresses=addresses)
     window.show()
     return window
 

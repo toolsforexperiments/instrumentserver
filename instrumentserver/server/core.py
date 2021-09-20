@@ -489,14 +489,18 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False):
+    def __init__(self, parent=None, port=5555, allowUserShutdown=False, addresses=[]):
         super().__init__(parent)
+
+        if addresses is None:
+            addresses = []
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
         self.port = port
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
+        self.listenAddresses = list(set(['127.0.0.1'] + addresses))
 
         self.broadcastPort = port + 1
         self.broadcastSocket = None
@@ -518,19 +522,22 @@ class StationServer(QtCore.QObject):
         """Start the server. This function does not return until the ZMQ server
         has been shut down."""
 
-        addr = f"tcp://*:{self.port}"
-        logger.info(f"Starting server at {addr}")
+
+        logger.info(f"Starting server.")
         logger.info(f"The safe word is: {self.SAFEWORD}")
         context = zmq.Context()
         socket = context.socket(zmq.REP)
-        socket.bind(addr)
+
+        for a in self.listenAddresses:
+            addr = f"tcp://{a}:{self.port}"
+            socket.bind(addr)
+            logger.info(f"Listening at {addr}")
 
         # creating and binding publishing socket to broadcast changes
         broadcastAddr = f"tcp://*:{self.broadcastPort}"
-        logger.info(f"Starting publishing server at {addr}")
+        logger.info(f"Starting publishing server at {broadcastAddr}")
         self.broadcastSocket = context.socket(zmq.PUB)
         self.broadcastSocket.bind(broadcastAddr)
-
 
         self.serverRunning = True
         self.serverStarted.emit(addr)
@@ -766,12 +773,12 @@ class StationServer(QtCore.QObject):
             self._broadcastParameterChange(pb)
 
 
-def startServer(port=5555, allowUserShutdown=False) -> \
+def startServer(port=5555, allowUserShutdown=False, addresses=[]) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
     :returns: the server object and the thread it's running in.
     """
-    server = StationServer(port=port, allowUserShutdown=allowUserShutdown)
+    server = StationServer(port=port, allowUserShutdown=allowUserShutdown, addresses=addresses)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)

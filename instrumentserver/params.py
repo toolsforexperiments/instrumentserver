@@ -280,6 +280,11 @@ class ParameterManager(InstrumentBase):
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
 
+    def toParamDict(self, simpleFormat: bool = False, includeMeta: List[str] = ['unit']):
+        params = serialize.toParamDict([self], simpleFormat=simpleFormat,
+                                       includeMeta=includeMeta)
+        return params
+
     def toFile(self, filePath: str = None):
 
         """Save parameters from the instrument into a json file.
@@ -293,7 +298,7 @@ class ParameterManager(InstrumentBase):
             filePath = self._paramValuesFile
 
         folder, file = os.path.split(filePath)
-        params = serialize.toParamDict([self], simpleFormat=False, includeMeta=['unit'])
+        params = self.toParamDict()
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(filePath, 'w') as f:
