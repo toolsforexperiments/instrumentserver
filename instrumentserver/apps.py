@@ -21,37 +21,39 @@ from .gui.instruments import ParameterManagerGui
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
 logger = logging.getLogger('instrumentserver')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
-def server(port, user_shutdown):
+def server(port, user_shutdown, addresses):
     app = QtCore.QCoreApplication([])
 
     # this allows us to kill the server by KeyboardInterrupt
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    server, thread = startServer(port, user_shutdown)
+    server, thread = startServer(port, user_shutdown, addresses)
     thread.finished.connect(app.quit)
     return app.exec_()
 
 
-def serverWithGui(port):
+def serverWithGui(port, addresses):
     app = QtWidgets.QApplication([])
-    window = startServerGuiApplication(port)
+    window = startServerGuiApplication(port, addresses)
     return app.exec_()
 
 
 def serverScript() -> None:
     parser = argparse.ArgumentParser(description='Starting the instrumentserver')
-    parser.add_argument("--port", default=5555)
+    parser.add_argument("-p", "--port", default=5555)
     parser.add_argument("--gui", default=True)
     parser.add_argument("--allow_user_shutdown", default=False)
+    parser.add_argument("-a", "--listen_at", type=str, nargs="*",
+                        help="On which network addresses we listen.")
     args = parser.parse_args()
 
     if args.gui == 'False':
-        server(args.port, args.allow_user_shutdown)
+        server(args.port, args.allow_user_shutdown, addresses=args.listen_at)
     else:
-        serverWithGui(args.port)
+        serverWithGui(args.port, addresses=args.listen_at)
 
 
 def parameterManagerScript() -> None:
