@@ -14,6 +14,7 @@ Core functionality of the instrument server.
 #   operations for adding parameters/submodules/functions
 # TODO: can we also create methods remotely?
 
+import os
 import importlib
 import inspect
 import logging
@@ -489,11 +490,19 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False, addresses=[]):
+    def __init__(self,
+                 parent: Optional[QtCore.QObject] = None,
+                 port: int = 5555,
+                 allowUserShutdown: bool = False,
+                 addresses: List[str] = [],
+                 initScript: Optional[str] = None,
+                 ) -> None:
         super().__init__(parent)
 
         if addresses is None:
             addresses = []
+        if initScript == None:
+            initScript = ''
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
@@ -501,6 +510,7 @@ class StationServer(QtCore.QObject):
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
         self.listenAddresses = list(set(['127.0.0.1'] + addresses))
+        self.initScript = initScript
 
         self.broadcastPort = port + 1
         self.broadcastSocket = None
@@ -517,11 +527,18 @@ class StationServer(QtCore.QObject):
                                                   f"kwargs: {str(kw)})'.")
         )
 
+    def _runInitScript(self):
+        if os.path.exists(self.initScript):
+            path = os.path.abspath(self.initScript)
+            env = dict(station=self.station)
+            exec(open(path).read(), env)
+        else:
+            logger.warning(f"path to initscript ({self.initScript}) not found.")
+
     @QtCore.Slot()
-    def startServer(self):
+    def startServer(self) -> None:
         """Start the server. This function does not return until the ZMQ server
         has been shut down."""
-
 
         logger.info(f"Starting server.")
         logger.info(f"The safe word is: {self.SAFEWORD}")
@@ -540,6 +557,9 @@ class StationServer(QtCore.QObject):
         self.broadcastSocket.bind(broadcastAddr)
 
         self.serverRunning = True
+        if self.initScript not in ['', None]:
+            logger.info(f"Running init script")
+            self._runInitScript()
         self.serverStarted.emit(addr)
 
         while self.serverRunning:
@@ -773,12 +793,18 @@ class StationServer(QtCore.QObject):
             self._broadcastParameterChange(pb)
 
 
-def startServer(port=5555, allowUserShutdown=False, addresses=[]) -> \
+def startServer(port: int = 5555,
+                allowUserShutdown: bool = False,
+                addresses: List[str] = [],
+                initScript: Optional[str] = None) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
     :returns: the server object and the thread it's running in.
     """
-    server = StationServer(port=port, allowUserShutdown=allowUserShutdown, addresses=addresses)
+    server = StationServer(port=port,
+                           allowUserShutdown=allowUserShutdown,
+                           addresses=addresses,
+                           initScript=initScript)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
