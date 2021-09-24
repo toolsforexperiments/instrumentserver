@@ -24,13 +24,13 @@ logger = logging.getLogger('instrumentserver')
 logger.setLevel(logging.INFO)
 
 
-def server(*args, **kwargs):
+def server(**kwargs):
     app = QtCore.QCoreApplication([])
 
     # this allows us to kill the server by KeyboardInterrupt
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    server, thread = startServer(*args, **kwargs)
+    server, thread = startServer(**kwargs)
     thread.finished.connect(app.quit)
     return app.exec_()
 
@@ -54,7 +54,7 @@ def serverScript() -> None:
 
     if args.gui == 'False':
         server(port=args.port,
-               allowUserShutDown=args.allow_user_shutdown,
+               allowUserShutdown=args.allow_user_shutdown,
                addresses=args.listen_at,
                initScript=args.init_script)
     else:
