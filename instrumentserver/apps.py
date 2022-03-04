@@ -2,7 +2,7 @@ import os
 import argparse
 import logging
 import importlib.util
-
+import signal
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
@@ -21,33 +21,46 @@ from .gui.instruments import ParameterManagerGui
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
 logger = logging.getLogger('instrumentserver')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
-def server(port, user_shutdown):
+def server(**kwargs):
     app = QtCore.QCoreApplication([])
-    server, thread = startServer(port, user_shutdown)
+
+    # this allows us to kill the server by KeyboardInterrupt
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    server, thread = startServer(**kwargs)
     thread.finished.connect(app.quit)
     return app.exec_()
 
 
-def serverWithGui(port):
+def serverWithGui(**kwargs):
     app = QtWidgets.QApplication([])
-    window = startServerGuiApplication(port)
+    window = startServerGuiApplication(**kwargs)
     return app.exec_()
 
 
 def serverScript() -> None:
     parser = argparse.ArgumentParser(description='Starting the instrumentserver')
-    parser.add_argument("--port", default=5555)
+    parser.add_argument("-p", "--port", default=5555)
     parser.add_argument("--gui", default=True)
     parser.add_argument("--allow_user_shutdown", default=False)
+    parser.add_argument("-a", "--listen_at", type=str, nargs="*",
+                        help="On which network addresses we listen.")
+    parser.add_argument("-i", "--init_script", default='',
+                        type=str)
     args = parser.parse_args()
 
     if args.gui == 'False':
-        server(args.port, args.allow_user_shutdown)
+        server(port=args.port,
+               allowUserShutdown=args.allow_user_shutdown,
+               addresses=args.listen_at,
+               initScript=args.init_script)
     else:
-        serverWithGui(args.port)
+        serverWithGui(port=args.port,
+                      addresses=args.listen_at,
+                      initScript=args.init_script)
 
 
 def parameterManagerScript() -> None:
@@ -67,6 +80,7 @@ def parameterManagerScript() -> None:
         pm = cli.create_instrument(
             'instrumentserver.params.ParameterManager', args.name)
         pm.fromFile()
+        pm.update()
 
     _ = widgetDialog(ParameterManagerGui(pm))
     app.exec_()

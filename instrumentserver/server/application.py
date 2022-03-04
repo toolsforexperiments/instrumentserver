@@ -1,17 +1,17 @@
 import html
+import logging
 import os
 import time
-import logging
-from typing import Union, Optional
+from typing import Union, Optional, Any
 
-from .. import QtCore, QtWidgets, QtGui, DEFAULT_PORT, serialize, resource
-from instrumentserver.log import LogLevels, LogWidget, log
 from instrumentserver.client import QtClient
+from instrumentserver.log import LogLevels, LogWidget, log
 
 from .core import (
     StationServer,
-    InstrumentModuleBluePrint, ParameterBluePrint, MethodBluePrint
+    InstrumentModuleBluePrint, ParameterBluePrint
 )
+from .. import QtCore, QtWidgets, QtGui
 
 logger = logging.getLogger(__name__)
 
@@ -125,14 +125,13 @@ class ServerGui(QtWidgets.QMainWindow):
 
     serverPortSet = QtCore.Signal(int)
 
-    def __init__(self,
-                 startServer: Optional[bool] = True,
-                 serverPort: Optional[int] = DEFAULT_PORT):
+    def __init__(self, startServer: Optional[bool] = True,
+                 **serverKwargs: Any):
         super().__init__()
 
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
-        self._serverPort = serverPort
         self._bluePrints = {}
+        self._serverKwargs = serverKwargs
 
         self.stationServer = None
         self.stationServerThread = None
@@ -185,13 +184,14 @@ class ServerGui(QtWidgets.QMainWindow):
 
         # A test client, just a simple helper object.
         self.client = EmbeddedClient()
+        self.client.recv_timeout = 10_000
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")
         )
         if startServer:
             self.startServer()
 
-        self.refreshStationComponents()
+        # self.refreshStationComponents()
 
     def log(self, message, level=LogLevels.info):
         log(logger, message, level)
@@ -204,7 +204,7 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def startServer(self):
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(port=self._serverPort)
+        self.stationServer = StationServer(**self._serverKwargs)
         self.stationServerThread = QtCore.QThread()
         self.stationServer.moveToThread(self.stationServerThread)
         self.stationServerThread.started.connect(self.stationServer.startServer)
@@ -215,6 +215,7 @@ class ServerGui(QtWidgets.QMainWindow):
         # Connecting some additional things for messages.
         self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
         self.stationServer.serverStarted.connect(self.client.start)
+        self.stationServer.serverStarted.connect(self.refreshStationComponents)
         self.stationServer.finished.connect(
             lambda: self.log('Server thread finished.', LogLevels.info)
         )
@@ -293,10 +294,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(bp)
 
 
-def startServerGuiApplication(port: int = DEFAULT_PORT) -> "ServerGui":
+def startServerGuiApplication(**serverKwargs: Any) -> "ServerGui":
     """Create a server gui window.
     """
-    window = ServerGui(startServer=True, serverPort=port)
+    window = ServerGui(startServer=True, **serverKwargs)
     window.show()
     return window
 

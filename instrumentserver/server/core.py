@@ -14,6 +14,7 @@ Core functionality of the instrument server.
 #   operations for adding parameters/submodules/functions
 # TODO: can we also create methods remotely?
 
+import os
 import importlib
 import inspect
 import logging
@@ -489,14 +490,27 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value.
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self, parent=None, port=5555, allowUserShutdown=False):
+    def __init__(self,
+                 parent: Optional[QtCore.QObject] = None,
+                 port: int = 5555,
+                 allowUserShutdown: bool = False,
+                 addresses: List[str] = [],
+                 initScript: Optional[str] = None,
+                 ) -> None:
         super().__init__(parent)
+
+        if addresses is None:
+            addresses = []
+        if initScript == None:
+            initScript = ''
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
         self.port = port
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
+        self.listenAddresses = list(set(['127.0.0.1'] + addresses))
+        self.initScript = initScript
 
         self.broadcastPort = port + 1
         self.broadcastSocket = None
@@ -513,26 +527,39 @@ class StationServer(QtCore.QObject):
                                                   f"kwargs: {str(kw)})'.")
         )
 
+    def _runInitScript(self):
+        if os.path.exists(self.initScript):
+            path = os.path.abspath(self.initScript)
+            env = dict(station=self.station)
+            exec(open(path).read(), env)
+        else:
+            logger.warning(f"path to initscript ({self.initScript}) not found.")
+
     @QtCore.Slot()
-    def startServer(self):
+    def startServer(self) -> None:
         """Start the server. This function does not return until the ZMQ server
         has been shut down."""
 
-        addr = f"tcp://*:{self.port}"
-        logger.info(f"Starting server at {addr}")
+        logger.info(f"Starting server.")
         logger.info(f"The safe word is: {self.SAFEWORD}")
         context = zmq.Context()
         socket = context.socket(zmq.REP)
-        socket.bind(addr)
+
+        for a in self.listenAddresses:
+            addr = f"tcp://{a}:{self.port}"
+            socket.bind(addr)
+            logger.info(f"Listening at {addr}")
 
         # creating and binding publishing socket to broadcast changes
         broadcastAddr = f"tcp://*:{self.broadcastPort}"
-        logger.info(f"Starting publishing server at {addr}")
+        logger.info(f"Starting publishing server at {broadcastAddr}")
         self.broadcastSocket = context.socket(zmq.PUB)
         self.broadcastSocket.bind(broadcastAddr)
 
-
         self.serverRunning = True
+        if self.initScript not in ['', None]:
+            logger.info(f"Running init script")
+            self._runInitScript()
         self.serverStarted.emit(addr)
 
         while self.serverRunning:
@@ -728,19 +755,19 @@ class StationServer(QtCore.QObject):
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
 
-    def _broadcastParameterChange(self, bluePrint: ParameterBroadcastBluePrint):
+    def _broadcastParameterChange(self, blueprint: ParameterBroadcastBluePrint):
         """
         Broadcast any changes to parameters in the server.
         The message is composed of a 2 part array. The first item is the name of the instrument the parameter is from,
         with the second item being the string of the blueprint in dict format.
         This is done to allow subscribers to subscribe to specific instruments.
 
-        :param bluePrint: The parameter broadcast blueprint that is being broadcast.
+        :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
-        self.broadcastSocket.send_string(bluePrint.name.split('.')[0], flags=zmq.SNDMORE)
-        self.broadcastSocket.send_string((bluePrint.toDictFormat()))
-        logger.info(f"Parameter {bluePrint.name} has broadcast an update of type: {bluePrint.action},"
-                     f" with a value: {bluePrint.value}.")
+        self.broadcastSocket.send_string(blueprint.name.split('.')[0], flags=zmq.SNDMORE)
+        self.broadcastSocket.send_string((blueprint.toDictFormat()))
+        logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
+                     f" with a value: {blueprint.value}.")
 
     def _newOrDeleteParameterDetection(self, spec, args, kwargs):
         """
@@ -753,24 +780,32 @@ class StationServer(QtCore.QObject):
         """
 
         if spec.target.split('.')[-1] == 'add_parameter':
-            pb = ParameterBroadcastBluePrint(spec.target,
+            name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
+            pb = ParameterBroadcastBluePrint(name,
                                              'parameter-creation',
                                              kwargs['initial_value'],
                                              kwargs['unit'])
             self._broadcastParameterChange(pb)
         elif spec.target.split('.')[-1] == 'remove_parameter':
-            pb = ParameterBroadcastBluePrint(spec.target,
+            name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
+            pb = ParameterBroadcastBluePrint(name,
                                              'parameter-deletion')
             self._broadcastParameterChange(pb)
 
 
-def startServer(port=5555, allowUserShutdown=False) -> \
+def startServer(port: int = 5555,
+                allowUserShutdown: bool = False,
+                addresses: List[str] = [],
+                initScript: Optional[str] = None) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 
     :returns: The server object and the thread it's running in.
     """
-    server = StationServer(port=port, allowUserShutdown=allowUserShutdown)
+    server = StationServer(port=port,
+                           allowUserShutdown=allowUserShutdown,
+                           addresses=addresses,
+                           initScript=initScript)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
