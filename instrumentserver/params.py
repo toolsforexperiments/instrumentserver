@@ -85,10 +85,10 @@ class ParameterManager(InstrumentBase):
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
         """Create a new ParameterManager instance from a paramDict.
 
-        :param paramDict: the paramDict object.
-        :param name: name of the instrument in the paramDict (each entry in the
-            paramDict starts with <instrumentName>.[...])
-        :returns: new ParameterManager instance.
+        :param paramDict: The paramDict object.
+        :param name: Name of the instrument in the paramDict (each entry in the
+            paramDict starts with <instrumentName>.[...]).
+        :returns: New ParameterManager instance.
         """
         raise NotImplementedError
 
@@ -141,9 +141,9 @@ class ParameterManager(InstrumentBase):
     def add_parameter(self, name: str, **kw: Any) -> None:
         """Add a parameter.
 
-        :param name: name of the parameter.
-            if the name contains `.`s, then an element before a dot is interpreted
-            as a submodule. multiple dots represent nested submodules. I.e., when
+        :param name: Name of the parameter.
+            If the name contains `.`s, then an element before a dot is interpreted
+            as a submodule. Multiple dots represent nested submodules. I.e., when
             we supply ``foo.bar.foo2`` we have a top-level submodule ``foo``,
             containing a submodule ``bar``, containing the parameter ``foo2``.
             Submodules are generated on demand.
@@ -152,7 +152,7 @@ class ParameterManager(InstrumentBase):
             - ``set_cmd`` is always set to ``None``
             - ``parameter_class`` is ``qcodes.Parameter``
             - ``vals`` defaults to ``qcodes.utils.validators.Anything()``.
-        :return: None
+        :return: None.
         """
         kw['parameter_class'] = Parameter
         if 'vals' not in kw:
@@ -181,7 +181,7 @@ class ParameterManager(InstrumentBase):
         param.set(value)
 
     def remove_empty_submodules(self):
-        """delete all empty submodules in the instrument."""
+        """Delete all empty submodules in the instrument."""
 
         def is_empty(parent):
             if len(parent.submodules) == 0 and len(parent.parameters) == 0:
@@ -201,7 +201,7 @@ class ParameterManager(InstrumentBase):
         purge(self)
 
     def parameter(self, name: str) -> "Parameter":
-        """get a parameter object from the manager.
+        """Get a parameter object from the manager.
 
         :param name: the full name
         :returns: the parameter
@@ -209,7 +209,7 @@ class ParameterManager(InstrumentBase):
         return self._get_param(name)
 
     def list(self) -> List[str]:
-        """return a list of all parameters."""
+        """Return a list of all parameters."""
         tree = self.to_tree()
 
         def tolist(x):
@@ -224,12 +224,12 @@ class ParameterManager(InstrumentBase):
         return tolist(tree)
 
     def fromFile(self, filePath: str = None, deleteMissing: bool = True):
-        """load parameters from a parameter json file
+        """Load parameters from a parameter json file
         (see :mod:`.serialize`).
 
-        :param filePath: path to the json file. If ``None`` it looks in the instrument current location
-                         directory for a file called "parametermanager_parameters.json"
-        :param deleteMissing: if ``True``, delete parameters currently in the
+        :param filePath: Path to the json file. If ``None`` it looks in the instrument current location
+                         directory for a file called "parametermanager_parameters.json".
+        :param deleteMissing: If ``True``, delete parameters currently in the
             ParameterManager that are not listed in the file.
         """
         if filePath is None:
@@ -244,10 +244,10 @@ class ParameterManager(InstrumentBase):
 
     def fromParamDict(self, paramDict: Dict[str, Any],
                       deleteMissing: bool = True):
-        """load parameters from a parameter dictionary (see :mod:`.serialize`).
+        """Load parameters from a parameter dictionary (see :mod:`.serialize`).
 
-        :param paramDict: parameter dictionary
-        :param deleteMissing: if ``True``, delete parameters currently in the
+        :param paramDict: Parameter dictionary.
+        :param deleteMissing: If ``True``, delete parameters currently in the
             ParameterManager that are not listed in the file.
         """
         serialize.validateParamDict(paramDict)
@@ -289,9 +289,9 @@ class ParameterManager(InstrumentBase):
 
         """Save parameters from the instrument into a json file.
 
-        :param filePath: path to the json file.
+        :param filePath: Path to the json file.
             If ``None`` it looks in the instrument current working
-            directory for a file called "parameter_manager-<name_of_this_instrument>.json"
+            directory for a file called "parameter_manager-<name_of_this_instrument>.json".
         """
 
         if filePath is None:

@@ -5,6 +5,9 @@ from .proxy import QtClient
 
 
 class InstrumentClientMainWindow(QtWidgets.QMainWindow):
+    """
+    Work in progress :).
+    """
 
     def __init__(self, client: QtClient, parent=None):
         super().__init__(parent)

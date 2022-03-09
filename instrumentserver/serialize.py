@@ -4,8 +4,10 @@ instrumentserver.serialize
 
 Serializing and de-serializing instruments and parameters.
 The tools in here can be used to perform the following tasks:
-- store instrument and parameter information to json
-- load instrument and parameter information from json
+
+    * Store instrument and parameter information to json.
+
+    * Load instrument and parameter information from json.
 
 The main utility of the methods here is to have a relatively simple representation
 of the state of the system (by system we mean: either a qcodes station, or simply
@@ -44,7 +46,7 @@ I.e., if the parameter is called using::
 
     station.[parent object(s)].parameter()
 
-then the name in `paramDict` is "[parent objects(s)].parameter".
+Then the name in `paramDict` is "[parent objects(s)].parameter".
 
 In case the only property of each parameter is `value`, then it is also possible
 to use a simplified format which looks like this::
@@ -90,17 +92,17 @@ def toParamDict(input: SerializableType,
     information about them.
 
     :param input: qcodes station or list of instruments/parameters.
-    :param get: whether to call `get` on the parameters.
-        if not, use the values from the current snapshot.
-        Note: parameters that are not included in the snapshot are never included.
-    :param includeMeta: list of parameter attributes to include besides value.
+    :param get: Whether to call `get` on the parameters.
+        If not, use the values from the current snapshot.
+        Note: Parameters that are not included in the snapshot are never included.
+    :param includeMeta: List of parameter attributes to include besides value.
         All keys occurring in snapshots are valid.
-    :param excludeParameters: list of parameters we don't include in the return.
-    :param simpleFormat: if ``True`` and no additional metadata is included,
+    :param excludeParameters: List of parameters we don't include in the return.
+    :param simpleFormat: If ``True`` and no additional metadata is included,
         then the output format will be simplified such that the the value for
         each parameter key is simply `value`, rather than a dictionary of
         multiple properties.
-    :returns: dictionary. If not simple format, conforms to
+    :returns: Dictionary. If not simple format, conforms to
         instrumentserver/schemas/parameters.json
 
     """
@@ -133,11 +135,11 @@ def toParamDict(input: SerializableType,
 
 def fromParamDict(paramDict: Dict[str, Any],
                   target: SerializableType) -> None:
-    """Load parameter values from JSON
+    """Load parameter values from JSON.
 
-    :param paramDict: the parameter dictionary in a valid JSON format (may be
-        simple or regular format)
-    :param target: object(s) holding the parameters to load.
+    :param paramDict: The parameter dictionary in a valid JSON format (may be
+        simple or regular format).
+    :param target: Object(s) holding the parameters to load.
     """
 
     validateParamDict(paramDict)
@@ -181,8 +183,8 @@ def saveParamsToFile(input: SerializableType,
     First obtains the parameters from :func:`toParamDict`, then saves its output.
 
     :param input: qcodes station or list of instruments/parameters.
-    :param filePath: output file path.
-    :param kw: options, all passed to :func:`toParamDict`.
+    :param filePath: Output file path.
+    :param kw: Options, all passed to :func:`toParamDict`.
     :returns:
     """
     ret = toParamDict(input, **kw)
@@ -233,7 +235,7 @@ def validateParamDict(params: Dict[str, Any]):
 
 
 def toDataFrame(input: SerializableType):
-    """Make a pandas data frame from the parameters. mainly useful for 
+    """Make a pandas data frame from the parameters. Mainly useful for
     printing overviews in notebooks."""
     params = toParamDict(input, includeMeta=['unit', 'vals'])
     return pd.DataFrame(params).T.sort_index()
@@ -292,7 +294,7 @@ def _singleInstrumentParametersToJson(instrument: InstrumentBase,
 
 
 def _getParamFromList(parent: Any, childrenList: List[str]) -> Parameter:
-    """return the lowest attribute in the hierarchy:
+    """Return the lowest attribute in the hierarchy:
     returns the object described by parent.<child_0>.<child_1>.[...].<child_N>.
     Works for any `N` >= 0.
 
@@ -312,7 +314,7 @@ def _getParamFromList(parent: Any, childrenList: List[str]) -> Parameter:
 def _getObjectByName(name: str,
                      src: Union[Station,
                                 List[Union[Instrument, Parameter]]]):
-    """Get an object from a container by specifying its name"""
+    """Get an object from a container by specifying its name."""
 
     if isinstance(src, Station):
         try:
