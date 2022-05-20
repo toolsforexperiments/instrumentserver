@@ -506,13 +506,13 @@ class StationServer(QtCore.QObject):
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
-        self.port = port
+        self.port = int(port)
         self.station = Station()
         self.allowUserShutdown = allowUserShutdown
         self.listenAddresses = list(set(['127.0.0.1'] + addresses))
         self.initScript = initScript
 
-        self.broadcastPort = port + 1
+        self.broadcastPort = self.port + 1
         self.broadcastSocket = None
 
         self.parameterSet.connect(
