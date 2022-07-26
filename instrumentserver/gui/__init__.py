@@ -12,6 +12,8 @@ def getStyleSheet():
 def widgetDialog(w: QtWidgets.QWidget):
     dg = QtWidgets.QDialog()
     dg.setWindowTitle('instrumentserver')
+    dg.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint)
+    dg.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint)
     dg.widget = w
 
     css = getStyleSheet()
