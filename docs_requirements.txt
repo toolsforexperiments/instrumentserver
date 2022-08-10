@@ -3,7 +3,7 @@ sphinx==2.4.4
 sphinx_rtd_theme
 sphinx-jsonschema
 nbsphinx
-nbconvert==5.6.1
+nbconvert==6.3.0
 ipython
 jupyter
 scipy
