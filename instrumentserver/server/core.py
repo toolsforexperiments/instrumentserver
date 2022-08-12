@@ -33,6 +33,7 @@ from qcodes.utils.validators import Validator
 
 from .. import QtCore, serialize
 from ..base import send, recv
+
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -106,69 +107,70 @@ class CallSpec:
     #: kw args to pass.
     kwargs: Optional[Dict[str, Any]] = None
 
+import pickle
+def is_picklable(obj):
+    try:
+      pickle.dumps(obj)
+    except:
+      return False
+    return True
 
 @dataclass
 class ParameterBluePrint:
     """Spec necessary for creating parameter proxies."""
-    name: str
-    path: str
-    base_class: str
-    parameter_class: str
-    gettable: bool = True
-    settable: bool = True
-    unit: str = ''
-    vals: Optional[Validator] = None
-    docstring: str = ''
-    setpoints: Optional[List[str]] = None
 
+
+    def __init__(self, path, parameter):
+        
+        #adds picklable attributes of the actual parameter to the parameter blueprint
+        for attr in dir(parameter):
+            if(attr[0:2] != '__'): #don't try to use these
+                temp = getattr(parameter, attr)                
+                picklable = is_picklable(temp)
+                if picklable:
+                    setattr(self, attr, temp)
+        setattr(self, 'path', path)
+        
+        #gets the base class and parameter class. possibly these would make more sense swapped
+        #TODO: make this neater
+        if not hasattr(self, 'base_class'): 
+            if typeClassPath(type(parameter)).split('.')[0] == 'qcodes': #then it's a regular Parameter
+                setattr(self, 'base_class', typeClassPath(type(parameter))) 
+            else: #otherwise it's a child class of a parameter of some sort
+                setattr(self, 'base_class', typeClassPath(type(parameter).__bases__[0])) #should do e.g. vna.s21 -> MultiParameter
+        if not hasattr(self, 'parameter_class'):
+            setattr(self, 'parameter_class', objectClassPath(parameter))
+        #gettable, settable should come from the param. I'll be surprised if they don't
+        setattr(self, 'docstring', parameter.__doc__)
+        
     def __repr__(self) -> str:
         return str(self)
 
     def __str__(self) -> str:
         return f"{self.name}: {self.parameter_class}"
 
-    def tostr(self, indent=0):
+    def tostr(self, indent=0): #is this used? I think these objects are pickled instead
         i = indent * ' '
         ret = f"""{self.name}: {self.parameter_class}
-{i}- unit: {self.unit}
-{i}- path: {self.path}
-{i}- base class: {self.base_class}
-{i}- gettable: {self.gettable}
-{i}- settable: {self.settable}
-{i}- validator: {self.vals}
-{i}- setpoints: {self.setpoints}
-"""
+        """
+        for attr in dir(self):
+            if(attr[0:2] != '__'): #don't try to use these
+                temp_str = f"""{i}- {attr}: {getattr(self, attr)}
+                """
+                ret = ret + temp_str
         return ret
 
 
 def bluePrintFromParameter(path: str, param: ParameterType) -> \
         Union[ParameterBluePrint, None]:
-    base_class = None
-    for bc in PARAMETER_BASE_CLASSES:
-        if isinstance(param, bc):
-            base_class = bc
-            break
-    if base_class is None:
-        logger.warning(f"Blueprints for parameter base type of {param} are "
-                       f"currently not supported.")
-        return None
 
-    bp = ParameterBluePrint(
-        name=param.name,
-        path=path,
-        base_class=typeClassPath(base_class),
-        parameter_class=objectClassPath(param),
-        gettable=True if hasattr(param, 'get') else False,
-        settable=True if hasattr(param, 'set') else False,
-        unit=param.unit,
-        docstring=param.__doc__,
-    )
-    if hasattr(param, 'set'):
-        bp.vals = param.vals
-    if hasattr(param, 'setpoints'):
-        bp.setpoints = [setpoint.name for setpoint in param.setpoints]
+    bp = ParameterBluePrint(path, param)
+    
+
 
     return bp
+
+
 
 
 @dataclass
@@ -278,11 +280,21 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         if elt[0] == '_' or hasattr(base_class, elt):
             continue
         o = getattr(ins, elt)
-        if callable(o) and not isinstance(o, tuple(PARAMETER_BASE_CLASSES)):
-            meth_path = f"{path}.{elt}"
-            meth_bp = bluePrintFromMethod(meth_path, o)
-            if meth_bp is not None:
-                bp.methods[elt] = meth_bp
+        #changing the check of whether it's a parameter
+        #if callable(o) and not o.__module__ == 'qcodes.instrument.parameter':
+        if callable(o):
+            #I'm sure there's a cleaner way to do this but I don't know it
+            #idea is every parameter can actually be a parameter so don't make
+            #it a method
+            isparam = False
+            for pn, p in ins.parameters.items(): 
+                if o == pn or o == p:
+                    isparam = True
+            if not isparam:
+                meth_path = f"{path}.{elt}"
+                meth_bp = bluePrintFromMethod(meth_path, o)
+                if meth_bp is not None:
+                    bp.methods[elt] = meth_bp
 
     for sn, s in ins.submodules.items():
         sub_path = f"{path}.{sn}"
@@ -532,6 +544,7 @@ class StationServer(QtCore.QObject):
             path = os.path.abspath(self.initScript)
             env = dict(station=self.station)
             exec(open(path).read(), env)
+            
         else:
             logger.warning(f"path to initscript ({self.initScript}) not found.")
 
@@ -614,7 +627,7 @@ class StationServer(QtCore.QObject):
                         logger.debug(response_log)
                     else:
                         logger.warning(response_log)
-
+            
             else:
                 response_log = f"Invalid message type."
                 response_to_client = ServerResponse(message=None, error=response_log)
@@ -666,9 +679,11 @@ class StationServer(QtCore.QObject):
         try:
             returns = func(*args, **kwargs)
             response = ServerResponse(message=returns)
-
+            
         except Exception as err:
             response = ServerResponse(message=None, error=err)
+
+            
 
         return response
 
@@ -732,12 +747,27 @@ class StationServer(QtCore.QObject):
     def _getBluePrint(self, path: str) -> Union[InstrumentModuleBluePrint,
                                                 ParameterBluePrint,
                                                 MethodBluePrint]:
+        
+        logger.info(f"Getting blueprint for path {path}")
+        logger.info(f"Path is type {type(path)}")
+        
+        #TODO: tidy this up
+        path_split = path.split('.')
+        path_minus1 = path_split[0:-1]
+        path_minus1_rejoined = '.'.join(path_minus1)
+        if path_minus1_rejoined != '':
+            obj_minus1 = nestedAttributeFromString(self.station, path_minus1_rejoined)
+            
+
         obj = nestedAttributeFromString(self.station, path)
+        
+        #if it's an instrument class, give an instrument blueprint
         if isinstance(obj, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
             return bluePrintFromInstrumentModule(path, obj)
-        elif isinstance(obj, tuple(PARAMETER_BASE_CLASSES)):
+        #if it's something like instrument.obj, assume it's a parameter #TODO: improve this
+        elif isinstance(obj_minus1, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
             return bluePrintFromParameter(path, obj)
-        elif callable(obj):
+        elif callable(obj): #the check before probably grabs all of these. Not sure if that's bad
             return bluePrintFromMethod(path, obj)
         else:
             raise ValueError(f'Cannot create a blueprint for {type(obj)}')

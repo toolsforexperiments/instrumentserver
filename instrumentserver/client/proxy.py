@@ -29,6 +29,10 @@ from instrumentserver.server.core import (
 )
 from .core import sendRequest, BaseClient
 
+from ..helpers import nestedAttributeFromString
+
+import importlib
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +42,11 @@ logger = logging.getLogger(__name__)
 # FIXME: need to generally find the imports we need for type annotations!
 # TODO: convenience function to refresh from server.
 
+import typing
 
+def is_optional(field):
+    return typing.get_origin(field) is Union and type(None) in typing.get_args(field)
+           
 class ProxyMixin:
     """ A simple mixin class for proxy objects."""
 
@@ -67,10 +75,25 @@ class ProxyMixin:
                              "specified.")
 
         kwargs.update(self.initKwargsFromBluePrint(self.bp))
+        
+        #update get_raw and set_raw if needed
+        self.updateRaw(self.bp)
+        
         super().__init__(*args, **kwargs)
+        
+        #update things like setpoints, units, etc for things like subclasses of MultiParameters
+        #where units isn't an accepted argument in the initialization
+        self.updateFromBP(self.bp)
+        
         self.__doc__ = self.bp.docstring
 
     def initKwargsFromBluePrint(self, bp):
+        raise NotImplementedError
+        
+    def updateRaw(self, bp):
+        raise NotImplementedError
+
+    def updateFromBP(self, bp):
         raise NotImplementedError
 
     def askServer(self, message: ServerInstruction):
@@ -95,73 +118,207 @@ class ProxyMixin:
         )
         return self.askServer(req)
 
+#TODO: this will come up with a bunch of identical classes. Could we save memory by memorizing them?
+def proxy_param_of_base_type(param_base_class): 
+    class ProxyParameter(ProxyMixin, param_base_class):
+        """Proxy for parameters.
+    
+        :param cli: Instance of `Client`.
+        :param name: The parameter name.
+        :param host: The name of the host where the server lives.
+        :param port: The port number of the server.
+        :param remotePath: Path of the remote object on the server.
+        :param bluePrint: The blue print to construct the proxy parameter.
+            If `remotePath` and `bluePrint` are both supplied, the blue print takes
+            priority.
+        """
+    
+        def __init__(self, name: str, *args,
+                     cli: Optional["Client"] = None,
+                     host: Optional[str] = 'localhost',
+                     port: Optional[int] = DEFAULT_PORT,
+                     remotePath: Optional[str] = None,
+                     bluePrint: Optional[ParameterBluePrint] = None,
+                     setpoints_instrument: Optional[Instrument] = None,
+                     **kwargs):
+    
+            #need to figure out what param_base_class needs that we don't have
+            #then make stuff up for it and replace the variables
+            
+            
+            #I think this is init of ProxyMixin, not param_base_class
+            #ProxyMixin.__init__() also calls super.__init__() despite not having parents
+            #probably that's our guy
+            super().__init__(name, *args, cli=cli, host=host, port=port,
+                             remotePath=remotePath, bluePrint=bluePrint,
+                             **kwargs)
+            
+    
+            #I think we don't want to do this - Theo
+            # # add setpoints to parameter if we deal with ParameterWithSetpoints
+            # if self.bp.setpoints is not None and setpoints_instrument is not None:
+            #     setpoints = [getattr(setpoints_instrument, setpoint) for
+            #                  setpoint in self.bp.setpoints]
+            #     setattr(self, 'setpoints', setpoints)
+    
+        #want to make all the attributes we have kwargs, I think
+        #except name: str, parameter_class: type = Parameter. They're not kwargs
+        #sometimes it's a method though, which can be a problem
+        def initKwargsFromBluePrint(self, bp):
+            kwargs = {}
+            
+            #I think what I want to do is here check the parameter_base_class e.g. M5180.FSMP
+            #for its arguments. See what I don't have in the blueprint (start, stop, npts)
+            #and make up numbers for them
+            #then in init I can replace things with values from the blueprint, most likely
+            
+            base_class_init = param_base_class.__init__
+            init_sig = inspect.signature(base_class_init)
+            init_sig_parameters = init_sig.parameters
+            
 
-class ProxyParameter(ProxyMixin, Parameter):
-    """Proxy for parameters.
+            for param in init_sig_parameters:
+                if param not in ['self', 'name', 'instrument', 'kwargs']:
+                    if param in dir(bp):
+                        kwargs[param] = getattr(bp, param)
+                    elif not is_optional(init_sig_parameters[param].annotation):
+                        if init_sig_parameters[param].default is inspect._empty:
+                            if init_sig_parameters[param].annotation == float:
+                                kwargs[param] = 0
+                            elif init_sig_parameters[param].annotation == int:
+                                kwargs[param] = 0
+                            elif init_sig_parameters[param].annotation == str:
+                                kwargs[param] = ''
+                            else:
+                                logger.warning(f"No default argument for parameter {param} of class {param_base_class}. Entering None")
+                                kwargs[param] = None
+                        else:
+                            kwargs[param] = init_sig_parameters[param].default
+            
+            #assume that every base class has a get_raw, set_raw
+            if bp.gettable:
+                if hasattr(param_base_class, 'get_raw'): #probably everything will
+                    #Parameter class' get_raw is fake (qcodes abstract) until initialized
+                    if hasattr(param_base_class.get_raw, '__qcodes_is_abstract_method__'): 
+                        #if it is fake, then use get_cmd
+                        if param_base_class.get_raw.__qcodes_is_abstract_method__:
+                            if 'get_cmd' in init_sig_parameters:
+                                kwargs['get_cmd'] = self._remoteGet
+                            else:
+                                #not sure what this case means
+                                pass
+                        else:
+                            #otherwise I have to change get_raw after the fact
+                            pass
+                    else:
+                        pass #change it after the fact, it's a FSMP
+                else:
+                    kwargs['get_cmd'] = False  #probably will never happen
+            else:
+                if 'get_cmd' in init_sig_parameters:
+                    kwargs['get_cmd'] = False
+                else:
+                    pass #this init doesn't want a get_cmd
+            
+            #assume that every base class has a get_raw, set_raw
+            if bp.settable:
+                if hasattr(param_base_class, 'set_raw'): #probably everything will
+                    #Parameter class' get_raw is fake (qcodes abstract) until initialized
+                    if hasattr(param_base_class.set_raw, '__qcodes_is_abstract_method__'): 
+                        #if it is fake, then use get_cmd
+                        if param_base_class.set_raw.__qcodes_is_abstract_method__:
+                            if 'set_cmd' in init_sig_parameters:
+                                kwargs['set_cmd'] = self._remoteSet
+                            else:
+                                #not sure what this case means
+                                pass
+                        else:
+                            #otherwise I have to change get_raw after the fact
+                            pass
+                    else:
+                        pass #change it after the fact, it's a FSMP
+                else:
+                    kwargs['set_cmd'] = False  #probably will never happen
+            else:
+                if 'set_cmd' in init_sig_parameters:
+                    kwargs['set_cmd'] = False
+                else:
+                    pass #this init doesn't want a set_cmd, like for FSMP
 
-    :param cli: Instance of `Client`.
-    :param name: The parameter name.
-    :param host: The name of the host where the server lives.
-    :param port: The port number of the server.
-    :param remotePath: Path of the remote object on the server.
-    :param bluePrint: The blue print to construct the proxy parameter.
-        If `remotePath` and `bluePrint` are both supplied, the blue print takes
-        priority.
-    """
-
-    def __init__(self, name: str, *args,
-                 cli: Optional["Client"] = None,
-                 host: Optional[str] = 'localhost',
-                 port: Optional[int] = DEFAULT_PORT,
-                 remotePath: Optional[str] = None,
-                 bluePrint: Optional[ParameterBluePrint] = None,
-                 setpoints_instrument: Optional[Instrument] = None,
-                 **kwargs):
-
-        super().__init__(name, *args, cli=cli, host=host, port=port,
-                         remotePath=remotePath, bluePrint=bluePrint,
-                         **kwargs)
-
-        # add setpoints to parameter if we deal with ParameterWithSetpoints
-        if self.bp.setpoints is not None and setpoints_instrument is not None:
-            setpoints = [getattr(setpoints_instrument, setpoint) for
-                         setpoint in self.bp.setpoints]
-            setattr(self, 'setpoints', setpoints)
-
-    def initKwargsFromBluePrint(self, bp):
-        kwargs = {}
-        if bp.settable:
-            kwargs['set_cmd'] = self._remoteSet
-        else:
-            kwargs['set_cmd'] = False
-        if bp.gettable:
-            kwargs['get_cmd'] = self._remoteGet
-        else:
-            kwargs['get_cmd'] = False
-        kwargs['unit'] = bp.unit
-        kwargs['vals'] = bp.vals
-        kwargs['docstring'] = bp.docstring
-        return kwargs
-
-    def _remoteSet(self, value: Any):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.remotePath,
-                args=(value,)
+            
+            return kwargs
+        
+        def updateRaw(self, bp):
+            # print('updating')
+            base_class_init = param_base_class.__init__
+            init_sig = inspect.signature(base_class_init)
+            init_sig_parameters = init_sig.parameters
+            
+            #TODO: can this be made neater?
+            if bp.gettable:
+                if hasattr(param_base_class, 'get_raw'): #probably everything will
+                    #Parameter class' get_raw is fake (qcodes abstract) until initialized
+                    if hasattr(param_base_class.get_raw, '__qcodes_is_abstract_method__'): 
+                        #if it is fake, then use get_cmd
+                        if param_base_class.get_raw.__qcodes_is_abstract_method__:
+                            if 'get_cmd' in init_sig_parameters:
+                                pass #we updated get_cmd earlier
+                            else:
+                                self.get_raw = self._remoteGet
+                        else:
+                            self.get_raw = self._remoteGet
+                    else:
+                        self.get_raw = self._remoteGet
+            
+            if bp.settable:
+                if hasattr(param_base_class, 'set_raw'): #probably everything will
+                    #Parameter class' get_raw is fake (qcodes abstract) until initialized
+                    if hasattr(param_base_class.set_raw, '__qcodes_is_abstract_method__'): 
+                        #if it is fake, then use get_cmd
+                        if param_base_class.set_raw.__qcodes_is_abstract_method__:
+                            if 'set_cmd' in init_sig_parameters:
+                                pass #we updated get_cmd earlier
+                            else:
+                                self.set_raw = self._remoteSet
+                        else:
+                            self.set_raw = self._remoteSet
+                    else:
+                        self.set_raw = self._remoteSet
+            
+        #update things like units
+        #I think this only matters for subclasses of parameters
+        #but I don't see any reason to put in a check
+        def updateFromBP(self, bp):
+            for attr in dir(bp):
+                if attr in dir(self):
+                    if attr[0:1] != '_': #don't mess with this stuff
+                        try: #TODO: figure out a cleaner way to do this
+                            setattr(self, attr, getattr(bp, attr)) #get e.g. setpoints
+                            pass
+                        except:
+                            pass
+                            
+    
+        def _remoteSet(self, value: Any):
+            msg = ServerInstruction(
+                operation=Operation.call,
+                call_spec=CallSpec(
+                    target=self.remotePath,
+                    args=(value,)
+                )
             )
-        )
-        return self.askServer(msg)
-
-    def _remoteGet(self):
-        msg = ServerInstruction(
-            operation=Operation.call,
-            call_spec=CallSpec(
-                target=self.remotePath,
+            return self.askServer(msg)
+    
+        def _remoteGet(self):
+            msg = ServerInstruction(
+                operation=Operation.call,
+                call_spec=CallSpec(
+                    target=self.remotePath,
+                )
             )
-        )
-        return self.askServer(msg)
-
+            return self.askServer(msg)
+    
+    return ProxyParameter
 
 class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
     """Construct a proxy module using the given blue print. Each proxy
@@ -197,6 +354,12 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
     def initKwargsFromBluePrint(self, bp):
         return {}
+    
+    def updateRaw(self, bp):
+        return {}
+    
+    def updateFromBP(self, bp):
+        return {}
 
     def update(self):
         self.bp = self.cli.getBluePrint(self.remotePath)
@@ -229,8 +392,18 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # the parameter doesn't, `setpoints` will just be `None`.
         for pn, p in self.bp.parameters.items():
             if pn not in self.parameters:
+                #at this point the blueprint has lots of information
+                #now we make sure ProxyParameter has the parameter's base class
+                #as a parent so that we get that information along with server-client stuff
                 pbp = self.cli.getBluePrint(f"{self.remotePath}.{pn}")
-                super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
+                param_base_class_string = pbp.parameter_class
+                base_mods = '.'.join(param_base_class_string.split('.')[1:])
+                base = importlib.import_module(param_base_class_string.split('.')[0])
+                param_base_class = nestedAttributeFromString(base, base_mods)
+                
+                proxy_param_class = proxy_param_of_base_type(param_base_class)
+                
+                super().add_parameter(pbp.name, proxy_param_class, cli=self.cli, host=self.host,
                                       port=self.port, bluePrint=pbp, setpoints_instrument=self)
 
         delKeys = []
@@ -277,7 +450,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # method of the instrument instance.
         sig_str = str(sig)
         sig_str = sig_str[0] + 'self, ' + sig_str[1:]
-        new_func_str = f"""from typing import *\ndef {bp.name}{sig_str}:
+        new_func_str = f"""import numpy\nfrom typing import *\ndef {bp.name}{sig_str}:
         return wrap({', '.join(args)})"""
 
         # make sure the method knows the wrap function.
