@@ -459,7 +459,7 @@ class StationServer(QtCore.QObject):
     # We use this to quit the server.
     # If this string is sent as message to the server, it'll shut down and close
     # the socket. Should only be used from within this module.
-    # It's randomized in the instantiated server for a little bit of safety.
+    # It's randomized in the instantiated server for a bit of safety.
     SAFEWORD = 'BANANA'
 
     #: Signal(str, str) -- emit messages for display in the gui (or other stuff the gui
@@ -564,6 +564,7 @@ class StationServer(QtCore.QObject):
 
         while self.serverRunning:
             message = recv(socket)
+            print("[Message]: ", message)
             message_ok = True
             response_to_client = None
             response_log = None
@@ -620,7 +621,7 @@ class StationServer(QtCore.QObject):
                 response_to_client = ServerResponse(message=None, error=response_log)
                 logger.warning(f"Invalid message type: {type(message)}.")
                 logger.debug(f"Invalid message received: {str(message)}")
-
+            print("[Response To Client]: ", response_to_client)
             send(socket, response_to_client)
 
             self.messageReceived.emit(str(message), response_log)
@@ -642,6 +643,8 @@ class StationServer(QtCore.QObject):
         args = []
         kwargs = {}
 
+
+        previous_state=self.station.snapshot()
         # We call a helper function depending on the operation that is requested.
         if instruction.operation == Operation.get_existing_instruments:
             func = self._getExistingInstruments
@@ -670,8 +673,56 @@ class StationServer(QtCore.QObject):
         except Exception as err:
             response = ServerResponse(message=None, error=err)
 
+        changed_parameters = self._getChangedParameters(snapshot=previous_state)
+        self._broadcastParameters(parameters=changed_parameters)
+
         return response
 
+    def _broadcastParameters(self, parameters: list):
+        for blueprint in parameters:
+            self._broadcastParameterChange(blueprint)
+
+    def _getChangedParameters(self, snapshot: dict):
+        """
+        Return the information of changed parameters, based on the provided snapshot.
+
+        :param snapshot: A snapshot from station object that will be compared.
+        :return: return parameter in blueprint format.
+        """
+        current = self.station.snapshot()
+        print(snapshot)
+        print(current)
+        changed_parameters = []
+        for instr in snapshot['instruments']:
+
+            if instr not in current['instruments']:
+                continue
+            for parameter in snapshot['instruments'][instr]['parameters']:
+
+                # check if such key exist:
+                if parameter not in current['instruments'][instr]['parameters']:
+                    continue
+                if snapshot['instruments'][instr]['parameters'][parameter]['value'] != \
+                        current['instruments'][instr]['parameters'][parameter]['value']:
+                    print('Difference!!')
+                    name = instr+'.'+parameter
+                    value = current['instruments'][instr]['parameters'][parameter]['value']
+                    unit = current['instruments'][instr]['parameters'][parameter]['unit']
+                    changed_parameters.append(ParameterBroadcastBluePrint(name=name, action='parameter-update',
+                                                                          value=value, unit=unit))
+        for parameter in snapshot['parameters']:
+            if parameter not in current['parameters']:
+                continue
+            if snapshot['parameters'][parameter]['value'] != \
+                    current['parameters'][parameter]['value']:
+                name = parameter
+                value = current['parameters'][parameter]['value']
+                unit = current['parameters'][parameter]['unit']
+                changed_parameters.append(ParameterBroadcastBluePrint(name=name, action='parameter-update',
+                                                                      value=value, unit=unit))
+        return changed_parameters
+
+        #
     def _getExistingInstruments(self) -> Dict:
         """
         Get the existing instruments in the station.
@@ -718,10 +769,11 @@ class StationServer(QtCore.QObject):
                 self.parameterSet.emit(spec.target, args[0])
 
                 # Broadcast changes in parameter values.
+                print(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
                 self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
             else:
                 self.parameterGet.emit(spec.target, ret)
-
+                print(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
                 # Broadcast calls of parameters.
                 self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
         else:
