@@ -3,6 +3,6 @@ from instrumentserver.client import Client as InstrumentClient
 cli = InstrumentClient()
 
 
-instrument = cli.get_instrument('test')
+instrument = cli.get_instrument('test_name')
 
-cli.setParameters({'test.param3': {'value': 31}})
+cli.setParameters({'test_name.param3': {'value': 31}})

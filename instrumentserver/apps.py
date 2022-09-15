@@ -50,7 +50,13 @@ def serverScript() -> None:
                         help="On which network addresses we listen.")
     parser.add_argument("-i", "--init_script", default='',
                         type=str)
+    parser.add_argument("-r", "--read_only", default='False',
+                        type=str)
     args = parser.parse_args()
+    if args.read_only == 'True':
+        read_only = True
+    else:
+        read_only = False
 
     if args.gui == 'False':
         server(port=args.port,
@@ -60,7 +66,8 @@ def serverScript() -> None:
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
-                      initScript=args.init_script)
+                      initScript=args.init_script,
+                      read_only=read_only)
 
 
 def parameterManagerScript() -> None:

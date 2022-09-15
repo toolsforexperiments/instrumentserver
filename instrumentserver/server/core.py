@@ -496,7 +496,7 @@ class StationServer(QtCore.QObject):
                  allowUserShutdown: bool = False,
                  addresses: List[str] = [],
                  initScript: Optional[str] = None,
-                 ) -> None:
+                 read_only: bool = False) -> None:
         super().__init__(parent)
 
         if addresses is None:
@@ -526,12 +526,14 @@ class StationServer(QtCore.QObject):
                                                   f"'{n}', args: {str(args)}, "
                                                   f"kwargs: {str(kw)})'.")
         )
+        self.read_only = read_only
 
     def _runInitScript(self):
         if os.path.exists(self.initScript):
             path = os.path.abspath(self.initScript)
             env = dict(station=self.station)
             exec(open(path).read(), env)
+            self.previous_state = self.station.snapshot()
         else:
             logger.warning(f"path to initscript ({self.initScript}) not found.")
 
@@ -577,7 +579,7 @@ class StationServer(QtCore.QObject):
                 self.serverRunning = False
                 logger.warning(response_log)
 
-            elif self.allowUserShutdown and message == 'SHUTDOWN':
+            elif self.allowUserShutdown and message == 'SHUTDOWN' and not self.read_only:
                 response_log = 'Server shutdown requested by client.'
                 response_to_client = ServerResponse(message=response_log)
                 self.serverRunning = False
@@ -606,10 +608,16 @@ class StationServer(QtCore.QObject):
                     logger.warning(response_log)
 
                 if message_ok:
-                    # We don't need to use a try-block here, because
-                    # errors are already handled in executeServerInstruction.
-                    response_to_client = self.executeServerInstruction(instruction)
-                    response_log = f"Response to client: {str(response_to_client)}"
+                    # First we check for illegal instruction, when we have set the server to read_only
+                    if self.read_only and self.checkIllegalInstruction(instruction):
+                        response_log = f"Received Illegal Instruction: {str(instruction.operation)}, Server Read Only. " \
+                                       f"No further action."
+                        response_to_client = ServerResponse(message=response_log, error=None)
+                    else:
+                        # We don't need to use a try-block here, because
+                        # errors are already handled in executeServerInstruction.
+                        response_to_client = self.executeServerInstruction(instruction)
+                        response_log = f"Response to client: {str(response_to_client)}"
                     if response_to_client.error is None:
                         logger.info(f"Response sent to client.")
                         logger.debug(response_log)
@@ -626,10 +634,22 @@ class StationServer(QtCore.QObject):
 
             self.messageReceived.emit(str(message), response_log)
 
+            # Check for changed variables
+            changed_parameters = self._getChangedParameters(snapshot=self.previous_state)
+            self.previous_state = self.station.snapshot()
+            self._broadcastParameters(parameters=changed_parameters)
+
         self.broadcastSocket.close()
         socket.close()
         self.finished.emit()
         return True
+
+    def checkIllegalInstruction(self, instruction: ServerInstruction) -> bool:
+        illegal_instruction_list = [Operation.create_instrument, Operation.set_params]
+        for instr in illegal_instruction_list:
+            if instruction.operation == instr:
+                return True
+        return False
 
     def executeServerInstruction(self, instruction: ServerInstruction) \
             -> Tuple[ServerResponse, str]:
@@ -643,8 +663,6 @@ class StationServer(QtCore.QObject):
         args = []
         kwargs = {}
 
-
-        previous_state=self.station.snapshot()
         # We call a helper function depending on the operation that is requested.
         if instruction.operation == Operation.get_existing_instruments:
             func = self._getExistingInstruments
@@ -673,9 +691,6 @@ class StationServer(QtCore.QObject):
         except Exception as err:
             response = ServerResponse(message=None, error=err)
 
-        changed_parameters = self._getChangedParameters(snapshot=previous_state)
-        self._broadcastParameters(parameters=changed_parameters)
-
         return response
 
     def _broadcastParameters(self, parameters: list):
@@ -690,8 +705,6 @@ class StationServer(QtCore.QObject):
         :return: return parameter in blueprint format.
         """
         current = self.station.snapshot()
-        print(snapshot)
-        print(current)
         changed_parameters = []
         for instr in snapshot['instruments']:
 
