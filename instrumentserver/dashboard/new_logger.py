@@ -69,10 +69,10 @@ class LoggerParameter:
         self.last_saved_t = datetime.datetime.now()
 
         if source_type == 'broadcast':
-            self.broadcast_initiation()
+            self.broadcastInitiation()
             print(self.data)
 
-    def broadcast_initiation(self):
+    def broadcastInitiation(self):
         """
         Initialize the data when the source type is broadcast.
         """
@@ -135,7 +135,7 @@ class ParameterLogger(QtCore.QObject):
             port = params[4]
             interval = params[5]
             if source_type == "parameter":
-                self._check_if_contain_client(server, port)  # create the client if not have yet
+                self._checkIfContainClient(server, port)  # create the client if not have yet
                 self.active_parameters.append(LoggerParameter(name=name,
                                                               source_type=source_type,
                                                               parameter_path=parameter_path,
@@ -144,8 +144,8 @@ class ParameterLogger(QtCore.QObject):
                                                               interval=interval))
 
             else:
-                self._check_if_contain_sub_client(server, port)  # create the sub client if not have yet
-                self._check_if_contain_client(server, port-1)
+                self._checkIfContainSubClient(server, port)  # create the sub client if not have yet
+                self._checkIfContainClient(server, port - 1)
                 self.passive_parameters.append(LoggerParameter(name=name,
                                                                source_type=source_type,
                                                                parameter_path=parameter_path,
@@ -169,7 +169,7 @@ class ParameterLogger(QtCore.QObject):
         self.last_saved_t = datetime.datetime.now()
         self.timer = QtCore.QTimer(self)
 
-    def save_data(self):
+    def saveData(self):
         """
         Saves the data in the specified file indicated in the config dictionary.
         Deletes the data from memory once it has been saved to storage.
@@ -207,20 +207,20 @@ class ParameterLogger(QtCore.QObject):
         else:
             ret.to_csv(self.save_directory, index=False, mode='a', header=False)
 
-    def run_logger(self):
+    def runLogger(self):
         """
         Start The timmer. Constantly running checking if its time to either save data or collect new data.
         """
         self.active = True
 
-        self.timer.timeout.connect(self._logger_drive)
+        self.timer.timeout.connect(self._loggerDrive)
         self.timer.start(1000)
         print(f'[Logger Start]')
-        self._start_sub_clients()
+        self._startSubClients()
 
         return
 
-    def _logger_drive(self):
+    def _loggerDrive(self):
         """
         This method update the all the active parameter by calling the their client.
         """
@@ -231,7 +231,7 @@ class ParameterLogger(QtCore.QObject):
 
             # check if its time to save data
             if (current_t - self.last_saved_t).total_seconds() >= self.refresh:
-                self.save_data()
+                self.saveData()
                 self.last_saved_t = current_t
 
             # individually check if its time to collect data from each parameter
@@ -243,7 +243,7 @@ class ParameterLogger(QtCore.QObject):
             self.timer.stop()
 
     @QtCore.Slot(dict)
-    def sub_slot(self, list_message):
+    def onSubSlot(self, list_message):
         """
         This method is a slot that will be called by the subclients if they received a message. This should be connected
         to the SubClient.update_logger.
@@ -256,13 +256,13 @@ class ParameterLogger(QtCore.QObject):
             name = message['name']
             value = message['value']
 
-            if self._check_if_contain_sub_parameter(server, port, name):
+            if self._checkIfContainSubParameter(server, port, name):
                 print(f'[SubParameter Update]: Server: {server}, Port: {port}, Param: {name}, value: {value}')
-                self._get_sub_parameter(server, port, name).update(data=value)
+                self._getSubParameter(server, port, name).update(data=value)
 
         pass
 
-    def _check_if_contain_client(self, server, port, create_client=True):
+    def _checkIfContainClient(self, server, port, create_client=True):
         if server in self.clients and port in self.clients[server]:
             return True
         elif create_client:
@@ -272,7 +272,7 @@ class ParameterLogger(QtCore.QObject):
             return True
         return False
 
-    def _check_if_contain_sub_client(self, server, port, create_client=True):
+    def _checkIfContainSubClient(self, server, port, create_client=True):
         if server in self.sub_clients and port in self.sub_clients[server]:
             return True
         elif create_client:
@@ -283,23 +283,23 @@ class ParameterLogger(QtCore.QObject):
             self.sub_threads[server][port] = QtCore.QThread()
             self.sub_clients[server][port].moveToThread(self.sub_threads[server][port])
             self.sub_threads[server][port].started.connect(self.sub_clients[server][port].connect)
-            self.sub_clients[server][port].update_logger.connect(self.sub_slot)
+            self.sub_clients[server][port].update_logger.connect(self.onSubSlot)
             return True
         return False
 
-    def _check_if_contain_sub_parameter(self, server, port, parameter_path):
+    def _checkIfContainSubParameter(self, server, port, parameter_path):
         for parameter in self.passive_parameters:
             if parameter.server == server and parameter.port == port and parameter.parameter_path == parameter_path:
                 return True
         return False
 
-    def _get_sub_parameter(self, server, port, parameter_path):
+    def _getSubParameter(self, server, port, parameter_path):
         for parameter in self.passive_parameters:
             if parameter.server == server and parameter.port == port and parameter.parameter_path == parameter_path:
                 return parameter
         return
 
-    def _start_sub_clients(self):
+    def _startSubClients(self):
         for server in self.sub_clients:
             for port in self.sub_clients[server]:
                 self.sub_threads[server][port].start()

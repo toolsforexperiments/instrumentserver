@@ -496,7 +496,7 @@ class StationServer(QtCore.QObject):
                  allowUserShutdown: bool = False,
                  addresses: List[str] = [],
                  initScript: Optional[str] = None,
-                 read_only: bool = False) -> None:
+                 readOnly: bool = False) -> None:
         super().__init__(parent)
 
         if addresses is None:
@@ -526,8 +526,8 @@ class StationServer(QtCore.QObject):
                                                   f"'{n}', args: {str(args)}, "
                                                   f"kwargs: {str(kw)})'.")
         )
-        self.read_only = read_only
-
+        self.readOnly = readOnly
+        self.previous_state = None
     def _runInitScript(self):
         if os.path.exists(self.initScript):
             path = os.path.abspath(self.initScript)
@@ -579,7 +579,7 @@ class StationServer(QtCore.QObject):
                 self.serverRunning = False
                 logger.warning(response_log)
 
-            elif self.allowUserShutdown and message == 'SHUTDOWN' and not self.read_only:
+            elif self.allowUserShutdown and message == 'SHUTDOWN' and not self.readOnly:
                 response_log = 'Server shutdown requested by client.'
                 response_to_client = ServerResponse(message=response_log)
                 self.serverRunning = False
@@ -608,8 +608,8 @@ class StationServer(QtCore.QObject):
                     logger.warning(response_log)
 
                 if message_ok:
-                    # First we check for illegal instruction, when we have set the server to read_only
-                    if self.read_only and self.checkIllegalInstruction(instruction):
+                    # First we check for illegal instruction, when we have set the server to readOnly
+                    if self.readOnly and self.checkIllegalInstruction(instruction):
                         response_log = f"Received Illegal Instruction: {str(instruction.operation)}, Server Read Only. " \
                                        f"No further action."
                         response_to_client = ServerResponse(message=response_log, error=None)

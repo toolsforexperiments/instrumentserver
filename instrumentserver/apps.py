@@ -62,12 +62,13 @@ def serverScript() -> None:
         server(port=args.port,
                allowUserShutdown=args.allow_user_shutdown,
                addresses=args.listen_at,
-               initScript=args.init_script)
+               initScript=args.init_script,
+               readOnly=read_only)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
                       initScript=args.init_script,
-                      read_only=read_only)
+                      readOnly=read_only)
 
 
 def parameterManagerScript() -> None:
@@ -135,7 +136,7 @@ def parameterLogger() -> None:
     parameter_logger = ParameterLogger(foo.config)
 
     # run the logger
-    parameter_logger.run_logger()
+    parameter_logger.runLogger()
 
 
 def loggerAndDashboard() -> None:
@@ -161,7 +162,7 @@ def loggerAndDashboard() -> None:
     parameter_logger.moveToThread(thread)
 
     # start the thread
-    thread.started.connect(parameter_logger.run_logger)
+    thread.started.connect(parameter_logger.runLogger)
     thread.start()
     bokehDashboard(foo.config)
 
