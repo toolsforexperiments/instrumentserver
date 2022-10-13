@@ -10,7 +10,7 @@ from .server.application import startServerGuiApplication
 from .server.core import startServer
 from bokeh.server.server import Server as BokehServer
 from .dashboard.dashboard import DashboardClass
-from .dashboard.new_logger import ParameterLogger
+from .dashboard.logger import ParameterLogger
 from typing import Dict
 
 
@@ -154,7 +154,6 @@ def loggerAndDashboard() -> None:
 
     # create the separate thread
     thread = QtCore.QThread()
-    print(foo.config)
     # create the logger
     parameter_logger = ParameterLogger(foo.config)
 

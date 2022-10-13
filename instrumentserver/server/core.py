@@ -516,7 +516,7 @@ class StationServer(QtCore.QObject):
         self.broadcastSocket = None
 
         self.parameterSet.connect(
-            lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
+            lambda n, v: logger.debug(f"Parameter '{n}' set to: {str(v)}")
         )
         self.parameterGet.connect(
             lambda n, v: logger.debug(f"Parameter '{n}' retrieved: {str(v)}")
@@ -536,6 +536,10 @@ class StationServer(QtCore.QObject):
             self.previous_state = self.station.snapshot()
         else:
             logger.warning(f"path to initscript ({self.initScript}) not found.")
+
+    @QtCore.Slot()
+    def stopServer(self):
+        self.serverRunning = False
 
     @QtCore.Slot()
     def startServer(self) -> None:
@@ -566,7 +570,7 @@ class StationServer(QtCore.QObject):
 
         while self.serverRunning:
             message = recv(socket)
-            print("[Message]: ", message)
+            #print("[Message]: ", message)
             message_ok = True
             response_to_client = None
             response_log = None
@@ -597,7 +601,7 @@ class StationServer(QtCore.QObject):
                 instruction = message
                 try:
                     instruction.validate()
-                    logger.info(f"Received request for operation: "
+                    logger.debug(f"Received request for operation: "
                                 f"{str(instruction.operation)}")
                     logger.debug(f"Instruction received: "
                                  f"{str(instruction)}")
@@ -612,6 +616,7 @@ class StationServer(QtCore.QObject):
                     if self.readOnly and self.checkIllegalInstruction(instruction):
                         response_log = f"Received Illegal Instruction: {str(instruction.operation)}, Server Read Only. " \
                                        f"No further action."
+                        logger.debug(f"Received Illegal Instruction: {str(instruction.operation)}.")
                         response_to_client = ServerResponse(message=response_log, error=None)
                     else:
                         # We don't need to use a try-block here, because
@@ -619,7 +624,7 @@ class StationServer(QtCore.QObject):
                         response_to_client = self.executeServerInstruction(instruction)
                         response_log = f"Response to client: {str(response_to_client)}"
                     if response_to_client.error is None:
-                        logger.info(f"Response sent to client.")
+                        logger.debug(f"Response sent to client.")
                         logger.debug(response_log)
                     else:
                         logger.warning(response_log)
@@ -629,7 +634,7 @@ class StationServer(QtCore.QObject):
                 response_to_client = ServerResponse(message=None, error=response_log)
                 logger.warning(f"Invalid message type: {type(message)}.")
                 logger.debug(f"Invalid message received: {str(message)}")
-            print("[Response To Client]: ", response_to_client)
+            #print("[Response To Client]: ", response_to_client)
             send(socket, response_to_client)
 
             self.messageReceived.emit(str(message), response_log)
@@ -638,6 +643,9 @@ class StationServer(QtCore.QObject):
             changed_parameters = self._getChangedParameters(snapshot=self.previous_state)
             self.previous_state = self.station.snapshot()
             self._broadcastParameters(parameters=changed_parameters)
+
+            if self.thread().isInterruptionRequested():
+                self.serverRunning=False
 
         self.broadcastSocket.close()
         socket.close()
@@ -706,6 +714,8 @@ class StationServer(QtCore.QObject):
         """
         current = self.station.snapshot()
         changed_parameters = []
+        if snapshot is None:
+            return []
         for instr in snapshot['instruments']:
 
             if instr not in current['instruments']:
@@ -717,7 +727,7 @@ class StationServer(QtCore.QObject):
                     continue
                 if snapshot['instruments'][instr]['parameters'][parameter]['value'] != \
                         current['instruments'][instr]['parameters'][parameter]['value']:
-                    print('Difference!!')
+                    #print('Difference!!')
                     name = instr+'.'+parameter
                     value = current['instruments'][instr]['parameters'][parameter]['value']
                     unit = current['instruments'][instr]['parameters'][parameter]['unit']
@@ -782,11 +792,9 @@ class StationServer(QtCore.QObject):
                 self.parameterSet.emit(spec.target, args[0])
 
                 # Broadcast changes in parameter values.
-                print(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
                 self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
             else:
                 self.parameterGet.emit(spec.target, ret)
-                print(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
                 # Broadcast calls of parameters.
                 self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
         else:
@@ -831,7 +839,7 @@ class StationServer(QtCore.QObject):
         """
         self.broadcastSocket.send_string(blueprint.name.split('.')[0], flags=zmq.SNDMORE)
         self.broadcastSocket.send_string((blueprint.toDictFormat()))
-        logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
+        logger.debug(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
                      f" with a value: {blueprint.value}.")
 
     def _newOrDeleteParameterDetection(self, spec, args, kwargs):
