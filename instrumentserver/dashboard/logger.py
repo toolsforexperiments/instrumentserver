@@ -72,7 +72,6 @@ class LoggerParameter:
 
         if source_type == 'broadcast':
             self.broadcastInitiation()
-            print(self.data)
 
     def broadcastInitiation(self):
         """
@@ -156,7 +155,6 @@ class ParameterLogger(QtCore.QObject):
                                                                client=self.clients[server][port-1],
                                                                server=server, port=port,
                                                                interval=interval))
-        print(self.passive_parameters)
         # check if the values are none.
         # if they are set the default one, if not, set the specified one in the config file
         if refresh is not None:
@@ -261,7 +259,6 @@ class ParameterLogger(QtCore.QObject):
             value = message['value']
 
             if self._checkIfContainSubParameter(server, port, name):
-                print(f'[SubParameter Update]: Server: {server}, Port: {port}, Param: {name}, value: {value}')
                 self._getSubParameter(server, port, name).update(data=value)
 
         pass
