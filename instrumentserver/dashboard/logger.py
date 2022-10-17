@@ -39,7 +39,9 @@ class LoggerParameter:
                  client: Client,
                  server: Optional[str] = 'localhost',
                  port: Optional[int] = 5555,
-                 interval: Optional[int] = 1):
+                 interval: Optional[int] = 1,
+                 upper_bound: Optional[float] = None,
+                 lower_bound=None):
         # load values
         self.name = name
         self.source_type = source_type
@@ -48,6 +50,16 @@ class LoggerParameter:
         self.server = server
         self.port = port
         self.interval = interval
+        self.upper_bound = upper_bound
+        self.lower_bound = lower_bound
+        if upper_bound is not None:
+            self.bounded_above = True
+        else:
+            self.bounded_above = False
+        if lower_bound is not None:
+            self.bounded_below = True
+        else:
+            self.bounded_below = False
 
         # data container
         self.data = []
@@ -97,12 +109,25 @@ class LoggerParameter:
             current_time = datetime.datetime.now()
             self.data.append(new_data)
             self.time.append(current_time)
+            self.check_bound(new_data)
 
         if self.source_type == 'broadcast':
             current_time = datetime.datetime.now()
             self.data.append(data)
             self.time.append(current_time)
-            pass
+            self.check_bound(data)
+
+    def check_bound(self, data):
+        if data is None:
+            return
+        if type(data) is str and data.isnumeric():
+            data_morphed = float(data)
+        if self.bounded_above and data_morphed > self.upper_bound:
+            logger.error(f"Parameter {self.parameter_path} has a value of {data}, which exceed the upper bound of "
+                         f"{self.upper_bound}")
+        if self.bounded_below and data_morphed < self.lower_bound:
+            logger.error(f"Parameter {self.parameter_path} has a value of {data}, which exceed the lower bound of "
+                         f"{self.lower_bound}")
 
 
 class ParameterLogger(QtCore.QObject):
@@ -137,6 +162,8 @@ class ParameterLogger(QtCore.QObject):
             server = params[3]
             port = params[4]
             interval = params[5]
+            upper_bound = params[6]
+            lower_bound = params[7]
             if source_type == "parameter":
                 self._checkIfContainClient(server, port)  # create the client if not have yet
                 self.active_parameters.append(LoggerParameter(name=name,
@@ -144,7 +171,9 @@ class ParameterLogger(QtCore.QObject):
                                                               parameter_path=parameter_path,
                                                               client=self.clients[server][port],
                                                               server=server, port=port,
-                                                              interval=interval))
+                                                              interval=interval,
+                                                              upper_bound=upper_bound,
+                                                              lower_bound=lower_bound))
 
             else:
                 self._checkIfContainSubClient(server, port)  # create the sub client if not have yet
@@ -154,7 +183,9 @@ class ParameterLogger(QtCore.QObject):
                                                                parameter_path=parameter_path,
                                                                client=self.clients[server][port-1],
                                                                server=server, port=port,
-                                                               interval=interval))
+                                                               interval=interval,
+                                                               upper_bound=upper_bound,
+                                                               lower_bound=lower_bound))
         # check if the values are none.
         # if they are set the default one, if not, set the specified one in the config file
         if refresh is not None:

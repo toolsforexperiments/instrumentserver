@@ -228,6 +228,8 @@ def read_config(return_config: str, config: Dict):
                         server_param = 'localhost'
                         port_param = 5555
                         interval_param = 1
+                        upper_bound = None
+                        lower_bound = None
 
                         # check if the optional options exist in the dictionary and overwrites them if they do.
                         if 'server' in config[key][plot][params]:
@@ -237,6 +239,10 @@ def read_config(return_config: str, config: Dict):
                         if 'options' in config[key][plot][params]:
                             if 'interval' in config[key][plot][params]['options']:
                                 interval_param = config[key][plot][params]['options']['interval']
+                            if 'upper_bound' in config[key][plot][params]['options']:
+                                upper_bound = config[key][plot][params]['options']['upper_bound']
+                            if 'lower_bound' in config[key][plot][params]['options']:
+                                lower_bound = config[key][plot][params]['options']['lower_bound']
 
                         # a tuple with the specified parameters for the logger
                         name = params
@@ -249,7 +255,9 @@ def read_config(return_config: str, config: Dict):
                                               parameter_path,
                                               server_param,
                                               port_param,
-                                              interval_param))
+                                              interval_param,
+                                              upper_bound,
+                                              lower_bound))
 
                 elif return_config == 'dashboard':
                     name_list = []
