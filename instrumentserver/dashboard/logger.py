@@ -122,6 +122,8 @@ class LoggerParameter:
             return
         if type(data) is str and data.isnumeric():
             data_morphed = float(data)
+        else:
+            data_morphed = data
         if self.bounded_above and data_morphed > self.upper_bound:
             logger.error(f"Parameter {self.parameter_path} has a value of {data}, which exceed the upper bound of "
                          f"{self.upper_bound}")
