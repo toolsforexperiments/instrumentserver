@@ -469,7 +469,10 @@ class SubClient(QtCore.QObject):
         :param instruments: List of instruments the subclient will listen for.
                             If empty it will listen to all broadcasts done by the server.
         :param host: The host location of the updates.
-        :param port: Should not be changed. It always is the server normal port +1.
+        :param port: Should not be changed. It is always the server normal port +1.
+        :param sub_host: the port for subscrition mode, default is the port+1
+        :param logger_mode: this configures if the logger is using this SubClient. When turn on, the SubClient instance
+        will have different behavior, default is False
         """
         super().__init__()
         self.host = sub_host

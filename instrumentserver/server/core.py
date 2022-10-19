@@ -869,7 +869,8 @@ class StationServer(QtCore.QObject):
 def startServer(port: int = 5555,
                 allowUserShutdown: bool = False,
                 addresses: List[str] = [],
-                initScript: Optional[str] = None) -> \
+                initScript: Optional[str] = None,
+                readOnly: bool = False) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 
@@ -878,7 +879,8 @@ def startServer(port: int = 5555,
     server = StationServer(port=port,
                            allowUserShutdown=allowUserShutdown,
                            addresses=addresses,
-                           initScript=initScript)
+                           initScript=initScript,
+                           readOnly=readOnly)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
