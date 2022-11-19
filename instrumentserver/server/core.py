@@ -519,10 +519,10 @@ class StationServer(QtCore.QObject):
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
         )
         self.parameterGet.connect(
-            lambda n, v: logger.debug(f"Parameter '{n}' retrieved: {str(v)}")
+            lambda n, v: logger.info(f"Parameter '{n}' retrieved: {str(v)}")
         )
         self.funcCalled.connect(
-            lambda n, args, kw, ret: logger.debug(f"Function called:"
+            lambda n, args, kw, ret: logger.info(f"Function called:"
                                                   f"'{n}', args: {str(args)}, "
                                                   f"kwargs: {str(kw)})'.")
         )
@@ -587,15 +587,15 @@ class StationServer(QtCore.QObject):
             elif isinstance(message, str):
                 response_log = f"Server has received: {message}. No further action."
                 response_to_client = ServerResponse(message=response_log)
-                logger.info(response_log)
+                logger.debug(response_log)
 
             # We assume this is a valid instruction set now.
             elif isinstance(message, ServerInstruction):
                 instruction = message
                 try:
                     instruction.validate()
-                    logger.info(f"Received request for operation: "
-                                f"{str(instruction.operation)}")
+                    logger.debug(f"Received request for operation: "
+                                 f"{str(instruction.operation)}")
                     logger.debug(f"Instruction received: "
                                  f"{str(instruction)}")
                 except Exception as e:
@@ -610,7 +610,7 @@ class StationServer(QtCore.QObject):
                     response_to_client = self.executeServerInstruction(instruction)
                     response_log = f"Response to client: {str(response_to_client)}"
                     if response_to_client.error is None:
-                        logger.info(f"Response sent to client.")
+                        logger.debug(f"Response sent to client.")
                         logger.debug(response_log)
                     else:
                         logger.warning(response_log)
