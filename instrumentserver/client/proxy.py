@@ -352,8 +352,8 @@ class Client(BaseClient):
         msg = ServerInstruction(operation=Operation.get_existing_instruments)
         return self.ask(msg)
 
-    def create_instrument(self, instrument_class: str, name: str,
-                          *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
+    def find_or_create_instrument(self, instrument_class: str, name: str,
+                                  *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
         """ Create a new instrument on the server and return a proxy for the new
         instrument.
 
@@ -459,7 +459,7 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
     update = QtCore.Signal(str)
 
-    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
+    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
         """
         Creates a new subscription client.
 
@@ -475,7 +475,6 @@ class SubClient(QtCore.QObject):
         self.instruments = instruments
 
         self.connected = False
-
 
     def connect(self):
         """
@@ -499,7 +498,6 @@ class SubClient(QtCore.QObject):
         self.connected = True
 
         while self.connected:
-
             message = socket.recv_multipart()
             # emits the signals already decoded so python recognizes it a string instead of bytes
             self.update.emit(message[1].decode("utf-8"))
