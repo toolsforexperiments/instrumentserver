@@ -21,7 +21,7 @@ def setup_log(win: InstrumentClientMainWindow):
 
 
 def setup_pm(win: InstrumentClientMainWindow):
-    pm = win.client.create_instrument(
+    pm = win.client.find_or_create_instrument(
         'instrumentserver.params.ParameterManager',
         'pm',
     )
