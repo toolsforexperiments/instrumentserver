@@ -459,7 +459,7 @@ class StationServer(QtCore.QObject):
     # We use this to quit the server.
     # If this string is sent as message to the server, it'll shut down and close
     # the socket. Should only be used from within this module.
-    # It's randomized in the instantiated server for a bit of safety.
+    # It's randomized in the instantiated server for a little bit of safety.
     SAFEWORD = 'BANANA'
 
     #: Signal(str, str) -- emit messages for display in the gui (or other stuff the gui
@@ -570,7 +570,6 @@ class StationServer(QtCore.QObject):
 
         while self.serverRunning:
             message = recv(socket)
-            #print("[Message]: ", message)
             message_ok = True
             response_to_client = None
             response_log = None
@@ -594,7 +593,7 @@ class StationServer(QtCore.QObject):
             elif isinstance(message, str):
                 response_log = f"Server has received: {message}. No further action."
                 response_to_client = ServerResponse(message=response_log)
-                logger.info(response_log)
+                logger.debug(response_log)
 
             # We assume this is a valid instruction set now.
             elif isinstance(message, ServerInstruction):
@@ -603,6 +602,8 @@ class StationServer(QtCore.QObject):
                     instruction.validate()
                     logger.debug(f"Received request for operation: "
                                 f"{str(instruction.operation)}")
+                    logger.debug(f"Received request for operation: "
+                                 f"{str(instruction.operation)}")
                     logger.debug(f"Instruction received: "
                                  f"{str(instruction)}")
                 except Exception as e:
@@ -634,7 +635,7 @@ class StationServer(QtCore.QObject):
                 response_to_client = ServerResponse(message=None, error=response_log)
                 logger.warning(f"Invalid message type: {type(message)}.")
                 logger.debug(f"Invalid message received: {str(message)}")
-            #print("[Response To Client]: ", response_to_client)
+
             send(socket, response_to_client)
 
             self.messageReceived.emit(str(message), response_log)
@@ -795,6 +796,7 @@ class StationServer(QtCore.QObject):
                 self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
             else:
                 self.parameterGet.emit(spec.target, ret)
+
                 # Broadcast calls of parameters.
                 self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
         else:

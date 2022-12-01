@@ -5,7 +5,14 @@ from typing import Dict, List
 
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, CheckboxGroup, DatetimeTickFormatter, HoverTool, DataRange1d
-from bokeh.models.widgets import Button, Tabs, Panel, Paragraph
+
+# FIXME: Bokeh had an update, this requires changes to the dashboard.
+try:
+    from bokeh.models.widgets import Button, Tabs, Panel, Paragraph
+except ImportError:
+    from bokeh.models.widgets import Button, Paragraph
+    from bokeh.models.layouts import Tabs, TabPanel
+
 from bokeh.plotting import figure
 from bokeh.palettes import Category10
 
@@ -138,7 +145,7 @@ class Plots:
         self.none_button.on_click(self.none_selected)
 
         # create the panels to switch from linear to log
-        panels = [Panel(child=self.fig_linear, title='linear'), Panel(child=self.fig_log, title='log')]
+        panels = [TabPanel(child=self.fig_linear, title='linear'), TabPanel(child=self.fig_log, title='log')]
 
         # creates the layout with all of the elements of this plot GUI
         self.layout = column(self.title,
