@@ -13,6 +13,5 @@ setup(name='instrumentserver',
             "instrumentserver = instrumentserver.apps:serverScript",
             "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",
             "instrumentserver-dashboard = instrumentserver.apps:bokehDashboard",
-            "instrumentserver-parameterlogger = instrumentserver.apps:parameterLogger",
             "instrumentserver-dashboardlogger = instrumentserver.apps:loggerAndDashboard"]}
       )

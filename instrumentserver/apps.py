@@ -120,25 +120,6 @@ def bokehDashboard(config_dict: Dict = None) -> None:
     dashboard_server.io_loop.add_callback(dashboard_server.show, "/")
     dashboard_server.io_loop.start()
 
-
-def parameterLogger() -> None:
-    parser = argparse.ArgumentParser(description='Starting the instrumentserver-logger')
-
-    parser.add_argument("--config_location", default=os.path.abspath("instrumentserver-dashboard-cfg.py"))
-
-    args = parser.parse_args()
-
-    spec = importlib.util.spec_from_file_location("instrumentserver-dashboard-cfg", args.config_location)
-    foo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(foo)
-
-    # create the logger
-    parameter_logger = ParameterLogger(foo.config)
-
-    # run the logger
-    parameter_logger.runLogger()
-
-
 def loggerAndDashboard() -> None:
     parser = argparse.ArgumentParser(description='Starting the instrumentserver-logger and instrumentserver-dashboard')
 
