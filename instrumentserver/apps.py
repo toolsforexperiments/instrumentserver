@@ -50,17 +50,25 @@ def serverScript() -> None:
                         help="On which network addresses we listen.")
     parser.add_argument("-i", "--init_script", default='',
                         type=str)
+    parser.add_argument("-r", "--read_only", default='False',
+                        type=str)
     args = parser.parse_args()
+    if args.read_only == 'True':
+        read_only = True
+    else:
+        read_only = False
 
     if args.gui == 'False':
         server(port=args.port,
                allowUserShutdown=args.allow_user_shutdown,
                addresses=args.listen_at,
-               initScript=args.init_script)
+               initScript=args.init_script,
+               readOnly=read_only)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
-                      initScript=args.init_script)
+                      initScript=args.init_script,
+                      readOnly=read_only)
 
 
 def parameterManagerScript() -> None:
@@ -112,25 +120,6 @@ def bokehDashboard(config_dict: Dict = None) -> None:
     dashboard_server.io_loop.add_callback(dashboard_server.show, "/")
     dashboard_server.io_loop.start()
 
-
-def parameterLogger() -> None:
-    parser = argparse.ArgumentParser(description='Starting the instrumentserver-logger')
-
-    parser.add_argument("--config_location", default=os.path.abspath("instrumentserver-dashboard-cfg.py"))
-
-    args = parser.parse_args()
-
-    spec = importlib.util.spec_from_file_location("instrumentserver-dashboard-cfg", args.config_location)
-    foo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(foo)
-
-    # create the logger
-    parameter_logger = ParameterLogger(foo.config)
-
-    # run the logger
-    parameter_logger.run_logger()
-
-
 def loggerAndDashboard() -> None:
     parser = argparse.ArgumentParser(description='Starting the instrumentserver-logger and instrumentserver-dashboard')
 
@@ -142,9 +131,10 @@ def loggerAndDashboard() -> None:
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)
 
+    app = QtWidgets.QApplication([])
+
     # create the separate thread
     thread = QtCore.QThread()
-
     # create the logger
     parameter_logger = ParameterLogger(foo.config)
 
@@ -152,8 +142,9 @@ def loggerAndDashboard() -> None:
     parameter_logger.moveToThread(thread)
 
     # start the thread
-    thread.started.connect(parameter_logger.run_logger)
+    thread.started.connect(parameter_logger.runLogger)
     thread.start()
-
     bokehDashboard(foo.config)
+
+    app.exec_()
 

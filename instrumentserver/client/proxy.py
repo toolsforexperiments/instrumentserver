@@ -28,6 +28,7 @@ from instrumentserver.server.core import (
     ParameterSerializeSpec,
 )
 from .core import sendRequest, BaseClient
+from ast import literal_eval
 
 logger = logging.getLogger(__name__)
 
@@ -459,20 +460,26 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
     update = QtCore.Signal(str)
 
-    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1):
+    update_logger = QtCore.Signal(dict)
+
+    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT+1, logger_mode = False):
         """
         Creates a new subscription client.
 
         :param instruments: List of instruments the subclient will listen for.
                             If empty it will listen to all broadcasts done by the server.
         :param host: The host location of the updates.
-        :param port: Should not be changed. It always is the server normal port +1.
+        :param port: Should not be changed. It is always the server normal port +1.
+        :param sub_host: the port for subscrition mode, default is the port+1
+        :param logger_mode: this configures if the logger is using this SubClient. When turn on, the SubClient instance
+        will have different behavior, default is False
         """
         super().__init__()
         self.host = sub_host
         self.port = sub_port
         self.addr = f"tcp://{self.host}:{self.port}"
         self.instruments = instruments
+        self.logger_mode = logger_mode
 
         self.connected = False
 
@@ -502,7 +509,13 @@ class SubClient(QtCore.QObject):
 
             message = socket.recv_multipart()
             # emits the signals already decoded so python recognizes it a string instead of bytes
-            self.update.emit(message[1].decode("utf-8"))
+            if self.logger_mode:
+                _message = literal_eval(message[1].decode("utf-8"))
+                _message['server'] = self.host
+                _message['port'] = self.port
+                self.update_logger.emit(_message)
+            else:
+                self.update.emit(message[1].decode("utf-8"))
 
         self.disconnect()
 

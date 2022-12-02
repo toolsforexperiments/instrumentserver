@@ -92,7 +92,7 @@ def setupLogging(addStreamHandler=True, logFile=None,
 
     if logFile is not None:
         fmt = logging.Formatter(
-            "%(asctime)s\t: %(name)s\t: %(levelname)s\t: %(message)s",
+            "%(asctime)s\t| %(name)s\t| %(levelname)s\t| %(message)s",
             datefmt='%Y-%m-%d %H:%M:%S',
         )
         fh = logging.FileHandler(logFile)

@@ -45,12 +45,14 @@ config = {
                 }
             },
             'Param 3': {
-                'source_type': 'parameter',
+                'source_type': 'broadcast',
                 'parameter_path': 'test.param3',
                 'server': 'localhost',
-                'port': 5555,
+                'port': 5556,
                 'options': {
-                    'interval': 1
+                    'interval': 1,
+                    'upper_bound': 35,
+                    'lower_bound': 31
                 }
             }
         },
@@ -58,6 +60,6 @@ config = {
     'options': {
         'refresh_rate': 10,
         'allowed_ip': ['*'],
-        'load_and_save': 'C:/Users/Msmt/Documents/dashboard_data.csv'
+        'load_and_save': r'/home/zelongx2/dev_zacko/test_folder/dashboard_data.csv'
         }
 }

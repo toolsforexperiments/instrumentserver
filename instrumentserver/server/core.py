@@ -496,7 +496,7 @@ class StationServer(QtCore.QObject):
                  allowUserShutdown: bool = False,
                  addresses: List[str] = [],
                  initScript: Optional[str] = None,
-                 ) -> None:
+                 readOnly: bool = False) -> None:
         super().__init__(parent)
 
         if addresses is None:
@@ -516,24 +516,30 @@ class StationServer(QtCore.QObject):
         self.broadcastSocket = None
 
         self.parameterSet.connect(
-            lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
+            lambda n, v: logger.debug(f"Parameter '{n}' set to: {str(v)}")
         )
         self.parameterGet.connect(
-            lambda n, v: logger.info(f"Parameter '{n}' retrieved: {str(v)}")
+            lambda n, v: logger.debug(f"Parameter '{n}' retrieved: {str(v)}")
         )
         self.funcCalled.connect(
-            lambda n, args, kw, ret: logger.info(f"Function called:"
+            lambda n, args, kw, ret: logger.debug(f"Function called:"
                                                   f"'{n}', args: {str(args)}, "
                                                   f"kwargs: {str(kw)})'.")
         )
-
+        self.readOnly = readOnly
+        self.previous_state = None
     def _runInitScript(self):
         if os.path.exists(self.initScript):
             path = os.path.abspath(self.initScript)
             env = dict(station=self.station)
             exec(open(path).read(), env)
+            self.previous_state = self.station.snapshot()
         else:
             logger.warning(f"path to initscript ({self.initScript}) not found.")
+
+    @QtCore.Slot()
+    def stopServer(self):
+        self.serverRunning = False
 
     @QtCore.Slot()
     def startServer(self) -> None:
@@ -576,7 +582,7 @@ class StationServer(QtCore.QObject):
                 self.serverRunning = False
                 logger.warning(response_log)
 
-            elif self.allowUserShutdown and message == 'SHUTDOWN':
+            elif self.allowUserShutdown and message == 'SHUTDOWN' and not self.readOnly:
                 response_log = 'Server shutdown requested by client.'
                 response_to_client = ServerResponse(message=response_log)
                 self.serverRunning = False
@@ -595,6 +601,8 @@ class StationServer(QtCore.QObject):
                 try:
                     instruction.validate()
                     logger.debug(f"Received request for operation: "
+                                f"{str(instruction.operation)}")
+                    logger.debug(f"Received request for operation: "
                                  f"{str(instruction.operation)}")
                     logger.debug(f"Instruction received: "
                                  f"{str(instruction)}")
@@ -605,10 +613,17 @@ class StationServer(QtCore.QObject):
                     logger.warning(response_log)
 
                 if message_ok:
-                    # We don't need to use a try-block here, because
-                    # errors are already handled in executeServerInstruction.
-                    response_to_client = self.executeServerInstruction(instruction)
-                    response_log = f"Response to client: {str(response_to_client)}"
+                    # First we check for illegal instruction, when we have set the server to readOnly
+                    if self.readOnly and self.checkIllegalInstruction(instruction):
+                        response_log = f"Received Illegal Instruction: {str(instruction.operation)}, Server Read Only. " \
+                                       f"No further action."
+                        logger.debug(f"Received Illegal Instruction: {str(instruction.operation)}.")
+                        response_to_client = ServerResponse(message=response_log, error=None)
+                    else:
+                        # We don't need to use a try-block here, because
+                        # errors are already handled in executeServerInstruction.
+                        response_to_client = self.executeServerInstruction(instruction)
+                        response_log = f"Response to client: {str(response_to_client)}"
                     if response_to_client.error is None:
                         logger.debug(f"Response sent to client.")
                         logger.debug(response_log)
@@ -625,10 +640,25 @@ class StationServer(QtCore.QObject):
 
             self.messageReceived.emit(str(message), response_log)
 
+            # Check for changed variables
+            changed_parameters = self._getChangedParameters(snapshot=self.previous_state)
+            self.previous_state = self.station.snapshot()
+            self._broadcastParameters(parameters=changed_parameters)
+
+            if self.thread().isInterruptionRequested():
+                self.serverRunning=False
+
         self.broadcastSocket.close()
         socket.close()
         self.finished.emit()
         return True
+
+    def checkIllegalInstruction(self, instruction: ServerInstruction) -> bool:
+        illegal_instruction_list = [Operation.create_instrument, Operation.set_params]
+        for instr in illegal_instruction_list:
+            if instruction.operation == instr:
+                return True
+        return False
 
     def executeServerInstruction(self, instruction: ServerInstruction) \
             -> Tuple[ServerResponse, str]:
@@ -672,6 +702,51 @@ class StationServer(QtCore.QObject):
 
         return response
 
+    def _broadcastParameters(self, parameters: list):
+        for blueprint in parameters:
+            self._broadcastParameterChange(blueprint)
+
+    def _getChangedParameters(self, snapshot: dict):
+        """
+        Return the information of changed parameters, based on the provided snapshot.
+
+        :param snapshot: A snapshot from station object that will be compared.
+        :return: return parameter in blueprint format.
+        """
+        current = self.station.snapshot()
+        changed_parameters = []
+        if snapshot is None:
+            return []
+        for instr in snapshot['instruments']:
+
+            if instr not in current['instruments']:
+                continue
+            for parameter in snapshot['instruments'][instr]['parameters']:
+
+                # check if such key exist:
+                if parameter not in current['instruments'][instr]['parameters']:
+                    continue
+                if snapshot['instruments'][instr]['parameters'][parameter]['value'] != \
+                        current['instruments'][instr]['parameters'][parameter]['value']:
+                    #print('Difference!!')
+                    name = instr+'.'+parameter
+                    value = current['instruments'][instr]['parameters'][parameter]['value']
+                    unit = current['instruments'][instr]['parameters'][parameter]['unit']
+                    changed_parameters.append(ParameterBroadcastBluePrint(name=name, action='parameter-update',
+                                                                          value=value, unit=unit))
+        for parameter in snapshot['parameters']:
+            if parameter not in current['parameters']:
+                continue
+            if snapshot['parameters'][parameter]['value'] != \
+                    current['parameters'][parameter]['value']:
+                name = parameter
+                value = current['parameters'][parameter]['value']
+                unit = current['parameters'][parameter]['unit']
+                changed_parameters.append(ParameterBroadcastBluePrint(name=name, action='parameter-update',
+                                                                      value=value, unit=unit))
+        return changed_parameters
+
+        #
     def _getExistingInstruments(self) -> Dict:
         """
         Get the existing instruments in the station.
@@ -766,7 +841,7 @@ class StationServer(QtCore.QObject):
         """
         self.broadcastSocket.send_string(blueprint.name.split('.')[0], flags=zmq.SNDMORE)
         self.broadcastSocket.send_string((blueprint.toDictFormat()))
-        logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
+        logger.debug(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
                      f" with a value: {blueprint.value}.")
 
     def _newOrDeleteParameterDetection(self, spec, args, kwargs):
@@ -796,7 +871,8 @@ class StationServer(QtCore.QObject):
 def startServer(port: int = 5555,
                 allowUserShutdown: bool = False,
                 addresses: List[str] = [],
-                initScript: Optional[str] = None) -> \
+                initScript: Optional[str] = None,
+                readOnly: bool = False) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 
@@ -805,7 +881,8 @@ def startServer(port: int = 5555,
     server = StationServer(port=port,
                            allowUserShutdown=allowUserShutdown,
                            addresses=addresses,
-                           initScript=initScript)
+                           initScript=initScript,
+                           readOnly=readOnly)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
