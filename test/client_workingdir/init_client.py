@@ -12,17 +12,17 @@ from instrumentserver.client import ProxyInstrument
 #%% Create all my instruments
 Instrument.close_all()
 ins_cli = Client()
-dummy_vna = ins_cli.create_instrument(
+dummy_vna = ins_cli.find_or_create_instrument(
     'instrumentserver.testing.dummy_instruments.rf.ResonatorResponse',
     'dummy_vna'
 )
 
-dummy_multichan = ins_cli.create_instrument(
+dummy_multichan = ins_cli.find_or_create_instrument(
     'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule',
     'dummy_multichan',
 )
 
-pm = ins_cli.create_instrument(
+pm = ins_cli.find_or_create_instrument(
     'instrumentserver.params.ParameterManager',
     'pm',
 )

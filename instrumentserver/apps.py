@@ -77,7 +77,7 @@ def parameterManagerScript() -> None:
     if args.name in cli.list_instruments():
         pm = cli.get_instrument(args.name)
     else:
-        pm = cli.create_instrument(
+        pm = cli.find_or_create_instrument(
             'instrumentserver.params.ParameterManager', args.name)
         pm.fromFile()
         pm.update()
