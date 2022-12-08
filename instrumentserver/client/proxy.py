@@ -352,19 +352,25 @@ class Client(BaseClient):
         msg = ServerInstruction(operation=Operation.get_existing_instruments)
         return self.ask(msg)
 
-    def find_or_create_instrument(self, instrument_class: str, name: str,
+    def find_or_create_instrument(self, name: str, instrument_class: Optional[str] = None,
                                   *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
-        """ Create a new instrument on the server and return a proxy for the new
-        instrument.
+        """ Looks for an instrument in the server. If it cannot find it, create a new instrument on the server. Returns
+        a proxy for either the found or the new instrument.
 
+        :param name: Name of the new instrument.
         :param instrument_class: Class of the instrument to create or a string of
             of the class.
-        :param name: Name of the new instrument.
         :param args: Positional arguments for new instrument instantiation.
         :param kwargs: Keyword arguments for new instrument instantiation.
 
         :returns: A new virtual instrument.
         """
+        if name in self.list_instruments():
+            return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
+
+        if instrument_class is None:
+            raise ValueError('Need a class to create a new instrument.')
+
         req = ServerInstruction(
             operation=Operation.create_instrument,
             create_instrument_spec=InstrumentCreationSpec(
