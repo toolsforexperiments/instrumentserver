@@ -22,8 +22,8 @@ def setup_log(win: InstrumentClientMainWindow):
 
 def setup_pm(win: InstrumentClientMainWindow):
     pm = win.client.find_or_create_instrument(
-        'instrumentserver.params.ParameterManager',
         'pm',
+        'instrumentserver.params.ParameterManager',
     )
     w = ParameterManagerGui(pm)
     win.addWidget(w, name="PM: "+pm.name)
