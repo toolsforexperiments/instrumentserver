@@ -694,7 +694,7 @@ class StationServer(QtCore.QObject):
         kwargs = dict() if spec.kwargs is None else spec.kwargs
 
         new_instrument = qc.find_or_create_instrument(
-            cls, name=spec.name, *args, **kwargs)
+            instrument_class=cls, name=spec.name, *args, **kwargs)
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 

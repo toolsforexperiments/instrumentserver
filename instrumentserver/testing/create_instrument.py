@@ -11,6 +11,6 @@ if 'test' in cli.list_instruments():
     instrument = cli.get_instrument('test')
 else:
     instrument = cli.find_or_create_instrument(
-        'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',
-        'test')
+        'test'
+        'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber',)
 
