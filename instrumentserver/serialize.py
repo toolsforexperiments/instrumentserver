@@ -70,6 +70,7 @@ import json
 import logging
 import os
 from typing import Dict, List, Any, Union
+from dataclasses import fields, dataclass
 
 from jsonschema import validate
 import pandas as pd
@@ -77,6 +78,7 @@ from qcodes import Instrument, Station, Parameter
 from qcodes.instrument.base import InstrumentBase
 
 from . import PARAMS_SCHEMA_PATH
+
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +174,19 @@ def fromParamDict(paramDict: Dict[str, Any],
                 logger.error(f"\t{type(e)}: {e}")
         else:
             logger.info(f"[{k}] does not support setting, ignore.")
+
+
+def bluePrintToDict(bp: dataclass,  json_type=True) -> dict:
+    param_dict = {}
+
+    for my_field in fields(bp):
+        print(f'am I not in my_field?: {my_field}')
+        if json_type:
+            param_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
+        else:
+            param_dict[my_field.name] = bp.__getattribute__(my_field.name)
+
+    return param_dict
 
 
 # Tools
