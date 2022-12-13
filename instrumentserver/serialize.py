@@ -175,20 +175,6 @@ def fromParamDict(paramDict: Dict[str, Any],
         else:
             logger.info(f"[{k}] does not support setting, ignore.")
 
-
-def bluePrintToDict(bp: dataclass,  json_type=True) -> dict:
-    param_dict = {}
-
-    for my_field in fields(bp):
-        print(f'am I not in my_field?: {my_field}')
-        if json_type:
-            param_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
-        else:
-            param_dict[my_field.name] = bp.__getattribute__(my_field.name)
-
-    return param_dict
-
-
 # Tools
 
 def saveParamsToFile(input: SerializableType,

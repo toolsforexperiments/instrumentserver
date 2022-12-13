@@ -1,4 +1,5 @@
 import inspect
+import logging
 from dataclasses import dataclass, field, fields
 from typing import Union, Optional, List, Dict, Callable
 
@@ -9,6 +10,8 @@ from qcodes.instrument.base import InstrumentBase
 from qcodes.utils.validators import Validator
 
 from .helpers import objectClassPath, typeClassPath
+
+logger = logging.getLogger(__name__)
 
 INSTRUMENT_MODULE_BASE_CLASSES = [
     Instrument, InstrumentChannel, InstrumentBase
@@ -263,3 +266,42 @@ class ParameterBroadcastBluePrint:
 
 
 BluePrintType = Union[ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
+
+
+def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
+    bp_dict = {}
+    for my_field in fields(bp):
+        value = bp.__getattribute__(my_field.name)
+        if isinstance(value, BluePrintType):
+            bp_dict[my_field.name] = bluePrintToDict(value, json_type)
+        else:
+            if json_type:
+                bp_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
+            else:
+                bp_dict[my_field.name] = bp.__getattribute__(my_field.name)
+
+
+    return bp_dict
+
+
+def bluePrintFromDict(bp: dict) -> BluePrintType:
+    bp_type = bp['base_class'].split('.')[-1]
+    print(f'bp_type is chan chan chan: {bp_type}')
+    for key, value in bp.items():
+        if value == 'None':
+            bp[key] = None
+        if value == 'True':
+            bp[key] = True
+        if value == 'False':
+            bp[key] = False
+
+    if bp_type == Parameter.__name__:
+        return ParameterBluePrint(**bp)
+    elif bp_type == 'function':
+        return MethodBluePrint(**bp)
+
+
+
+
+
+
