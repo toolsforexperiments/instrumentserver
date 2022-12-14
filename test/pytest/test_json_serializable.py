@@ -1,7 +1,13 @@
 import qcodes as qc
 
-from instrumentserver.blueprints import bluePrintFromInstrumentModule, bluePrintFromMethod, bluePrintFromParameter, bluePrintToDict, bluePrintFromDict
-
+from instrumentserver.blueprints import (bluePrintFromInstrumentModule,
+                                         bluePrintFromMethod,
+                                         bluePrintFromMethodNew,
+                                         bluePrintFromParameter,
+                                         bluePrintToDict,
+                                         bluePrintFromDict,
+                                         )
+from instrumentserver.testing.dummy_instruments.generic import DummyChannel
 
 class CustomParameter(qc.Parameter):
 
@@ -36,14 +42,17 @@ def test_basic_param_dictionary():
 
 def test_basic_function_dictionary():
     my_method = MyClass.customFunction
-    method_bp = bluePrintFromMethod("", my_method)
+    method_bp = bluePrintFromMethodNew("", my_method)
     bp_dict = bluePrintToDict(method_bp)
     reconstructed_bp = bluePrintFromDict(bp_dict)
     assert method_bp == reconstructed_bp
 
 
-
-
-
+def test_basic_instrument_dictionary():
+    my_instrument = DummyChannel('my_instrument')
+    instrument_bp = bluePrintFromInstrumentModule("", my_instrument)
+    bp_dict = bluePrintToDict(instrument_bp)
+    reconstructed_bp = bluePrintFromDict(bp_dict)
+    return instrument_bp == reconstructed_bp
 
 

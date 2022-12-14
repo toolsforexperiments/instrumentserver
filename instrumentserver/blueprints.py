@@ -1,7 +1,7 @@
 import inspect
 import logging
 from dataclasses import dataclass, field, fields
-from typing import Union, Optional, List, Dict, Callable
+from typing import Union, Optional, List, Dict, Callable, Tuple
 
 import qcodes as qc
 from qcodes import (
@@ -118,12 +118,58 @@ class MethodBluePrint:
         return ret
 
 
+@dataclass
+class MethodBluePrintNew:
+    """Spec necessary for creating method proxies"""
+    name: str
+    path: str
+    call_signature_str: str
+    signature_parameters: dict
+    docstring: str = None
+    base_class: str = 'function'
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return f"{self.name}{str(self.call_signature_str)}"
+
+    def tostr(self, indent=0):
+        i = indent * ' '
+        ret = f"""{self.name}{str(self.call_signature_str)}
+{i}- path: {self.path}
+"""
+        return ret
+
+    # we might want to be careful to keep them in the correct order
+    @classmethod
+    def signature_str_and_params_from_obj(cls, sig: inspect.signature) -> Tuple[str, dict]:
+        call_signature_str = str(sig)
+        param_dict = {}
+        for name, param in sig.parameters.items():
+            param_dict[name] = str(param.kind)
+        return call_signature_str, param_dict
+
+
 def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
     sig = inspect.signature(method)
     bp = MethodBluePrint(
         name=path.split('.')[-1],
         path=path,
         call_signature=sig,
+        docstring=method.__doc__,
+    )
+    return bp
+
+
+def bluePrintFromMethodNew(path: str, method: Callable) -> Union[MethodBluePrintNew, None]:
+    sig = inspect.signature(method)
+    sig_str, param_dict = MethodBluePrintNew.signature_str_and_params_from_obj(sig)
+    bp = MethodBluePrintNew(
+        name=path.split('.')[-1],
+        path=path,
+        call_signature_str=sig_str,
+        signature_parameters=param_dict,
         docstring=method.__doc__,
     )
     return bp
@@ -265,7 +311,21 @@ class ParameterBroadcastBluePrint:
         return "{"+ret+"}"
 
 
-BluePrintType = Union[ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
+BluePrintType = Union[ParameterBluePrint, MethodBluePrint, MethodBluePrintNew, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
+
+
+def _dictToJson(_dict: dict, json_type: bool=True) -> dict:
+    ret = {}
+    for key, value in _dict.items():
+        if isinstance(value, dict):
+            json_dict = _dictToJson(value, json_type)
+            ret[key] = json_dict
+        else:
+            if json_type:
+                ret[key] = str(value)
+            else:
+                ret[key] = value
+    return ret
 
 
 def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
@@ -274,19 +334,18 @@ def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
         value = bp.__getattribute__(my_field.name)
         if isinstance(value, BluePrintType):
             bp_dict[my_field.name] = bluePrintToDict(value, json_type)
+        elif isinstance(value, dict):
+            bp_dict[my_field.name] = _dictToJson(bp.__getattribute__(my_field.name), json_type)
         else:
             if json_type:
                 bp_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
             else:
                 bp_dict[my_field.name] = bp.__getattribute__(my_field.name)
-
-
     return bp_dict
 
 
 def bluePrintFromDict(bp: dict) -> BluePrintType:
     bp_type = bp['base_class'].split('.')[-1]
-    print(f'bp_type is chan chan chan: {bp_type}')
     for key, value in bp.items():
         if value == 'None':
             bp[key] = None
@@ -298,7 +357,7 @@ def bluePrintFromDict(bp: dict) -> BluePrintType:
     if bp_type == Parameter.__name__:
         return ParameterBluePrint(**bp)
     elif bp_type == 'function':
-        return MethodBluePrint(**bp)
+        return MethodBluePrintNew(**bp)
 
 
 
