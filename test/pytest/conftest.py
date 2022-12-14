@@ -22,7 +22,10 @@ def dummy_instrument(server_client):
     dummy = server_client.find_or_create_instrument('dummy', 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
     return server_client, dummy
 
-
+@pytest.fixture()
+def param_manager(server_client):
+    params = server_client.find_or_create_instrument('parameter_manager', 'instrumentserver.params.ParameterManager')
+    return server_client, params
 
 
 

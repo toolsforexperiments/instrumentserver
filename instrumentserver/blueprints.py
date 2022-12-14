@@ -38,6 +38,7 @@ class ParameterBluePrint:
     vals: Optional[Validator] = None
     docstring: str = ''
     setpoints: Optional[List[str]] = None
+    bp_type: str = 'parameter'
 
     def __repr__(self) -> str:
         return str(self)
@@ -103,6 +104,7 @@ class MethodBluePrint:
     path: str
     call_signature: inspect.Signature
     docstring: str = ''
+    bp_type: str = 'method'
 
     def __repr__(self):
         return str(self)
@@ -126,7 +128,7 @@ class MethodBluePrintNew:
     call_signature_str: str
     signature_parameters: dict
     docstring: str = None
-    base_class: str = 'function'
+    bp_type: str = 'method'
 
     def __repr__(self):
         return str(self)
@@ -186,6 +188,7 @@ class InstrumentModuleBluePrint:
     parameters: Optional[Dict[str, ParameterBluePrint]] = field(default_factory=dict)
     methods: Optional[Dict[str, MethodBluePrint]] = field(default_factory=dict)
     submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = field(default_factory=dict)
+    bp_type: str = 'instrument'
 
     def __repr__(self) -> str:
         return str(self)
@@ -251,7 +254,7 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         o = getattr(ins, elt)
         if callable(o) and not isinstance(o, tuple(PARAMETER_BASE_CLASSES)):
             meth_path = f"{path}.{elt}"
-            meth_bp = bluePrintFromMethod(meth_path, o)
+            meth_bp = bluePrintFromMethodNew(meth_path, o)
             if meth_bp is not None:
                 bp.methods[elt] = meth_bp
 
@@ -270,12 +273,7 @@ class ParameterBroadcastBluePrint:
     action: str
     value: int = None
     unit: str = None
-
-    def __init__(self, name: str, action: str, value: int = None, unit: str = None):
-        self.name = name
-        self.value = value
-        self.unit = unit
-        self.action = action
+    bp_type: str = 'parameter_broadcast'
 
     def __str__(self) -> str:
         ret = f"""\"name\":\"{self.name}\": {{    
@@ -297,9 +295,11 @@ class ParameterBroadcastBluePrint:
 {i}- action: {self.action}
 {i}- value: {self.value}
 {i}- unit: {self.unit}
+{i}- bp_type: {self.bp_type}
     """
         return ret
 
+    # TODO: Delete this once we move to json serializable
     def toDictFormat(self):
         """
         Formats the blueprint for easy conversion to dictionary later.
@@ -318,8 +318,9 @@ def _dictToJson(_dict: dict, json_type: bool=True) -> dict:
     ret = {}
     for key, value in _dict.items():
         if isinstance(value, dict):
-            json_dict = _dictToJson(value, json_type)
-            ret[key] = json_dict
+            ret[key] = _dictToJson(value, json_type)
+        elif isinstance(value, BluePrintType):
+            ret[key] = bluePrintToDict(value, json_type)
         else:
             if json_type:
                 ret[key] = str(value)
@@ -327,6 +328,20 @@ def _dictToJson(_dict: dict, json_type: bool=True) -> dict:
                 ret[key] = value
     return ret
 
+def _is_numeric(val) -> Optional[Union[int, float]]:
+    try:
+        int_conversion = int(val)
+        return int_conversion
+    except Exception:
+        pass
+
+    try:
+        float_conversion = float(val)
+        return float_conversion
+    except Exception:
+        pass
+
+    return None
 
 def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
     bp_dict = {}
@@ -345,22 +360,32 @@ def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
 
 
 def bluePrintFromDict(bp: dict) -> BluePrintType:
-    bp_type = bp['base_class'].split('.')[-1]
+    """
+    Don't have nested items other than dictionaries containing more blueprints since we are not checking for those
+    """
+    if 'bp_type' not in bp:
+        raise AttributeError(f'Blueprint does not indicates its type')
+
+    bp_type = bp['bp_type']
     for key, value in bp.items():
-        if value == 'None':
+        numeric_form = _is_numeric(value)
+        if numeric_form is not None:
+            bp[key] = numeric_form
+        elif value == 'None':
             bp[key] = None
-        if value == 'True':
+        elif value == 'True':
             bp[key] = True
-        if value == 'False':
+        elif value == 'False':
             bp[key] = False
 
-    if bp_type == Parameter.__name__:
+    if bp_type == 'parameter':
         return ParameterBluePrint(**bp)
-    elif bp_type == 'function':
+    elif bp_type == 'method':
         return MethodBluePrintNew(**bp)
-
-
-
-
-
+    elif bp_type == 'instrument':
+        return InstrumentModuleBluePrint(**bp)
+    elif bp_type == 'parameter_broadcast':
+        return ParameterBroadcastBluePrint(**bp)
+    else:
+        raise AttributeError(f'Could not identify blueprint type {bp_type}')
 

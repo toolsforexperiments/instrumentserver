@@ -6,8 +6,10 @@ from instrumentserver.blueprints import (bluePrintFromInstrumentModule,
                                          bluePrintFromParameter,
                                          bluePrintToDict,
                                          bluePrintFromDict,
+                                         ParameterBroadcastBluePrint,
                                          )
 from instrumentserver.testing.dummy_instruments.generic import DummyChannel
+
 
 class CustomParameter(qc.Parameter):
 
@@ -24,6 +26,7 @@ class CustomParameter(qc.Parameter):
     def set_raw(self, val):
         self.value = val
         return self.value
+
 
 class MyClass:
 
@@ -53,6 +56,15 @@ def test_basic_instrument_dictionary():
     instrument_bp = bluePrintFromInstrumentModule("", my_instrument)
     bp_dict = bluePrintToDict(instrument_bp)
     reconstructed_bp = bluePrintFromDict(bp_dict)
-    return instrument_bp == reconstructed_bp
+    assert instrument_bp == reconstructed_bp
+
+
+def test_basic_broadcast_parameter_dictionary():
+    broadcast_bp = ParameterBroadcastBluePrint(name='my_param', action='an_action', value=-56, unit='M')
+    bp_dict = bluePrintToDict(broadcast_bp)
+    reconstructed_bp = bluePrintFromDict(bp_dict)
+    assert broadcast_bp == reconstructed_bp
+
+
 
 
