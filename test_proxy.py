@@ -5,6 +5,8 @@ Created on Sat Apr 18 22:12:05 2020
 @author: Chao
 """
 
+# TODO: This script seems outdated, should probably update it. or delete it and have tests that do this instead of scripts
+
 from instrumentserver.client.proxy import create_instrument
 
 test_src = create_instrument(instrument_class = 'instrumentserver.testing.dummy_instruments.rf.Generator',                          

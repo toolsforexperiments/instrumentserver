@@ -34,7 +34,8 @@ from qcodes.utils.validators import Validator
 from .. import QtCore, serialize
 from ..blueprints import (ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint,
                           bluePrintFromMethod, bluePrintFromInstrumentModule, bluePrintFromParameter,
-                          INSTRUMENT_MODULE_BASE_CLASSES, PARAMETER_BASE_CLASSES)
+                          INSTRUMENT_MODULE_BASE_CLASSES, PARAMETER_BASE_CLASSES, Operation,
+                          InstrumentCreationSpec, CallSpec, ParameterSerializeSpec, ServerInstruction, ServerResponse,)
 
 from ..base import send, recv
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
@@ -43,168 +44,6 @@ __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
 __license__ = 'MIT'
 
 logger = logging.getLogger(__name__)
-
-
-@unique
-class Operation(Enum):
-    """Valid operations for the server."""
-
-    #: Get a list of instruments the server has instantiated.
-    get_existing_instruments = 'get_existing_instruments'
-
-    #: Create a new instrument.
-    create_instrument = 'create_instrument'
-
-    #: Get the blueprint of an object.
-    get_blueprint = 'get_blueprint'
-
-    #: Make a call to an object.
-    call = 'call'
-
-    #: Get the station contents as parameter dict.
-    get_param_dict = 'get_param_dict'
-
-    #: Set station parameters from a dictionary.
-    set_params = 'set_params'
-
-
-@dataclass
-class InstrumentCreationSpec:
-    """Spec for creating an instrument instance."""
-
-    #: Driver class as string, in the format "global.path.to.module.DriverClass".
-    instrument_class: str
-
-    #: Name of the new instrument, I separate this from args and kwargs to
-    # make it easier to be found.
-    name: str = ''
-
-    #: Arguments to pass to the constructor.
-    args: Optional[Tuple] = None
-
-    #: kw args to pass to the constructor.
-    kwargs: Optional[Dict[str, Any]] = None
-
-
-@dataclass
-class CallSpec:
-    """Spec for executing a call on an object in the station."""
-
-    #: Full name of the callable object, as string, relative to the station object.
-    #: E.g.: "instrument.my_callable" refers to ``station.instrument.my_callable``.
-    target: str
-
-    #: Positional arguments to pass.
-    args: Optional[Any] = None
-
-    #: kw args to pass.
-    kwargs: Optional[Dict[str, Any]] = None
-
-
-@dataclass
-class ParameterSerializeSpec:
-
-    #: Path of the object to serialize. ``None`` refers to the station as a whole.
-    path: Optional[str] = None
-
-    #: Which attributes to include for each parameter. Default is ['values'].
-    attrs: List[str] = field(default_factory=lambda: ['values'])
-
-    #: Additional arguments to pass to the serialization function
-    #: :func:`.serialize.toParamDict`.
-    args: Optional[Any] = field(default_factory=list)
-
-    #: Additional kw arguments to pass to the serialization function
-    #: :func:`.serialize.toParamDict`.
-    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
-
-
-@dataclass
-class ServerInstruction:
-    #TODO: Remove set parameterr from the code.
-    """Instruction spec for the server.
-
-    Valid operations:
-
-    - :attr:`Operation.get_existing_instruments` -- get the instruments currently
-      instantiated in the station.
-
-        - **Required options:** -
-        - **Return message:** dictionary with instrument name and class (as string).
-
-    - :attr:`Operation.create_instrument` -- create a new instrument in the station.
-
-        - **Required options:** :attr:`.create_instrument_spec`
-        - **Return message:** ``None``
-
-    - :attr:`Operation.call` -- make a call to an object in the station.
-
-        - **Required options:** :attr:`.call_spec`
-        - **Return message:** The return value of the call.
-
-    - :attr:`Operation.get_blueprint` -- request the blueprint of an object
-
-        - **Required options:** :attr:`.requested_path`
-        - **Return message:** The blueprint of the object.
-
-    - :attr:`Operation.get_param_dict` -- request parameters as dictionary
-      Get the parameters of either the full station or a single object.
-
-        - **Options:** :attr:`.serialization_opts`
-        - **Return message:** param dict.
-
-    """
-
-    #: This is the only mandatory item.
-    #: Which other fields are required depends on the operation.
-    operation: Operation
-
-    #: Specification for creating an instrument.
-    create_instrument_spec: Optional[InstrumentCreationSpec] = None
-
-    #: Specification for executing a call.
-    call_spec: Optional[CallSpec] = None
-
-    #: Name of the instrument for which we want the blueprint.
-    requested_path: Optional[str] = None
-
-    #: Options for serialization.
-    serialization_opts: Optional[ParameterSerializeSpec] = None
-
-    #: Setting parameters in bulk with a paramDict.
-    set_parameters: Optional[Dict[str, Any]] = field(default_factory=dict)
-
-    #: Generic arguments.
-    args: Optional[List[Any]] = field(default_factory=list)
-
-    #: Generic keyword arguments.
-    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
-
-    def validate(self):
-        if self.operation is Operation.create_instrument:
-            if not isinstance(self.create_instrument_spec, InstrumentCreationSpec):
-                raise ValueError('Invalid instrument creation spec.')
-
-        if self.operation is Operation.call:
-            if not isinstance(self.call_spec, CallSpec):
-                raise ValueError('Invalid call spec.')
-
-
-@dataclass
-class ServerResponse:
-    """Spec for what the server can return.
-
-    If the requested operation succeeds, `message` will the return of that operation,
-    and `error` is None.
-    See :class:`ServerInstruction` for a documentation of the expected returns.
-    If an error occurs, `message` is typically ``None``, and `error` contains an
-    error message or object describing the error.
-    """
-    #: The return message.
-    message: Optional[Any] = None
-
-    #: Any error message occured during execution of the instruction.
-    error: Optional[Union[None, str, Warning, Exception]] = None
 
 
 class StationServer(QtCore.QObject):
@@ -402,22 +241,23 @@ class StationServer(QtCore.QObject):
         args = []
         kwargs = {}
 
+        operation = Operation(instruction.operation)
         # We call a helper function depending on the operation that is requested.
-        if instruction.operation == Operation.get_existing_instruments:
+        if operation == Operation.get_existing_instruments:
             func = self._getExistingInstruments
-        elif instruction.operation == Operation.create_instrument:
+        elif operation == Operation.create_instrument:
             func = self._createInstrument
             args = [instruction.create_instrument_spec]
-        elif instruction.operation == Operation.call:
+        elif operation == Operation.call:
             func = self._callObject
             args = [instruction.call_spec]
-        elif instruction.operation == Operation.get_blueprint:
+        elif operation == Operation.get_blueprint:
             func = self._getBluePrint
             args = [instruction.requested_path]
-        elif instruction.operation == Operation.get_param_dict:
+        elif operation == Operation.get_param_dict:
             func = self._toParamDict
             args = [instruction.serialization_opts]
-        elif instruction.operation == Operation.set_params:
+        elif operation == Operation.set_params:
             func = self._fromParamDict
             args = [instruction.set_parameters]
         else:
@@ -432,14 +272,14 @@ class StationServer(QtCore.QObject):
 
         return response
 
-    def _getExistingInstruments(self) -> Dict:
+    def _getExistingInstruments(self) -> List[str]:
         """
         Get the existing instruments in the station.
 
-        :returns: A dictionary that contains the instrument name and its class name.
+        :returns: A list that contains the instrument name.
         """
         comps = self.station.components
-        info = {k: v.__class__ for k, v in comps.items()}
+        info = [key for key in comps.keys()]
         return info
 
     def _createInstrument(self, spec: InstrumentCreationSpec) -> None:

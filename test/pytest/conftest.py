@@ -13,19 +13,19 @@ def start_server():
     thread = None
 
 @pytest.fixture()
-def server_client(start_server):
+def cli(start_server):
     cli = Client()
     return cli
 
 @pytest.fixture()
-def dummy_instrument(server_client):
-    dummy = server_client.find_or_create_instrument('dummy', 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
-    return server_client, dummy
+def dummy_instrument(cli):
+    dummy = cli.find_or_create_instrument('dummy', 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
+    return cli, dummy
 
 @pytest.fixture()
-def param_manager(server_client):
-    params = server_client.find_or_create_instrument('parameter_manager', 'instrumentserver.params.ParameterManager')
-    return server_client, params
+def param_manager(cli):
+    params = cli.find_or_create_instrument('parameter_manager', 'instrumentserver.params.ParameterManager')
+    return cli, params
 
 
 

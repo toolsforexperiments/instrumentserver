@@ -193,6 +193,14 @@ class ServerGui(QtWidgets.QMainWindow):
 
         # self.refreshStationComponents()
 
+        # development options: they must always be commented out
+    #     printSpaceAction = QtWidgets.QAction(QtGui.QIcon(":/icons/code.svg"), 'prints empty space', self)
+    #     printSpaceAction.triggered.connect(self._prints_empty_space)
+    #     self.toolBar.addAction(printSpaceAction)
+    #
+    # def _prints_empty_space(self):
+    #     print('\n \n \n \n')
+
     def log(self, message, level=LogLevels.info):
         log(logger, message, level)
 
@@ -257,10 +265,10 @@ class ServerGui(QtWidgets.QMainWindow):
         """Clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         self.stationList.clear()
-        for k, v in self.client.list_instruments().items():
-            bp = self.client.getBluePrint(k)
+        for ins in self.client.list_instruments():
+            bp = self.client.getBluePrint(ins)
             self.stationList.addInstrument(bp)
-            self._bluePrints[k] = bp
+            self._bluePrints[ins] = bp
         self.stationList.resizeColumnToContents(0)
 
     def loadParamsFromFile(self):
@@ -355,13 +363,15 @@ def parameterToHtml(bp: ParameterBluePrint, headerLevel=None):
     ret += f"""
 <ul>
     <li><b>Type:</b> {bp.parameter_class} ({bp.base_class})</li>
-    <li><b>Unit:</b> {bp.unit}</li>
-    <li><b>Validator:</b> {html.escape(str(bp.vals))}</li>
-    <li><b>Doc:</b> {html.escape(str(bp.docstring))}</li>
+    <li><b>Unit:</b> {bp.unit}</li>"""
+    # FIXME: We deleted the validator since there is no real easy way of deserializing them. It would be a good idea to
+    #  have them here though
+    # <li><b>Validator:</b> {html.escape(str(bp.vals))}</li>
+    var = """<li><b>Doc:</b> {html.escape(str(bp.docstring))}</li>
 </ul>
 </div>
     """
-    return ret
+    return ret + var
 
 
 def instrumentToHtml(bp: InstrumentModuleBluePrint):
@@ -391,7 +401,7 @@ def instrumentToHtml(bp: InstrumentModuleBluePrint):
     <div class="method_container">
     <div class='object_name'>{mbp.name}</div>
     <ul>
-        <li><b>Call signature:</b> {html.escape(str(mbp.call_signature))}</li>
+        <li><b>Call signature:</b> {html.escape(str(mbp.call_signature_str))}</li>
         <li><b>Doc:</b> {html.escape(str(mbp.docstring))}</li>
     </ul>
     </div>

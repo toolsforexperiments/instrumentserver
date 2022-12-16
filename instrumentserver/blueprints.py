@@ -1,7 +1,9 @@
 import inspect
+import json
 import logging
-from dataclasses import dataclass, field, fields
-from typing import Union, Optional, List, Dict, Callable, Tuple
+from enum import Enum, unique
+from dataclasses import dataclass, field, fields, asdict, is_dataclass
+from typing import Union, Optional, List, Dict, Callable, Tuple, Any
 
 import qcodes as qc
 from qcodes import (
@@ -35,10 +37,9 @@ class ParameterBluePrint:
     gettable: bool = True
     settable: bool = True
     unit: str = ''
-    vals: Optional[Validator] = None
     docstring: str = ''
     setpoints: Optional[List[str]] = None
-    bp_type: str = 'parameter'
+    _class_type: str = 'ParameterBluePrint'
 
     def __repr__(self) -> str:
         return str(self)
@@ -61,7 +62,6 @@ class ParameterBluePrint:
 {i}- base class: {self.base_class}
 {i}- gettable: {self.gettable}
 {i}- settable: {self.settable}
-{i}- validator: {self.vals}
 {i}- setpoints: {self.setpoints}
 """
         return ret
@@ -89,8 +89,6 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
         unit=param.unit,
         docstring=param.__doc__,
     )
-    if hasattr(param, 'set'):
-        bp.vals = param.vals
     if hasattr(param, 'setpoints'):
         bp.setpoints = [setpoint.name for setpoint in param.setpoints]
 
@@ -99,36 +97,13 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
 
 @dataclass
 class MethodBluePrint:
-    """Spec necessary for creating method proxies."""
-    name: str
-    path: str
-    call_signature: inspect.Signature
-    docstring: str = ''
-    bp_type: str = 'method'
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        return f"{self.name}{str(self.call_signature)}"
-
-    def tostr(self, indent=0):
-        i = indent * ' '
-        ret = f"""{self.name}{str(self.call_signature)}
-{i}- path: {self.path}
-"""
-        return ret
-
-
-@dataclass
-class MethodBluePrintNew:
     """Spec necessary for creating method proxies"""
     name: str
     path: str
     call_signature_str: str
     signature_parameters: dict
     docstring: str = None
-    bp_type: str = 'method'
+    _class_type: str = 'MethodBluePrint'
 
     def __repr__(self):
         return str(self)
@@ -155,19 +130,8 @@ class MethodBluePrintNew:
 
 def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
     sig = inspect.signature(method)
+    sig_str, param_dict = MethodBluePrint.signature_str_and_params_from_obj(sig)
     bp = MethodBluePrint(
-        name=path.split('.')[-1],
-        path=path,
-        call_signature=sig,
-        docstring=method.__doc__,
-    )
-    return bp
-
-
-def bluePrintFromMethodNew(path: str, method: Callable) -> Union[MethodBluePrintNew, None]:
-    sig = inspect.signature(method)
-    sig_str, param_dict = MethodBluePrintNew.signature_str_and_params_from_obj(sig)
-    bp = MethodBluePrintNew(
         name=path.split('.')[-1],
         path=path,
         call_signature_str=sig_str,
@@ -188,7 +152,7 @@ class InstrumentModuleBluePrint:
     parameters: Optional[Dict[str, ParameterBluePrint]] = field(default_factory=dict)
     methods: Optional[Dict[str, MethodBluePrint]] = field(default_factory=dict)
     submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = field(default_factory=dict)
-    bp_type: str = 'instrument'
+    _class_type: str = 'InstrumentModuleBluePrint'
 
     def __repr__(self) -> str:
         return str(self)
@@ -254,7 +218,7 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
         o = getattr(ins, elt)
         if callable(o) and not isinstance(o, tuple(PARAMETER_BASE_CLASSES)):
             meth_path = f"{path}.{elt}"
-            meth_bp = bluePrintFromMethodNew(meth_path, o)
+            meth_bp = bluePrintFromMethod(meth_path, o)
             if meth_bp is not None:
                 bp.methods[elt] = meth_bp
 
@@ -273,7 +237,7 @@ class ParameterBroadcastBluePrint:
     action: str
     value: int = None
     unit: str = None
-    bp_type: str = 'parameter_broadcast'
+    _class_type: str = 'ParameterBroadcastBluePrint'
 
     def __str__(self) -> str:
         ret = f"""\"name\":\"{self.name}\": {{    
@@ -311,10 +275,264 @@ class ParameterBroadcastBluePrint:
         return "{"+ret+"}"
 
 
-BluePrintType = Union[ParameterBluePrint, MethodBluePrint, MethodBluePrintNew, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
+BluePrintType = Union[ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
 
 
-def _dictToJson(_dict: dict, json_type: bool=True) -> dict:
+@unique
+class Operation(Enum):
+    """Valid operations for the server."""
+
+    #: Get a list of instruments the server has instantiated.
+    get_existing_instruments = 'get_existing_instruments'
+
+    #: Create a new instrument.
+    create_instrument = 'create_instrument'
+
+    #: Get the blueprint of an object.
+    get_blueprint = 'get_blueprint'
+
+    #: Make a call to an object.
+    call = 'call'
+
+    #: Get the station contents as parameter dict.
+    get_param_dict = 'get_param_dict'
+
+    #: Set station parameters from a dictionary.
+    set_params = 'set_params'
+
+
+@dataclass
+class InstrumentCreationSpec:
+    """Spec for creating an instrument instance."""
+
+    #: Driver class as string, in the format "global.path.to.module.DriverClass".
+    instrument_class: str
+
+    #: Name of the new instrument, I separate this from args and kwargs to
+    # make it easier to be found.
+    name: str = ''
+
+    #: Arguments to pass to the constructor.
+    args: Optional[Tuple] = None
+
+    #: kw args to pass to the constructor.
+    kwargs: Optional[Dict[str, Any]] = None
+
+    _class_type: str = 'InstrumentCreationSpec'
+
+
+@dataclass
+class CallSpec:
+    """Spec for executing a call on an object in the station."""
+
+    #: Full name of the callable object, as string, relative to the station object.
+    #: E.g.: "instrument.my_callable" refers to ``station.instrument.my_callable``.
+    target: str
+
+    #: Positional arguments to pass.
+    args: Optional[Any] = None
+
+    #: kw args to pass.
+    kwargs: Optional[Dict[str, Any]] = None
+
+    _class_type: str = 'CallSpec'
+
+
+@dataclass
+class ParameterSerializeSpec:
+
+    #: Path of the object to serialize. ``None`` refers to the station as a whole.
+    path: Optional[str] = None
+
+    #: Which attributes to include for each parameter. Default is ['values'].
+    attrs: List[str] = field(default_factory=lambda: ['values'])
+
+    #: Additional arguments to pass to the serialization function
+    #: :func:`.serialize.toParamDict`.
+    args: Optional[Any] = field(default_factory=list)
+
+    #: Additional kw arguments to pass to the serialization function
+    #: :func:`.serialize.toParamDict`.
+    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+    _class_type: str = 'ParameterSerializeSpec'
+
+
+@dataclass
+class ServerInstruction:
+    #TODO: Remove set parameter from the code.
+    """Instruction spec for the server.
+
+    Valid operations:
+
+    - :attr:`Operation.get_existing_instruments` -- get the instruments currently
+      instantiated in the station.
+
+        - **Required options:** -
+        - **Return message:** dictionary with instrument name and class (as string).
+
+    - :attr:`Operation.create_instrument` -- create a new instrument in the station.
+
+        - **Required options:** :attr:`.create_instrument_spec`
+        - **Return message:** ``None``
+
+    - :attr:`Operation.call` -- make a call to an object in the station.
+
+        - **Required options:** :attr:`.call_spec`
+        - **Return message:** The return value of the call.
+
+    - :attr:`Operation.get_blueprint` -- request the blueprint of an object
+
+        - **Required options:** :attr:`.requested_path`
+        - **Return message:** The blueprint of the object.
+
+    - :attr:`Operation.get_param_dict` -- request parameters as dictionary
+      Get the parameters of either the full station or a single object.
+
+        - **Options:** :attr:`.serialization_opts`
+        - **Return message:** param dict.
+
+    """
+
+    #: This is the only mandatory item.
+    #: Which other fields are required depends on the operation.
+    operation: Operation
+
+    #: Specification for creating an instrument.
+    create_instrument_spec: Optional[InstrumentCreationSpec] = None
+
+    #: Specification for executing a call.
+    call_spec: Optional[CallSpec] = None
+
+    #: Name of the instrument for which we want the blueprint.
+    requested_path: Optional[str] = None
+
+    #: Options for serialization.
+    serialization_opts: Optional[ParameterSerializeSpec] = None
+
+    #: Setting parameters in bulk with a paramDict.
+    set_parameters: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+    #: Generic arguments.
+    args: Optional[List[Any]] = field(default_factory=list)
+
+    #: Generic keyword arguments.
+    kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+    _class_type: str = 'ServerInstruction'
+
+    def validate(self):
+        if self.operation is Operation.create_instrument:
+            if not isinstance(self.create_instrument_spec, InstrumentCreationSpec):
+                raise ValueError('Invalid instrument creation spec.')
+
+        if self.operation is Operation.call:
+            if not isinstance(self.call_spec, CallSpec):
+                raise ValueError('Invalid call spec.')
+
+
+@dataclass
+class ServerResponse:
+    """Spec for what the server can return.
+
+    If the requested operation succeeds, `message` will the return of that operation,
+    and `error` is None.
+    See :class:`ServerInstruction` for a documentation of the expected returns.
+    If an error occurs, `message` is typically ``None``, and `error` contains an
+    error message or object describing the error.
+    """
+    #: The return message.
+    message: Optional[Any] = None
+
+    # TODO: Probably remove the warnings, since all warnings are Exceptions
+    #: Any error message occurred during execution of the instruction.
+    error: Optional[Union[None, str, Warning, Exception]] = None
+
+    _class_type: str = 'ServerResponse'
+
+    def __init__(self, message: Optional[Any] = None,
+                 error: Optional[Union[None, str, Warning, Exception, dict]] = None,
+                 _class_type: str = 'ServerResponse'):
+        self.message = message
+        if isinstance(message, str):
+            try:
+                # TODO: have this documented somewhere that these replacements are happening so we can deserialize it
+                message = message.replace("'", '"')
+                message = message.replace("(", "[")
+                message = message.replace(")", "]")
+                message = message.replace("T", "t")
+                message = message.replace("F", "f")
+                message = message.replace("None", "null")
+                message = message.replace("none", "null")
+
+                after_json_loads = json.loads(message)
+                self.message = after_json_loads
+            except json.JSONDecodeError as e:
+                logger.info('string could not be decoded by JSON')
+        if isinstance(error, dict):
+            self.error = Exception(error['message'])
+        else:
+            self.error = error
+
+        self._class_type = 'ServerResponse'
+
+
+# TODO: If the only thing that actually gets sent around is the the server instruction then the factory only needs to
+#  be of the server instruction. instead of creating all of the other dictionary versions of the objects we can move
+#  them to their respective objects
+def server_dataclasses_factory(data):
+
+    # Factory for server instruction
+    if isinstance(data, ServerInstruction):
+        ret = {'operation': str(data.operation.name)}
+
+        if data.create_instrument_spec is None:
+            ret['create_instrument_spec'] = None
+        else:
+            ret['create_instrument_spec'] = server_dataclasses_factory(data.create_instrument_spec)
+
+        if data.call_spec is None:
+            ret['call_spec'] = None
+        else:
+            ret['call_spec'] = server_dataclasses_factory(data.call_spec)
+
+        ret['requested_path'] = str(data.requested_path)
+
+        if data.serialization_opts is None:
+            ret['serialization_opts'] = None
+        else:
+            ret['serialization_opts'] = server_dataclasses_factory(data.serialization_opts)
+
+        ret['set_parameters'] = data.set_parameters
+        ret['args'] = data.args
+        ret['kwargs'] = data.kwargs
+        ret['_class_type'] = data._class_type
+
+        return ret
+
+    if isinstance(data, ServerResponse):
+        ret = {}
+        if isinstance(data.message, BluePrintType):
+            ret['message'] = bluePrintToDict(data.message)
+        else:
+            ret['message'] = str(data.message)
+        if isinstance(data.error, Exception):
+            ret['error'] = dict(exception_type=str(type(data.error)), message=str(data.error))
+        else:
+            ret['error'] = str(data.error)
+
+        ret['_class_type'] = data._class_type
+
+        return ret
+
+    if is_dataclass(data):
+        return asdict(data)
+
+    if isinstance(data, str):
+        return data
+
+
+def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
     ret = {}
     for key, value in _dict.items():
         if isinstance(value, dict):
@@ -327,6 +545,7 @@ def _dictToJson(_dict: dict, json_type: bool=True) -> dict:
             else:
                 ret[key] = value
     return ret
+
 
 def _is_numeric(val) -> Optional[Union[int, float]]:
     try:
@@ -342,6 +561,7 @@ def _is_numeric(val) -> Optional[Union[int, float]]:
         pass
 
     return None
+
 
 def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
     bp_dict = {}
@@ -359,33 +579,74 @@ def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
     return bp_dict
 
 
-def bluePrintFromDict(bp: dict) -> BluePrintType:
+def to_dict(data) -> dict:
+    if isinstance(data, BluePrintType):
+        return bluePrintToDict(data, True)
+
+    return server_dataclasses_factory(data)
+
+
+def from_dict(data: Union[dict, str]) -> Any:
     """
     Don't have nested items other than dictionaries containing more blueprints since we are not checking for those
     """
-    if 'bp_type' not in bp:
-        raise AttributeError(f'Blueprint does not indicates its type')
+    if isinstance(data, str):
+        return data
 
-    bp_type = bp['bp_type']
-    for key, value in bp.items():
+    # TODO: You can probably include a better error message here
+    if '_class_type' not in data:
+        raise AttributeError(f'message does not indicates its type: {data}')
+
+    class_type = data['_class_type']
+    for key, value in data.items():
         numeric_form = _is_numeric(value)
         if numeric_form is not None:
-            bp[key] = numeric_form
+            data[key] = numeric_form
         elif value == 'None':
-            bp[key] = None
+            data[key] = None
         elif value == 'True':
-            bp[key] = True
+            data[key] = True
         elif value == 'False':
-            bp[key] = False
+            data[key] = False
+        elif value == '{}':
+            data[key] = {}
+        elif isinstance(value, dict):
+            if '_class_type' in value:
+                data[key] = from_dict(value)
+        elif isinstance(value, str):
+            if len(value) > 0:
+                if value[0] == '{' and value[-1] == '}':
+                    data[key] = json.loads(value)
 
-    if bp_type == 'parameter':
-        return ParameterBluePrint(**bp)
-    elif bp_type == 'method':
-        return MethodBluePrintNew(**bp)
-    elif bp_type == 'instrument':
-        return InstrumentModuleBluePrint(**bp)
-    elif bp_type == 'parameter_broadcast':
-        return ParameterBroadcastBluePrint(**bp)
+    if class_type == 'ParameterBluePrint':
+        param_bp = ParameterBluePrint(**data)
+        param_bp.vals = None
+        return param_bp
+    elif class_type == 'MethodBluePrint':
+        return MethodBluePrint(**data)
+    elif class_type == 'InstrumentModuleBluePrint':
+        instr_bp = InstrumentModuleBluePrint(**data)
+        if data['methods'] is not None:
+            methods = {key: from_dict(value) for key, value in data['methods'].items()}
+            instr_bp.methods = methods
+        if data['parameters'] is not None:
+            parameters = {key: from_dict(value) for key, value in data['parameters'].items()}
+            instr_bp.parameters = parameters
+        if data['submodules'] is not None:
+            submodules = {key: from_dict(value) for key, value in data['submodules'].items()}
+            instr_bp.submodules = submodules
+        return instr_bp
+    elif class_type == 'ParameterBroadcastBluePrint':
+        return ParameterBroadcastBluePrint(**data)
+    elif class_type == 'InstrumentCreationSpec':
+        return InstrumentCreationSpec(**data)
+    elif class_type == 'CallSpec':
+        return CallSpec(**data)
+    elif class_type == 'ParameterSerializeSpec':
+        return ParameterSerializeSpec(**data)
+    elif class_type == 'ServerInstruction':
+        return ServerInstruction(**data)
+    elif class_type == 'ServerResponse':
+        return ServerResponse(**data)
     else:
-        raise AttributeError(f'Could not identify blueprint type {bp_type}')
-
+        raise AttributeError(f'Could not decode {class_type}')
