@@ -162,25 +162,26 @@ class ServerGui(QtWidgets.QMainWindow):
         self.toolBar.setIconSize(QtCore.QSize(16, 16))
 
         # Station tools.
+        # The actions must be class parameters so that they are accessible by the tests.
         self.toolBar.addWidget(QtWidgets.QLabel('Station:'))
-        refreshStationAction = QtWidgets.QAction(
+        self.refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), 'Refresh', self)
-        refreshStationAction.triggered.connect(self.refreshStationComponents)
-        self.toolBar.addAction(refreshStationAction)
+        self.refreshStationAction.triggered.connect(self.refreshStationComponents)
+        self.toolBar.addAction(self.refreshStationAction)
 
         # Parameter tools.
         self.toolBar.addSeparator()
         self.toolBar.addWidget(QtWidgets.QLabel('Params:'))
 
-        loadParamsAction = QtWidgets.QAction(
+        self.loadParamsAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/load.svg"), 'Load from file', self)
-        loadParamsAction.triggered.connect(self.loadParamsFromFile)
-        self.toolBar.addAction(loadParamsAction)
+        self.loadParamsAction.triggered.connect(self.loadParamsFromFile)
+        self.toolBar.addAction(self.loadParamsAction)
 
-        saveParamsAction = QtWidgets.QAction(
+        self.saveParamsAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/save.svg"), 'Save to file', self)
-        saveParamsAction.triggered.connect(self.saveParamsToFile)
-        self.toolBar.addAction(saveParamsAction)
+        self.saveParamsAction.triggered.connect(self.saveParamsToFile)
+        self.toolBar.addAction(self.saveParamsAction)
 
         # A test client, just a simple helper object.
         self.client = EmbeddedClient()

@@ -464,7 +464,6 @@ class ServerResponse:
                 message = message.replace("F", "f")
                 message = message.replace("None", "null")
                 message = message.replace("none", "null")
-
                 after_json_loads = json.loads(message)
                 self.message = after_json_loads
             except json.JSONDecodeError as e:
@@ -496,7 +495,10 @@ def server_dataclasses_factory(data):
         else:
             ret['call_spec'] = server_dataclasses_factory(data.call_spec)
 
-        ret['requested_path'] = str(data.requested_path)
+        if data.requested_path is None:
+            ret['requested_path'] = None
+        else:
+            ret['requested_path'] = str(data.requested_path)
 
         if data.serialization_opts is None:
             ret['serialization_opts'] = None
@@ -616,7 +618,11 @@ def from_dict(data: Union[dict, str]) -> Any:
         elif isinstance(value, str):
             if len(value) > 0:
                 if value[0] == '{' and value[-1] == '}':
-                    data[key] = json.loads(value)
+                    try:
+                        data[key] = json.loads(value.replace("'", '"'))
+                    except json.JSONDecodeError as e:
+                        logger.error(f'Could not decode: "{value}".'
+                                     f' It does not conform to JSON standard, Might not be correct once used: {e}.')
 
     if class_type == 'ParameterBluePrint':
         param_bp = ParameterBluePrint(**data)
