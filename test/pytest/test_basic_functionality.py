@@ -28,3 +28,11 @@ def test_calling_instrument_method(dummy_instrument):
     expected = [1, 2, 3, [5, 6], False, ins.param0()]
     assert expected == ret
 
+
+def test_closing_instruments(dummy_instrument):
+    cli, dummy = dummy_instrument
+    cli.close_instrument(dummy.name)
+
+    assert cli.list_instruments() == []
+
+

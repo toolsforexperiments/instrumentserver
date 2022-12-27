@@ -115,6 +115,15 @@ class ParameterManagerGui(QtWidgets.QWidget):
 
         toolbar.addSeparator()
 
+        # Debugging tools keep commented for commits.
+        # printAction = toolbar.addAction(
+        #     QtGui.QIcon(":/icons/code.svg"),
+        #     "print empty space",
+        # )
+        # printAction.triggered.connect(lambda x: print('\n \n \n \n \n'))
+        #
+        # toolbar.addSeparator()
+
         self.filterEdit = QtWidgets.QLineEdit(self)
         self.filterEdit.textChanged.connect(self.filterParameters)
         toolbar.addWidget(QtWidgets.QLabel('Filter:'))
@@ -209,8 +218,9 @@ class ParameterManagerGui(QtWidgets.QWidget):
                     return
 
         try:
+            # Validators are commented out until they can be serialized.
             self._instrument.add_parameter(fullName, initial_value=value,
-                                           unit=unit, vals=vals)
+                                           unit=unit,) # vals=vals)
         except Exception as e:
             self.parameterCreationError.emit(f"Could not create parameter."
                                              f"Adding parameter raised"
