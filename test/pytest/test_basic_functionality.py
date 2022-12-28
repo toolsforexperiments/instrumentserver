@@ -31,8 +31,8 @@ def test_calling_instrument_method(dummy_instrument):
 
 def test_closing_instruments(dummy_instrument):
     cli, dummy = dummy_instrument
+    assert 'dummy' in cli.list_instruments()
     cli.close_instrument(dummy.name)
-
-    assert cli.list_instruments() == []
+    assert 'dummy' not in cli.list_instruments()
 
 

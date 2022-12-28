@@ -47,13 +47,6 @@ class ParameterBluePrint:
     def __str__(self) -> str:
         return f"{self.name}: {self.parameter_class}"
 
-    # def __dict__(self) -> dict:
-    #     param_dict = {}
-    #     for my_field in fields(self):
-    #         print(f'what are you my_field: {my_field} \n the type: {type(my_field)}')
-    #         param_dict[my_field.name] = str(self.__getattribute__(my_field.name))
-    #     return param_dict
-
     def tostr(self, indent=0):
         i = indent * ' '
         ret = f"""{self.name}: {self.parameter_class}
@@ -65,6 +58,9 @@ class ParameterBluePrint:
 {i}- setpoints: {self.setpoints}
 """
         return ret
+
+    def toJson(self):
+        return bluePrintToDict(self)
 
 
 def bluePrintFromParameter(path: str, param: ParameterType) -> \
@@ -127,6 +123,10 @@ class MethodBluePrint:
             param_dict[name] = str(param.kind)
         return call_signature_str, param_dict
 
+    def toJson(self):
+        return bluePrintToDict(self)
+
+
 
 def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
     sig = inspect.signature(method)
@@ -179,6 +179,9 @@ class InstrumentModuleBluePrint:
             ret += f"{i}  - " + s.tostr(indent + 4)
 
         return ret
+
+    def toJson(self):
+        return bluePrintToDict(self)
 
 
 def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
@@ -274,8 +277,42 @@ class ParameterBroadcastBluePrint:
               f" 'unit': '{self.unit}'"
         return "{"+ret+"}"
 
+    def toJson(self):
+        return bluePrintToDict(self)
+
 
 BluePrintType = Union[ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
+
+
+def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
+    ret = {}
+    for key, value in _dict.items():
+        if isinstance(value, dict):
+            ret[key] = _dictToJson(value, json_type)
+        elif isinstance(value, BluePrintType):
+            ret[key] = bluePrintToDict(value, json_type)
+        else:
+            if json_type:
+                ret[key] = str(value)
+            else:
+                ret[key] = value
+    return ret
+
+
+def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
+    bp_dict = {}
+    for my_field in fields(bp):
+        value = bp.__getattribute__(my_field.name)
+        if isinstance(value, BluePrintType):
+            bp_dict[my_field.name] = bluePrintToDict(value, json_type)
+        elif isinstance(value, dict):
+            bp_dict[my_field.name] = _dictToJson(bp.__getattribute__(my_field.name), json_type)
+        else:
+            if json_type:
+                bp_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
+            else:
+                bp_dict[my_field.name] = bp.__getattribute__(my_field.name)
+    return bp_dict
 
 
 @unique
@@ -320,6 +357,9 @@ class InstrumentCreationSpec:
 
     _class_type: str = 'InstrumentCreationSpec'
 
+    def toJson(self):
+        return asdict(self)
+
 
 @dataclass
 class CallSpec:
@@ -336,6 +376,9 @@ class CallSpec:
     kwargs: Optional[Dict[str, Any]] = None
 
     _class_type: str = 'CallSpec'
+
+    def toJson(self):
+        return asdict(self)
 
 
 @dataclass
@@ -356,6 +399,9 @@ class ParameterSerializeSpec:
     kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
 
     _class_type: str = 'ParameterSerializeSpec'
+
+    def toJson(self):
+        return asdict(self)
 
 
 @dataclass
@@ -430,6 +476,36 @@ class ServerInstruction:
             if not isinstance(self.call_spec, CallSpec):
                 raise ValueError('Invalid call spec.')
 
+    def toJson(self):
+        ret = {'operation': str(self.operation.name)}
+
+        if self.create_instrument_spec is None:
+            ret['create_instrument_spec'] = None
+        else:
+            ret['create_instrument_spec'] = self.create_instrument_spec.toJson()
+
+        if self.call_spec is None:
+            ret['call_spec'] = None
+        else:
+            ret['call_spec'] = self.call_spec.toJson()
+
+        if self.requested_path is None:
+            ret['requested_path'] = None
+        else:
+            ret['requested_path'] = str(self.requested_path)
+
+        if self.serialization_opts is None:
+            ret['serialization_opts'] = None
+        else:
+            ret['serialization_opts'] = self.serialization_opts.toJson()
+
+        ret['set_parameters'] = self.set_parameters
+        ret['args'] = self.args
+        ret['kwargs'] = self.kwargs
+        ret['_class_type'] = self._class_type
+
+        return ret
+
 
 @dataclass
 class ServerResponse:
@@ -444,7 +520,6 @@ class ServerResponse:
     #: The return message.
     message: Optional[Any] = None
 
-    # TODO: Probably remove the warnings, since all warnings are Exceptions
     #: Any error message occurred during execution of the instruction.
     error: Optional[Union[None, str, Warning, Exception]] = None
 
@@ -467,7 +542,7 @@ class ServerResponse:
                 after_json_loads = json.loads(message)
                 self.message = after_json_loads
             except json.JSONDecodeError as e:
-                logger.info('string could not be decoded by JSON')
+                logger.info(f'message could not be decoded by JSON and will be treated as a string: {message}')
         if isinstance(error, dict):
             self.error = Exception(error['message'])
         else:
@@ -475,78 +550,31 @@ class ServerResponse:
 
         self._class_type = 'ServerResponse'
 
-
-# TODO: If the only thing that actually gets sent around is the the server instruction then the factory only needs to
-#  be of the server instruction. instead of creating all of the other dictionary versions of the objects we can move
-#  them to their respective objects
-def server_dataclasses_factory(data):
-
-    # Factory for server instruction
-    if isinstance(data, ServerInstruction):
-        ret = {'operation': str(data.operation.name)}
-
-        if data.create_instrument_spec is None:
-            ret['create_instrument_spec'] = None
-        else:
-            ret['create_instrument_spec'] = server_dataclasses_factory(data.create_instrument_spec)
-
-        if data.call_spec is None:
-            ret['call_spec'] = None
-        else:
-            ret['call_spec'] = server_dataclasses_factory(data.call_spec)
-
-        if data.requested_path is None:
-            ret['requested_path'] = None
-        else:
-            ret['requested_path'] = str(data.requested_path)
-
-        if data.serialization_opts is None:
-            ret['serialization_opts'] = None
-        else:
-            ret['serialization_opts'] = server_dataclasses_factory(data.serialization_opts)
-
-        ret['set_parameters'] = data.set_parameters
-        ret['args'] = data.args
-        ret['kwargs'] = data.kwargs
-        ret['_class_type'] = data._class_type
-
-        return ret
-
-    if isinstance(data, ServerResponse):
+    def toJson(self):
         ret = {}
-        if isinstance(data.message, BluePrintType):
-            ret['message'] = bluePrintToDict(data.message)
+        if isinstance(self.message, BluePrintType):
+            ret['message'] = self.message.toJson()
         else:
-            ret['message'] = str(data.message)
-        if isinstance(data.error, Exception):
-            ret['error'] = dict(exception_type=str(type(data.error)), message=str(data.error))
+            ret['message'] = str(self.message)
+        if isinstance(self.error, Exception):
+            ret['error'] = dict(exception_type=str(type(self.error)), message=str(self.error))
         else:
-            ret['error'] = str(data.error)
+            ret['error'] = str(self.error)
 
-        ret['_class_type'] = data._class_type
+        ret['_class_type'] = self._class_type
 
         return ret
 
-    if is_dataclass(data):
-        return asdict(data)
 
+def to_dict(data) -> Union[Dict[str, str], str]:
+    """
+    Converts object to json serializable. This is done by calling the method toJson of the object being passed.
+    Strings are returned without any more processing.
+    """
     if isinstance(data, str):
         return data
 
-
-def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
-    ret = {}
-    for key, value in _dict.items():
-        if isinstance(value, dict):
-            ret[key] = _dictToJson(value, json_type)
-        elif isinstance(value, BluePrintType):
-            ret[key] = bluePrintToDict(value, json_type)
-        else:
-            if json_type:
-                ret[key] = str(value)
-            else:
-                ret[key] = value
-    return ret
+    return data.toJson()
 
 
 def _is_numeric(val) -> Optional[Union[int, float]]:
@@ -565,29 +593,6 @@ def _is_numeric(val) -> Optional[Union[int, float]]:
     return None
 
 
-def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
-    bp_dict = {}
-    for my_field in fields(bp):
-        value = bp.__getattribute__(my_field.name)
-        if isinstance(value, BluePrintType):
-            bp_dict[my_field.name] = bluePrintToDict(value, json_type)
-        elif isinstance(value, dict):
-            bp_dict[my_field.name] = _dictToJson(bp.__getattribute__(my_field.name), json_type)
-        else:
-            if json_type:
-                bp_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
-            else:
-                bp_dict[my_field.name] = bp.__getattribute__(my_field.name)
-    return bp_dict
-
-
-def to_dict(data) -> dict:
-    if isinstance(data, BluePrintType):
-        return bluePrintToDict(data, True)
-
-    return server_dataclasses_factory(data)
-
-
 def from_dict(data: Union[dict, str]) -> Any:
     """
     Don't have nested items other than dictionaries containing more blueprints since we are not checking for those
@@ -595,11 +600,12 @@ def from_dict(data: Union[dict, str]) -> Any:
     if isinstance(data, str):
         return data
 
-    # TODO: You can probably include a better error message here
     if '_class_type' not in data:
         raise AttributeError(f'message does not indicates its type: {data}')
 
     class_type = data['_class_type']
+
+    # Convert some things that the JSON decoder misses.
     for key, value in data.items():
         numeric_form = _is_numeric(value)
         if numeric_form is not None:
@@ -625,13 +631,12 @@ def from_dict(data: Union[dict, str]) -> Any:
                                      f' It does not conform to JSON standard, Might not be correct once used: {e}.')
 
     if class_type == 'ParameterBluePrint':
-        param_bp = ParameterBluePrint(**data)
-        param_bp.vals = None
-        return param_bp
+        return ParameterBluePrint(**data)
     elif class_type == 'MethodBluePrint':
         return MethodBluePrint(**data)
     elif class_type == 'InstrumentModuleBluePrint':
         instr_bp = InstrumentModuleBluePrint(**data)
+        # InstrumentModuleBluePrint has nested items that are serialized and need to be instantiated too.
         if data['methods'] is not None:
             methods = {key: from_dict(value) for key, value in data['methods'].items()}
             instr_bp.methods = methods

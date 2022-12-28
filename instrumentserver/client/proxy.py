@@ -139,7 +139,8 @@ class ProxyParameter(ProxyMixin, Parameter):
         else:
             kwargs['get_cmd'] = False
         kwargs['unit'] = bp.unit
-        kwargs['vals'] = bp.vals
+        # FIXME: uncomment after implementing serializable validators
+        # kwargs['vals'] = bp.vals
         kwargs['docstring'] = bp.docstring
         return kwargs
 

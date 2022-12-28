@@ -67,7 +67,7 @@ def test_refresh_button(qtbot):
     assert window.stationList.topLevelItemCount() == 0
 
     dummy = window.client.find_or_create_instrument('dummy',
-                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')\
+                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
 
     refresh_widget = window.toolBar.widgetForAction(window.refreshStationAction)
     qtbot.mouseClick(refresh_widget, QtCore.Qt.LeftButton)
