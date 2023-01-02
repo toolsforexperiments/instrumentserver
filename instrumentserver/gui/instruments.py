@@ -7,6 +7,7 @@ from qcodes import Parameter
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
 from .. import QtWidgets, QtCore, QtGui
+from ..blueprints import ParameterBroadcastBluePrint
 from ..client import ProxyInstrument, SubClient
 from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
 from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
@@ -337,24 +338,20 @@ class ParameterManagerGui(QtWidgets.QWidget):
         except Exception as e:
             logger.info(f"Loading failed. {type(e)}: {e.args}")
 
-    @QtCore.Slot(str)
-    def refreshParameter(self, message: str):
+    @QtCore.Slot(ParameterBroadcastBluePrint)
+    def refreshParameter(self, bp: ParameterBroadcastBluePrint):
         """
         Refreshes the GUI to show real time updates of parameters.
         """
-
-        # converting the blueprint into a dictionary
-        paramdict = literal_eval(message)
-
         # getting the full name of the parameter and splitting it
-        named_submodules = paramdict['name'].split('.')
+        named_submodules = bp.name.split('.')
         name = named_submodules[1]
 
         # if a new parameter has been created, refresh all the parameters
-        if paramdict['action'] == 'parameter-creation':
+        if bp.action == 'parameter-creation':
             self.refreshAll()
 
-        elif paramdict['action'] == 'parameter-deletion':
+        elif bp.action == 'parameter-deletion':
             # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
             for i in range(2, len(named_submodules)):
                 name = name + '.' + named_submodules[i]
@@ -363,7 +360,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
                 self.removeParameter(name, False)
 
         # updates the changed parameter
-        elif paramdict['action'] == 'parameter-update' or paramdict['action'] == 'parameter-call':
+        elif bp.action == 'parameter-update' or bp.action == 'parameter-call':
             # generates the name of the parameter as a string without the instrument name in it
             for i in range(2, len(named_submodules)):
                 name = name + '.' + named_submodules[i]
@@ -374,7 +371,7 @@ class ParameterManagerGui(QtWidgets.QWidget):
             else:
                 # get the corresponding itemwidget and update the value
                 w = self.plist.itemWidget(item[0], 2)
-                w.paramWidget.setValue(paramdict['value'])
+                w.paramWidget.setValue(bp.value)
 
 
 
