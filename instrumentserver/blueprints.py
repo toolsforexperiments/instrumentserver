@@ -623,7 +623,8 @@ def from_dict(data: Union[dict, str]) -> Any:
                 data[key] = from_dict(value)
         elif isinstance(value, str):
             if len(value) > 0:
-                if value[0] == '{' and value[-1] == '}':
+                # The json encoder will convert nested dictionaries and lists into strings with the items inside.
+                if (value[0] == '{' and value[-1] == '}') or (value[0] == '[' and value[-1] == ']'):
                     try:
                         data[key] = json.loads(value.replace("'", '"'))
                     except json.JSONDecodeError as e:

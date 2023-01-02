@@ -7,7 +7,7 @@ from instrumentserver.blueprints import (bluePrintFromInstrumentModule,
                                          from_dict,
                                          ParameterBroadcastBluePrint,
                                          )
-from instrumentserver.testing.dummy_instruments.generic import DummyChannel
+from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
 
 
 class CustomParameter(qc.Parameter):
@@ -51,7 +51,7 @@ def test_basic_function_dictionary():
 
 
 def test_basic_instrument_dictionary():
-    my_instrument = DummyChannel('my_instrument')
+    my_instrument = ResonatorResponse('rr')
     instrument_bp = bluePrintFromInstrumentModule("", my_instrument)
     bp_dict = bluePrintToDict(instrument_bp)
     reconstructed_bp = from_dict(bp_dict)
