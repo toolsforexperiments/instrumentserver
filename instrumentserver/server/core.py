@@ -37,7 +37,7 @@ from ..blueprints import (ParameterBluePrint, MethodBluePrint, InstrumentModuleB
                           INSTRUMENT_MODULE_BASE_CLASSES, PARAMETER_BASE_CLASSES, Operation,
                           InstrumentCreationSpec, CallSpec, ParameterSerializeSpec, ServerInstruction, ServerResponse,)
 
-from ..base import send, recv
+from ..base import send, recv, sendBroadcast
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -364,8 +364,7 @@ class StationServer(QtCore.QObject):
 
         :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
-        self.broadcastSocket.send_string(blueprint.name.split('.')[0], flags=zmq.SNDMORE)
-        self.broadcastSocket.send_string((blueprint.toDictFormat()))
+        sendBroadcast(self.broadcastSocket, blueprint.name.split('.')[0], blueprint)
         logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
                      f" with a value: {blueprint.value}.")
 

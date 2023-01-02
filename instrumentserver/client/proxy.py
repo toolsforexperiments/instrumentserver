@@ -28,6 +28,8 @@ from instrumentserver.server.core import (
     ParameterSerializeSpec,
 )
 from .core import sendRequest, BaseClient
+from ..base import recvMultipart
+from ..blueprints import ParameterBroadcastBluePrint
 
 logger = logging.getLogger(__name__)
 
@@ -463,9 +465,9 @@ class SubClient(QtCore.QObject):
     """
     Specific subscription client used for real-time parameter updates.
     """
-    #: Signal(str) --
+    #: Signal(ParameterBroadcastBluePrint) --
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
-    update = QtCore.Signal(str)
+    update = QtCore.Signal(ParameterBroadcastBluePrint)
 
     def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
         """
@@ -506,9 +508,8 @@ class SubClient(QtCore.QObject):
         self.connected = True
 
         while self.connected:
-            message = socket.recv_multipart()
-            # emits the signals already decoded so python recognizes it a string instead of bytes
-            self.update.emit(message[1].decode("utf-8"))
+            message = recvMultipart(socket)
+            self.update.emit(message[1])
 
         self.disconnect()
 
