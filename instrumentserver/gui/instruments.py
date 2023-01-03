@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Optional, Any, List, Tuple, Union
 
-from qcodes import Parameter
+from qcodes import Parameter, Instrument
 
 from . import parameters, keepSmallHorizontally
 from .parameters import ParameterWidget
@@ -387,7 +387,6 @@ class ParameterList(QtWidgets.QTreeWidget):
         self.setAlternatingRowColors(True)
 
         self.parameters = []
-        self.parameters = []
         self.filterString = ''
 
     def addParameter(self, p: Parameter, fullName: str) \
@@ -616,3 +615,137 @@ class AddParameterWidget(QtWidgets.QWidget):
     def clearError(self):
         self.addButton.setStyleSheet("")
         self.addButton.setToolTip("")
+
+
+class InstrumentParameters(QtWidgets.QWidget):
+    """
+    Widget that displays all the parameters of an instrument. It updates live with its values through the server broadcasts.
+    You can modify the values of parameters directly from the widget.
+    """
+    def __init__(self, ins, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.ins = ins
+
+        self._layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(self._layout)
+
+        self.plist = ParameterList(self)
+        self._layout.addWidget(self.plist)
+
+        self.widgets = {}
+
+        for paramName, param in self.ins.parameters.items():
+            self.addParameterWidget(paramName, param)
+
+        self.cliThread = QtCore.QThread()
+        self.subClient = SubClient([self.ins.name])
+        self.subClient.moveToThread(self.cliThread)
+
+        self.cliThread.started.connect(self.subClient.connect)
+        self.subClient.update.connect(self.updateParameter)
+
+        self.cliThread.start()
+
+    @QtCore.Slot(ParameterBroadcastBluePrint)
+    def updateParameter(self, bp: ParameterBroadcastBluePrint):
+
+        def _addParameter(_bp):
+            paramName = '.'.join(_bp.name.split('.')[1:])
+            if paramName not in self.ins.parameters:
+                self.ins.update()
+            if paramName in self.ins.parameters:
+                self.addParameterWidget(paramName, self.ins.parameters[paramName])
+
+        # TODO: revise what this actually means
+        # getting the full name of the parameter and splitting it
+        named_submodules = bp.name.split('.')
+        name = named_submodules[1]
+
+        # if a new parameter has been created, refresh all the parameters
+        if bp.action == 'parameter-creation':
+            _addParameter(bp)
+
+        elif bp.action == 'parameter-deletion':
+            # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
+            for i in range(2, len(named_submodules)):
+                name = name + '.' + named_submodules[i]
+
+            if name in self.plist.parameters:
+                self.removeParameter(name)
+
+        # updates the changed parameter
+        elif bp.action == 'parameter-update' or bp.action == 'parameter-call':
+            # generates the name of the parameter as a string without the instrument name in it
+            for i in range(2, len(named_submodules)):
+                name = name + '.' + named_submodules[i]
+            item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+            # if the parameter does not exist refresh all the parameters
+            if len(item) == 0:
+                _addParameter(bp)
+            else:
+                # get the corresponding itemwidget and update the value
+                w = self.plist.itemWidget(item[0], 2)
+                w.paramWidget.setValue(bp.value)
+
+    def addParameterWidget(self, fullName: str, parameter: Parameter):
+        item = self.plist.addParameter(parameter, fullName)
+        widget = ParameterWidget(parameter, parent=self)
+        self.widgets[fullName] = widget
+        self.plist.setItemWidget(item, 2, widget)
+
+    def removeParameter(self, fullName: str):
+        items = self.plist.findItems(fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+        if len(items) > 0:
+            item = items[0]
+            self.plist.takeTopLevelItem(self.plist.indexOfTopLevelItem(item))
+            del item
+
+        if fullName in self.plist.parameters:
+            self.plist.parameters.remove(fullName)
+
+        if fullName in self.widgets:
+            self.widgets[fullName].deleteLater()
+            del self.widgets[fullName]
+
+    def closeEvent(self, event):
+        self.cliThread.quit()
+        self.cliThread.deleteLater()
+        self.cliThread = None
+        super().closeEvent(event)
+
+
+class InstrumentMethods(QtWidgets.QWidget):
+    """
+    Widget that will display all the methods of an instrument
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._layout = QtWidgets.QVBoxLayout(self)
+        self.label = QtWidgets.QLabel('Methods methods methods')
+        self._layout.addWidget(self.label)
+        self.setLayout(self._layout)
+
+
+# TODO: Figure out how to handle submodules
+class GenericInstrument(QtWidgets.QWidget):
+    """
+    Widget that allows the display of real time parameters and changing their values.
+    """
+
+    def __init__(self, ins: Union[ProxyInstrument, Instrument], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.ins = ins
+
+        self._layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(self._layout)
+
+        self.parametersList = InstrumentParameters(ins)
+        self.methodsList = InstrumentMethods()
+        self.instrumentNameLabel = QtWidgets.QLabel(f'{self.ins.name} | type: {type(self.ins)}')
+
+        self._layout.addWidget(self.instrumentNameLabel)
+        self._layout.addWidget(self.parametersList)
+        self._layout.addWidget(self.methodsList)

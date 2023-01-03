@@ -13,6 +13,7 @@ from .core import (
 )
 from .. import QtCore, QtWidgets, QtGui
 from ..gui.misc import SeparableTabWidget
+from ..gui.instruments import GenericInstrument
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +138,9 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer = None
         self.stationServerThread = None
 
+        # TODO: remove items from the list once you can close tabs.
+        self.instrumentTabsOpen = []
+
         self.setWindowTitle('Instrument server')
 
         # Central widget is simply a tab container.
@@ -148,6 +152,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationList = StationList()
         self.stationObjInfo = StationObjectInfo()
         self.stationList.componentSelected.connect(self.displayComponentInfo)
+        self.stationList.itemDoubleClicked.connect(self.addInstrumentTab)
 
         stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         stationWidgets.addWidget(self.stationList)
@@ -302,6 +307,18 @@ class ServerGui(QtWidgets.QMainWindow):
             bp = None
         self.stationObjInfo.setObject(bp)
 
+    @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
+    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int):
+        """
+        Adds a new generic instrument GUI window to the tab bar.
+        """
+        name = item.text(0)
+        if name not in self.instrumentTabsOpen:
+            ins = self.client.find_or_create_instrument(name)
+            genericGui = GenericInstrument(ins)
+            self.tabs.addTab(genericGui, ins.name)
+            self.instrumentTabsOpen.append(ins.name)
+            self.tabs.setCurrentWidget(genericGui)
 
 def startServerGuiApplication(**serverKwargs: Any) -> "ServerGui":
     """Create a server gui window.

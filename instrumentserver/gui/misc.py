@@ -29,6 +29,9 @@ class AlertLabel(QtWidgets.QLabel):
 
 
 class DetachedTab(QtWidgets.QDialog):
+
+    #: Signal(QtWidgets.QWidget)
+    #: emitted when a tab for the instrument is closed
     onCloseSignal = QtCore.Signal(object, str)
 
     def __init__(self, contentWidget: QtWidgets.QWidget, name: str, *args, **kwargs):
