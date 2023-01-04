@@ -374,7 +374,6 @@ class ParameterManagerGui(QtWidgets.QWidget):
                 w.paramWidget.setValue(bp.value)
 
 
-
 class ParameterList(QtWidgets.QTreeWidget):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
@@ -633,12 +632,25 @@ class InstrumentParameters(QtWidgets.QWidget):
         self.plist = ParameterList(self)
         self._layout.addWidget(self.plist)
 
+        self.collapseAction = QtWidgets.QAction('Collapse all')
+        self.expandAction = QtWidgets.QAction(f'Expand all')
+
+        self.collapseAction.triggered.connect(self.plist.collapseAll)
+        self.expandAction.triggered.connect(self.plist.expandAll)
+
+        self.conextMenu = QtWidgets.QMenu(self)
+        self.conextMenu.addAction(self.collapseAction)
+        self.conextMenu.addAction(self.expandAction)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(lambda x: self.conextMenu.exec_(self.mapToGlobal(x)))
+
         self.widgets = {}
 
         for paramName, param in self.ins.parameters.items():
             self.addParameterWidget(paramName, param)
 
         self.addSubmodules()
+        self.plist.expandAll()
 
         self.cliThread = QtCore.QThread()
         self.subClient = SubClient([self.ins.name])
@@ -654,6 +666,7 @@ class InstrumentParameters(QtWidgets.QWidget):
 
         def _addParameter(_bp):
             paramName = '.'.join(_bp.name.split('.')[1:])
+            # The parameter might not be in the proxy instrument yet, so you need to update it.
             if paramName not in self.ins.list():
                 self.ins.update()
             if paramName in self.ins.list():
@@ -673,7 +686,7 @@ class InstrumentParameters(QtWidgets.QWidget):
             for i in range(2, len(named_submodules)):
                 name = name + '.' + named_submodules[i]
 
-            if name in self.plist.parameters:
+            if name in self.plist.list():
                 self.removeParameter(name)
 
         # updates the changed parameter
@@ -715,8 +728,15 @@ class InstrumentParameters(QtWidgets.QWidget):
         items = self.plist.findItems(fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
         if len(items) > 0:
             item = items[0]
-            self.plist.takeTopLevelItem(self.plist.indexOfTopLevelItem(item))
-            del item
+            parent = item.parent()
+            if parent is None:
+                self.plist.takeTopLevelItem(self.plist.indexOfTopLevelItem(item))
+                del item
+            else:
+                parent.removeChild(item)
+                del item
+                if parent.childCount() == 0:
+                    self.removeParameter(parent.text(0))
 
         if fullName in self.plist.parameters:
             self.plist.parameters.remove(fullName)
