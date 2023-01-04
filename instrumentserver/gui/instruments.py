@@ -638,6 +638,8 @@ class InstrumentParameters(QtWidgets.QWidget):
         for paramName, param in self.ins.parameters.items():
             self.addParameterWidget(paramName, param)
 
+        self.addSubmodules()
+
         self.cliThread = QtCore.QThread()
         self.subClient = SubClient([self.ins.name])
         self.subClient.moveToThread(self.cliThread)
@@ -652,10 +654,10 @@ class InstrumentParameters(QtWidgets.QWidget):
 
         def _addParameter(_bp):
             paramName = '.'.join(_bp.name.split('.')[1:])
-            if paramName not in self.ins.parameters:
+            if paramName not in self.ins.list():
                 self.ins.update()
-            if paramName in self.ins.parameters:
-                self.addParameterWidget(paramName, self.ins.parameters[paramName])
+            if paramName in self.ins.list():
+                self.addParameterWidget(paramName, nestedAttributeFromString(self.ins, paramName))
 
         # TODO: revise what this actually means
         # getting the full name of the parameter and splitting it
@@ -687,6 +689,21 @@ class InstrumentParameters(QtWidgets.QWidget):
                 # get the corresponding itemwidget and update the value
                 w = self.plist.itemWidget(item[0], 2)
                 w.paramWidget.setValue(bp.value)
+
+    def addSubmodules(self, submod = None, prefix=None):
+        if submod is None and prefix is None:
+            if hasattr(self.ins, 'instrument_modules'):
+                for submodName, _submod in self.ins.instrument_modules.items():
+                    self.addSubmodules(_submod, submodName)
+                return
+
+        else:
+            if hasattr(submod, 'instrument_modules'):
+                for submodName, _submod in submod.instrument_modules.items():
+                    self.addSubmodules(_submod, prefix + '.' + submodName)
+
+        for paramName, param in submod.parameters.items():
+            self.addParameterWidget(prefix + '.' + paramName, param)
 
     def addParameterWidget(self, fullName: str, parameter: Parameter):
         item = self.plist.addParameter(parameter, fullName)
