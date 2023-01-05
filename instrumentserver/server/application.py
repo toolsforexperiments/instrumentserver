@@ -139,7 +139,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServerThread = None
 
         # TODO: remove items from the list once you can close tabs.
-        self.instrumentTabsOpen = []
+        self.instrumentTabsOpen = {}
 
         self.setWindowTitle('Instrument server')
 
@@ -310,15 +310,20 @@ class ServerGui(QtWidgets.QMainWindow):
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
     def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int):
         """
-        Adds a new generic instrument GUI window to the tab bar.
+        Gets called when the user double clicks and item of the instrument list.
+         Adds a new generic instrument GUI window to the tab bar.
+         If the tab already exists switches to that one.
         """
         name = item.text(0)
         if name not in self.instrumentTabsOpen:
             ins = self.client.find_or_create_instrument(name)
             genericGui = GenericInstrument(ins)
             self.tabs.addTab(genericGui, ins.name)
-            self.instrumentTabsOpen.append(ins.name)
+            self.instrumentTabsOpen[ins.name] = genericGui
             self.tabs.setCurrentWidget(genericGui)
+
+        elif name in self.instrumentTabsOpen:
+            self.tabs.setCurrentWidget(self.instrumentTabsOpen[name])
 
 def startServerGuiApplication(**serverKwargs: Any) -> "ServerGui":
     """Create a server gui window.

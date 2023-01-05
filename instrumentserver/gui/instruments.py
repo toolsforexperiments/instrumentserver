@@ -1,11 +1,13 @@
 import json
 import logging
-from typing import Optional, Any, List, Tuple, Union
+import inspect
+from typing import Optional, Any, List, Tuple, Union, Callable
 
+from instrumentserver.gui.misc import AlertLabelGreen
 from qcodes import Parameter, Instrument
 
 from . import parameters, keepSmallHorizontally
-from .parameters import ParameterWidget
+from .parameters import ParameterWidget, AnyInput
 from .. import QtWidgets, QtCore, QtGui
 from ..blueprints import ParameterBroadcastBluePrint
 from ..client import ProxyInstrument, SubClient
@@ -563,11 +565,16 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.addButton.clicked.connect(self.requestNewParameter)
         layout.addWidget(self.addButton, 0, 6, 1, 1)
 
+        # Becuase we open this widget in a dialog, we need to specify a default button and the clear is safer than the add.
+        self.addButton.setDefault(False)
+        self.addButton.setAutoDefault(False)
+
         self.clearButton = QtWidgets.QPushButton(
             QtGui.QIcon(":/icons/delete.svg"),
             ' Clear',
             parent=self)
 
+        self.clearButton.setAutoDefault(True)
         self.clearButton.clicked.connect(self.clear)
         layout.addWidget(self.clearButton, 0, 7, 1, 1)
 
@@ -686,7 +693,7 @@ class InstrumentParameters(QtWidgets.QWidget):
             for i in range(2, len(named_submodules)):
                 name = name + '.' + named_submodules[i]
 
-            if name in self.plist.list():
+            if name in self.plist.parameters:
                 self.removeParameter(name)
 
         # updates the changed parameter
@@ -752,20 +759,127 @@ class InstrumentParameters(QtWidgets.QWidget):
         super().closeEvent(event)
 
 
-class InstrumentMethods(QtWidgets.QWidget):
+def getTooltipFromFun(fun: Callable):
+    """
+    Returns the signature of the function with its documentation underneath.
+    """
+    sig = inspect.signature(fun)
+    doc = inspect.getdoc(fun)
+    return str(sig) + '\n\n' + str(doc)
+
+
+class AnyInputForMethod(AnyInput):
+    """
+    Implementation of AnyInput that can process arguments and keyword arguments to use for methods.
+    You can add multiple arguments if they are separated by a comma. If the '=' is present in any argument, it will
+    be treated like a keyword argument with the string in front of the equal sign as the key, and the evaluated value.
+
+    All arguments and keyword arguments are evaluated if the doEval button is checked, if not everything is treated like
+    a long string.
+    """
+    def value(self):
+        if self.doEval.isChecked():
+            # If '=' is present we need to separate the keyword from the value
+            # If ',' is present we have more than one argument.
+            if '=' in self.input.text() or ',' in self.input.text():
+                rawArgs = self.input.text().split(',')
+                args = []
+                kwargs = {}
+                for x in rawArgs:
+                    if '=' in x:
+                        key, value = x.split('=')
+                        key = key.replace(" ", "")
+                        kwargs[key] = eval(value)
+                    else:
+                        args.append(eval(x))
+                return tuple(args), kwargs
+            else:
+                return super().value(), None
+
+        return self.input.text(), None
+
+
+class MethodDisplay(QtWidgets.QWidget):
+
+    #: Signal(str)
+    #: emitted when the widget runs a function and fails. Emits the exception as a string.
+    runFailed = QtCore.Signal(str)
+
+    #: Signal(str)
+    #: emitted when the widget runs a function and is successful. Emits the return value as a string.
+    runSuccessful = QtCore.Signal(str)
+
+    def __init__(self, fun, fullName=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fun = fun
+
+        # Only used for logging purposes.
+        self.fullName = fullName
+
+        self.anyInput = AnyInputForMethod()
+        self.anyInput.input.setPlaceholderText(str(inspect.signature(fun)))
+        self.anyInput.input.setToolTip(getTooltipFromFun(fun))
+        self.anyInput.input.returnPressed.connect(self.runFun)
+
+        self.runButton = QtWidgets.QPushButton("Run", parent=self)
+        self.runButton.clicked.connect(self.runFun)
+
+        self.alertLabel = AlertLabelGreen(parent=self)
+        self.runFailed.connect(self.alertLabel.setAlert)
+        self.runSuccessful.connect(self.alertLabel.setSuccssefulAlert)
+
+        self._layout = QtWidgets.QHBoxLayout(self)
+        self.setLayout(self._layout)
+        self._layout.addWidget(self.anyInput)
+        self._layout.addWidget(self.runButton)
+        self._layout.addWidget(self.alertLabel)
+
+    @QtCore.Slot()
+    def runFun(self):
+        try:
+            args, kwargs = self.anyInput.value()
+            if kwargs is not None:
+                ret = self.fun(*args, **kwargs)
+            else:
+                if isinstance(args, list) or isinstance(args, tuple):
+                    ret = self.fun(*args)
+                else:
+                    ret = self.fun(args)
+            self.runSuccessful.emit(str(ret))
+            logger.info(f"'{self.fullName}' returned: {ret}")
+
+        except Exception as e:
+            self.runFailed.emit(str(e))
+            logger.warning(f"'{self.fullName}' Raised the following execution: {e}")
+
+
+class InstrumentMethods(QtWidgets.QTreeWidget):
     """
     Widget that will display all the methods of an instrument
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ins, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._layout = QtWidgets.QVBoxLayout(self)
-        self.label = QtWidgets.QLabel('Methods methods methods')
-        self._layout.addWidget(self.label)
-        self.setLayout(self._layout)
+        self.ins = ins
+
+        self.setColumnCount(2)
+        self.setHeaderLabels(['Method Name', 'Arguments & Run'])
+        self.setHeaderHidden(False)
+        self.setSortingEnabled(True)
+        self.setAlternatingRowColors(True)
+
+        for name, meth in self.ins.functions.items():
+            self.addMethod(meth, name)
+
+    def addMethod(self, meth, fullName):
+        item = QtWidgets.QTreeWidgetItem([fullName, ''])
+        item.setToolTip(0, getTooltipFromFun(meth))
+        self.addTopLevelItem(item)
+        itemWidget = MethodDisplay(meth, self.ins.name + '.' + fullName)
+        self.setItemWidget(item, 1, itemWidget)
 
 
-# TODO: Figure out how to handle submodules
 class GenericInstrument(QtWidgets.QWidget):
     """
     Widget that allows the display of real time parameters and changing their values.
@@ -779,10 +893,14 @@ class GenericInstrument(QtWidgets.QWidget):
         self._layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(self._layout)
 
+        self.splitter = QtWidgets.QSplitter(self)
+        self.splitter.setOrientation(QtCore.Qt.Vertical)
+
         self.parametersList = InstrumentParameters(ins)
-        self.methodsList = InstrumentMethods()
+        self.methodsList = InstrumentMethods(ins)
         self.instrumentNameLabel = QtWidgets.QLabel(f'{self.ins.name} | type: {type(self.ins)}')
 
         self._layout.addWidget(self.instrumentNameLabel)
-        self._layout.addWidget(self.parametersList)
-        self._layout.addWidget(self.methodsList)
+        self._layout.addWidget(self.splitter)
+        self.splitter.addWidget(self.parametersList)
+        self.splitter.addWidget(self.methodsList)

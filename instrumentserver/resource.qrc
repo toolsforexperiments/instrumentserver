@@ -13,5 +13,6 @@
     <file alias="icons/plus-square.svg">resource/icons/plus-square.svg</file>
     <file alias="icons/collapse.svg">resource/icons/collapse.svg</file>
     <file alias="icons/expand.svg">resource/icons/expand.svg</file>
+    <file alias="icons/green-alert.svg">resource/icons/alert-octagon-green.svg</file>
 </qresource>
 </RCC>

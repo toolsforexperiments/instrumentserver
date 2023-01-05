@@ -28,6 +28,26 @@ class AlertLabel(QtWidgets.QLabel):
         self.setToolTip('no alerts')
 
 
+class AlertLabelGreen(AlertLabel):
+    """
+    Expanding the functionality of the AlertLabel to add green alerts to indicate successful things
+    """
+    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
+        self.clearAlert()
+        super().mouseDoubleClickEvent(a0)
+
+    def mousePressEvent(self, ev: QtGui.QMouseEvent) -> None:
+        if ev.buttons() == QtCore.Qt.MidButton:
+            self.clearAlert()
+        super().mousePressEvent(ev)
+
+    @QtCore.Slot(str)
+    def setSuccssefulAlert(self, message: str):
+        pix = QtGui.QIcon(":/icons/green-alert.svg").pixmap(*self._pixmapSize)
+        self.setPixmap(pix)
+        self.setToolTip(message)
+
+
 class DetachedTab(QtWidgets.QDialog):
 
     #: Signal(QtWidgets.QWidget)
