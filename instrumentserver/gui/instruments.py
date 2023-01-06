@@ -376,6 +376,13 @@ class ParameterManagerGui(QtWidgets.QWidget):
                 w.paramWidget.setValue(bp.value)
 
 
+def _addChildTo(parent, child):
+    if isinstance(parent, QtWidgets.QTreeWidget):
+        parent.addTopLevelItem(child)
+    else:
+        parent.addChild(child)
+
+
 class ParameterList(QtWidgets.QTreeWidget):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
@@ -409,23 +416,16 @@ class ParameterList(QtWidgets.QTreeWidget):
             )
             if len(items) == 0:
                 newItem = QtWidgets.QTreeWidgetItem([smName, '', ''])
-                self._addChildTo(parent, newItem)
+                _addChildTo(parent, newItem)
                 parent = newItem
             else:
                 parent = items[0]
 
         paramItem = QtWidgets.QTreeWidgetItem([fullName, f"{p.unit}", ''])
-        self._addChildTo(parent, paramItem)
+        _addChildTo(parent, paramItem)
         self.parameters.append(fullName)
         self.filterItems(self.filterString)
         return paramItem
-
-    @staticmethod
-    def _addChildTo(parent, child):
-        if isinstance(parent, ParameterList):
-            parent.addTopLevelItem(child)
-        else:
-            parent.addChild(child)
 
     def removeEmptyContainers(self):
         """Delete all items that are not parameters and don't contain any
@@ -835,6 +835,8 @@ class MethodDisplay(QtWidgets.QWidget):
         self._layout.addWidget(self.runButton)
         self._layout.addWidget(self.alertLabel)
 
+        self._layout.setContentsMargins(1, 1, 1, 1)
+
     @QtCore.Slot()
     def runFun(self):
         try:
@@ -862,22 +864,64 @@ class InstrumentMethods(QtWidgets.QTreeWidget):
         super().__init__(*args, **kwargs)
 
         self.ins = ins
+        self.methods = {}
 
         self.setColumnCount(2)
         self.setHeaderLabels(['Method Name', 'Arguments & Run'])
         self.setHeaderHidden(False)
         self.setSortingEnabled(True)
         self.setAlternatingRowColors(True)
+        # self.setUniformRowHeights(True)
 
         for name, meth in self.ins.functions.items():
             self.addMethod(meth, name)
 
+        self.addSubmodules()
+
     def addMethod(self, meth, fullName):
-        item = QtWidgets.QTreeWidgetItem([fullName, ''])
-        item.setToolTip(0, getTooltipFromFun(meth))
-        self.addTopLevelItem(item)
+        path = fullName.split('.')[:-1]
+        paramName = fullName.split('.')[-1]
+
+        parent = self
+        smName = None
+        for sm in path:
+            if smName is None:
+                smName = sm
+            else:
+                smName = smName + f".{sm}"
+
+            items = self.findItems(smName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+
+            if len(items) == 0:
+                newItem = QtWidgets.QTreeWidgetItem([smName, ''])
+                _addChildTo(parent, newItem)
+                parent = newItem
+            else:
+                parent = items[0]
+
+        methodItem = QtWidgets.QTreeWidgetItem([fullName, ''])
+        methodItem.setToolTip(0, getTooltipFromFun(meth))
+
+        _addChildTo(parent, methodItem)
+        self.methods[fullName] = meth
         itemWidget = MethodDisplay(meth, self.ins.name + '.' + fullName)
-        self.setItemWidget(item, 1, itemWidget)
+        self.setItemWidget(methodItem, 1, itemWidget)
+        return methodItem
+
+    def addSubmodules(self, submod=None, prefix=None):
+        if submod is None and prefix is None:
+            if hasattr(self.ins, 'instrument_modules'):
+                for submodName, _submod in self.ins.instrument_modules.items():
+                    self.addSubmodules(_submod, submodName)
+                return
+
+        else:
+            if hasattr(submod, 'instrument_modules'):
+                for submodName, _submod in submod.instrument_modules.items():
+                    self.addSubmodules(_submod, prefix + '.' + submodName)
+
+        for funName, fun in submod.functions.items():
+            self.addMethod(fun, prefix + '.' + funName)
 
 
 class GenericInstrument(QtWidgets.QWidget):
