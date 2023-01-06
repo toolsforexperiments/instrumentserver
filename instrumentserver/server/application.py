@@ -170,7 +170,6 @@ class ServerGui(QtWidgets.QMainWindow):
         self.toolBar.setIconSize(QtCore.QSize(16, 16))
 
         # Station tools.
-        # The actions must be class parameters so that they are accessible by the tests.
         self.toolBar.addWidget(QtWidgets.QLabel('Station:'))
         self.refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), 'Refresh', self)

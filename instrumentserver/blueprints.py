@@ -1,8 +1,23 @@
+"""
+This module contains all objects that are being sent between client and server. This includes all of the blueprints
+and other messaging objects (and its parts) like ServerInstruction and ServerResponse.
+
+This module is responsible for defining them, present tools to create them and serializing them and deserializing them.
+
+Any object that is ment to be sent, should have the method "toJson" implemented and should return a dictionary object
+with all of its item json compatible.
+
+To deserialize objects from dictionaries the only rule is that the dictionary must contain the field "_class_type"
+with the class it should be deserialized to. If any object requires any special care when deserializing them, it should
+be done in the constructor of that class. All deserializing classes will receive all of the dictionary items as keyword
+arguments.
+"""
+
 import inspect
 import json
 import logging
 from enum import Enum, unique
-from dataclasses import dataclass, field, fields, asdict, is_dataclass
+from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
 from typing import Union, Optional, List, Dict, Callable, Tuple, Any
 
 import qcodes as qc
@@ -127,7 +142,6 @@ class MethodBluePrint:
         return bluePrintToDict(self)
 
 
-
 def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, None]:
     sig = inspect.signature(method)
     sig_str, param_dict = MethodBluePrint.signature_str_and_params_from_obj(sig)
@@ -153,6 +167,57 @@ class InstrumentModuleBluePrint:
     methods: Optional[Dict[str, MethodBluePrint]] = field(default_factory=dict)
     submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = field(default_factory=dict)
     _class_type: str = 'InstrumentModuleBluePrint'
+
+    def __init__(self, name: str,
+                 path: str,
+                 base_class: str,
+                 instrument_module_class: str,
+                 docstring: str = '',
+                 parameters: Optional[Dict[str, ParameterBluePrint]] = None,
+                 methods: Optional[Dict[str, MethodBluePrint]] = None,
+                 submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None,
+                 _class_type: str = 'InstrumentModuleBluePrint'):
+
+        self.name = name
+        self.path = path
+        self.base_class = base_class
+        self.instrument_module_class = instrument_module_class
+        self.docstring = docstring
+
+        self.parameters = None
+        if parameters is not None:
+            self.parameters = {}
+            for paramName, param in parameters.items():
+                if isinstance(param, dict):
+                    self.parameters[paramName] = from_dict(param)
+                elif isinstance(param, ParameterBluePrint):
+                    self.parameters[paramName] = param
+                else:
+                    raise AttributeError("parameters has invalid type.")
+
+        self.methods = None
+        if methods is not None:
+            self.methods = {}
+            for methName, meth in methods.items():
+                if isinstance(meth, dict):
+                    self.methods[methName] = from_dict(meth)
+                elif isinstance(meth, MethodBluePrint):
+                    self.methods[methName] = meth
+                else:
+                    raise AttributeError("methods has invalid type.")
+
+        self.submodules = None
+        if submodules is not None:
+            self.submodules = {}
+            for submodName, submod in submodules.items():
+                if isinstance(submod, dict):
+                    self.submodules[submodName] = from_dict(submod)
+                elif isinstance(submod, InstrumentModuleBluePrint):
+                    self.submodules[submodName] = submod
+                else:
+                    raise AttributeError("parameters has invalid type.")
+
+        self._class_type = 'InstrumentModuleBluePrint'
 
     def __repr__(self) -> str:
         return str(self)
@@ -233,6 +298,7 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
 
     return bp
 
+
 @dataclass
 class ParameterBroadcastBluePrint:
     """Blueprint to broadcast parameter changes."""
@@ -266,17 +332,6 @@ class ParameterBroadcastBluePrint:
     """
         return ret
 
-    # TODO: Delete this once we move to json serializable
-    def toDictFormat(self):
-        """
-        Formats the blueprint for easy conversion to dictionary later.
-        """
-        ret = f"'name': '{self.name}'," \
-              f" 'action': '{self.action}'," \
-              f" 'value': '{self.value}'," \
-              f" 'unit': '{self.unit}'"
-        return "{"+ret+"}"
-
     def toJson(self):
         return bluePrintToDict(self)
 
@@ -299,7 +354,7 @@ def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
     return ret
 
 
-def bluePrintToDict(bp: BluePrintType,  json_type=True) -> dict:
+def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
     bp_dict = {}
     for my_field in fields(bp):
         value = bp.__getattribute__(my_field.name)
@@ -383,7 +438,6 @@ class CallSpec:
 
 @dataclass
 class ParameterSerializeSpec:
-
     #: Path of the object to serialize. ``None`` refers to the station as a whole.
     path: Optional[str] = None
 
@@ -406,7 +460,7 @@ class ParameterSerializeSpec:
 
 @dataclass
 class ServerInstruction:
-    #TODO: Remove set parameter from the code.
+    # TODO: Remove set parameter from the code.
     """Instruction spec for the server.
 
     Valid operations:
@@ -523,6 +577,7 @@ class ServerResponse:
     #: Any error message occurred during execution of the instruction.
     error: Optional[Union[None, str, Warning, Exception]] = None
 
+    #: The type of the class, used for deserializing it.
     _class_type: str = 'ServerResponse'
 
     def __init__(self, message: Optional[Any] = None,
@@ -578,6 +633,9 @@ def to_dict(data) -> Union[Dict[str, str], str]:
 
 
 def _is_numeric(val) -> Optional[Union[int, float]]:
+    """
+    Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
+    """
     try:
         int_conversion = int(val)
         return int_conversion
@@ -595,7 +653,10 @@ def _is_numeric(val) -> Optional[Union[int, float]]:
 
 def from_dict(data: Union[dict, str]) -> Any:
     """
-    Don't have nested items other than dictionaries containing more blueprints since we are not checking for those
+    Converts dictionaries into the objects the dictionaries came from. It is used to convert messages and blueprints
+    back into objects instead of dictionaries.
+
+    the dictionary must have the key "_class_type" indicating the type of the class.
     """
     if isinstance(data, str):
         return data
@@ -603,9 +664,8 @@ def from_dict(data: Union[dict, str]) -> Any:
     if '_class_type' not in data:
         raise AttributeError(f'message does not indicates its type: {data}')
 
-    class_type = data['_class_type']
-
     # Convert some things that the JSON decoder misses.
+    # This happens because we have nested objects, blueprints inside of blueprints for example.
     for key, value in data.items():
         numeric_form = _is_numeric(value)
         if numeric_form is not None:
@@ -631,34 +691,4 @@ def from_dict(data: Union[dict, str]) -> Any:
                         logger.error(f'Could not decode: "{value}".'
                                      f' It does not conform to JSON standard, Might not be correct once used: {e}.')
 
-    if class_type == 'ParameterBluePrint':
-        return ParameterBluePrint(**data)
-    elif class_type == 'MethodBluePrint':
-        return MethodBluePrint(**data)
-    elif class_type == 'InstrumentModuleBluePrint':
-        instr_bp = InstrumentModuleBluePrint(**data)
-        # InstrumentModuleBluePrint has nested items that are serialized and need to be instantiated too.
-        if data['methods'] is not None:
-            methods = {key: from_dict(value) for key, value in data['methods'].items()}
-            instr_bp.methods = methods
-        if data['parameters'] is not None:
-            parameters = {key: from_dict(value) for key, value in data['parameters'].items()}
-            instr_bp.parameters = parameters
-        if data['submodules'] is not None:
-            submodules = {key: from_dict(value) for key, value in data['submodules'].items()}
-            instr_bp.submodules = submodules
-        return instr_bp
-    elif class_type == 'ParameterBroadcastBluePrint':
-        return ParameterBroadcastBluePrint(**data)
-    elif class_type == 'InstrumentCreationSpec':
-        return InstrumentCreationSpec(**data)
-    elif class_type == 'CallSpec':
-        return CallSpec(**data)
-    elif class_type == 'ParameterSerializeSpec':
-        return ParameterSerializeSpec(**data)
-    elif class_type == 'ServerInstruction':
-        return ServerInstruction(**data)
-    elif class_type == 'ServerResponse':
-        return ServerResponse(**data)
-    else:
-        raise AttributeError(f'Could not decode {class_type}')
+    return eval(f'{data["_class_type"]}(**data)')

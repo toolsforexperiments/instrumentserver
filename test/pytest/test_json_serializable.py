@@ -7,6 +7,7 @@ from instrumentserver.blueprints import (bluePrintFromInstrumentModule,
                                          from_dict,
                                          ParameterBroadcastBluePrint,
                                          )
+from instrumentserver.testing.dummy_instruments.generic import DummyInstrumentWithSubmodule
 from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
 
 
@@ -51,19 +52,20 @@ def test_basic_function_dictionary():
 
 
 def test_basic_instrument_dictionary():
-    my_instrument = ResonatorResponse('rr')
-    instrument_bp = bluePrintFromInstrumentModule("", my_instrument)
+    my_rr = ResonatorResponse('rr')
+    instrument_bp = bluePrintFromInstrumentModule("", my_rr)
     bp_dict = bluePrintToDict(instrument_bp)
     reconstructed_bp = from_dict(bp_dict)
     assert instrument_bp == reconstructed_bp
 
+    my_dummy = DummyInstrumentWithSubmodule('dummy')
+    dummy_bp = bluePrintFromInstrumentModule("", my_dummy)
+    dummy_bp_dict = bluePrintToDict(dummy_bp)
+    reconstructed_dummy_bp = from_dict(dummy_bp_dict)
+    assert dummy_bp == reconstructed_dummy_bp
 
 def test_basic_broadcast_parameter_dictionary():
     broadcast_bp = ParameterBroadcastBluePrint(name='my_param', action='an_action', value=-56, unit='M')
     bp_dict = bluePrintToDict(broadcast_bp)
     reconstructed_bp = from_dict(bp_dict)
     assert broadcast_bp == reconstructed_bp
-
-
-
-
