@@ -1,7 +1,7 @@
 import json
 import logging
 import inspect
-from typing import Optional, Any, List, Tuple, Union, Callable
+from typing import Optional, Any, List, Tuple, Union, Callable, Dict
 
 from instrumentserver.gui.misc import AlertLabelGreen
 from qcodes import Parameter, Instrument
@@ -864,19 +864,34 @@ class InstrumentMethods(QtWidgets.QTreeWidget):
         super().__init__(*args, **kwargs)
 
         self.ins = ins
-        self.methods = {}
+        self.methods: Dict[str, MethodDisplay] = {}
 
         self.setColumnCount(2)
         self.setHeaderLabels(['Method Name', 'Arguments & Run'])
         self.setHeaderHidden(False)
         self.setSortingEnabled(True)
         self.setAlternatingRowColors(True)
-        # self.setUniformRowHeights(True)
+
+        self.collapseAction = QtWidgets.QAction('Collapse all')
+        self.expandAction = QtWidgets.QAction('Expand all')
+        self.clearAleartsAction = QtWidgets.QAction('Clear alerts')
+
+        self.collapseAction.triggered.connect(self.collapseAll)
+        self.expandAction.triggered.connect(self.expandAll)
+
+        self.conextMenu = QtWidgets.QMenu(self)
+        self.conextMenu.addAction(self.clearAleartsAction)
+        self.conextMenu.addSeparator()
+        self.conextMenu.addAction(self.collapseAction)
+        self.conextMenu.addAction(self.expandAction)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(lambda x: self.conextMenu.exec_(self.mapToGlobal(x)))
 
         for name, meth in self.ins.functions.items():
             self.addMethod(meth, name)
 
         self.addSubmodules()
+        self.expandAll()
 
     def addMethod(self, meth, fullName):
         path = fullName.split('.')[:-1]
@@ -905,6 +920,7 @@ class InstrumentMethods(QtWidgets.QTreeWidget):
         _addChildTo(parent, methodItem)
         self.methods[fullName] = meth
         itemWidget = MethodDisplay(meth, self.ins.name + '.' + fullName)
+        self.clearAleartsAction.triggered.connect(itemWidget.alertLabel.clearAlert)
         self.setItemWidget(methodItem, 1, itemWidget)
         return methodItem
 
