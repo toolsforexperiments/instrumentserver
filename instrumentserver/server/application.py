@@ -12,7 +12,7 @@ from .core import (
     InstrumentModuleBluePrint, ParameterBluePrint
 )
 from .. import QtCore, QtWidgets, QtGui
-from ..gui.misc import SeparableTabWidget
+from ..gui.misc import DetachableTabWidget
 from ..gui.instruments import GenericInstrument
 
 logger = logging.getLogger(__name__)
@@ -144,8 +144,8 @@ class ServerGui(QtWidgets.QMainWindow):
         self.setWindowTitle('Instrument server')
 
         # Central widget is simply a tab container.
-        # self.tabs = QtWidgets.QTabWidget(self)
-        self.tabs = SeparableTabWidget(self)
+        self.tabs = DetachableTabWidget(self)
+        self.tabs.onTabClosed.connect(self.onTabDeleted)
 
         self.setCentralWidget(self.tabs)
 
@@ -158,12 +158,12 @@ class ServerGui(QtWidgets.QMainWindow):
         stationWidgets.addWidget(self.stationList)
         stationWidgets.addWidget(self.stationObjInfo)
         stationWidgets.setSizes([300, 500])
-        self.tabs.addTab(stationWidgets, 'Station')
 
-        self.tabs.addTab(LogWidget(level=logging.INFO), 'Log')
+        self.tabs.addUnclosableTab(stationWidgets, 'Station')
+        self.tabs.addUnclosableTab(LogWidget(level=logging.INFO), 'Log')
 
         self.serverStatus = ServerStatus()
-        self.tabs.addTab(self.serverStatus, 'Server')
+        self.tabs.addUnclosableTab(self.serverStatus, 'Server')
 
         # Toolbar.
         self.toolBar = self.addToolBar('Tools')
@@ -317,12 +317,17 @@ class ServerGui(QtWidgets.QMainWindow):
         if name not in self.instrumentTabsOpen:
             ins = self.client.find_or_create_instrument(name)
             genericGui = GenericInstrument(ins)
-            self.tabs.addTab(genericGui, ins.name)
+            index = self.tabs.addTab(genericGui, ins.name)
             self.instrumentTabsOpen[ins.name] = genericGui
-            self.tabs.setCurrentWidget(genericGui)
+            self.tabs.setCurrentIndex(index)
 
         elif name in self.instrumentTabsOpen:
             self.tabs.setCurrentWidget(self.instrumentTabsOpen[name])
+
+    @QtCore.Slot(str)
+    def onTabDeleted(self, name: str) -> None:
+        if name in self.instrumentTabsOpen:
+            del self.instrumentTabsOpen[name]
 
 def startServerGuiApplication(**serverKwargs: Any) -> "ServerGui":
     """Create a server gui window.
