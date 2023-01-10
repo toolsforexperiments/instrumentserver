@@ -15,7 +15,7 @@ from typing import Dict
 
 
 from .client import Client
-from .gui import widgetDialog
+from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
 
 setupLogging(addStreamHandler=True,
@@ -82,7 +82,7 @@ def parameterManagerScript() -> None:
         pm.fromFile()
         pm.update()
 
-    _ = widgetDialog(ParameterManagerGui(pm))
+    _ = widgetMainWindow(ParameterManagerGui(pm), 'Parameter Manager')
     app.exec_()
 
 

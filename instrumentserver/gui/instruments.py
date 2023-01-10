@@ -563,11 +563,10 @@ class AddParameterWidget(QtWidgets.QWidget):
             parent=self)
 
         self.addButton.clicked.connect(self.requestNewParameter)
+        self.nameEdit.returnPressed.connect(self.addButton.click)
+        self.valueEdit.returnPressed.connect(self.addButton.click)
+        self.unitEdit.returnPressed.connect(self.addButton.click)
         layout.addWidget(self.addButton, 0, 6, 1, 1)
-
-        # Becuase we open this widget in a dialog, we need to specify a default button and the clear is safer than the add.
-        self.addButton.setDefault(False)
-        self.addButton.setAutoDefault(False)
 
         self.clearButton = QtWidgets.QPushButton(
             QtGui.QIcon(":/icons/delete.svg"),

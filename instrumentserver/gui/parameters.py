@@ -113,7 +113,7 @@ class ParameterWidget(QtWidgets.QWidget):
                 self.paramWidget = AnyInput(self)
                 self.paramWidget.setValue(parameter())
                 self.paramWidget.inputChanged.connect(self.setPending)
-                self.paramWidget.input.returnPressed.connect(self.onEnterPressed)
+                self.paramWidget.input.returnPressed.connect(self.onReturnPressed)
                 self._getMethod = self.paramWidget.value
                 self._setMethod = self.paramWidget.setValue
 
@@ -139,7 +139,7 @@ class ParameterWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
     @QtCore.Slot()
-    def onEnterPressed(self):
+    def onReturnPressed(self):
         """Activates the setButton when the input is selected and enter is pressed."""
         self.setButton.click()
         self.paramWidget.input.deselect()

@@ -28,6 +28,18 @@ def widgetDialog(w: QtWidgets.QWidget):
     return dg
 
 
+def widgetMainWindow(w: QtWidgets.QWidget, name: str = 'instrumentserver'):
+    mw = QtWidgets.QMainWindow()
+    mw.setWindowTitle(name)
+    mw.setCentralWidget(w)
+
+    css = getStyleSheet()
+    w.setStyleSheet(css)
+
+    mw.show()
+    return mw
+
+
 def keepSmallHorizontally(w: QtWidgets.QWidget):
     w.setSizePolicy(
         QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
