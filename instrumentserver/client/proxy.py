@@ -28,6 +28,8 @@ from instrumentserver.server.core import (
     ParameterSerializeSpec,
 )
 from .core import sendRequest, BaseClient
+from ..base import recvMultipart
+from ..blueprints import ParameterBroadcastBluePrint
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +141,8 @@ class ProxyParameter(ProxyMixin, Parameter):
         else:
             kwargs['get_cmd'] = False
         kwargs['unit'] = bp.unit
-        kwargs['vals'] = bp.vals
+        # FIXME: uncomment after implementing serializable validators
+        # kwargs['vals'] = bp.vals
         kwargs['docstring'] = bp.docstring
         return kwargs
 
@@ -260,30 +263,31 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             )
             return self.askServer(msg)
 
-        sig = bp.call_signature
+        sig = bp.call_signature_str
+        params = bp.signature_parameters
         args = []
-        for pn in sig.parameters:
-            if sig.parameters[pn].kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                           inspect.Parameter.POSITIONAL_ONLY]:
+        # FIXME: a better solution to this would probably be to convet kind into the enum object. But it seems that the
+        #  parameter kind enum is private.
+        for pn, kind in params.items():
+            if kind in [str(inspect.Parameter.POSITIONAL_OR_KEYWORD), str(inspect.Parameter.POSITIONAL_ONLY)]:
                 args.append(f'{pn}')
-            elif sig.parameters[pn].kind is inspect.Parameter.VAR_POSITIONAL:
+            elif kind == str(inspect.Parameter.VAR_POSITIONAL):
                 args.append(f"*{pn}")
-            elif sig.parameters[pn].kind is inspect.Parameter.KEYWORD_ONLY:
+            elif kind == str(inspect.Parameter.KEYWORD_ONLY):
                 args.append(f"{pn}={pn}")
-            elif sig.parameters[pn].kind is inspect.Parameter.VAR_KEYWORD:
+            elif kind == str(inspect.Parameter.VAR_KEYWORD):
                 args.append(f"**{pn}")
 
         # we need to add a `self` argument because we want this to be a bound
         # method of the instrument instance.
-        sig_str = str(sig)
-        sig_str = sig_str[0] + 'self, ' + sig_str[1:]
-        new_func_str = f"""from typing import *\ndef {bp.name}{sig_str}:
+        sig = sig[0] + 'self, ' + sig[1:]
+        new_func_str = f"""from typing import *\ndef {bp.name}{sig}:
         return wrap({', '.join(args)})"""
 
         # make sure the method knows the wrap function.
         # TODO: this is not complete!
         globs = {'wrap': wrap, 'qcodes': qc}
-        exec(new_func_str, globs)
+        _ret = exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
         return globs[bp.name]
@@ -461,9 +465,9 @@ class SubClient(QtCore.QObject):
     """
     Specific subscription client used for real-time parameter updates.
     """
-    #: Signal(str) --
+    #: Signal(ParameterBroadcastBluePrint) --
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
-    update = QtCore.Signal(str)
+    update = QtCore.Signal(ParameterBroadcastBluePrint)
 
     def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
         """
@@ -504,9 +508,8 @@ class SubClient(QtCore.QObject):
         self.connected = True
 
         while self.connected:
-            message = socket.recv_multipart()
-            # emits the signals already decoded so python recognizes it a string instead of bytes
-            self.update.emit(message[1].decode("utf-8"))
+            message = recvMultipart(socket)
+            self.update.emit(message[1])
 
         self.disconnect()
 
