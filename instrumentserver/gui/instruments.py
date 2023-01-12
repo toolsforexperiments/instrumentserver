@@ -1,7 +1,8 @@
 import json
 import logging
 import inspect
-from typing import Optional, Any, List, Tuple, Union, Callable, Dict
+from pprint import pprint
+from typing import Optional, Any, List, Tuple, Union, Callable, Dict, Type
 
 from instrumentserver.gui.misc import AlertLabelGreen
 from qcodes import Parameter, Instrument
@@ -635,6 +636,9 @@ class InstrumentParameters(QtWidgets.QWidget):
         self._layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(self._layout)
 
+        self.toolbar, self.filterEdit = _makeToolbar(self)
+        self._layout.addWidget(self.toolbar)
+
         self.plist = ParameterList(self)
         self._layout.addWidget(self.plist)
 
@@ -751,6 +755,30 @@ class InstrumentParameters(QtWidgets.QWidget):
             self.widgets[fullName].deleteLater()
             del self.widgets[fullName]
 
+    @QtCore.Slot(str)
+    def filterItems(self, filterString: str):
+        self.plist.filterItems(filterString)
+
+    @QtCore.Slot()
+    def refreshAll(self):
+        print(f'refresh all has been pressed PARAMETERS')
+
+    @QtCore.Slot()
+    def expandAll(self):
+        self.plist.expandAll()
+
+    @QtCore.Slot()
+    def collapseAll(self):
+        self.plist.collapseAll()
+
+    @QtCore.Slot()
+    def promoteStar(self):
+        print(f'In the methods the promote star has been called')
+
+    @QtCore.Slot()
+    def hideTrash(self):
+        print(f'In the methods hide trash has been called')
+
     def closeEvent(self, event):
         self.cliThread.quit()
         self.cliThread.deleteLater()
@@ -855,7 +883,7 @@ class MethodDisplay(QtWidgets.QWidget):
             logger.warning(f"'{self.fullName}' Raised the following execution: {e}")
 
 
-class InstrumentMethods(QtWidgets.QTreeWidget):
+class MethodsList(QtWidgets.QTreeWidget):
     """
     Widget that will display all the methods of an instrument
     """
@@ -864,6 +892,7 @@ class InstrumentMethods(QtWidgets.QTreeWidget):
 
         self.ins = ins
         self.methods: Dict[str, MethodDisplay] = {}
+        self.filterString = ''
 
         self.setColumnCount(2)
         self.setHeaderLabels(['Method Name', 'Arguments & Run'])
@@ -937,6 +966,132 @@ class InstrumentMethods(QtWidgets.QTreeWidget):
 
         for funName, fun in submod.functions.items():
             self.addMethod(fun, prefix + '.' + funName)
+
+    def filterItems(self, filterString: str):
+        self.filterString = filterString.strip()
+        for pn in self.methods.keys():
+            self.showItem(pn, self.filterString in pn)
+
+        def hideEmptyParent(parent):
+            hideme = True
+            nChildren = parent.childCount() if \
+                isinstance(parent, QtWidgets.QTreeWidgetItem) else \
+                parent.topLevelItemCount()
+
+            for i in range(nChildren):
+                if isinstance(parent, QtWidgets.QTreeWidgetItem):
+                    item = parent.child(i)
+                else:
+                    item = parent.topLevelItem(i)
+                if item.text(0) not in self.methods:
+                    hideEmptyParent(item)
+                if not item.isHidden():
+                    hideme = False
+
+            if isinstance(parent, QtWidgets.QTreeWidgetItem):
+                parent.setHidden(hideme)
+
+        hideEmptyParent(self)
+
+    def showItem(self, name: str, show: bool):
+        item = self.findItems(
+            name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)[0]
+        item.setHidden(not show)
+
+    def sizeHint(self):
+        ret = super().sizeHint()
+        print(f'The sizeHint for the methods: {ret}')
+        return ret
+
+
+class InstrumentMethods(QtWidgets.QWidget):
+
+    def __init__(self, ins: Union[ProxyInstrument, Instrument], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.ins = ins
+
+        self._layout = QtWidgets.QVBoxLayout(self)
+        self.setLayout(self._layout)
+
+        self.toolbar, self.filterEdit = _makeToolbar(self)
+        self._layout.addWidget(self.toolbar)
+
+        self.mlist = MethodsList(ins, parent=self)
+        self._layout.addWidget(self.mlist)
+
+    @QtCore.Slot(str)
+    def filterItems(self, filterString: str):
+        self.mlist.filterItems(filterString)
+
+    @QtCore.Slot()
+    def refreshAll(self):
+        print(f'refresh all has been pressed')
+
+    @QtCore.Slot()
+    def expandAll(self):
+        self.mlist.expandAll()
+
+    @QtCore.Slot()
+    def collapseAll(self):
+        self.mlist.collapseAll()
+
+    @QtCore.Slot()
+    def promoteStar(self):
+        print(f'In the methods the promote star has been called')
+
+    @QtCore.Slot()
+    def hideTrash(self):
+        print(f'In the methods hide trash has been called')
+
+
+# TOOD: Figure out the tooltip text for all of these guys
+def _makeToolbar(widget: QtWidgets.QWidget):
+    toolbar = QtWidgets.QToolBar(widget)
+    toolbar.setIconSize(QtCore.QSize(16, 16))
+
+    refreshAction = toolbar.addAction(
+        QtGui.QIcon(":/icons/refresh.svg"),
+        "refresh all the items from the instrument",
+    )
+    refreshAction.triggered.connect(lambda x: widget.refreshAll())
+
+    toolbar.addSeparator()
+
+    expandAction = toolbar.addAction(
+        QtGui.QIcon(":/icons/expand.svg"),
+        "expand in the tree",
+    )
+    expandAction.triggered.connect(lambda x: widget.expandAll())
+
+    collapseAction = toolbar.addAction(
+        QtGui.QIcon(":/icons/collapse.svg"),
+        "collapse the parameter tree",
+    )
+    collapseAction.triggered.connect(lambda x: widget.collapseAll())
+
+    toolbar.addSeparator()
+
+    starAction = toolbar.addAction(
+        QtGui.QIcon(':/icons/star.svg'),
+        "Move Starred items to the top"
+    )
+    starAction.setCheckable(True)
+    starAction.triggered.connect(lambda x: widget.promoteStar())
+
+    trashAction = toolbar.addAction(
+        QtGui.QIcon(":/icons/trash.svg"),
+        "Hide trashed items"
+    )
+    trashAction.setCheckable(True)
+    trashAction.triggered.connect(lambda x: widget.hideTrash())
+
+    filterEdit = QtWidgets.QLineEdit(widget)
+    filterEdit.textChanged.connect(widget.filterItems)
+    filterEdit.setPlaceholderText('Filter Items')
+    toolbar.addWidget(filterEdit)
+
+    return toolbar, filterEdit
 
 
 class GenericInstrument(QtWidgets.QWidget):

@@ -19,6 +19,8 @@ class DummyChannel(Instrument):
                            vals=validators.Numbers(-1, 1),
                            initial_value=1)
 
+        self.functions['dummy_function'] = self.dummy_function
+
     def dummy_function(self, *args, **kwargs):
         """Dummy function for specific channels used for testing"""
         print(f'the dummy chanel: {self.name} has been activated with:')
@@ -44,6 +46,9 @@ class DummyInstrumentWithSubmodule(Instrument):
         for chan_name in ('A', 'B', 'C'):
             channel = DummyChannel('Chan{}'.format(chan_name))
             self.add_submodule(chan_name, channel)
+
+        self.functions['test_func'] = self.test_func
+        self.functions['dummy_function'] = self.dummy_function
 
     def test_func(self, a, b, *args, c: List[int] = [10, 11], **kwargs):
         """
