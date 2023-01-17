@@ -563,7 +563,8 @@ class ServerInstruction:
 
 @dataclass
 class ServerResponse:
-    """Spec for what the server can return.
+    """Spec for what the server can return. If the message is a string, it will assume it is a serialized json object
+    and will try and deserialize it
 
     If the requested operation succeeds, `message` will the return of that operation,
     and `error` is None.
@@ -586,7 +587,8 @@ class ServerResponse:
         self.message = message
         if isinstance(message, str):
             try:
-                # TODO: have this documented somewhere that these replacements are happening so we can deserialize it
+                # Replacing some key characters so that if the serializer missed it,
+                # they can still be deserialize to objects and not strings.
                 message = message.replace("'", '"')
                 message = message.replace("(", "[")
                 message = message.replace(")", "]")
@@ -597,7 +599,7 @@ class ServerResponse:
                 after_json_loads = json.loads(message)
                 self.message = after_json_loads
             except json.JSONDecodeError as e:
-                logger.info(f'message could not be decoded by JSON and will be treated as a string: {message}')
+                logger.debug(f'message could not be decoded by JSON and will be treated as a string: {message}')
         if isinstance(error, dict):
             self.error = Exception(error['message'])
         else:
