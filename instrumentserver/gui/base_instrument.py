@@ -20,6 +20,7 @@ The exception is with the toolbar actions themselves, those are handled by the m
 """
 
 from pprint import pprint
+from typing import Optional, List
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 
@@ -31,24 +32,30 @@ class ItemBase(QtGui.QStandardItem):
     :param name: The name. This should include all of the submodules.
     :param star: indicates if the item is starred.
     :param trash: indicates if the item is trashed.
-    :param extra_obj: The object we want to store here, this can be a parameter or a method at the moment.
+    :param showDelegate: If true, the delegate for that item will be shown.
+    :param extraObj: The object we want to store here, this can be a parameter or a method at the moment.
         If this is None, it means that the item is a submodule and should only be there to store the children.
     """
 
-    def __init__(self, name, star=False, trash=False, extra_obj=None, *args, **kwargs):
+    def __init__(self, name, star=False, trash=False, showDelegate=True, extraObj=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.name = name
         self.star = star
         self.trash = trash
-        self.extra_obj = extra_obj
+        self.showDelegate = showDelegate
+        self.extra_obj = extraObj
 
         self.setText(self.name)
 
 
 class InstrumentModelBase(QtGui.QStandardItemModel):
     """
-    Base model used to display information of an instrument (like parameters or methods)
+    Base model used to display information of an instrument (like parameters or methods).
+
+    If you are implementing the addChildTo function it is very important that you emit the newItem signal in the end.
+    Delegates will not work properly unless you do so. This is because the integrated signal that Qt has, is emitted
+    at the beginning of the insertion process and not in the end, not allowing the delegates to be properly set
 
     You need to indicate the instrument and a dictionary from which you want to get the things.
 
@@ -56,6 +63,10 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
     :param attr: The string name of the dictionary of the items we want to show ("parameters", for example)
     :param customItem: The item class the model should use.
     """
+    #: Signal(ItemBase)
+    #: Gets emitted after a new item has been added. The user is in charge of emitting it in their implementation
+    #: of addChildTo
+    newItem = QtCore.Signal(object)
 
     def __init__(self, instrument, attr: str, itemClass: ItemBase = ItemBase, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -86,20 +97,28 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
             # constructor
             if prefix is not None:
                 objectName = '.'.join([prefix, objectName])
-            self.addItem(fullName=objectName, star=False, trash=False, extra_obj=obj)
+            self.addItem(fullName=objectName, star=False, trash=False, extraObj=obj)
 
         for submodName, submod in module.submodules.items():
             if prefix is not None:
                 submodName = '.'.join([prefix, submodName])
             self.loadItems(submod, submodName)
 
-    def _addChildTo(self, parent, item):
+    # TODO: think of a better name for this function. This is important because we have to overload this function to
+    #  be able to implement models with more columns. Should also think if this is the best way of doing it.
+    def addChildTo(self, parent, item):
+        """
+        This is the only function that actually inserts items into the model.
+        Overload for models that utilize more columns.
+
+        If you are using delegates, this function should emit the newItem signal
+        """
         if parent == self:
             self.setItem(self.rowCount(), 0, item)
         else:
             parent.appendRow(item)
 
-    def addItem(self, fullName, *args, **kwargs):
+    def addItem(self, fullName, **kwargs):
         """
         Adds an item to the model. The *args and **kwargs are whatever the specific item needs for a new item.
 
@@ -119,14 +138,14 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
             items = self.findItems(smName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
 
             if len(items) == 0:
-                subModItem = self.itemClass(smName, False, False, None)
-                self._addChildTo(parent, subModItem)
+                subModItem = self.itemClass(name=smName, star=False, trash=False, showDelegate=False, extraObj=None)
+                self.addChildTo(parent, subModItem)
                 parent = subModItem
             else:
                 parent = items[0]
 
-        newItem = self.itemClass(fullName, *args, **kwargs)
-        self._addChildTo(parent, newItem)
+        newItem = self.itemClass(name=fullName, **kwargs)
+        self.addChildTo(parent, newItem)
 
         return newItem
 
@@ -265,10 +284,17 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
     #: emitted when this item got its star action triggered.
     itemStarToggle = QtCore.Signal(ItemBase)
 
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, model, delegateColumns: Optional[List[int]]=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Indicates if a column is using delegates.
+        self.delegateColumns = delegateColumns
+
         self.setModel(model)
+
+        # Because we are filtering we set a proxy model as the model, however, there are times we want to work with
+        # the real model
+        self.modelActual: InstrumentModelBase = self.model().sourceModel()
 
         # We need to turn sorting off so that the view sorting does not interfere with the proxy model sorting.
         self.setSortingEnabled(False)
@@ -297,6 +323,54 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         self.customContextMenuRequested.connect(self.onContextMenuRequested)
 
         self.lastSelectedItem = None
+
+    # TODO: Fix this function to work on all columns instead of 1
+    def setAllDelegatesPersistent(self, column, parentIndex=None):
+        """
+        Recursive function that goes through the entire model and sets all delegates to be persistent editors
+
+        :param index: If None, start the process. if its an item, it will go through the children
+        """
+
+        if parentIndex is None:
+            for i in range(self.model().rowCount()):
+                index = self.model().index(i, column)
+                index0 = self.model().index(i, 0)  # Only items at column 0 hold children and model info
+                item0 = self.modelActual.itemFromIndex(self.model().mapToSource(index0))
+                if item0.showDelegate:
+                    self.openPersistentEditor(index)
+                if item0.hasChildren():
+                    self.setAllDelegatesPersistent(column, index0)
+        else:
+            parentItem = self.modelActual.itemFromIndex(self.model().mapToSource(parentIndex))
+            for i in range(parentItem.rowCount()):
+                item = parentItem.child(i, column)
+                item0 = parentItem.child(i, 0)
+                index = self.model().mapFromSource(self.modelActual.indexFromItem(item))
+                index0 = self.model().mapFromSource(self.modelActual.indexFromItem(item0))
+                if item0.showDelegate:
+                    self.openPersistentEditor(index)
+                if item0.hasChildren():
+                    self.setAllDelegatesPersistent(column, index0)
+
+    @QtCore.Slot(object)
+    def checkDelegate(self, item):
+        """
+        Makes sure that the delegates are shown if needed.
+
+        :param item: The item whose row the delegates need to be activated
+        """
+        if item is not None:
+            if item.showDelegate:
+                row = item.row()
+                parent = item.parent()
+                for column in self.delegateColumns:
+                    if parent is None:
+                        sibling = self.modelActual.item(row, column)
+                    else:
+                        sibling = parent.child(row, column)
+                    index = self.model().mapFromSource(self.modelActual.indexFromItem(sibling))
+                    self.openPersistentEditor(index)
 
     @QtCore.Slot(QtCore.QPoint)
     def onContextMenuRequested(self, pos):
@@ -369,9 +443,13 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
 
         self.setLayout(self.layout_)
 
+        self.view.expandAll()
+
         self.connectSignals()
 
     def connectSignals(self):
+        self.model.newItem.connect(self.view.checkDelegate)
+
         self.view.itemStarToggle.connect(self.model.onItemStarToggle)
         self.view.itemTrashToggle.connect(self.model.onItemTrashToggle)
 

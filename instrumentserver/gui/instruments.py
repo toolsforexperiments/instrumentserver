@@ -8,6 +8,7 @@ from instrumentserver.gui.misc import AlertLabelGreen
 from qcodes import Parameter, Instrument
 
 from . import parameters, keepSmallHorizontally
+from .base_instrument import InstrumentDisplayBase, ItemBase, InstrumentModelBase, InstrumentTreeViewBase
 from .parameters import ParameterWidget, AnyInput
 from .. import QtWidgets, QtCore, QtGui
 from ..blueprints import ParameterBroadcastBluePrint
@@ -1094,6 +1095,141 @@ def _makeToolbar(widget: QtWidgets.QWidget):
     return toolbar, filterEdit
 
 
+# TODO: Document everything inside the parameters display classes
+# ----------------- Parameters Display Classes-----------------------------
+
+class ItemParameters(ItemBase):
+    def __init__(self, unit='', **kwargs):
+        super().__init__(**kwargs)
+
+        self.unit = unit
+
+
+class ParameterDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.parameters = {}
+
+    def createEditor(self, QWidget, QStyleOptionViewItem, QModelIndex):
+        """
+        This is the function that is supposed to create the widget. It should return it.
+        """
+        proxyModel = QModelIndex.model()
+        model = proxyModel.sourceModel()
+        item = model.itemFromIndex(proxyModel.mapToSource(QModelIndex))
+        if item.column != 0:
+            parent = item.parent()
+            row = item.row()
+            if parent is None:
+                item = model.item(row, 0)
+            else:
+                item = parent.child(row, 0)
+
+        extraObj = item.extra_obj
+
+        ret = ParameterWidget(extraObj, QWidget)
+        self.parameters[item.name] = ret
+        return ret
+
+
+class ModelParameters(InstrumentModelBase):
+
+    itemNewValue = QtCore.Signal(object, object)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.setColumnCount(3)
+        self.setHorizontalHeaderLabels([self.attr, 'unit', ''])
+
+        # Live updates items
+        self.cliThread = QtCore.QThread()
+        self.subClient = SubClient([self.instrument.name])
+        self.subClient.moveToThread(self.cliThread)
+
+        self.cliThread.started.connect(self.subClient.connect)
+        self.subClient.update.connect(self.updateParameter)
+
+        self.cliThread.start()
+
+    @QtCore.Slot(ParameterBroadcastBluePrint)
+    def updateParameter(self, bp: ParameterBroadcastBluePrint):
+        fullName = '.'.join(bp.name.split('.')[1:])
+
+        if bp.action == 'parameter-creation':
+            if fullName not in self.instrument.list():
+                self.instrument.update()
+            if fullName in self.instrument.list():
+                self.addItem(fullName, extraObj=nestedAttributeFromString(self.instrument, fullName))
+
+        elif bp.action == 'parameter-deletion':
+            self.removeItem(fullName)
+
+        elif bp.action == 'parameter-update' or bp.action == 'parameter-call':
+            item = self.findItems(fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+            if len(item) == 0:
+                self.addItem(fullName, extraObj=nestedAttributeFromString(self.instrument, fullName))
+            else:
+                self.itemNewValue.emit(item[0].name, bp.value)
+
+    def addChildTo(self, parent: QtGui.QStandardItem, item):
+        if item is not None:
+            # A parameter might not have a unit
+            unit = ''
+            if item.extra_obj is not None:
+                unit = item.extra_obj.unit
+            unitItem = QtGui.QStandardItem(unit)
+            extraItem = QtGui.QStandardItem()
+
+            if parent == self:
+                rowCount = self.rowCount()
+                self.setItem(rowCount, 2, extraItem)
+                self.setItem(rowCount, 1, unitItem)
+                self.setItem(rowCount, 0, item)
+            else:
+                parent.appendRow([item, unitItem, extraItem])
+
+            self.newItem.emit(item)
+
+
+class ParametersTreeView(InstrumentTreeViewBase):
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(model, [2], *args, **kwargs)
+
+        self.delegate = ParameterDelegate(self)
+
+        self.setItemDelegateForColumn(2, self.delegate)
+        self.setAllDelegatesPersistent(2)
+
+    @QtCore.Slot(object, object)
+    def onItemNewValue(self, item, value):
+        widget = self.delegate.parameters[item]
+        widget.paramWidget.setValue(value)
+
+
+class NewInstrumentParameters(InstrumentDisplayBase):
+    def __init__(self, instrument, *args, **kwargs):
+        if 'instrument' in kwargs:
+            del kwargs['instrument']
+
+        super().__init__(instrument=instrument,
+                         attr='parameters',
+                         itemClass=ItemParameters,
+                         modelType=ModelParameters,
+                         viewType=ParametersTreeView,
+                         *args, **kwargs)
+
+    def connectSignals(self):
+        super().connectSignals()
+        self.model.itemNewValue.connect(self.view.onItemNewValue)
+
+# -------------------------------------------------------------------------
+
+
 class GenericInstrument(QtWidgets.QWidget):
     """
     Widget that allows the display of real time parameters and changing their values.
@@ -1110,7 +1246,8 @@ class GenericInstrument(QtWidgets.QWidget):
         self.splitter = QtWidgets.QSplitter(self)
         self.splitter.setOrientation(QtCore.Qt.Vertical)
 
-        self.parametersList = InstrumentParameters(ins)
+        # TODO: Rename the NewInstrumentParameters to InstrumentParameters once the old class has been deleted
+        self.parametersList = NewInstrumentParameters(instrument=ins)
         self.methodsList = InstrumentMethods(ins)
         self.instrumentNameLabel = QtWidgets.QLabel(f'{self.ins.name} | type: {type(self.ins)}')
 
