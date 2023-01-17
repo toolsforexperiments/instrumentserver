@@ -406,7 +406,7 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         """
         Recursive function that goes through the entire model and sets all delegates to be persistent editors
 
-        :param parentIndex: If None, start the process. if its an item, it will go through the children
+        :param parentIndex: If None, start the process. if it's an item, it will go through the children
         """
         if parentIndex is None:
             for i in range(self.model().rowCount()):
