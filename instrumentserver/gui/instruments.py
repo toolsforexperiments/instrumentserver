@@ -1112,7 +1112,9 @@ class ParameterDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self.parameters = {}
+        # Stores as key the name of the item and as value the widget that the delegate creates.
+        # used to keep a reference to the widget.
+        self.parameters: Dict[str, QtWidgets.QWidget] = {}
 
     def createEditor(self, QWidget, QStyleOptionViewItem, QModelIndex):
         """
@@ -1174,6 +1176,7 @@ class ModelParameters(InstrumentModelBase):
             if len(item) == 0:
                 self.addItem(fullName, extraObj=nestedAttributeFromString(self.instrument, fullName))
             else:
+                # The model can't actually modify the widget since it knows nothing about the view itself.
                 self.itemNewValue.emit(item[0].name, bp.value)
 
     def addChildTo(self, parent: QtGui.QStandardItem, item):
@@ -1203,7 +1206,7 @@ class ParametersTreeView(InstrumentTreeViewBase):
         self.delegate = ParameterDelegate(self)
 
         self.setItemDelegateForColumn(2, self.delegate)
-        self.setAllDelegatesPersistent(2)
+        self.setAllDelegatesPersistent()
 
     @QtCore.Slot(object, object)
     def onItemNewValue(self, item, value):

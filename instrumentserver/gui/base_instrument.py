@@ -20,7 +20,7 @@ The exception is with the toolbar actions themselves, those are handled by the m
 """
 
 from pprint import pprint
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 
@@ -187,6 +187,14 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
 class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
 
+    #: Signal()
+    #: Emitted before a filter occurs
+    filterIncoming = QtCore.Signal()
+
+    #: Signal()
+    #: Emitted after a filter has occurred.
+    filterFinished = QtCore.Signal()
+
     def __init__(self, sourceModel: InstrumentModelBase, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -197,6 +205,8 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         self.star = False
         self.trash = False
 
+        self.sort(0, QtCore.Qt.DescendingOrder)
+
     @QtCore.Slot(int, QtCore.Qt.SortOrder)
     def onSortingIndicatorChanged(self, index, sortingOrder):
         self.sort(index, sortingOrder)
@@ -206,15 +216,44 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
             self.star = False
         else:
             self.star = True
-        self.invalidateFilter()
-        self.sort(0, self.sortOrder())
+
+        # When the start status changes, trigger a sorting so that the star items move.
+        if self.sortOrder() == QtCore.Qt.DescendingOrder:
+            self.sort(0, QtCore.Qt.AscendingOrder)
+            self.sort(0, QtCore.Qt.DescendingOrder)
+        elif self.sortOrder() == QtCore.Qt.AscendingOrder:
+            self.sort(0, QtCore.Qt.DescendingOrder)
+            self.sort(0, QtCore.Qt.AscendingOrder)
 
     def onToggleTrash(self):
         if self.trash:
             self.trash = False
         else:
             self.trash = True
+        self.triggerFiltering()
+
+    @QtCore.Slot(str)
+    def onTextFilterChange(self, filter: str):
+        self.filterIncoming.emit()
+        self.setFilterRegExp(filter)
+        self.filterFinished.emit()
+
+    def triggerFiltering(self):
+        self.filterIncoming.emit()
         self.invalidateFilter()
+        self.filterFinished.emit()
+
+    def _isParentTrash(self, parent):
+        """
+        Recursive function to see if any parent of an item is trash.
+        """
+        if parent is None:
+            return False
+
+        if parent.trash:
+            return True
+
+        return self._isParentTrash(parent.parent())
 
     def filterAcceptsRow(self, source_row: int, source_parent: QtCore.QModelIndex) -> bool:
         """
@@ -235,18 +274,6 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
 
         return super().filterAcceptsRow(source_row, source_parent)
 
-    def _isParentTrash(self, parent):
-        """
-        Recursive function to see if any parent of an item is trash.
-        """
-        if parent is None:
-            return False
-
-        if parent.trash:
-            return True
-
-        return self._isParentTrash(parent.parent())
-
     def lessThan(self, left: QtCore.QModelIndex, right: QtCore.QModelIndex) -> bool:
         """
         If star is active, we want the star items to always be on the top.
@@ -258,18 +285,18 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
             if self.star:
                 leftItem = self.sourceModel().itemFromIndex(left)
                 rightItem = self.sourceModel().itemFromIndex(right)
+                if hasattr(leftItem, 'star') and hasattr(rightItem, 'star'):
+                    if self.sortOrder() == QtCore.Qt.DescendingOrder:
+                        if rightItem.star and not leftItem.star:
+                            return True
+                        elif not rightItem.star and leftItem.star:
+                            return False
 
-                if self.sortOrder() == QtCore.Qt.DescendingOrder:
-                    if rightItem.star and not leftItem.star:
-                        return True
-                    elif not rightItem.star and leftItem.star:
-                        return False
-
-                elif self.sortOrder() == QtCore.Qt.AscendingOrder:
-                    if rightItem.star and not leftItem.star:
-                        return False
-                    elif not rightItem.star and leftItem.star:
-                        return True
+                    elif self.sortOrder() == QtCore.Qt.AscendingOrder:
+                        if rightItem.star and not leftItem.star:
+                            return False
+                        elif not rightItem.star and leftItem.star:
+                            return True
 
         return super().lessThan(left, right)
 
@@ -289,6 +316,12 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
 
         # Indicates if a column is using delegates.
         self.delegateColumns = delegateColumns
+        self.lastSelectedItem = None
+        # Stores the last collapsed state before a change in filtering to restore it afterwards.
+        # The keys are persistent indexes from the original model (not the proxy one) and the values a bool
+        # indicating its collapsed state
+        self.collapsedState: Dict[QtCore.QPersistentModelIndex, bool] = {}
+        self.collapsedStateDebug: Dict[str, bool] = {}
 
         self.setModel(model)
 
@@ -322,39 +355,83 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenuRequested)
 
-        self.lastSelectedItem = None
+    @QtCore.Slot()
+    def fillCollapsedDict(self, parentItem: Optional[ItemBase]=None):
+        """
+        Fills the collapsed state dictionary to be recover after a filter event occured.
+        """
+        if parentItem is None:
+            for i in range(self.modelActual.rowCount()):
+                index = self.modelActual.index(i, 0)
+                item = self.modelActual.itemFromIndex(index)
+                persistentIndex = QtCore.QPersistentModelIndex(index)
+                proxyIndex = self.model().mapFromSource(index)
+                if proxyIndex.isValid():
+                    self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
+                    if item.hasChildren():
+                        self.fillCollapsedDict(item)
+        else:
+            for i in range(parentItem.rowCount()):
+                child = parentItem.child(i, 0)
+                childIndex = self.modelActual.indexFromItem(child)
+                persistentIndex = QtCore.QPersistentModelIndex(childIndex)
+                proxyIndex = self.model().mapFromSource(childIndex)
+                if proxyIndex.isValid():
+                    self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
+                    if child.hasChildren():
+                        self.fillCollapsedDict(child)
 
-    # TODO: Fix this function to work on all columns instead of 1
-    def setAllDelegatesPersistent(self, column, parentIndex=None):
+    @QtCore.Slot()
+    def restoreCollapsedDict(self):
+        """
+        Goes through the collapsed state dictionary, and expands any item that should be expanded. It also resets
+        the persistent editors and triggers a resizing of delegates.
+        """
+        for persistentIndex, state in self.collapsedState.items():
+            modelIndex = self.modelActual.index(persistentIndex.row(), persistentIndex.column(), persistentIndex.parent())
+            item = self.modelActual.itemFromIndex(modelIndex)
+            proxyIndex = self.model().mapFromSource(modelIndex)
+            self.setExpanded(proxyIndex, state)
+            if item.showDelegate:
+                delegateIndexes = [self.modelActual.index(persistentIndex.row(), x, persistentIndex.parent()) for x in
+                                   self.delegateColumns]
+                proxyDelegateIndexes = [self.model().mapFromSource(index) for index in delegateIndexes]
+                for delegateIndex in proxyDelegateIndexes:
+                    self.openPersistentEditor(delegateIndex)
+        self.scheduleDelayedItemsLayout()
+
+    def setAllDelegatesPersistent(self, parentIndex=None):
         """
         Recursive function that goes through the entire model and sets all delegates to be persistent editors
 
-        :param index: If None, start the process. if its an item, it will go through the children
+        :param parentIndex: If None, start the process. if its an item, it will go through the children
         """
-
         if parentIndex is None:
             for i in range(self.model().rowCount()):
-                index = self.model().index(i, column)
-                index0 = self.model().index(i, 0)  # Only items at column 0 hold children and model info
-                item0 = self.modelActual.itemFromIndex(self.model().mapToSource(index0))
-                if item0.showDelegate:
-                    self.openPersistentEditor(index)
-                if item0.hasChildren():
-                    self.setAllDelegatesPersistent(column, index0)
+                for column in self.delegateColumns:
+                    index = self.model().index(i, column)
+                    index0 = self.model().index(i, 0)  # Only items at column 0 hold children and model info
+                    item0 = self.modelActual.itemFromIndex(self.model().mapToSource(index0))
+                    if item0.showDelegate:
+                        self.openPersistentEditor(index)
+                    if item0.hasChildren():
+                        self.setAllDelegatesPersistent(index0)
+
         else:
             parentItem = self.modelActual.itemFromIndex(self.model().mapToSource(parentIndex))
             for i in range(parentItem.rowCount()):
-                item = parentItem.child(i, column)
-                item0 = parentItem.child(i, 0)
-                index = self.model().mapFromSource(self.modelActual.indexFromItem(item))
-                index0 = self.model().mapFromSource(self.modelActual.indexFromItem(item0))
-                if item0.showDelegate:
-                    self.openPersistentEditor(index)
-                if item0.hasChildren():
-                    self.setAllDelegatesPersistent(column, index0)
+                for column in self.delegateColumns:
+                    item = parentItem.child(i, column)
+                    item0 = parentItem.child(i, 0)
+                    index = self.model().mapFromSource(self.modelActual.indexFromItem(item))
+                    index0 = self.model().mapFromSource(self.modelActual.indexFromItem(item0))
+                    if item0.showDelegate:
+                        self.openPersistentEditor(index)
+                    if item0.hasChildren():
+                        self.setAllDelegatesPersistent(index0)
 
     @QtCore.Slot(object)
-    def checkDelegate(self, item):
+    def onCheckDelegate(self, item):
         """
         Makes sure that the delegates are shown if needed.
 
@@ -380,7 +457,15 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         proxyIndex = self.indexAt(pos)
         index = self.model().mapToSource(proxyIndex)
 
-        item = originalModel.itemFromIndex(index)
+        # catch the case if the user rightcliks on any other column
+        if index.column() != 0:
+            parent = originalModel.itemFromIndex(index.parent())
+            if parent is None:
+                item = originalModel.item(index.row(), 0)
+            else:
+                item = parent.child(index.row(), 0)
+        else:
+            item = originalModel.itemFromIndex(index)
 
         # if item is none the user right clicked in an empty part of the widget
         if item is not None:
@@ -448,12 +533,15 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.connectSignals()
 
     def connectSignals(self):
-        self.model.newItem.connect(self.view.checkDelegate)
+        self.model.newItem.connect(self.view.onCheckDelegate)
+
+        self.proxyModel.filterIncoming.connect(self.view.fillCollapsedDict)
+        self.proxyModel.filterFinished.connect(self.view.restoreCollapsedDict)
 
         self.view.itemStarToggle.connect(self.model.onItemStarToggle)
         self.view.itemTrashToggle.connect(self.model.onItemTrashToggle)
 
-        self.lineEdit.textChanged.connect(self.proxyModel.setFilterRegExp)
+        self.lineEdit.textChanged.connect(self.proxyModel.onTextFilterChange)
 
         self.view.header().sortIndicatorChanged.connect(self.proxyModel.onSortingIndicatorChanged)
 
