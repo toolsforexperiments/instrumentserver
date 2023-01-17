@@ -999,11 +999,6 @@ class MethodsList(QtWidgets.QTreeWidget):
             name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)[0]
         item.setHidden(not show)
 
-    def sizeHint(self):
-        ret = super().sizeHint()
-        print(f'The sizeHint for the methods: {ret}')
-        return ret
-
 
 class InstrumentMethods(QtWidgets.QWidget):
 
@@ -1095,8 +1090,7 @@ def _makeToolbar(widget: QtWidgets.QWidget):
     return toolbar, filterEdit
 
 
-# TODO: Document everything inside the parameters display classes
-# ----------------- Parameters Display Classes-----------------------------
+# ----------------- Parameters Display Classes - Beginning -----------------------------
 
 class ItemParameters(ItemBase):
     def __init__(self, unit='', **kwargs):
@@ -1107,6 +1101,7 @@ class ItemParameters(ItemBase):
 
 class ParameterDelegate(QtWidgets.QStyledItemDelegate):
     """
+    The delegate for the InstrumentParameters widget.
     """
 
     def __init__(self, parent=None):
@@ -1190,9 +1185,9 @@ class ModelParameters(InstrumentModelBase):
 
             if parent == self:
                 rowCount = self.rowCount()
-                self.setItem(rowCount, 2, extraItem)
-                self.setItem(rowCount, 1, unitItem)
                 self.setItem(rowCount, 0, item)
+                self.setItem(rowCount, 1, unitItem)
+                self.setItem(rowCount, 2, extraItem)
             else:
                 parent.appendRow([item, unitItem, extraItem])
 
@@ -1230,7 +1225,91 @@ class NewInstrumentParameters(InstrumentDisplayBase):
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
 
-# -------------------------------------------------------------------------
+# ----------------- Parameters Display Classes - Ending --------------------------------
+
+# ----------------- Methods Display Classes - Beginning --------------------------------
+
+
+class MethodsModel(InstrumentModelBase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels([self.attr, 'Arguments & Run'])
+
+    def addChildTo(self, parent, item):
+        if item is not None:
+            extraItem = QtGui.QStandardItem()
+
+            if parent == self:
+                rowCount = self.rowCount()
+                self.setItem(rowCount, 0, item)
+                self.setItem(rowCount, 1, extraItem)
+            else:
+                parent.appendRow([item, extraItem])
+
+            self.newItem.emit(item)
+
+
+class MethodsDelegate(QtWidgets.QStyledItemDelegate):
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.methods = {}
+
+    def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
+                     index: QtCore.QModelIndex) -> QtWidgets.QWidget:
+
+        proxyModel = index.model()
+        model = proxyModel.sourceModel()
+        item = model.itemFromIndex(proxyModel.mapToSource(index))
+        if item.column != 0:
+            parent = item.parent()
+            row = item.row()
+            if parent is None:
+                item = model.item(row, 0)
+            else:
+                item = parent.child(row, 0)
+
+        extraObj = item.extra_obj
+
+        ret = MethodDisplay(extraObj, item.name, parent=widget)
+
+        # connecting the widget with the clear alert signal
+        self.parent().clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)
+
+        self.methods[item.name] = ret
+        return ret
+
+
+class MethodsTreeView(InstrumentTreeViewBase):
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(model, [1], *args, **kwargs)
+
+        # Adding the clear alert to the context menu
+        self.clearAlertsAction = QtWidgets.QAction('Clear alerts')
+        self.contextMenu.addSeparator()
+        self.contextMenu.addAction(self.clearAlertsAction)
+
+        self.delegate = MethodsDelegate(self)
+        self.setItemDelegateForColumn(1, self.delegate)
+        self.setAllDelegatesPersistent()
+
+
+class NewInstrumentMethods(InstrumentDisplayBase):
+
+    def __init__(self, instrument, *args, **kwargs):
+        if 'instrument' in kwargs:
+            del kwargs['instrument']
+
+        super().__init__(instrument=instrument,
+                         attr='functions',
+                         modelType=MethodsModel,
+                         viewType=MethodsTreeView,
+                         *args, **kwargs)
+
+# ----------------- Methods Display Classes - Ending -----------------------------------
 
 
 class GenericInstrument(QtWidgets.QWidget):
@@ -1251,7 +1330,7 @@ class GenericInstrument(QtWidgets.QWidget):
 
         # TODO: Rename the NewInstrumentParameters to InstrumentParameters once the old class has been deleted
         self.parametersList = NewInstrumentParameters(instrument=ins)
-        self.methodsList = InstrumentMethods(ins)
+        self.methodsList = NewInstrumentMethods(instrument=ins)
         self.instrumentNameLabel = QtWidgets.QLabel(f'{self.ins.name} | type: {type(self.ins)}')
 
         self._layout.addWidget(self.instrumentNameLabel)

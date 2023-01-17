@@ -53,6 +53,8 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
     """
     Base model used to display information of an instrument (like parameters or methods).
 
+    In the constructor of the implemented model, you should specify how many columns it has and its header labels
+
     If you are implementing the addChildTo function it is very important that you emit the newItem signal in the end.
     Delegates will not work properly unless you do so. This is because the integrated signal that Qt has, is emitted
     at the beginning of the insertion process and not in the end, not allowing the delegates to be properly set
@@ -358,7 +360,7 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
     @QtCore.Slot()
     def fillCollapsedDict(self, parentItem: Optional[ItemBase]=None):
         """
-        Fills the collapsed state dictionary to be recover after a filter event occured.
+        Fills the collapsed state dictionary to be recovered after a filter event occured.
         """
         if parentItem is None:
             for i in range(self.modelActual.rowCount()):
