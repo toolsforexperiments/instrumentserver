@@ -254,6 +254,37 @@ class NumberInput(QtWidgets.QLineEdit):
         self.setText(str(value))
 
 
+class AnyInputForMethod(AnyInput):
+    """
+    Implementation of AnyInput that can process arguments and keyword arguments to use for methods.
+    You can add multiple arguments if they are separated by a comma. If the '=' is present in any argument, it will
+    be treated like a keyword argument with the string in front of the equal sign as the key, and the evaluated value.
+
+    All arguments and keyword arguments are evaluated if the doEval button is checked, if not everything is treated like
+    a long string.
+    """
+    def value(self):
+        if self.doEval.isChecked():
+            # If '=' is present we need to separate the keyword from the value
+            # If ',' is present we have more than one argument.
+            if '=' in self.input.text() or ',' in self.input.text():
+                rawArgs = self.input.text().split(',')
+                args = []
+                kwargs = {}
+                for x in rawArgs:
+                    if '=' in x:
+                        key, value = x.split('=')
+                        key = key.replace(" ", "")
+                        kwargs[key] = eval(value)
+                    else:
+                        args.append(eval(x))
+                return tuple(args), kwargs
+            else:
+                return super().value(), None
+
+        return self.input.text(), None
+
+
 class SetButton(QtWidgets.QPushButton):
 
     @QtCore.Slot(bool)

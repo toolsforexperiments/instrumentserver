@@ -8,8 +8,8 @@ from instrumentserver.gui.misc import AlertLabelGreen
 from qcodes import Parameter, Instrument
 
 from . import parameters, keepSmallHorizontally
-from .base_instrument import InstrumentDisplayBase, ItemBase, InstrumentModelBase, InstrumentTreeViewBase
-from .parameters import ParameterWidget, AnyInput
+from .base_instrument import InstrumentDisplayBase, ItemBase, InstrumentModelBase, InstrumentTreeViewBase, DelegateBase
+from .parameters import ParameterWidget, AnyInput, AnyInputForMethod
 from .. import QtWidgets, QtCore, QtGui
 from ..blueprints import ParameterBroadcastBluePrint
 from ..client import ProxyInstrument, SubClient
@@ -24,7 +24,7 @@ from ast import literal_eval
 logger = logging.getLogger(__name__)
 
 
-class ParameterManagerGui(QtWidgets.QWidget):
+class OldParameterManagerGui(QtWidgets.QWidget):
     #: Signal(str) --
     #: emitted when there's an error during parameter creation.
     parameterCreationError = QtCore.Signal(str)
@@ -569,6 +569,7 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.valueEdit.returnPressed.connect(self.addButton.click)
         self.unitEdit.returnPressed.connect(self.addButton.click)
         layout.addWidget(self.addButton, 0, 6, 1, 1)
+        self.addButton.setAutoDefault(True)
 
         self.clearButton = QtWidgets.QPushButton(
             QtGui.QIcon(":/icons/delete.svg"),
@@ -631,37 +632,6 @@ def getTooltipFromFun(fun: Callable):
     sig = inspect.signature(fun)
     doc = inspect.getdoc(fun)
     return str(sig) + '\n\n' + str(doc)
-
-
-class AnyInputForMethod(AnyInput):
-    """
-    Implementation of AnyInput that can process arguments and keyword arguments to use for methods.
-    You can add multiple arguments if they are separated by a comma. If the '=' is present in any argument, it will
-    be treated like a keyword argument with the string in front of the equal sign as the key, and the evaluated value.
-
-    All arguments and keyword arguments are evaluated if the doEval button is checked, if not everything is treated like
-    a long string.
-    """
-    def value(self):
-        if self.doEval.isChecked():
-            # If '=' is present we need to separate the keyword from the value
-            # If ',' is present we have more than one argument.
-            if '=' in self.input.text() or ',' in self.input.text():
-                rawArgs = self.input.text().split(',')
-                args = []
-                kwargs = {}
-                for x in rawArgs:
-                    if '=' in x:
-                        key, value = x.split('=')
-                        key = key.replace(" ", "")
-                        kwargs[key] = eval(value)
-                    else:
-                        args.append(eval(x))
-                return tuple(args), kwargs
-            else:
-                return super().value(), None
-
-        return self.input.text(), None
 
 
 class MethodDisplay(QtWidgets.QWidget):
@@ -730,7 +700,7 @@ class ItemParameters(ItemBase):
         self.unit = unit
 
 
-class ParameterDelegate(QtWidgets.QStyledItemDelegate):
+class ParameterDelegate(DelegateBase):
     """
     The delegate for the InstrumentParameters widget.
     """
@@ -742,24 +712,15 @@ class ParameterDelegate(QtWidgets.QStyledItemDelegate):
         # used to keep a reference to the widget.
         self.parameters: Dict[str, QtWidgets.QWidget] = {}
 
-    def createEditor(self, QWidget, QStyleOptionViewItem, QModelIndex):
+    def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
+                     index: QtCore.QModelIndex) -> QtWidgets.QWidget:
         """
         This is the function that is supposed to create the widget. It should return it.
         """
-        proxyModel = QModelIndex.model()
-        model = proxyModel.sourceModel()
-        item = model.itemFromIndex(proxyModel.mapToSource(QModelIndex))
-        if item.column != 0:
-            parent = item.parent()
-            row = item.row()
-            if parent is None:
-                item = model.item(row, 0)
-            else:
-                item = parent.child(row, 0)
-
+        item = self.getItem(index)
         element = item.element
 
-        ret = ParameterWidget(element, QWidget)
+        ret = ParameterWidget(element, widget)
         self.parameters[item.name] = ret
         return ret
 
@@ -837,13 +798,13 @@ class ParametersTreeView(InstrumentTreeViewBase):
         self.setAllDelegatesPersistent()
 
     @QtCore.Slot(object, object)
-    def onItemNewValue(self, item, value):
-        widget = self.delegate.parameters[item]
+    def onItemNewValue(self, itemName, value):
+        widget = self.delegate.parameters[itemName]
         widget.paramWidget.setValue(value)
 
 
 class InstrumentParameters(InstrumentDisplayBase):
-    def __init__(self, instrument, *args, **kwargs):
+    def __init__(self, instrument, viewType=ParametersTreeView, *args, **kwargs):
         if 'instrument' in kwargs:
             del kwargs['instrument']
 
@@ -851,7 +812,7 @@ class InstrumentParameters(InstrumentDisplayBase):
                          attr='parameters',
                          itemType=ItemParameters,
                          modelType=ModelParameters,
-                         viewType=ParametersTreeView,
+                         viewType=viewType,
                          *args, **kwargs)
 
     def connectSignals(self):
@@ -859,6 +820,132 @@ class InstrumentParameters(InstrumentDisplayBase):
         self.model.itemNewValue.connect(self.view.onItemNewValue)
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
+
+# ----------------- Parameters Manager Classes - Beginning -----------------------------
+
+
+class ParameterDeleteDelegate(ParameterDelegate):
+
+    #: Signal(str)
+    #: Emits the name of the parameter to be deleted when the user presses the delete button.
+    removeParameter = QtCore.Signal(str)
+
+    def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
+                     index: QtCore.QModelIndex) -> QtWidgets.QWidget:
+
+        item = self.getItem(index)
+        element = item.element
+        rw = self.makeRemoveWidget(item.name, widget)
+
+        ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
+        self.parameters[item.name] = ret
+
+        return ret
+
+    def makeRemoveWidget(self, fullName: str, widget: QtWidgets.QWidget):
+        w = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/delete.svg"), "", parent=widget)
+        w.setStyleSheet("""
+            QPushButton { background-color: salmon }
+        """)
+        w.setToolTip("Delete this parameter")
+        keepSmallHorizontally(w)
+
+        w.pressed.connect(lambda: self.removeParameter.emit(fullName))
+        return w
+
+
+class ParameterManagerTreeView(InstrumentTreeViewBase):
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(model, [2], *args, **kwargs)
+
+        self.delegate = ParameterDeleteDelegate(self)
+
+        self.setItemDelegateForColumn(2, self.delegate)
+        self.setAllDelegatesPersistent()
+
+    @QtCore.Slot(object, object)
+    def onItemNewValue(self, itemName, value):
+        widget = self.delegate.parameters[itemName]
+        widget.paramWidget.setValue(value)
+
+
+class ParameterManagerGui(InstrumentParameters):
+
+    #: Signal(str) --
+    #: emitted when there's an error during parameter creation.
+    parameterCreationError = QtCore.Signal(str)
+
+    #: Signal() --
+    #:  emitted when a parameter was created successfully
+    parameterCreated = QtCore.Signal()
+
+    def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], *args, **kwargs):
+        super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, *args, **kwargs)
+        self.addParam = AddParameterWidget(parent=self)
+        self.layout().addWidget(self.addParam)
+        self.connectSignals()
+
+    def connectSignals(self):
+        super().connectSignals()
+        self.view.delegate.removeParameter.connect(self.removeParameter)
+        self.addParam.newParamRequested.connect(self.addParameter)
+        self.parameterCreationError.connect(self.addParam.setError)
+        self.parameterCreated.connect(self.addParam.clear)
+
+    def makeToolbar(self):
+        toolbar = super().makeToolbar()
+
+        toolbar.addSeparator()
+
+        loadParamAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/load.svg"),
+            "Load parameters from file",
+        )
+        loadParamAction.triggered.connect(lambda x: self.loadFromFile())
+
+        saveParamAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/save.svg"),
+            "Save parameters to file",
+        )
+        saveParamAction.triggered.connect(lambda x: self.saveToFile())
+
+        return toolbar
+
+    def removeParameter(self, fullName: str):
+        if self.instrument.has_param(fullName):
+            self.instrument.remove_parameter(fullName)
+
+    def addParameter(self, fullName, value, unit):
+        try:
+            # Validators are commented out until they can be serialized.
+            self.instrument.add_parameter(fullName, initial_value=value,
+                                           unit=unit, )  # vals=vals)
+            self.parameterCreated.emit()
+        except Exception as e:
+            self.parameterCreationError.emit(f"Could not create parameter."
+                                             f"Adding parameter raised"
+                                             f"{type(e)}: {e.args}")
+            return
+
+    @QtCore.Slot()
+    def loadFromFile(self):
+        try:
+            self.instrument.fromFile(deleteMissing=False)
+            # TODO: Uncomment this line after the refresh all goes to all instruments
+            # self.refreshAll(delete=False, unitCheck=True)
+
+        except Exception as e:
+            logger.info(f"Loading failed. {type(e)}: {e.args}")
+
+    @QtCore.Slot()
+    def saveToFile(self):
+        try:
+            self.instrument.toFile()
+        except Exception as e:
+            logger.info(f"Saving failed. {type(e)}: {e.args}")
+
+# ----------------- Parameters Manager Classes - Ending --------------------------------
 
 # ----------------- Methods Display Classes - Beginning --------------------------------
 
@@ -884,7 +971,7 @@ class MethodsModel(InstrumentModelBase):
             self.newItem.emit(item)
 
 
-class MethodsDelegate(QtWidgets.QStyledItemDelegate):
+class MethodsDelegate(DelegateBase):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -894,19 +981,8 @@ class MethodsDelegate(QtWidgets.QStyledItemDelegate):
     def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
 
-        proxyModel = index.model()
-        model = proxyModel.sourceModel()
-        item = model.itemFromIndex(proxyModel.mapToSource(index))
-        if item.column != 0:
-            parent = item.parent()
-            row = item.row()
-            if parent is None:
-                item = model.item(row, 0)
-            else:
-                item = parent.child(row, 0)
-
+        item = self.getItem(index)
         element = item.element
-
         ret = MethodDisplay(element, item.name, parent=widget)
 
         # connecting the widget with the clear alert signal
