@@ -153,6 +153,10 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
     #: of addChildTo
     newItem = QtCore.Signal(object)
 
+    #: Signal()
+    #: Emitted when the model refreshes.
+    modelRefreshed = QtCore.Signal()
+
     def __init__(self, instrument, attr: str, itemClass: ItemBase = ItemBase, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -189,6 +193,14 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 submodName = '.'.join([prefix, submodName])
             self.loadItems(submod, submodName)
 
+    def refreshAll(self):
+        """
+        Removes all the rows from the model, updates the instrument and loads the model again.
+        """
+        self.removeRows(0, self.rowCount())
+        self.instrument.update()
+        self.loadItems()
+        self.modelRefreshed.emit()
 
     def insertItemTo(self, parent, item):
         """
@@ -632,6 +644,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         Connects all the signals to slots of different classes. Override to add more signals
         """
         self.model.newItem.connect(self.view.onCheckDelegate)
+        self.model.modelRefreshed.connect(self.view.expandAll)
 
         self.proxyModel.filterIncoming.connect(self.view.fillCollapsedDict)
         self.proxyModel.filterFinished.connect(self.view.restoreCollapsedDict)
@@ -650,15 +663,13 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         toolbar = QtWidgets.QToolBar(self)
         toolbar.setIconSize(QtCore.QSize(16, 16))
 
-        # FIXME: To properly refresh I would like to close the model and create a new one. The problem is that
-        #  the sub client does not handle closing properly.
-        # refreshAction = toolbar.addAction(
-        #     QtGui.QIcon(":/icons/refresh.svg"),
-        #     "refresh all parameters from the instrument",
-        # )
-        # refreshAction.triggered.connect(lambda x: self.refresh())
+        refreshAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/refresh.svg"),
+            "refresh all parameters from the instrument",
+        )
+        refreshAction.triggered.connect(lambda x: self.refreshAll())
 
-        # toolbar.addSeparator()
+        toolbar.addSeparator()
 
         expandAction = toolbar.addAction(
             QtGui.QIcon(":/icons/expand.svg"),
@@ -711,6 +722,10 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
     @QtCore.Slot()
     def promoteStar(self):
         self.proxyModel.onToggleStar()
+
+    @QtCore.Slot()
+    def refreshAll(self):
+        self.model.refreshAll()
 
     def debuggingMethod(self):
         """
