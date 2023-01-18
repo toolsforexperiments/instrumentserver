@@ -757,15 +757,17 @@ class ParameterDelegate(QtWidgets.QStyledItemDelegate):
             else:
                 item = parent.child(row, 0)
 
-        extraObj = item.extra_obj
+        element = item.element
 
-        ret = ParameterWidget(extraObj, QWidget)
+        ret = ParameterWidget(element, QWidget)
         self.parameters[item.name] = ret
         return ret
 
 
 class ModelParameters(InstrumentModelBase):
 
+    # : Signal(item, object) : Emitted when an item in the model has received a new value, first object is the item's
+    # name, second object is its new value
     itemNewValue = QtCore.Signal(object, object)
 
     def __init__(self, *args, **kwargs):
@@ -792,7 +794,7 @@ class ModelParameters(InstrumentModelBase):
             if fullName not in self.instrument.list():
                 self.instrument.update()
             if fullName in self.instrument.list():
-                self.addItem(fullName, extraObj=nestedAttributeFromString(self.instrument, fullName))
+                self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
 
         elif bp.action == 'parameter-deletion':
             self.removeItem(fullName)
@@ -800,17 +802,17 @@ class ModelParameters(InstrumentModelBase):
         elif bp.action == 'parameter-update' or bp.action == 'parameter-call':
             item = self.findItems(fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(item) == 0:
-                self.addItem(fullName, extraObj=nestedAttributeFromString(self.instrument, fullName))
+                self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
             else:
                 # The model can't actually modify the widget since it knows nothing about the view itself.
                 self.itemNewValue.emit(item[0].name, bp.value)
 
-    def addChildTo(self, parent: QtGui.QStandardItem, item):
+    def insertItemTo(self, parent: QtGui.QStandardItem, item):
         if item is not None:
             # A parameter might not have a unit
             unit = ''
-            if item.extra_obj is not None:
-                unit = item.extra_obj.unit
+            if item.element is not None:
+                unit = item.element.unit
             unitItem = QtGui.QStandardItem(unit)
             extraItem = QtGui.QStandardItem()
 
@@ -840,14 +842,14 @@ class ParametersTreeView(InstrumentTreeViewBase):
         widget.paramWidget.setValue(value)
 
 
-class NewInstrumentParameters(InstrumentDisplayBase):
+class InstrumentParameters(InstrumentDisplayBase):
     def __init__(self, instrument, *args, **kwargs):
         if 'instrument' in kwargs:
             del kwargs['instrument']
 
         super().__init__(instrument=instrument,
                          attr='parameters',
-                         itemClass=ItemParameters,
+                         itemType=ItemParameters,
                          modelType=ModelParameters,
                          viewType=ParametersTreeView,
                          *args, **kwargs)
@@ -868,7 +870,7 @@ class MethodsModel(InstrumentModelBase):
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels([self.attr, 'Arguments & Run'])
 
-    def addChildTo(self, parent, item):
+    def insertItemTo(self, parent, item):
         if item is not None:
             extraItem = QtGui.QStandardItem()
 
@@ -903,9 +905,9 @@ class MethodsDelegate(QtWidgets.QStyledItemDelegate):
             else:
                 item = parent.child(row, 0)
 
-        extraObj = item.extra_obj
+        element = item.element
 
-        ret = MethodDisplay(extraObj, item.name, parent=widget)
+        ret = MethodDisplay(element, item.name, parent=widget)
 
         # connecting the widget with the clear alert signal
         self.parent().clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)
@@ -928,7 +930,7 @@ class MethodsTreeView(InstrumentTreeViewBase):
         self.setAllDelegatesPersistent()
 
 
-class NewInstrumentMethods(InstrumentDisplayBase):
+class InstrumentMethods(InstrumentDisplayBase):
 
     def __init__(self, instrument, *args, **kwargs):
         if 'instrument' in kwargs:
@@ -959,8 +961,8 @@ class GenericInstrument(QtWidgets.QWidget):
         self.splitter = QtWidgets.QSplitter(self)
         self.splitter.setOrientation(QtCore.Qt.Vertical)
 
-        self.parametersList = NewInstrumentParameters(instrument=ins)
-        self.methodsList = NewInstrumentMethods(instrument=ins)
+        self.parametersList = InstrumentParameters(instrument=ins)
+        self.methodsList = InstrumentMethods(instrument=ins)
         self.instrumentNameLabel = QtWidgets.QLabel(f'{self.ins.name} | type: {type(self.ins)}')
 
         self._layout.addWidget(self.instrumentNameLabel)
