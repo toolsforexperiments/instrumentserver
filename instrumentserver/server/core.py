@@ -9,7 +9,6 @@ Core functionality of the instrument server.
 
 # TODO: add a signal for when instruments are closed?
 # TODO: validator only when the parameter is settable?
-# TODO: the BluePrints should probably go into the serialization module.
 # TODO: for full functionality in the proxy, we probably need to introduce
 #   operations for adding parameters/submodules/functions
 # TODO: can we also create methods remotely?
@@ -19,6 +18,7 @@ import importlib
 import inspect
 import logging
 import random
+from pathlib import Path
 from dataclasses import dataclass, field, fields
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
@@ -95,6 +95,8 @@ class StationServer(QtCore.QObject):
                  allowUserShutdown: bool = False,
                  addresses: List[str] = [],
                  initScript: Optional[str] = None,
+                 serverConfig: Optional[Dict[str, Any]] = None,
+                 stationConfig: Optional[str] = None,
                  ) -> None:
         super().__init__(parent)
 
@@ -106,7 +108,14 @@ class StationServer(QtCore.QObject):
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
         self.port = int(port)
-        self.station = Station()
+        self.serverConfig = serverConfig
+        self.station = Station(config_file=stationConfig)
+        # Delete the temporary file once its loaded into the station
+        if stationConfig is not None:
+            stationConfigPath = Path(stationConfig)
+            if stationConfigPath.is_file():
+                stationConfigPath.unlink()
+
         self.allowUserShutdown = allowUserShutdown
         self.listenAddresses = list(set(['127.0.0.1'] + addresses))
         self.initScript = initScript
@@ -395,7 +404,9 @@ class StationServer(QtCore.QObject):
 def startServer(port: int = 5555,
                 allowUserShutdown: bool = False,
                 addresses: List[str] = [],
-                initScript: Optional[str] = None) -> \
+                initScript: Optional[str] = None,
+                serverConfig: Optional[Dict[str, Any]] = None,
+                stationConfig: Optional[str] = None,) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 
@@ -404,7 +415,9 @@ def startServer(port: int = 5555,
     server = StationServer(port=port,
                            allowUserShutdown=allowUserShutdown,
                            addresses=addresses,
-                           initScript=initScript)
+                           initScript=initScript,
+                           serverConfig=serverConfig,
+                           stationConfig=stationConfig)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)

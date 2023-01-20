@@ -130,6 +130,9 @@ class ServerGui(QtWidgets.QMainWindow):
     def __init__(self, startServer: Optional[bool] = True,
                  **serverKwargs: Any):
         super().__init__()
+        self.guiConfig = {}
+        if 'guiConfig' in serverKwargs:
+            self.guiConfig = serverKwargs.pop('guiConfig')
 
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
         self._bluePrints = {}
@@ -138,7 +141,6 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer = None
         self.stationServerThread = None
 
-        # TODO: remove items from the list once you can close tabs.
         self.instrumentTabsOpen = {}
 
         self.setWindowTitle('Instrument server')

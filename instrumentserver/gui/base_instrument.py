@@ -546,6 +546,7 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                         sibling = parent.child(row, column)
                     index = self.model().mapFromSource(self.modelActual.indexFromItem(sibling))
                     self.openPersistentEditor(index)
+            self.scheduleDelayedItemsLayout()
 
     @QtCore.Slot(QtCore.QPoint)
     def onContextMenuRequested(self, pos):
