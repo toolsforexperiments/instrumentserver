@@ -120,8 +120,8 @@ class ItemBase(QtGui.QStandardItem):
         If this is None, it means that the item is a submodule and should only be there to store the children.
     """
 
-    def __init__(self, name, star=False, trash=False, showDelegate=True, element=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name, star=False, trash=False, showDelegate=True, element=None,):
+        super().__init__()
 
         self.name = name
         self.star = star
@@ -146,7 +146,11 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
     :param instrument: The instrument we are trying to show.
     :param attr: The string name of the dictionary of the items we want to show ("parameters", for example)
-    :param customItem: The item class the model should use.
+    :param itemClass: The item class the model should use.
+    :param itemsStar: List of items that will start being starred.
+    :param itemsTrash: List of items that will start trashed.
+    :param itemsHide: List of items that will not be loaded. If the user adds the same parameters to the model manually,
+        they will be shown.
     """
     #: Signal(ItemBase)
     #: Gets emitted after a new item has been added. The user is in charge of emitting it in their implementation
@@ -157,8 +161,15 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
     #: Emitted when the model refreshes.
     modelRefreshed = QtCore.Signal()
 
-    def __init__(self, instrument, attr: str, itemClass: ItemBase = ItemBase, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, instrument,
+                 attr: str,
+                 itemClass: ItemBase = ItemBase,
+                 itemsStar:Optional[List[str]] = [],
+                 itemsTrash: Optional[List[str]] = [],
+                 itemsHide: Optional[List[str]] = [],
+                 parent: Optional[QtCore.QObject] = None,):
+
+        super().__init__(parent=parent)
 
         self.instrument = instrument
         # Indicates the name of the attributes we are creating the model: Parameters or methods for now.
@@ -166,9 +177,16 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         self.objectDictionary = getattr(self.instrument, self.attr)
         self.itemClass: ItemBase = itemClass
 
+        self.itemsStar = itemsStar
+        self.itemsTrash = itemsTrash
+        self.itemsHide = itemsHide
+
         self.setHorizontalHeaderLabels([attr])
 
+        # Indicates if when adding items to the model, should pay attention to the itemsStar, itemsTrash or itemsHide.
+        self.loadingItems = True
         self.loadItems()
+        self.loadingItems = False
 
     def loadItems(self, module=None, prefix=None):
         """
@@ -186,7 +204,12 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
             # constructor
             if prefix is not None:
                 objectName = '.'.join([prefix, objectName])
-            self.addItem(fullName=objectName, star=False, trash=False, element=obj)
+            if objectName not in self.itemsHide:
+                item = self.addItem(fullName=objectName, star=False, trash=False, element=obj)
+                if objectName in self.itemsTrash:
+                    self.onItemTrashToggle(item)
+                if objectName in self.itemsStar:
+                    self.onItemStarToggle(item)
 
         for submodName, submod in module.submodules.items():
             if prefix is not None:
@@ -235,7 +258,16 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
             if len(items) == 0:
                 subModItem = self.itemClass(name=smName, star=False, trash=False, showDelegate=False, element=None)
-                self.insertItemTo(parent, subModItem)
+                # submodules get directly added here and not in the load function, so need to have it here too.
+                if self.loadingItems:
+                    if smName not in self.itemsHide:
+                        self.insertItemTo(parent, subModItem)
+                        if smName in self.itemsTrash:
+                            self.onItemTrashToggle(subModItem)
+                        if smName in self.itemsStar:
+                            self.onItemStarToggle(subModItem)
+                else:
+                    self.insertItemTo(parent, subModItem)
                 parent = subModItem
             else:
                 parent = items[0]
@@ -291,8 +323,8 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
     #: Emitted after a filter has occurred.
     filterFinished = QtCore.Signal()
 
-    def __init__(self, sourceModel: InstrumentModelBase, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, sourceModel: InstrumentModelBase, parent: Optional[QtCore.QObject] = None):
+        super().__init__(parent=parent)
 
         self.setSourceModel(sourceModel)
         self.setRecursiveFilteringEnabled(True)
@@ -409,8 +441,8 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
     #: emitted when this item got its star action triggered.
     itemStarToggle = QtCore.Signal(ItemBase)
 
-    def __init__(self, model, delegateColumns: Optional[List[int]]=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, model, delegateColumns: Optional[List[int]]=None, parent: Optional[QtCore.QObject] = None):
+        super().__init__(parent=parent)
 
         # Indicates if a column is using delegates.
         self.delegateColumns = delegateColumns
@@ -614,8 +646,9 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
                  modelType = InstrumentModelBase,
                  proxyModelType = InstrumentSortFilterProxyModel,
                  viewType = InstrumentTreeViewBase,
-                 *args, **kwargs):
-        super().__init__(*args, **kwargs)
+                 parent: Optional[QtCore.QObject] = None,
+                 **modelKwargs):
+        super().__init__(parent=parent)
 
         # initializing variables
         self.instrument = instrument
@@ -623,7 +656,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.itemClass = itemType
 
         # initializing all the different classes
-        self.model = modelType(instrument, attr, itemType, parent=self)
+        self.model = modelType(instrument, attr, itemType, parent=self, **modelKwargs)
         self.proxyModel = proxyModelType(self.model)
         self.view = viewType(self.proxyModel)
 

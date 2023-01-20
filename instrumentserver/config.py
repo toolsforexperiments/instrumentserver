@@ -8,7 +8,7 @@ from pathlib import Path
 SERVERFIELDS = {'initialize': True}
 
 # Extra fields for the GUI.
-GUIFIELD = {'type': 'instrumentserver.gui.instruments.GenericInstrument'}
+GUIFIELD = {'type': 'instrumentserver.gui.instruments.GenericInstrument', 'kwargs': {}}
 
 def loadConfig(configPath: str):
     """
@@ -33,12 +33,17 @@ def loadConfig(configPath: str):
         serverConfig[instrumentName] = {}
         for field, default in SERVERFIELDS.items():
             if field in configDict:
-                serverConfig[instrumentName][field] = configDict.pop(field)
+                fieldSetting = configDict.pop(field)
+                if fieldSetting is None:
+                    raise AttributeError(f'"{field}" field cannot be None')
+                serverConfig[instrumentName][field] = fieldSetting
             else:
                 serverConfig[instrumentName][field] = default
 
         if 'gui' in configDict:
             guiDict = configDict.pop('gui')
+            if guiDict is None:
+                raise AttributeError(f'"gui" field cannot be None')
             if 'type' in guiDict:
                 if guiDict['type'] == 'generic' or guiDict['type'] == 'Generic':
                     guiDict['type'] = GUIFIELD['type']

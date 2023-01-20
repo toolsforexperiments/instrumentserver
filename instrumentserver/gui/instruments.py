@@ -843,16 +843,23 @@ class ParametersTreeView(InstrumentTreeViewBase):
 
 
 class InstrumentParameters(InstrumentDisplayBase):
-    def __init__(self, instrument, *args, **kwargs):
+    def __init__(self, instrument, **kwargs):
         if 'instrument' in kwargs:
             del kwargs['instrument']
+        modelKwargs = {}
+        if 'parameters-star' in kwargs:
+            modelKwargs['itemsStar'] = kwargs.pop('parameters-star')
+        if 'parameters-trash' in kwargs:
+            modelKwargs['itemsTrash'] = kwargs.pop('parameters-trash')
+        if 'parameters-hide' in kwargs:
+            modelKwargs['itemsHide'] = kwargs.pop('parameters-hide')
 
         super().__init__(instrument=instrument,
                          attr='parameters',
                          itemType=ItemParameters,
                          modelType=ModelParameters,
                          viewType=ParametersTreeView,
-                         *args, **kwargs)
+                         **modelKwargs)
 
     def connectSignals(self):
         super().connectSignals()
@@ -932,15 +939,23 @@ class MethodsTreeView(InstrumentTreeViewBase):
 
 class InstrumentMethods(InstrumentDisplayBase):
 
-    def __init__(self, instrument, *args, **kwargs):
+    def __init__(self, instrument, **kwargs):
         if 'instrument' in kwargs:
             del kwargs['instrument']
 
+        modelKwargs = {}
+        if 'methods-star' in kwargs:
+            modelKwargs['itemsStar'] = kwargs.pop('methods-star')
+        if 'methods-trash' in kwargs:
+            modelKwargs['itemsTrash'] = kwargs.pop('methods-trash')
+        if 'methods-hide' in kwargs:
+            modelKwargs['itemsHide'] = kwargs.pop('methods-hide')
+
         super().__init__(instrument=instrument,
-                         attr='functions',
-                         modelType=MethodsModel,
-                         viewType=MethodsTreeView,
-                         *args, **kwargs)
+                             attr='functions',
+                             modelType=MethodsModel,
+                             viewType=MethodsTreeView,
+                             **modelKwargs)
 
 # ----------------- Methods Display Classes - Ending -----------------------------------
 
@@ -950,7 +965,7 @@ class GenericInstrument(QtWidgets.QWidget):
     Widget that allows the display of real time parameters and changing their values.
     """
 
-    def __init__(self, ins: Union[ProxyInstrument, Instrument], parent=None, **kwargs):
+    def __init__(self, ins: Union[ProxyInstrument, Instrument], parent=None, **modelKwargs):
         super().__init__(parent=parent)
 
         self.ins = ins
@@ -961,8 +976,8 @@ class GenericInstrument(QtWidgets.QWidget):
         self.splitter = QtWidgets.QSplitter(self)
         self.splitter.setOrientation(QtCore.Qt.Vertical)
 
-        self.parametersList = InstrumentParameters(instrument=ins)
-        self.methodsList = InstrumentMethods(instrument=ins)
+        self.parametersList = InstrumentParameters(instrument=ins, **modelKwargs)
+        self.methodsList = InstrumentMethods(instrument=ins, **modelKwargs)
         self.instrumentNameLabel = QtWidgets.QLabel(f'{self.ins.name} | type: {type(self.ins)}')
 
         self._layout.addWidget(self.instrumentNameLabel)
