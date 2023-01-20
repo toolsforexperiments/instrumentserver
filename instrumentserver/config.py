@@ -8,7 +8,7 @@ from pathlib import Path
 SERVERFIELDS = {'initialize': True}
 
 # Extra fields for the GUI.
-GUIFIELD = {'gui': 'generic'}
+GUIFIELD = {'type': 'instrumentserver.gui.instruments.GenericInstrument'}
 
 def loadConfig(configPath: str):
     """
@@ -36,12 +36,15 @@ def loadConfig(configPath: str):
                 serverConfig[instrumentName][field] = configDict.pop(field)
             else:
                 serverConfig[instrumentName][field] = default
-        guiConfig[instrumentName] = {}
-        for field, default in GUIFIELD.items():
-            if field in configDict:
-                guiConfig[instrumentName][field] = configDict.pop(field)
-            else:
-                guiConfig[instrumentName][field] = default
+
+        if 'gui' in configDict:
+            guiDict = configDict.pop('gui')
+            if 'type' in guiDict:
+                if guiDict['type'] == 'generic' or guiDict['type'] == 'Generic':
+                    guiDict['type'] = GUIFIELD['type']
+            guiConfig[instrumentName] = guiDict
+        else:
+            guiConfig[instrumentName] = GUIFIELD
 
     # Creating the file like object
     with io.BytesIO() as ioBytesFile:

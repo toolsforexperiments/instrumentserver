@@ -110,11 +110,12 @@ class StationServer(QtCore.QObject):
         self.port = int(port)
         self.serverConfig = serverConfig
         self.station = Station(config_file=stationConfig)
-        # Delete the temporary file once its loaded into the station
-        if stationConfig is not None:
-            stationConfigPath = Path(stationConfig)
-            if stationConfigPath.is_file():
-                stationConfigPath.unlink()
+
+        # For now the only server configs are whether to start an instrument.
+        if self.serverConfig is not None:
+            for instrumentName, settings in self.serverConfig.items():
+                if settings['initialize']:
+                    self.station.load_instrument(instrumentName)
 
         self.allowUserShutdown = allowUserShutdown
         self.listenAddresses = list(set(['127.0.0.1'] + addresses))

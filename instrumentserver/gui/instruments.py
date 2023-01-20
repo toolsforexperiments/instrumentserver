@@ -950,8 +950,8 @@ class GenericInstrument(QtWidgets.QWidget):
     Widget that allows the display of real time parameters and changing their values.
     """
 
-    def __init__(self, ins: Union[ProxyInstrument, Instrument], *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, ins: Union[ProxyInstrument, Instrument], parent=None, **kwargs):
+        super().__init__(parent=parent)
 
         self.ins = ins
 

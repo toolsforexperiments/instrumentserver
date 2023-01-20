@@ -1,8 +1,9 @@
 import html
+import importlib
 import logging
 import os
 import time
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Dict
 
 from instrumentserver.client import QtClient
 from instrumentserver.log import LogLevels, LogWidget, log
@@ -128,15 +129,14 @@ class ServerGui(QtWidgets.QMainWindow):
     serverPortSet = QtCore.Signal(int)
 
     def __init__(self, startServer: Optional[bool] = True,
+                 guiConfig: Optional[dict] = None,
                  **serverKwargs: Any):
         super().__init__()
-        self.guiConfig = {}
-        if 'guiConfig' in serverKwargs:
-            self.guiConfig = serverKwargs.pop('guiConfig')
 
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
         self._bluePrints = {}
         self._serverKwargs = serverKwargs
+        self._guiConfig = guiConfig
 
         self.stationServer = None
         self.stationServerThread = None
@@ -318,9 +318,20 @@ class ServerGui(QtWidgets.QMainWindow):
         name = item.text(0)
         if name not in self.instrumentTabsOpen:
             ins = self.client.find_or_create_instrument(name)
-            genericGui = GenericInstrument(ins)
-            index = self.tabs.addTab(genericGui, ins.name)
-            self.instrumentTabsOpen[ins.name] = genericGui
+            # import the widget
+            moduleName = '.'.join(self._guiConfig[name]['type'].split('.')[:-1])
+            widgetClassName = self._guiConfig[name]['type'].split('.')[-1]
+            module = importlib.import_module(moduleName)
+            widgetClass = getattr(module, widgetClassName)
+
+            # get any kwargs if the config file has any
+            kwargs = {}
+            if 'kwargs' in self._guiConfig[name]:
+                kwargs = self._guiConfig[name]['kwargs']
+
+            insWidget = widgetClass(ins, parent=self, **kwargs)
+            index = self.tabs.addTab(insWidget, ins.name)
+            self.instrumentTabsOpen[ins.name] = insWidget
             self.tabs.setCurrentIndex(index)
 
         elif name in self.instrumentTabsOpen:
@@ -331,10 +342,11 @@ class ServerGui(QtWidgets.QMainWindow):
         if name in self.instrumentTabsOpen:
             del self.instrumentTabsOpen[name]
 
-def startServerGuiApplication(**serverKwargs: Any) -> "ServerGui":
+def startServerGuiApplication(guiConfig: Optional[Dict[str, Dict[str, Any]]] = None,
+                              **serverKwargs: Any) -> "ServerGui":
     """Create a server gui window.
     """
-    window = ServerGui(startServer=True, **serverKwargs)
+    window = ServerGui(startServer=True, guiConfig=guiConfig, **serverKwargs)
     window.show()
     return window
 
