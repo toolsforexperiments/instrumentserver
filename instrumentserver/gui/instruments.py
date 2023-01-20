@@ -24,475 +24,6 @@ from ast import literal_eval
 logger = logging.getLogger(__name__)
 
 
-class OldParameterManagerGui(QtWidgets.QWidget):
-    #: Signal(str) --
-    #: emitted when there's an error during parameter creation.
-    parameterCreationError = QtCore.Signal(str)
-
-    #: Signal() --
-    #:  emitted when a parameter was created successfully
-    parameterCreated = QtCore.Signal()
-
-    def __init__(self, ins: Union[ParameterManager, ProxyInstrument],
-                 parent: Optional[QtWidgets.QWidget] = None,
-                 makeAvailable: Optional[List[Tuple[str, Any]]] = []):
-
-        super().__init__(parent)
-
-        for (modName, mod) in makeAvailable:
-            setattr(parameters, modName, mod)
-
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(300)
-
-        self._instrument = ins
-        self._widgets = {}
-        self._removeWidgets = {}
-
-        # make the main layout and set up all the widgets
-        layout = QtWidgets.QVBoxLayout(self)
-
-        # toolbar: refreshing, filtering, and some control over the tree
-        self.toolbar = self._makeToolbar()
-        layout.addWidget(self.toolbar)
-
-        # the main widget for displaying the parameters
-        self.plist = ParameterList(self)
-        layout.addWidget(self.plist)
-
-        # at the bottom, a widget to add new parameters
-        self.addParam = AddParameterWidget(self)
-        self.addParam.newParamRequested.connect(self.addParameter)
-        self.parameterCreationError.connect(self.addParam.setError)
-        self.parameterCreated.connect(self.addParam.clear)
-        layout.addWidget(self.addParam)
-
-        self.setLayout(layout)
-        self.populateList()
-
-        # creating subscriber client and initializing it
-        self.thread = QtCore.QThread()
-        self.updateClient = SubClient([self._instrument.name])
-        self.updateClient.moveToThread(self.thread)
-
-        # connecting starting slot with the main loop of the subscriber client
-        self.thread.started.connect(self.updateClient.connect)
-        self.updateClient.update.connect(self.refreshParameter)
-
-        # starts the updateClient in a separate thread. The
-        self.thread.start()
-
-    def _makeToolbar(self):
-        toolbar = QtWidgets.QToolBar(self)
-        toolbar.setIconSize(QtCore.QSize(16, 16))
-
-        refreshAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/refresh.svg"),
-            "refresh all parameters from the instrument",
-        )
-        refreshAction.triggered.connect(lambda x: self.refreshAll())
-
-        loadParamAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/load.svg"),
-            "Load parameters from file",
-        )
-        loadParamAction.triggered.connect(lambda x: self.loadFromFile())
-
-        saveParamAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/save.svg"),
-            "Save parameters to file",
-        )
-        saveParamAction.triggered.connect(lambda x: self.saveToFile())
-
-        toolbar.addSeparator()
-
-        expandAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/expand.svg"),
-            "expand the parameter tree",
-        )
-        expandAction.triggered.connect(lambda x: self.plist.expandAll())
-
-        collapseAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/collapse.svg"),
-            "collapse the parameter tree",
-        )
-        collapseAction.triggered.connect(lambda x: self.plist.collapseAll())
-
-        toolbar.addSeparator()
-
-        # Debugging tools keep commented for commits.
-        # printAction = toolbar.addAction(
-        #     QtGui.QIcon(":/icons/code.svg"),
-        #     "print empty space",
-        # )
-        # printAction.triggered.connect(lambda x: print('\n \n \n \n \n'))
-        #
-        # toolbar.addSeparator()
-
-        self.filterEdit = QtWidgets.QLineEdit(self)
-        self.filterEdit.textChanged.connect(self.filterParameters)
-        toolbar.addWidget(QtWidgets.QLabel('Filter:'))
-        toolbar.addWidget(self.filterEdit)
-
-        return toolbar
-
-    def getParameter(self, fullName: str):
-        param = nestedAttributeFromString(self._instrument, fullName)
-        return param
-
-    def populateList(self):
-        for pname in sorted(toParamDict([self._instrument])):
-            fullName = '.'.join(pname.split('.')[1:])
-            param = self.getParameter(fullName)
-            self.addParameterWidget(fullName, param)
-
-        self.plist.expandAll()
-        self.plist.resizeColumnToContents(0)
-        self.plist.resizeColumnToContents(1)
-
-    def addParameter(self, fullName: str, value: Any, unit: str,
-                     parameterType: ParameterTypes,
-                     valsArgs: Optional[str] = '') -> None:
-        """Add a new parameter to the instrument.
-
-        :param fullName: parameter name, incl. submodules, excl. instrument name.
-        :param value: the value of the parameter, as string.
-            if the parameter type is not string, must be possible to evaluate to
-            the right type.
-        :param unit: physical unit of the parameter
-        :param parameterType: determines the validator we will use.
-            see: :class:`.params.ParameterType`.
-        :param valsArgs: a string that will be converted as args and kwargs for
-            creation of the validator. see :func:`.helpers.stringToArgsAndKwargs`.
-        :return: None
-        """
-        try:
-            args, kw = stringToArgsAndKwargs(valsArgs)
-        except ValueError as e:
-            self.parameterCreationError.emit(f'Cannot create parameter. Validator'
-                                             f'arguments invalid (how ironic):'
-                                             f'{e.args}')
-            return
-        vals = parameterTypes[parameterType]['validatorType'](*args, **kw)
-
-        if parameterType is not ParameterTypes.string:
-            try:
-                value = eval(value)
-            except Exception as e:
-                value = str(value)
-
-        # Checking that the new parameter is not an existing submodule.
-        fullName_submodules = fullName.split('.')
-        fullName_length = len(fullName_submodules)
-
-        equal = False
-
-        # we go through all of the parameters to see if the new parameter has the same name as an existing submodule
-        for param in self._instrument.list():
-            param_submodules = param.split('.')
-            param_length = len(param_submodules)
-            top_level = param_submodules[0]
-
-            # we check if either the new parameter or the existing parameter has
-            # more modules and use the smaller one to construct the top-level submodules
-            if fullName_length > param_length:
-                assembly_number = param_length
-
-            # this only happens when the new parameter has the same name as an existing parameter and not a submodule
-            # only used to display correct  error
-            elif fullName_length == param_length:
-                assembly_number = fullName_length
-                equal = True
-
-            else:
-                assembly_number = fullName_length
-
-            # construct the top level submodule
-            for i in range(1, assembly_number):
-                top_level = top_level + '.' + param_submodules[i]
-
-            if fullName == top_level:
-                if equal:
-                    self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
-                                                     f"is an existing parameter.")
-
-                    return
-                else:
-                    self.parameterCreationError.emit(f"Could not create parameter. {fullName} "
-                                                     f"is an existing submodule.")
-                    return
-
-        try:
-            # Validators are commented out until they can be serialized.
-            self._instrument.add_parameter(fullName, initial_value=value,
-                                           unit=unit,) # vals=vals)
-        except Exception as e:
-            self.parameterCreationError.emit(f"Could not create parameter."
-                                             f"Adding parameter raised"
-                                             f"{type(e)}: {e.args}")
-            return
-
-        # we cannot get the real instrument .parameter() function because we
-        # want the proxy parameter, of course.
-        param = self.getParameter(fullName)
-        self.addParameterWidget(fullName, param)
-        self.parameterCreated.emit()
-
-    def addParameterWidget(self, fullName: str, parameter: Parameter):
-        item = self.plist.addParameter(parameter, fullName)
-
-        rw = self.makeRemoveWidget(fullName)
-        self._removeWidgets[fullName] = rw
-
-        w = ParameterWidget(parameter, parent=self, additionalWidgets=[rw])
-        self._widgets[fullName] = w
-        self.plist.setItemWidget(item, 2, w)
-
-    def makeRemoveWidget(self, fullName: str):
-        w = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/delete.svg"), "", parent=self)
-        w.setStyleSheet("""
-            QPushButton { background-color: salmon }
-        """)
-        w.setToolTip("Delete this parameter")
-        keepSmallHorizontally(w)
-
-        w.pressed.connect(lambda: self.removeParameter(fullName))
-        return w
-
-    def removeParameter(self, fullName: str, deleteServerSide: Optional[bool] = True):
-        items = self.plist.findItems(
-            fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-        if len(items) > 0:
-            item = items[0]
-            parent = item.parent()
-            if isinstance(parent, QtWidgets.QTreeWidgetItem):
-                parent.removeChild(item)
-            else:
-                self.plist.takeTopLevelItem(self.plist.indexOfTopLevelItem(item))
-            del item
-
-        if fullName in self.plist.parameters:
-            self.plist.parameters.remove(fullName)
-
-        if fullName in self._widgets:
-            self._widgets[fullName].deleteLater()
-            del self._widgets[fullName]
-
-        if fullName in self._removeWidgets:
-            self._removeWidgets[fullName].deleteLater()
-            del self._removeWidgets[fullName]
-        if deleteServerSide:
-            if self._instrument.has_param(fullName):
-                self._instrument.remove_parameter(fullName)
-
-        self.plist.removeEmptyContainers()
-
-    def refreshAll(self, delete: Optional[bool] = True, unitCheck: Optional[bool] = False):
-        """Refreshes the state of the GUI.
-
-        :param delete: Optional, If False, it will not delete parameters when it updates.
-        :param unitCheck:  If true, the refresh will check for changes in units, not only values
-
-        Encapsulated in a separate object so we can run it in a separate thread.
-        """
-
-        # first, we need to make sure we update the proxy instrument (if using one)
-        if isinstance(self._instrument, ProxyInstrument):
-            self._instrument.update()
-
-        # next, we can parse through the parameters and update the GUI.
-        insParams = self._instrument.list()
-        for n in insParams:
-            items = self.plist.findItems(n, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-            if len(items) == 0:
-                self.addParameterWidget(n, self.getParameter(n))
-            else:
-                # this is grabbing the widget consisting of input and all the buttons
-                w = self.plist.itemWidget(items[0], 2)
-                w.setWidgetFromParameter()
-
-                # also need to check the unit (doesn't happen often, but can!)
-                if unitCheck:
-                    newUnit = self.getParameter(n).unit
-                    items[0].setText(1, newUnit)
-
-        if delete:
-            deleteParams = []
-            for pn in self.plist.parameters:
-                if pn not in insParams:
-                    deleteParams.append(pn)
-            for pn in deleteParams:
-                self.removeParameter(pn)
-
-    def filterParameters(self, filterString: str):
-        self.plist.filterItems(filterString)
-
-    def saveToFile(self):
-        try:
-            self._instrument.toFile()
-        except Exception as e:
-            logger.info(f"Saving failed. {type(e)}: {e.args}")
-
-    def loadFromFile(self):
-        try:
-            self._instrument.fromFile(deleteMissing=False)
-            self.refreshAll(delete=False, unitCheck=True)
-
-        except Exception as e:
-            logger.info(f"Loading failed. {type(e)}: {e.args}")
-
-    @QtCore.Slot(ParameterBroadcastBluePrint)
-    def refreshParameter(self, bp: ParameterBroadcastBluePrint):
-        """
-        Refreshes the GUI to show real time updates of parameters.
-        """
-        # getting the full name of the parameter and splitting it
-        named_submodules = bp.name.split('.')
-        name = named_submodules[1]
-
-        # if a new parameter has been created, refresh all the parameters
-        if bp.action == 'parameter-creation':
-            self.refreshAll()
-
-        elif bp.action == 'parameter-deletion':
-            # if a parameter is being deleted, need to adjust name creation for the end 'remove_parameter' tag
-            for i in range(2, len(named_submodules)):
-                name = name + '.' + named_submodules[i]
-
-            if name in self.plist.parameters:
-                self.removeParameter(name, False)
-
-        # updates the changed parameter
-        elif bp.action == 'parameter-update' or bp.action == 'parameter-call':
-            # generates the name of the parameter as a string without the instrument name in it
-            for i in range(2, len(named_submodules)):
-                name = name + '.' + named_submodules[i]
-            item = self.plist.findItems(name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-            # if the parameter does not exist refresh all the parameters
-            if len(item) == 0:
-                self.refreshAll()
-            else:
-                # get the corresponding itemwidget and update the value
-                w = self.plist.itemWidget(item[0], 2)
-                w.paramWidget.setValue(bp.value)
-
-
-def _addChildTo(parent, child):
-    if isinstance(parent, QtWidgets.QTreeWidget):
-        parent.addTopLevelItem(child)
-    else:
-        parent.addChild(child)
-
-
-class ParameterList(QtWidgets.QTreeWidget):
-
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
-        super().__init__(parent)
-
-        self.setColumnCount(2)
-        self.setHeaderLabels(['Parameter name', 'Unit', ''])
-        self.setHeaderHidden(False)
-        self.setSortingEnabled(True)
-        self.setAlternatingRowColors(True)
-
-        self.parameters = []
-        self.filterString = ''
-
-    def addParameter(self, p: Parameter, fullName: str) \
-            -> QtWidgets.QTreeWidgetItem:
-
-        path = fullName.split('.')[:-1]
-        paramName = fullName.split('.')[-1]
-
-        parent = self
-        smName = None
-        for sm in path:
-            if smName is None:
-                smName = sm
-            else:
-                smName = smName + f".{sm}"
-
-            items = self.findItems(
-                smName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0
-            )
-            if len(items) == 0:
-                newItem = QtWidgets.QTreeWidgetItem([smName, '', ''])
-                _addChildTo(parent, newItem)
-                parent = newItem
-            else:
-                parent = items[0]
-
-        paramItem = QtWidgets.QTreeWidgetItem([fullName, f"{p.unit}", ''])
-        _addChildTo(parent, paramItem)
-        self.parameters.append(fullName)
-        self.filterItems(self.filterString)
-        return paramItem
-
-    def removeEmptyContainers(self):
-        """Delete all items that are not parameters and don't contain any
-        parameters."""
-
-        def check(parent):
-            parent: Union[QtWidgets.QTreeWidgetItem, ParameterList]
-            removeList = []
-
-            nChildren = parent.childCount() if \
-                isinstance(parent, QtWidgets.QTreeWidgetItem) else \
-                parent.topLevelItemCount()
-
-            for i in range(nChildren):
-                if isinstance(parent, QtWidgets.QTreeWidgetItem):
-                    item = parent.child(i)
-                else:
-                    item = parent.topLevelItem(i)
-
-                if item.text(0) not in self.parameters:
-                    check(item)
-                    nGrandChildren = item.childCount()
-                    if nGrandChildren == 0:
-                        removeList.append(item)
-
-            for item in removeList:
-                if isinstance(parent, QtWidgets.QTreeWidgetItem):
-                    parent.removeChild(item)
-                else:
-                    parent.takeTopLevelItem(parent.indexOfTopLevelItem(item))
-
-        check(self)
-
-    def filterItems(self, filterString: str):
-        self.filterString = filterString.strip()
-        for pn in self.parameters:
-            self.showItem(pn, self.filterString in pn)
-
-        def hideEmptyParent(parent):
-            hideme = True
-            nChildren = parent.childCount() if \
-                isinstance(parent, QtWidgets.QTreeWidgetItem) else \
-                parent.topLevelItemCount()
-
-            for i in range(nChildren):
-                if isinstance(parent, QtWidgets.QTreeWidgetItem):
-                    item = parent.child(i)
-                else:
-                    item = parent.topLevelItem(i)
-                if item.text(0) not in self.parameters:
-                    hideEmptyParent(item)
-                if not item.isHidden():
-                    hideme = False
-
-            if isinstance(parent, QtWidgets.QTreeWidgetItem):
-                parent.setHidden(hideme)
-
-        hideEmptyParent(self)
-
-    def showItem(self, name: str, show: bool):
-        item = self.findItems(
-            name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)[0]
-        item.setHidden(not show)
-
-
 class AddParameterWidget(QtWidgets.QWidget):
     """A widget that allows parameter creation.
 
@@ -625,17 +156,7 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.addButton.setToolTip("")
 
 
-def getTooltipFromFun(fun: Callable):
-    """
-    Returns the signature of the function with its documentation underneath.
-    """
-    sig = inspect.signature(fun)
-    doc = inspect.getdoc(fun)
-    return str(sig) + '\n\n' + str(doc)
-
-
 class MethodDisplay(QtWidgets.QWidget):
-
     #: Signal(str)
     #: emitted when the widget runs a function and fails. Emits the exception as a string.
     runFailed = QtCore.Signal(str)
@@ -654,7 +175,7 @@ class MethodDisplay(QtWidgets.QWidget):
 
         self.anyInput = AnyInputForMethod()
         self.anyInput.input.setPlaceholderText(str(inspect.signature(fun)))
-        self.anyInput.input.setToolTip(getTooltipFromFun(fun))
+        self.anyInput.input.setToolTip(self.getTooltipFromFun(fun))
         self.anyInput.input.returnPressed.connect(self.runFun)
 
         self.runButton = QtWidgets.QPushButton("Run", parent=self)
@@ -689,6 +210,15 @@ class MethodDisplay(QtWidgets.QWidget):
         except Exception as e:
             self.runFailed.emit(str(e))
             logger.warning(f"'{self.fullName}' Raised the following execution: {e}")
+
+    @classmethod
+    def getTooltipFromFun(cls, fun: Callable):
+        """
+        Returns the signature of the function with its documentation underneath.
+        """
+        sig = inspect.signature(fun)
+        doc = inspect.getdoc(fun)
+        return str(sig) + '\n\n' + str(doc)
 
 
 # ----------------- Parameters Display Classes - Beginning -----------------------------
@@ -726,7 +256,6 @@ class ParameterDelegate(DelegateBase):
 
 
 class ModelParameters(InstrumentModelBase):
-
     # : Signal(item, object) : Emitted when an item in the model has received a new value, first object is the item's
     # name, second object is its new value
     itemNewValue = QtCore.Signal(object, object)
@@ -804,7 +333,7 @@ class ParametersTreeView(InstrumentTreeViewBase):
 
 
 class InstrumentParameters(InstrumentDisplayBase):
-    def __init__(self, instrument, viewType=ParametersTreeView, **kwargs):
+    def __init__(self, instrument, viewType=ParametersTreeView, callSignals: bool = True, **kwargs):
         if 'instrument' in kwargs:
             del kwargs['instrument']
         modelKwargs = {}
@@ -820,11 +349,13 @@ class InstrumentParameters(InstrumentDisplayBase):
                          itemType=ItemParameters,
                          modelType=ModelParameters,
                          viewType=viewType,
+                         callSignals=callSignals,
                          **modelKwargs)
 
     def connectSignals(self):
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
+
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
 
@@ -832,14 +363,12 @@ class InstrumentParameters(InstrumentDisplayBase):
 
 
 class ParameterDeleteDelegate(ParameterDelegate):
-
     #: Signal(str)
     #: Emits the name of the parameter to be deleted when the user presses the delete button.
     removeParameter = QtCore.Signal(str)
 
     def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
-
         item = self.getItem(index)
         element = item.element
         rw = self.makeRemoveWidget(item.name, widget)
@@ -878,7 +407,6 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
 
 
 class ParameterManagerGui(InstrumentParameters):
-
     #: Signal(str) --
     #: emitted when there's an error during parameter creation.
     parameterCreationError = QtCore.Signal(str)
@@ -887,8 +415,8 @@ class ParameterManagerGui(InstrumentParameters):
     #:  emitted when a parameter was created successfully
     parameterCreated = QtCore.Signal()
 
-    def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], *args, **kwargs):
-        super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, *args, **kwargs)
+    def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], **kwargs):
+        super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
         self.addParam = AddParameterWidget(parent=self)
         self.layout().addWidget(self.addParam)
         self.connectSignals()
@@ -927,7 +455,7 @@ class ParameterManagerGui(InstrumentParameters):
         try:
             # Validators are commented out until they can be serialized.
             self.instrument.add_parameter(fullName, initial_value=value,
-                                           unit=unit, )  # vals=vals)
+                                          unit=unit, )  # vals=vals)
             self.parameterCreated.emit()
         except Exception as e:
             self.parameterCreationError.emit(f"Could not create parameter."
@@ -939,8 +467,7 @@ class ParameterManagerGui(InstrumentParameters):
     def loadFromFile(self):
         try:
             self.instrument.fromFile(deleteMissing=False)
-            # TODO: Uncomment this line after the refresh all goes to all instruments
-            self.refreshAll(delete=False, unitCheck=True)
+            self.refreshAll()
 
         except Exception as e:
             logger.info(f"Loading failed. {type(e)}: {e.args}")
@@ -951,6 +478,7 @@ class ParameterManagerGui(InstrumentParameters):
             self.instrument.toFile()
         except Exception as e:
             logger.info(f"Saving failed. {type(e)}: {e.args}")
+
 
 # ----------------- Parameters Manager Classes - Ending --------------------------------
 
@@ -987,7 +515,6 @@ class MethodsDelegate(DelegateBase):
 
     def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
-
         item = self.getItem(index)
         element = item.element
         ret = MethodDisplay(element, item.name, parent=widget)
@@ -1028,10 +555,11 @@ class InstrumentMethods(InstrumentDisplayBase):
             modelKwargs['itemsHide'] = kwargs.pop('methods-hide')
 
         super().__init__(instrument=instrument,
-                             attr='functions',
-                             modelType=MethodsModel,
-                             viewType=MethodsTreeView,
-                             **modelKwargs)
+                         attr='functions',
+                         modelType=MethodsModel,
+                         viewType=MethodsTreeView,
+                         **modelKwargs)
+
 
 # ----------------- Methods Display Classes - Ending -----------------------------------
 

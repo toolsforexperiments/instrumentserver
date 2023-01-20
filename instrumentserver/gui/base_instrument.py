@@ -680,7 +680,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.itemClass = itemType
 
         # initializing all the different classes
-        self.model = modelType(instrument, attr, itemType, parent=self)
+        self.model = modelType(instrument, attr, itemType, parent=self, **modelKwargs)
         self.proxyModel = proxyModelType(self.model)
         self.view = viewType(self.proxyModel)
 
@@ -726,7 +726,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
 
         refreshAction = toolbar.addAction(
             QtGui.QIcon(":/icons/refresh.svg"),
-            "refresh all parameters from the instrument",
+            "refresh all items from the instrument",
         )
         refreshAction.triggered.connect(lambda x: self.refreshAll())
 
@@ -734,13 +734,13 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
 
         expandAction = toolbar.addAction(
             QtGui.QIcon(":/icons/expand.svg"),
-            "expand the parameter tree",
+            "expand tree",
         )
         expandAction.triggered.connect(lambda x: self.view.expandAll())
 
         collapseAction = toolbar.addAction(
             QtGui.QIcon(":/icons/collapse.svg"),
-            "collapse the parameter tree",
+            "collapse tree",
         )
         collapseAction.triggered.connect(lambda x: self.view.collapseAll())
 
