@@ -204,9 +204,9 @@ class ServerGui(QtWidgets.QMainWindow):
         # self.refreshStationComponents()
 
         # development options: they must always be commented out
-        printSpaceAction = QtWidgets.QAction(QtGui.QIcon(":/icons/code.svg"), 'prints empty space', self)
-        printSpaceAction.triggered.connect(lambda x: print("\n \n \n \n"))
-        self.toolBar.addAction(printSpaceAction)
+        # printSpaceAction = QtWidgets.QAction(QtGui.QIcon(":/icons/code.svg"), 'prints empty space', self)
+        # printSpaceAction.triggered.connect(lambda x: print("\n \n \n \n"))
+        # self.toolBar.addAction(printSpaceAction)
 
     def log(self, message, level=LogLevels.info):
         log(logger, message, level)
