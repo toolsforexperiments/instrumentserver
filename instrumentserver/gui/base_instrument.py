@@ -132,6 +132,28 @@ class ItemBase(QtGui.QStandardItem):
         self.setText(self.name)
 
 
+class DelegateBase(QtWidgets.QStyledItemDelegate):
+    """
+    The parent of the delegate should be the view. The signals should go through the view too.
+    """
+
+    @classmethod
+    def getItem(cls, QModelIndex):
+
+        proxyModel = QModelIndex.model()
+        model = proxyModel.sourceModel()
+        item = model.itemFromIndex(proxyModel.mapToSource(QModelIndex))
+        if item.column != 0:
+            parent = item.parent()
+            row = item.row()
+            if parent is None:
+                item = model.item(row, 0)
+            else:
+                item = parent.child(row, 0)
+
+        return item
+
+
 class InstrumentModelBase(QtGui.QStandardItemModel):
     """
     Base model used to display information of an instrument (like parameters or methods).
@@ -639,6 +661,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
     :param modelType: The type of model that should be used.
     :param proxyModelType: The type of proxy model that should be used.
     :param viewType: The type of view that should be used.
+    :param callSignals: If False, the constructor will not call the method connectSignals
     """
     def __init__(self, instrument,
                  attr: str,
@@ -646,6 +669,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
                  modelType = InstrumentModelBase,
                  proxyModelType = InstrumentSortFilterProxyModel,
                  viewType = InstrumentTreeViewBase,
+                 callSignals: bool = True,
                  parent: Optional[QtCore.QObject] = None,
                  **modelKwargs):
         super().__init__(parent=parent)
@@ -656,22 +680,25 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.itemClass = itemType
 
         # initializing all the different classes
-        self.model = modelType(instrument, attr, itemType, parent=self, **modelKwargs)
+        self.model = modelType(instrument, attr, itemType, parent=self)
         self.proxyModel = proxyModelType(self.model)
         self.view = viewType(self.proxyModel)
 
         self.layout_ = QtWidgets.QVBoxLayout()
 
-        self.toolBar, self.lineEdit = self.makeToolbar()
-        self.layout_.addWidget(self.toolBar)
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.lineEdit.setPlaceholderText(f"Filter {self.attr}")
+        self.toolbar = self.makeToolbar()
+        self.toolbar.addWidget(self.lineEdit)
 
+        self.layout_.addWidget(self.toolbar)
         self.layout_.addWidget(self.view)
-
         self.setLayout(self.layout_)
 
         self.view.expandAll()
 
-        self.connectSignals()
+        if callSignals:
+            self.connectSignals()
 
     def connectSignals(self):
         """
@@ -742,12 +769,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         #
         # toolbar.addSeparator()
 
-        filterEdit = QtWidgets.QLineEdit(self)
-        filterEdit.setPlaceholderText(f"Filter {self.attr}")
-
-        toolbar.addWidget(filterEdit)
-
-        return toolbar, filterEdit
+        return toolbar
 
     @QtCore.Slot()
     def hideTrash(self):
