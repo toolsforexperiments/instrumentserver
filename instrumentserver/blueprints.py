@@ -18,7 +18,7 @@ import json
 import logging
 from enum import Enum, unique
 from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
-from typing import Union, Optional, List, Dict, Callable, Tuple, Any
+from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args
 
 import qcodes as qc
 from qcodes import (
@@ -609,7 +609,7 @@ class ServerResponse:
 
     def toJson(self):
         ret = {}
-        if isinstance(self.message, BluePrintType):
+        if isinstance(self.message, get_args(BluePrintType)):
             ret['message'] = self.message.toJson()
         else:
             ret['message'] = str(self.message)

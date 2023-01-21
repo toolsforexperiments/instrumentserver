@@ -113,6 +113,7 @@ class ParameterWidget(QtWidgets.QWidget):
                 self.paramWidget = AnyInput(self)
                 self.paramWidget.setValue(parameter())
                 self.paramWidget.inputChanged.connect(self.setPending)
+                self.paramWidget.input.returnPressed.connect(self.onReturnPressed)
                 self._getMethod = self.paramWidget.value
                 self._setMethod = self.paramWidget.setValue
 
@@ -136,6 +137,14 @@ class ParameterWidget(QtWidgets.QWidget):
 
         layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(layout)
+
+    @QtCore.Slot()
+    def onReturnPressed(self):
+        """Activates the setButton when the input is selected and enter is pressed."""
+        self.setButton.click()
+        self.paramWidget.input.deselect()
+        self.setButton.setFocus()
+
 
     def setParameter(self, value: Any):
         try:
@@ -243,6 +252,37 @@ class NumberInput(QtWidgets.QLineEdit):
 
     def setValue(self, value: numbers.Number):
         self.setText(str(value))
+
+
+class AnyInputForMethod(AnyInput):
+    """
+    Implementation of AnyInput that can process arguments and keyword arguments to use for methods.
+    You can add multiple arguments if they are separated by a comma. If the '=' is present in any argument, it will
+    be treated like a keyword argument with the string in front of the equal sign as the key, and the evaluated value.
+
+    All arguments and keyword arguments are evaluated if the doEval button is checked, if not everything is treated like
+    a long string.
+    """
+    def value(self):
+        if self.doEval.isChecked():
+            # If '=' is present we need to separate the keyword from the value
+            # If ',' is present we have more than one argument.
+            if '=' in self.input.text() or ',' in self.input.text():
+                rawArgs = self.input.text().split(',')
+                args = []
+                kwargs = {}
+                for x in rawArgs:
+                    if '=' in x:
+                        key, value = x.split('=')
+                        key = key.replace(" ", "")
+                        kwargs[key] = eval(value)
+                    else:
+                        args.append(eval(x))
+                return tuple(args), kwargs
+            else:
+                return super().value(), None
+
+        return self.input.text(), None
 
 
 class SetButton(QtWidgets.QPushButton):

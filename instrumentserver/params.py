@@ -80,6 +80,7 @@ class ParameterManager(InstrumentBase):
 
         #: default location and name of the parameters save file.
         self._paramValuesFile = os.path.join(os.getcwd(), f'parameter_manager-{self.name}.json')
+        self.fromFile()
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":

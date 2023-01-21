@@ -19,6 +19,14 @@ class DummyChannel(Instrument):
                            vals=validators.Numbers(-1, 1),
                            initial_value=1)
 
+        self.functions['dummy_function'] = self.dummy_function
+
+    def dummy_function(self, *args, **kwargs):
+        """Dummy function for specific channels used for testing"""
+        print(f'the dummy chanel: {self.name} has been activated with:')
+        print(f'args: {args}')
+        print(f'kwargs: {kwargs}')
+        return True
 
 class DummyInstrumentWithSubmodule(Instrument):
     """A dummy instrument with submodules."""
@@ -39,8 +47,28 @@ class DummyInstrumentWithSubmodule(Instrument):
             channel = DummyChannel('Chan{}'.format(chan_name))
             self.add_submodule(chan_name, channel)
 
+        self.functions['test_func'] = self.test_func
+        self.functions['dummy_function'] = self.dummy_function
+
     def test_func(self, a, b, *args, c: List[int] = [10, 11], **kwargs):
+        """
+        This is a test function, of course you knew this from the tittle but It's nice to have documentation, isn't it?
+
+        :param a: Very nice parameter.
+        :param b: Even nicer parameter
+        :param c: This one sucks though.
+        """
         return a, b, args[0], c, kwargs['d'], self.param0()
+
+    def dummy_function(self, *args, **kwargs):
+        """
+        Such a dumb dummy function here doing nothing other than printing and occupying your precious, precious terminal
+        space.
+        """
+        print(f'the dummy chanel: {self.name} has been activated with:')
+        print(f'args: {args}')
+        print(f'kwargs: {kwargs}')
+        return "I am being returned"
 
 
 class DummyInstrumentTimeout(Instrument):
@@ -56,7 +84,6 @@ class DummyInstrumentTimeout(Instrument):
     def get_random_timeout(self):
         time.sleep(10)
         return self.random
-
 
 
 class DummyInstrumentRandomNumber(Instrument):

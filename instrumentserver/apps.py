@@ -6,6 +6,7 @@ import signal
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
+from .config import loadConfig
 from .server.application import startServerGuiApplication
 from .server.core import startServer
 from bokeh.server.server import Server as BokehServer
@@ -15,7 +16,7 @@ from typing import Dict
 
 
 from .client import Client
-from .gui import widgetDialog
+from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
 
 setupLogging(addStreamHandler=True,
@@ -50,17 +51,31 @@ def serverScript() -> None:
                         help="On which network addresses we listen.")
     parser.add_argument("-i", "--init_script", default='',
                         type=str)
+    parser.add_argument("-c", "--config", type=str, default='')
     args = parser.parse_args()
+
+    # Load and process the config file if any.
+    configPath = args.config
+
+    stationConfig, serverConfig, guiConfig = None, None, None
+    if configPath != '':
+        # Separates the corresponding settings into the 4 necessary parts
+        stationConfig, serverConfig, guiConfig, tempFile = loadConfig(configPath)
 
     if args.gui == 'False':
         server(port=args.port,
                allowUserShutdown=args.allow_user_shutdown,
                addresses=args.listen_at,
-               initScript=args.init_script)
+               initScript=args.init_script,
+               serverConfig=serverConfig,
+               stationConfig=stationConfig)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
-                      initScript=args.init_script)
+                      initScript=args.init_script,
+                      serverConfig=serverConfig,
+                      stationConfig=stationConfig,
+                      guiConfig=guiConfig)
 
 
 def parameterManagerScript() -> None:
@@ -82,7 +97,7 @@ def parameterManagerScript() -> None:
         pm.fromFile()
         pm.update()
 
-    _ = widgetDialog(ParameterManagerGui(pm))
+    _ = widgetMainWindow(ParameterManagerGui(pm), 'Parameter Manager')
     app.exec_()
 
 
