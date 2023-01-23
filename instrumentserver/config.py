@@ -57,7 +57,7 @@ def loadConfig(configPath: str):
         stationConfig = ioBytesFile.getvalue()
 
     # Storing the file like object in a temporary file to pass to the station config
-    tempFile = tempfile.NamedTemporaryFile()
+    tempFile = tempfile.NamedTemporaryFile(delete=False)
     tempFile.write(stationConfig)
     tempFile.seek(0)
     tempFilePath = tempFile.name
