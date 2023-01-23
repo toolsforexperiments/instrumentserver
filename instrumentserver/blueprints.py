@@ -344,7 +344,7 @@ def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
     for key, value in _dict.items():
         if isinstance(value, dict):
             ret[key] = _dictToJson(value, json_type)
-        elif isinstance(value, BluePrintType):
+        elif isinstance(value, get_args(BluePrintType)):
             ret[key] = bluePrintToDict(value, json_type)
         else:
             if json_type:
@@ -358,7 +358,7 @@ def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
     bp_dict = {}
     for my_field in fields(bp):
         value = bp.__getattribute__(my_field.name)
-        if isinstance(value, BluePrintType):
+        if isinstance(value, get_args(BluePrintType)):
             bp_dict[my_field.name] = bluePrintToDict(value, json_type)
         elif isinstance(value, dict):
             bp_dict[my_field.name] = _dictToJson(bp.__getattribute__(my_field.name), json_type)
