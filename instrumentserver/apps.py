@@ -3,6 +3,7 @@ import argparse
 import logging
 import importlib.util
 import signal
+from pathlib import Path
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
@@ -57,7 +58,7 @@ def serverScript() -> None:
     # Load and process the config file if any.
     configPath = args.config
 
-    stationConfig, serverConfig, guiConfig = None, None, None
+    stationConfig, serverConfig, guiConfig, tempFile = None, None, None, None
     if configPath != '':
         # Separates the corresponding settings into the 4 necessary parts
         stationConfig, serverConfig, guiConfig, tempFile = loadConfig(configPath)
@@ -76,6 +77,11 @@ def serverScript() -> None:
                       serverConfig=serverConfig,
                       stationConfig=stationConfig,
                       guiConfig=guiConfig)
+
+    # Close and delete the temporary files
+    if tempFile is not None:
+        tempFile.close()
+        Path(stationConfig).unlink(missing_ok=True)
 
 
 def parameterManagerScript() -> None:
