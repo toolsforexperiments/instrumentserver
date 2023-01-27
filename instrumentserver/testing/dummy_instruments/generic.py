@@ -2,6 +2,7 @@ from typing import List
 
 from qcodes import Instrument
 from qcodes.utils import validators
+from qcodes.math_utils.field_vector import FieldVector
 import numpy as np
 import time
 
@@ -133,3 +134,27 @@ class DummyInstrumentRandomNumber(Instrument):
     def get(self, param_name):
         self.generate_data(param_name)
         return self.parameters[param_name].get()
+
+
+class FieldVectorIns(Instrument):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.field_vector = FieldVector(x=1, y=1, z=1)
+
+        self.add_parameter(name="field",
+                           label='target field',
+                           unit='T',
+                           get_cmd=self.get_field,
+                           set_cmd=self.set_field,
+                           )
+
+    def get_field(self):
+        return self.field_vector
+
+    def set_field(self, field_vector: FieldVector):
+        self.field_vector = field_vector
+
+    def generic_function(self):
+        print(f'this generic function has been called')
+        return 3

@@ -5,14 +5,17 @@ and other messaging objects (and its parts) like ServerInstruction and ServerRes
 This module is responsible for defining them, present tools to create them and serializing them and deserializing them.
 
 Any object that is ment to be sent, should have the method "toJson" implemented and should return a dictionary object
-with all of its item json compatible.
+with all of its item json compatible. If any arbitrary object wants to be sent between client and server in the args or
+kwargs it must have a class attribute called "attributes" in which it lists all the attributes it needs to be replicated.
+It is important to note that due to the use of JSON the instance is not copied but instead all of its attributes are
+written in a dictionary and the a new instance with those values is created on the other side.
 
 To deserialize objects from dictionaries the only rule is that the dictionary must contain the field "_class_type"
 with the class it should be deserialized to. If any object requires any special care when deserializing them, it should
 be done in the constructor of that class. All deserializing classes will receive all of the dictionary items as keyword
 arguments.
 """
-
+import importlib
 import inspect
 import json
 import logging
@@ -370,6 +373,45 @@ def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
     return bp_dict
 
 
+def args_and_kwargs_to_dict(args: Optional[List[Any]] = None, kwargs: Optional[Dict[str, Any]] = None):
+    """
+    Gets all the attributes in args and kwargs and converts them into dictionary by using all the attributes as keywords
+    and their values as values. The class must have a class attribute called "attributes" for this to function.
+
+    returns a list with the args as dictionaries and a dictionary with the kwargs values as dictionaries.
+
+    The current rules:
+        - Any object that is being serialized here must have a class attribute listing all the classes attributes that
+        the constructor needs to create an identical instance of that class
+        - The serialized dictionary need to have the field: '_class_type', to indicate what it is that needs to be
+        instantiated.
+    """
+
+    converted_args = None
+    if args is not None:
+        converted_args = []
+        for arg in args:
+            if hasattr(arg, 'attributes'):
+                arg_dict = {}
+                for attr in arg.attributes:
+                    arg_dict[attr] = getattr(arg, attr)
+                arg_dict['_class_type'] = {'module': arg.__module__, 'type': arg.__class__.__name__}
+                converted_args.append(arg_dict)
+
+    converted_kwargs = None
+    if kwargs is not None:
+        converted_kwargs = {}
+        for name, value in kwargs.items():
+            if hasattr(value, 'attributes'):
+                kwarg_dict = {}
+                for attr in value.attributes:
+                    kwarg_dict[attr] = getattr(value, attr)
+                kwarg_dict['_class_type'] = {'module': value.__module__, 'type': value.__class__.__name__}
+                converted_kwargs[name] = kwarg_dict
+
+    return converted_args, converted_kwargs
+
+
 @unique
 class Operation(Enum):
     """Valid operations for the server."""
@@ -413,6 +455,8 @@ class InstrumentCreationSpec:
     _class_type: str = 'InstrumentCreationSpec'
 
     def toJson(self):
+        ret = asdict(self)
+        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
         return asdict(self)
 
 
@@ -433,7 +477,9 @@ class CallSpec:
     _class_type: str = 'CallSpec'
 
     def toJson(self):
-        return asdict(self)
+        ret = asdict(self)
+        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        return ret
 
 
 @dataclass
@@ -455,7 +501,9 @@ class ParameterSerializeSpec:
     _class_type: str = 'ParameterSerializeSpec'
 
     def toJson(self):
-        return asdict(self)
+        ret = asdict(self)
+        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        return ret
 
 
 @dataclass
@@ -554,8 +602,7 @@ class ServerInstruction:
             ret['serialization_opts'] = self.serialization_opts.toJson()
 
         ret['set_parameters'] = self.set_parameters
-        ret['args'] = self.args
-        ret['kwargs'] = self.kwargs
+        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
         ret['_class_type'] = self._class_type
 
         return ret
@@ -639,12 +686,6 @@ def _is_numeric(val) -> Optional[Union[int, float]]:
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
     try:
-        int_conversion = int(val)
-        return int_conversion
-    except Exception:
-        pass
-
-    try:
         float_conversion = float(val)
         return float_conversion
     except Exception:
@@ -688,9 +729,29 @@ def from_dict(data: Union[dict, str]) -> Any:
                 # The json encoder will convert nested dictionaries and lists into strings with the items inside.
                 if (value[0] == '{' and value[-1] == '}') or (value[0] == '[' and value[-1] == ']'):
                     try:
-                        data[key] = json.loads(value.replace("'", '"'))
+                        # If there is a nested object that needs to be re instantiated, it will be a string first
+                        # and by our rules it will have the key _class_type
+                        loaded_json = json.loads(value.replace("'", '"'))
+                        if '_class_type' in loaded_json:
+                            data[key] = from_dict(loaded_json)
+                        else:
+                            data[key] = loaded_json
+
                     except json.JSONDecodeError as e:
                         logger.error(f'Could not decode: "{value}".'
                                      f' It does not conform to JSON standard, Might not be correct once used: {e}.')
-
-    return eval(f'{data["_class_type"]}(**data)')
+    # If data is a class in this module, we just need to eval the class type
+    if isinstance(data['_class_type'], str):
+        return eval(f'{data["_class_type"]}(**data)')
+    # if there is a dicitonary in class type it is a generic class and it needs to be imported before we can create a
+    # new instance of it.
+    else:
+        class_type = data['_class_type']
+        if 'module' in class_type and 'type' in class_type:
+            mod = importlib.import_module(class_type['module'])
+            cls = getattr(mod, class_type['type'])
+            data.pop('_class_type')
+            return cls(**data)
+        else:
+            raise KeyError(f"serialized class does not indicate its type. Make sure it has 'module' and 'type' fields "
+                           f"in the _class_type dictionary: {data}")
