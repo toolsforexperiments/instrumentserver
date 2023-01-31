@@ -754,6 +754,18 @@ def from_dict(data: Union[dict, str]) -> Any:
         elif isinstance(value, dict):
             if '_class_type' in value:
                 data[key] = from_dict(value)
+
+        # args can come inside of lists, needing to convert each item in that list
+        elif isinstance(value, list):
+            new_list = []
+            for arg in value:
+                if isinstance(arg, dict) and '_class_type' in arg:
+                    converted_arg = from_dict(arg)
+                    new_list.append(converted_arg)
+                else:
+                    new_list.append(arg)
+            data[key] = new_list
+
         elif isinstance(value, str):
             if len(value) > 0:
                 # The json encoder will convert nested dictionaries and lists into strings with the items inside.

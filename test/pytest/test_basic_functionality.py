@@ -43,15 +43,18 @@ def test_sending_and_receiving_arbitrary_objects(cli):
     # Testing receiving arbitrary return from method
     field_vector = magnet.get_field()
     expected_field = FieldVector(1, 1, 1)
+    assert isinstance(field_vector, FieldVector)
     assert field_vector.is_equal(expected_field)
 
     # Getting the parameter directly instead of through a function
     field_vector = magnet.field()
+    assert isinstance(field_vector, FieldVector)
     assert field_vector.is_equal(expected_field)
 
     # Setting parameter directly.
     new_field_vector = FieldVector(11, 22, 33)
     magnet.field(new_field_vector)
+    assert isinstance(magnet.field(), FieldVector)
     assert magnet.field().is_equal(new_field_vector)
 
     new_field_vector = FieldVector(101, 102, 103)
