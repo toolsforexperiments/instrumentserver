@@ -373,6 +373,36 @@ def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
     return bp_dict
 
 
+def _convert_obj_to_dict(obj: object) -> Dict[str, Any]:
+    """
+    Converts an objects into a dictionary. Assumes that the object contains an attribute called 'attributes' in which
+    it lists all the attributes it needs for the object to be able to be serialized. These should also be accepted as
+    keyword arguments in the constructor of the object.
+    """
+    obj_dict = {}
+    for attr in obj.attributes:
+        obj_dict[attr] = getattr(obj, attr)
+    obj_dict['_class_type'] = {'module': obj.__module__, 'type': obj.__class__.__name__}
+    return obj_dict
+
+
+def _convert_dict_to_obj(item_dict: dict):
+    """
+    Instantiates an object from an object dictionary. The reverse of the _convert_obj_to_dict. The constructor of the
+    object should accept all of the items in the dictionary in the constructor.
+    """
+    class_type = item_dict['_class_type']
+    if 'module' in class_type and 'type' in class_type:
+        mod = importlib.import_module(class_type['module'])
+        cls = getattr(mod, class_type['type'])
+        item_dict.pop('_class_type')
+        return cls(**item_dict)
+    else:
+        logger.warning(f"serialized class does not indicate its type. Make sure it has 'module' and 'type' fields "
+                       f"in the _class_type dictionary: {item_dict} \nBehaviour might be unpredictable from here")
+        return item_dict
+
+
 def args_and_kwargs_to_dict(args: Optional[List[Any]] = None, kwargs: Optional[Dict[str, Any]] = None):
     """
     Gets all the attributes in args and kwargs and converts them into dictionary by using all the attributes as keywords
@@ -392,22 +422,20 @@ def args_and_kwargs_to_dict(args: Optional[List[Any]] = None, kwargs: Optional[D
         converted_args = []
         for arg in args:
             if hasattr(arg, 'attributes'):
-                arg_dict = {}
-                for attr in arg.attributes:
-                    arg_dict[attr] = getattr(arg, attr)
-                arg_dict['_class_type'] = {'module': arg.__module__, 'type': arg.__class__.__name__}
+                arg_dict = _convert_obj_to_dict(arg)
                 converted_args.append(arg_dict)
+            else:
+                converted_args.append(arg)
 
     converted_kwargs = None
     if kwargs is not None:
         converted_kwargs = {}
         for name, value in kwargs.items():
             if hasattr(value, 'attributes'):
-                kwarg_dict = {}
-                for attr in value.attributes:
-                    kwarg_dict[attr] = getattr(value, attr)
-                kwarg_dict['_class_type'] = {'module': value.__module__, 'type': value.__class__.__name__}
+                kwarg_dict = _convert_obj_to_dict(value)
                 converted_kwargs[name] = kwarg_dict
+            else:
+                converted_kwargs[name] = value
 
     return converted_args, converted_kwargs
 
@@ -457,7 +485,7 @@ class InstrumentCreationSpec:
     def toJson(self):
         ret = asdict(self)
         ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
-        return asdict(self)
+        return ret
 
 
 @dataclass
@@ -658,6 +686,8 @@ class ServerResponse:
         ret = {}
         if isinstance(self.message, get_args(BluePrintType)):
             ret['message'] = self.message.toJson()
+        elif hasattr(self.message, 'attributes'):
+            ret['message'] = _convert_obj_to_dict(self.message)
         else:
             ret['message'] = str(self.message)
         if isinstance(self.error, Exception):
@@ -743,15 +773,7 @@ def from_dict(data: Union[dict, str]) -> Any:
     # If data is a class in this module, we just need to eval the class type
     if isinstance(data['_class_type'], str):
         return eval(f'{data["_class_type"]}(**data)')
-    # if there is a dicitonary in class type it is a generic class and it needs to be imported before we can create a
+    # if there is a dictionary in class type it is a generic class and it needs to be imported before we can create a
     # new instance of it.
     else:
-        class_type = data['_class_type']
-        if 'module' in class_type and 'type' in class_type:
-            mod = importlib.import_module(class_type['module'])
-            cls = getattr(mod, class_type['type'])
-            data.pop('_class_type')
-            return cls(**data)
-        else:
-            raise KeyError(f"serialized class does not indicate its type. Make sure it has 'module' and 'type' fields "
-                           f"in the _class_type dictionary: {data}")
+        return _convert_dict_to_obj(data)

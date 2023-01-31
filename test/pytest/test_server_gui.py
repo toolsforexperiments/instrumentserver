@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from instrumentserver import QtCore
-from instrumentserver.serialize import toParamDict
+from instrumentserver.gui.instruments import GenericInstrument
 from instrumentserver.server.application import startServerGuiApplication
 
 correct_file_dict = {
@@ -92,3 +92,24 @@ def test_clicking_an_item(qtbot):
     qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
 
     assert True
+
+
+def test_opening_new_tab_generic_object(qtbot):
+    window = startServerGuiApplication()
+    qtbot.addWidget(window)
+
+    dummy = window.client.find_or_create_instrument('dummy',
+                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
+
+    window.refreshStationAction.trigger()
+    item = window.stationList.findItems('dummy', QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+
+    # Manually triggering the tab opening since qtbot refuses to double-click an item
+    window.addInstrumentTab(item[0], 0)
+
+    assert 'dummy' in window.instrumentTabsOpen
+
+    assert isinstance(window.instrumentTabsOpen['dummy'], GenericInstrument)
+
+
+

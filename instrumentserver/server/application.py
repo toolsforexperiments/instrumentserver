@@ -136,7 +136,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
         self._bluePrints = {}
         self._serverKwargs = serverKwargs
-        self._guiConfig = guiConfig
+        if guiConfig is None:
+            self._guiConfig = {}
+        else:
+            self._guiConfig = guiConfig
 
         self.stationServer = None
         self.stationServerThread = None
@@ -318,16 +321,19 @@ class ServerGui(QtWidgets.QMainWindow):
         name = item.text(0)
         if name not in self.instrumentTabsOpen:
             ins = self.client.find_or_create_instrument(name)
-            # import the widget
-            moduleName = '.'.join(self._guiConfig[name]['type'].split('.')[:-1])
-            widgetClassName = self._guiConfig[name]['type'].split('.')[-1]
-            module = importlib.import_module(moduleName)
-            widgetClass = getattr(module, widgetClassName)
-
-            # get any kwargs if the config file has any
+            widgetClass = GenericInstrument
             kwargs = {}
-            if 'kwargs' in self._guiConfig[name]:
-                kwargs = self._guiConfig[name]['kwargs']
+            # The user might create an instrument that is not in the config file
+            if name in self._guiConfig:
+                # import the widget
+                moduleName = '.'.join(self._guiConfig[name]['type'].split('.')[:-1])
+                widgetClassName = self._guiConfig[name]['type'].split('.')[-1]
+                module = importlib.import_module(moduleName)
+                widgetClass = getattr(module, widgetClassName)
+
+                # get any kwargs if the config file has any
+                if 'kwargs' in self._guiConfig[name]:
+                    kwargs = self._guiConfig[name]['kwargs']
 
             insWidget = widgetClass(ins, parent=self, **kwargs)
             index = self.tabs.addTab(insWidget, ins.name)
