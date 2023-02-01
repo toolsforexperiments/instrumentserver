@@ -23,16 +23,17 @@ class BaseClient:
     :param connect: If true, the server connects as it is being constructed, defaults to True.
     :param timeout: Amount of time that the client waits for an answer before declaring timeout in ms.
                     Defaults to 5000.
+    :param raise_exceptions: If true the client will raise an exception when the server sends one to it, defaults to True.
     """
 
-    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=5000):
+    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=5000, raise_exceptions=True):
         self.connected = False
         self.context = None
         self.socket = None
         self.host = host
         self.port = port
         self.addr = f"tcp://{host}:{port}"
-
+        self.raise_exceptions = raise_exceptions
         #: Timeout for server replies.
         self.recv_timeout = timeout
 
@@ -74,17 +75,25 @@ class BaseClient:
                     elif isinstance(err, Warning):
                         warnings.warn(err)
                     elif isinstance(err, Exception):
-                        raise err
+                        if self.raise_exceptions:
+                            raise err
+                        else:
+                            logger.error(f'Server raised the following exception: {err}')
                     else:
-                        raise TypeError(f'Unknown Error Type: {str(err)}')
+                        if self.raise_exceptions:
+                            raise TypeError(f'Unknown Error Type: {str(err)}')
+                        else:
+                            logger.error(f'Unknown Error Type: {str(err)}')
             return ret.message
 
         except zmq.error.Again as e:
             # if there is a timeout, close the socket and connect again
             self.socket.close()
             self.connect()
-            raise RuntimeError(f'Server did not reply before timeout.')
-
+            if self.raise_exceptions:
+                raise RuntimeError(f'Server did not reply before timeout.')
+            else:
+                logger.error(f'Server did not reply before timeout.')
 
     def disconnect(self):
         self.socket.close()
