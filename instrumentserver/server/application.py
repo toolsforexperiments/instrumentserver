@@ -5,6 +5,7 @@ import os
 import time
 from typing import Union, Optional, Any, Dict
 
+import instrumentserver.testing.dummy_instruments.generic
 from instrumentserver.client import QtClient
 from instrumentserver.log import LogLevels, LogWidget, log
 
@@ -14,6 +15,7 @@ from .core import (
 )
 from .. import QtCore, QtWidgets, QtGui
 from ..gui.misc import DetachableTabWidget
+from ..gui.parameters import AnyInputForMethod
 from ..gui.instruments import GenericInstrument
 
 logger = logging.getLogger(__name__)
@@ -123,6 +125,153 @@ class ServerStatus(QtWidgets.QWidget):
         self.messages.append(f"Server replied: {reply}")
 
 
+# TODO: Come up with a better name
+# TODO: have it such that you cannot change the vertical length of it
+class CreateInstrumentDialog(QtWidgets.QDialog):
+
+    createInstrument = QtCore.Signal(str, str, tuple)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        formLayout = QtWidgets.QFormLayout()
+        self.typeEdit = QtWidgets.QLineEdit()
+        self.nameEdit = QtWidgets.QLineEdit()
+        self.argsEdit = AnyInputForMethod()
+        self.argsEdit.doEval.hide()
+
+        formLayout.addRow(QtWidgets.QLabel('Instrument Type:'), self.typeEdit)
+        formLayout.addRow(QtWidgets.QLabel('Instrument Name:'), self.nameEdit)
+        formLayout.addRow(QtWidgets.QLabel('arguments and keyword arguments:'), self.argsEdit)
+
+        layout.addLayout(formLayout)
+
+        self.acceptButton = QtWidgets.QPushButton("Create baby create")
+        self.acceptButton.setDefault(True)
+        buttonSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        self.acceptButton.setSizePolicy(buttonSizePolicy)
+        layout.addWidget(self.acceptButton)
+        layout.setAlignment(self.acceptButton, QtCore.Qt.AlignCenter)
+
+        self.acceptButton.clicked.connect(self.onAcceptButton)
+
+    @QtCore.Slot()
+    def onAcceptButton(self):
+        insType = self.typeEdit.text()
+        insName = self.nameEdit.text()
+        # Args is not a normal line edit, value evaluates the args and kwargs already
+        args = tuple(self.argsEdit.value())
+        self.createInstrument.emit(insType, insName, args)
+
+    @QtCore.Slot(object)
+    def onException(self, exception):
+        """
+        Opens another dialog indicating the problem with the creation of the instrument
+        """
+        dialog = QtWidgets.QDialog(parent=self)
+        dialog.setWindowTitle("Instrument Creation Error")
+        layout = QtWidgets.QVBoxLayout(dialog)
+
+        exceptionRaisedLabel = QtWidgets.QLabel(f"Exception Raised:")
+        exceptionLabel = QtWidgets.QLabel(str(exception))
+
+        accept = QtWidgets.QPushButton("Accept")
+
+        layout.addWidget(exceptionRaisedLabel)
+        layout.setAlignment(exceptionRaisedLabel, QtCore.Qt.AlignCenter)
+        layout.addWidget(exceptionLabel)
+        layout.setAlignment(exceptionLabel, QtCore.Qt.AlignCenter)
+        layout.addWidget(accept)
+        layout.setAlignment(accept, QtCore.Qt.AlignCenter)
+
+        accept.clicked.connect(dialog.accept)
+        dialog.exec_()
+
+
+# TODO: Seriously think of the names of everything in this class
+# TODO: Have more serious sizing policies
+class PotentialInstrumentDisplay(QtWidgets.QTreeWidget):
+
+    cols = ["Instrument Type", "Instrument Name", "Create Instrument"]
+
+    def __init__(self, *args, ):
+        super().__init__(*args)
+
+        self.setColumnCount(len(self.cols))
+        self.setHeaderLabels(self.cols)
+
+        self.addPotentialInstrument()
+        self.addPotentialInstrument()
+
+    def addPotentialInstrument(self, insType: str = 'InstrumentType', insName: str = 'MyInstrument'):
+        lst = [insType, insName, 'create']
+        item = QtWidgets.QTreeWidgetItem(lst)
+        self.addTopLevelItem(item)
+        lineEdit = QtWidgets.QLineEdit()
+        lineEdit.setPlaceholderText(insName)
+        createButton = QtWidgets.QPushButton("Create")
+        self.setItemWidget(item, 1, lineEdit)
+        self.setItemWidget(item, 2, createButton)
+
+
+class InstrumentsCreator(QtWidgets.QWidget):
+    """
+    Widget that is able to instantiate new instruments in the instrumentserver.
+
+    :param cli: client used to communicate with the server.
+    """
+    newInstrumentCreated = QtCore.Signal()
+
+    # emits the exception
+    newInstrumentFailed = QtCore.Signal(object)
+
+    def __init__(self, cli, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.cli = cli
+
+        self.potentialInstrumentDisplay = PotentialInstrumentDisplay()
+
+        self.createNewButton = QtWidgets.QPushButton("Create New Instrument")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.potentialInstrumentDisplay)
+        layout.addWidget(self.createNewButton, 0)
+
+        self.createNewButton.clicked.connect(self.onCreateNewButton)
+
+    @QtCore.Slot()
+    def onCreateNewButton(self):
+        dialog = CreateInstrumentDialog(parent=self)
+        dialog.createInstrument.connect(self.onDialogNewInstrument)
+        self.newInstrumentCreated.connect(dialog.accept)
+        self.newInstrumentFailed.connect(dialog.onException)
+        dialog.exec_()
+
+    @QtCore.Slot(str, str, tuple)
+    def onDialogNewInstrument(self, insType, insName, argsKwargs):
+        args, kwargs = argsKwargs
+        print(f'instype: {insType}, insName: {insName}, argsKwargs: {argsKwargs}')
+
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
+        newIns = None
+        try:
+            newIns = self.cli.find_or_create_instrument(
+                instrument_class=insType,
+                name=insName,
+                *args, **kwargs
+            )
+            self.newInstrumentCreated.emit()
+        except Exception as e:
+            self.newInstrumentFailed.emit(e)
+
+
 class ServerGui(QtWidgets.QMainWindow):
     """Main window of the qcodes station server."""
 
@@ -201,6 +350,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")
         )
+
+        self.instrumentCreator = InstrumentsCreator(self.client)
+        self.tabs.addUnclosableTab(self.instrumentCreator, 'Creator')
+
         if startServer:
             self.startServer()
 
