@@ -7,7 +7,9 @@ from instrumentserver.blueprints import (bluePrintFromInstrumentModule,
                                          bluePrintFromParameter,
                                          bluePrintToDict,
                                          from_dict,
-                                         ParameterBroadcastBluePrint, args_and_kwargs_to_dict,
+                                         ParameterBroadcastBluePrint,
+                                         iterable_to_serialized_dict,
+                                         dict_to_serialized_dict,
                                          )
 from instrumentserver.testing.dummy_instruments.generic import DummyInstrumentWithSubmodule
 from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
@@ -93,8 +95,8 @@ def test_arbitrary_class_serialization():
                                              '_class_type': {'module': arbitrary_class_2.__module__,
                                                              'type': arbitrary_class_2.__class__.__name__}}}
 
-    returned_args, returned_kwargs = args_and_kwargs_to_dict([arbitrary_class_1],
-                                                             {'arbitrary_class_2': arbitrary_class_2})
+    returned_args = iterable_to_serialized_dict([arbitrary_class_1])
+    returned_kwargs = dict_to_serialized_dict({'arbitrary_class_2': arbitrary_class_2})
     assert returned_args == expected_arg
     assert expected_kwargs == returned_kwargs
 
@@ -110,3 +112,32 @@ def test_send_arbitrary_objects(cli):
     assert new_vector.is_equal(ins_vector)
 
 
+def test_sending_complex_numbers(cli):
+    field_vector_ins = cli.find_or_create_instrument('field_vector',
+                                                     instrument_class="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns")
+
+    # Getting value
+    expected_complex = 1 + 1j
+    ret_complex = field_vector_ins.complex()
+    assert expected_complex == ret_complex
+
+    # Setting value
+    new_complex = 2 - 4j
+    field_vector_ins.complex(new_complex)
+    assert new_complex == field_vector_ins.complex()
+
+    # Getting lists
+    expected_list = [1 + 1j, -2 - 2j]
+    ret_list = field_vector_ins.complex_list()
+    assert expected_list == ret_list
+    ret_list = field_vector_ins.get_complex_list()
+    assert expected_list == ret_list
+
+    # Setting lists
+    new_list = [3 + 3j, -4 - 4j]
+    field_vector_ins.complex_list(new_list)
+    assert new_list == field_vector_ins.complex_list()
+
+    new_list = [5 + 5j, -6 - 6j]
+    field_vector_ins.set_complex_list(new_list)
+    assert new_list == field_vector_ins.get_complex_list()

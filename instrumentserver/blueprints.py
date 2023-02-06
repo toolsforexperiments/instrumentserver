@@ -20,6 +20,7 @@ import inspect
 import json
 import logging
 from enum import Enum, unique
+from collections.abc import Iterable
 from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
 from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args
 
@@ -403,41 +404,72 @@ def _convert_dict_to_obj(item_dict: dict):
         return item_dict
 
 
-def args_and_kwargs_to_dict(args: Optional[List[Any]] = None, kwargs: Optional[Dict[str, Any]] = None):
+def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
     """
-    Gets all the attributes in args and kwargs and converts them into dictionary by using all the attributes as keywords
-    and their values as values. The class must have a class attribute called "attributes" for this to function.
+    Goes through an iterable (lists, tuples, sets) and serialize each object inside of it. If trying to serialize an
+    arbitrary object, this object must have a class attribute "attributes" for the serialization to happen correctly.
 
-    returns a list with the args as dictionaries and a dictionary with the kwargs values as dictionaries.
+    returns a list with the args as serialized dictionaries.
 
     The current rules:
-        - Any object that is being serialized here must have a class attribute listing all the classes attributes that
+        - Any arbitrary object that is being serialized here must have a class attribute listing all the classes attributes that
         the constructor needs to create an identical instance of that class
         - The serialized dictionary need to have the field: '_class_type', to indicate what it is that needs to be
         instantiated.
     """
+    converted_iterable = None
+    if iterable is not None:
+        converted_iterable = []
+        for item in iterable:
+            # Check if the object is iterable since the objects inside the iterable should be serialized too.
+            if not isinstance(item, str) and isinstance(item, Iterable):
+                if isinstance(item, dict):
+                    serialized_iterable = dict_to_serialized_dict(dct=item)
+                else:
+                    serialized_iterable = iterable_to_serialized_dict(iterable=item)
+                converted_iterable.append(serialized_iterable)
 
-    converted_args = None
-    if args is not None:
-        converted_args = []
-        for arg in args:
-            if hasattr(arg, 'attributes'):
-                arg_dict = _convert_obj_to_dict(arg)
-                converted_args.append(arg_dict)
+            elif hasattr(item, 'attributes'):
+                arg_dict = _convert_obj_to_dict(item)
+                converted_iterable.append(arg_dict)
+
+            elif isinstance(item, complex):
+                arg_dict = dict(real=item.real, imag=item.imag, _class_type='complex')
+                converted_iterable.append(arg_dict)
+
             else:
-                converted_args.append(arg)
+                converted_iterable.append(str(item))
 
-    converted_kwargs = None
-    if kwargs is not None:
-        converted_kwargs = {}
-        for name, value in kwargs.items():
-            if hasattr(value, 'attributes'):
+    return converted_iterable
+
+
+def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
+    """
+    Same idea as iterable_to_serialized_dict but for dictionaries.
+    """
+
+    converted_dict = None
+    if dct is not None:
+        converted_dict = {}
+        for name, value in dct.items():
+            # check if the object is iterable since the objects inside the iterable should be serialized too.
+            if not isinstance(value, str) and isinstance(value, Iterable):
+                if isinstance(value, dict):
+                    serialized_iterable = dict_to_serialized_dict(dct=value)
+                else:
+                    serialized_iterable = iterable_to_serialized_dict(iterable=value)
+                converted_dict[name] = serialized_iterable
+
+            elif hasattr(value, 'attributes'):
                 kwarg_dict = _convert_obj_to_dict(value)
-                converted_kwargs[name] = kwarg_dict
+                converted_dict[name] = kwarg_dict
+            elif isinstance(value, complex):
+                kwarg_dict = dict(real=value.real, imag=value.imag, _class_type='complex')
+                converted_dict[name] = kwarg_dict
             else:
-                converted_kwargs[name] = value
+                converted_dict[name] = str(value)
 
-    return converted_args, converted_kwargs
+    return converted_dict
 
 
 @unique
@@ -484,7 +516,8 @@ class InstrumentCreationSpec:
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -506,7 +539,8 @@ class CallSpec:
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -530,7 +564,8 @@ class ParameterSerializeSpec:
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -630,7 +665,8 @@ class ServerInstruction:
             ret['serialization_opts'] = self.serialization_opts.toJson()
 
         ret['set_parameters'] = self.set_parameters
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         ret['_class_type'] = self._class_type
 
         return ret
@@ -688,6 +724,13 @@ class ServerResponse:
             ret['message'] = self.message.toJson()
         elif hasattr(self.message, 'attributes'):
             ret['message'] = _convert_obj_to_dict(self.message)
+        elif not isinstance(self.message, str) and isinstance(self.message, Iterable):
+            if isinstance(self.message, dict):
+                message_dict = dict_to_serialized_dict(self.message)
+                ret['message'] = str(message_dict)
+            else:
+                message_iterable = iterable_to_serialized_dict(self.message)
+                ret['message'] = str(message_iterable)
         else:
             ret['message'] = str(self.message)
         if isinstance(self.error, Exception):
@@ -711,13 +754,19 @@ def to_dict(data) -> Union[Dict[str, str], str]:
     return data.toJson()
 
 
-def _is_numeric(val) -> Optional[Union[int, float]]:
+def _is_numeric(val) -> Optional[Union[float, complex]]:
     """
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
     try:
         float_conversion = float(val)
         return float_conversion
+    except Exception:
+        pass
+
+    try:
+        complex_conversion = complex(val)
+        return complex_conversion
     except Exception:
         pass
 
@@ -731,6 +780,20 @@ def from_dict(data: Union[dict, str]) -> Any:
 
     the dictionary must have the key "_class_type" indicating the type of the class.
     """
+
+    def _instantiate_iterable(iter):
+        """
+        Goes through an iterable instantiating any value that is inside.
+        """
+        new_list = []
+        for item in iter:
+            if isinstance(item, dict) and '_class_type' in item:
+                converted_arg = from_dict(item)
+                new_list.append(converted_arg)
+            else:
+                new_list.append(item)
+        return new_list
+
     if isinstance(data, str):
         return data
 
@@ -757,14 +820,7 @@ def from_dict(data: Union[dict, str]) -> Any:
 
         # args can come inside of lists, needing to convert each item in that list
         elif isinstance(value, list):
-            new_list = []
-            for arg in value:
-                if isinstance(arg, dict) and '_class_type' in arg:
-                    converted_arg = from_dict(arg)
-                    new_list.append(converted_arg)
-                else:
-                    new_list.append(arg)
-            data[key] = new_list
+            data[key] = _instantiate_iterable(value)
 
         elif isinstance(value, str):
             if len(value) > 0:
@@ -774,8 +830,12 @@ def from_dict(data: Union[dict, str]) -> Any:
                         # If there is a nested object that needs to be re instantiated, it will be a string first
                         # and by our rules it will have the key _class_type
                         loaded_json = json.loads(value.replace("'", '"'))
+                        # If the loaded json is an instance of a class that needs to be instantiated or an iterable with
+                        # objects inside, we need to load those too.
                         if '_class_type' in loaded_json:
                             data[key] = from_dict(loaded_json)
+                        elif isinstance(loaded_json, Iterable):
+                            data[key] = _instantiate_iterable(loaded_json)
                         else:
                             data[key] = loaded_json
 
@@ -784,7 +844,12 @@ def from_dict(data: Union[dict, str]) -> Any:
                                      f' It does not conform to JSON standard, Might not be correct once used: {e}.')
     # If data is a class in this module, we just need to eval the class type
     if isinstance(data['_class_type'], str):
-        return eval(f'{data["_class_type"]}(**data)')
+        # The class might not want the _class_type as an argument
+        try:
+            return eval(f'{data["_class_type"]}(**data)')
+        except TypeError:
+            _class_type = data.pop('_class_type')
+            return eval(f'{_class_type}(**data)')
     # if there is a dictionary in class type it is a generic class and it needs to be imported before we can create a
     # new instance of it.
     else:
