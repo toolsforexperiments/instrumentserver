@@ -89,11 +89,9 @@ def test_arbitrary_class_serialization():
     arbitrary_class_2 = MyClass(x=10, y=11, z=12)
 
     expected_arg = [{'x': 1, 'y': 2, 'z': 3,
-                     '_class_type': {'module': arbitrary_class_1.__module__,
-                                     'type': arbitrary_class_1.__class__.__name__}}]
+                     '_class_type': f'{arbitrary_class_1.__module__}.{arbitrary_class_1.__class__.__name__}'}]
     expected_kwargs = {'arbitrary_class_2': {'x': 10, 'y': 11, 'z': 12,
-                                             '_class_type': {'module': arbitrary_class_2.__module__,
-                                                             'type': arbitrary_class_2.__class__.__name__}}}
+                                             '_class_type': f'{arbitrary_class_2.__module__}.{arbitrary_class_2.__class__.__name__}'}}
 
     returned_args = iterable_to_serialized_dict([arbitrary_class_1])
     returned_kwargs = dict_to_serialized_dict({'arbitrary_class_2': arbitrary_class_2})

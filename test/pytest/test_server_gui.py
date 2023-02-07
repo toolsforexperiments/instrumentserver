@@ -5,24 +5,27 @@ from instrumentserver import QtCore
 from instrumentserver.gui.instruments import GenericInstrument
 from instrumentserver.server.application import startServerGuiApplication
 
-correct_file_dict = {
-  "dummy.A.ch0": 0,
-  "dummy.A.ch1": 1,
-  "dummy.B.ch0": 0,
-  "dummy.B.ch1": 1,
-  "dummy.C.ch0": 0,
-  "dummy.C.ch1": 1,
-  "dummy.param0": 1,
-  "dummy.param1": 1,
-}
-
 
 def test_saving_button(qtbot):
+    correct_file_dict = {
+        "rr.bandwidth": 10000.0,
+        "rr.data": None,
+        "rr.frequency": None,
+        "rr.input_attenuation": 70,
+        "rr.noise_temperature": 4.0,
+        "rr.npoints": 1601,
+        "rr.power": -100,
+        "rr.resonator_frequency": 5000000000.0,
+        "rr.resonator_linewidth": 1000000.0,
+        "rr.start_frequency": 20000.0,
+        "rr.stop_frequency": 20000000000.0
+    }
+
+
     window = startServerGuiApplication()
-    dummy = window.client.find_or_create_instrument('dummy',
-                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
-    dummy.param0(1)
-    dummy.param1(1)
+    rr = window.client.find_or_create_instrument('rr',
+                                                 'instrumentserver.testing.dummy_instruments.rf.ResonatorResponse')
+
     qtbot.addWidget(window)
     saving_widget = window.toolBar.widgetForAction(window.saveParamsAction)
     qtbot.mouseClick(saving_widget, QtCore.Qt.LeftButton)
@@ -39,6 +42,17 @@ def test_saving_button(qtbot):
 
 
 def test_loading_button(qtbot):
+    correct_file_dict = {
+        "dummy.A.ch0": 0,
+        "dummy.A.ch1": 1,
+        "dummy.B.ch0": 0,
+        "dummy.B.ch1": 1,
+        "dummy.C.ch0": 0,
+        "dummy.C.ch1": 1,
+        "dummy.param0": 1,
+        "dummy.param1": 1,
+    }
+
     window = startServerGuiApplication()
 
     file_path = Path(window._paramValuesFile)
