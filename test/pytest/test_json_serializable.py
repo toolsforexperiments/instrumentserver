@@ -146,6 +146,6 @@ def test_sending_complex_numbers(cli):
     field_vector_ins.set_complex_list(new_list)
     assert new_list == field_vector_ins.get_complex_list()
 
-    numpy_array = np.array([1, 2, 3, 4, 5])
+    numpy_array = np.array([1, 2, 3, 4, 5, 4-23j])
     field_vector_ins.set_complex_list(numpy_array)
     assert np.array_equal(numpy_array, field_vector_ins.complex_list())
