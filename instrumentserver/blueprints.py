@@ -1,25 +1,60 @@
 """
+Blueprints Module
+=================
+
 This module contains all objects that are being sent between client and server. This includes all of the blueprints
 and other messaging objects (and its parts) like ServerInstruction and ServerResponse.
 
 This module is responsible for defining them, present tools to create them and serializing them and deserializing them.
 
 Any object that is ment to be sent, should have the method "toJson" implemented and should return a dictionary object
-with all of its item json compatible. If any arbitrary object wants to be sent between client and server in the args or
-kwargs it must have a class attribute called "attributes" in which it lists all the attributes it needs to be replicated.
-It is important to note that due to the use of JSON the instance is not copied but instead all of its attributes are
-written in a dictionary and the a new instance with those values is created on the other side.
+with all of its item json compatible. This however does not apply to any argument or keyword argument inside those
+objects. These will each be tried to be serialized as best as possible. If an arbitrary class that is sent inside one
+of the objects present in this module needs to be serialized, this class must have an attribute called "attributes"
+inside listing all of the arguments that are needed to deserialize the class, these arguments must also be accepted
+by the constructor of the class.
 
-To deserialize objects from dictionaries the only rule is that the dictionary must contain the field "_class_type"
-with the class it should be deserialized to. If any object requires any special care when deserializing them, it should
-be done in the constructor of that class. All deserializing classes will receive all of the dictionary items as keyword
-arguments.
+After passing the string through the json.loads function, to deserialize the object we call the deserialize_obj. If we
+pass a dictionary containing the key '_class_type'. the function assumes that that dictionary is representing an object
+that must be instantiated. If the key is missing, it will try to deserialize any value in the keys and return the
+dictionary. If a list is passed, the function will go through the items in the list and deserialize them.
+
+More Specifics for Developers
+=============================
+
+The server and client only communicate by sending a class that is in this module. You can split them in to 2
+different categories: blueprints and instructions/information. The blueprints are used to represent instruments,
+functions, and parameters for the client to utilize. While instructions/information are classes used to ask for
+commands or request items and their responses.
+
+All of the classes in the module contain the toJson method inside of them. For blueprints, their toJson calls the
+function bluePrintToDict, which returns the blueprint in a dict representation with all the values as strings. The
+function is smart enough such that if a blueprint has another blueprint inside, the inside blueprint gets properly
+deserialized. This occurs for all attributes inside the blueprint.
+
+The rest of the classes each handles its own serialization in their own toJson function. There are occasions when
+classes like ServerInstruction, contain other classes of this module inside of it. When this happens the toJson function
+of that class is called.
+
+Special care is placed in serializing the args and kwargs fields of all of those classes, as they do not have
+specified types and often require special handling. Because args always comes inside iterables, to serialize those
+the function iterable_to_serialize_dict is called. The function goes through each item and serializes them one by
+one. This ensures that any nested classes gets properly serialized. For kwargs, a similar process happens but for a
+dictionary, the function dict_to_serialized_dict is called instead.
+
+To deserialize objects the function deserialize_obj is called. If an object is a dictionary or an iterable (except
+string) the function will go through all of the items inside of it trying to deserialize them as best as it can. A
+few helper functions are used like _is_numeric and _convert_dict_to_obj. If a string is passed, it will try and pass
+json.load to the string in case this happens because the first round of deserialization missed some nested object,
+otherwise, it will keep it as a string.
 """
+
 import importlib
 import inspect
 import json
 import logging
 from enum import Enum, unique
+from collections.abc import Iterable
 from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
 from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args
 
@@ -192,7 +227,7 @@ class InstrumentModuleBluePrint:
             self.parameters = {}
             for paramName, param in parameters.items():
                 if isinstance(param, dict):
-                    self.parameters[paramName] = from_dict(param)
+                    self.parameters[paramName] = deserialize_obj(param)
                 elif isinstance(param, ParameterBluePrint):
                     self.parameters[paramName] = param
                 else:
@@ -203,7 +238,7 @@ class InstrumentModuleBluePrint:
             self.methods = {}
             for methName, meth in methods.items():
                 if isinstance(meth, dict):
-                    self.methods[methName] = from_dict(meth)
+                    self.methods[methName] = deserialize_obj(meth)
                 elif isinstance(meth, MethodBluePrint):
                     self.methods[methName] = meth
                 else:
@@ -214,7 +249,7 @@ class InstrumentModuleBluePrint:
             self.submodules = {}
             for submodName, submod in submodules.items():
                 if isinstance(submod, dict):
-                    self.submodules[submodName] = from_dict(submod)
+                    self.submodules[submodName] = deserialize_obj(submod)
                 elif isinstance(submod, InstrumentModuleBluePrint):
                     self.submodules[submodName] = submod
                 else:
@@ -358,6 +393,13 @@ def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
 
 
 def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
+    """
+    Converts a blueprint into a dictionary.
+
+    :param bp: The blueprint to convert
+    :param json_type: If True, the values are str. If False, the values remain the objects that are in the blueprint.
+        Defaults True.
+    """
     bp_dict = {}
     for my_field in fields(bp):
         value = bp.__getattribute__(my_field.name)
@@ -371,73 +413,6 @@ def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
             else:
                 bp_dict[my_field.name] = bp.__getattribute__(my_field.name)
     return bp_dict
-
-
-def _convert_obj_to_dict(obj: object) -> Dict[str, Any]:
-    """
-    Converts an objects into a dictionary. Assumes that the object contains an attribute called 'attributes' in which
-    it lists all the attributes it needs for the object to be able to be serialized. These should also be accepted as
-    keyword arguments in the constructor of the object.
-    """
-    obj_dict = {}
-    for attr in obj.attributes:
-        obj_dict[attr] = getattr(obj, attr)
-    obj_dict['_class_type'] = {'module': obj.__module__, 'type': obj.__class__.__name__}
-    return obj_dict
-
-
-def _convert_dict_to_obj(item_dict: dict):
-    """
-    Instantiates an object from an object dictionary. The reverse of the _convert_obj_to_dict. The constructor of the
-    object should accept all of the items in the dictionary in the constructor.
-    """
-    class_type = item_dict['_class_type']
-    if 'module' in class_type and 'type' in class_type:
-        mod = importlib.import_module(class_type['module'])
-        cls = getattr(mod, class_type['type'])
-        item_dict.pop('_class_type')
-        return cls(**item_dict)
-    else:
-        logger.warning(f"serialized class does not indicate its type. Make sure it has 'module' and 'type' fields "
-                       f"in the _class_type dictionary: {item_dict} \nBehaviour might be unpredictable from here")
-        return item_dict
-
-
-def args_and_kwargs_to_dict(args: Optional[List[Any]] = None, kwargs: Optional[Dict[str, Any]] = None):
-    """
-    Gets all the attributes in args and kwargs and converts them into dictionary by using all the attributes as keywords
-    and their values as values. The class must have a class attribute called "attributes" for this to function.
-
-    returns a list with the args as dictionaries and a dictionary with the kwargs values as dictionaries.
-
-    The current rules:
-        - Any object that is being serialized here must have a class attribute listing all the classes attributes that
-        the constructor needs to create an identical instance of that class
-        - The serialized dictionary need to have the field: '_class_type', to indicate what it is that needs to be
-        instantiated.
-    """
-
-    converted_args = None
-    if args is not None:
-        converted_args = []
-        for arg in args:
-            if hasattr(arg, 'attributes'):
-                arg_dict = _convert_obj_to_dict(arg)
-                converted_args.append(arg_dict)
-            else:
-                converted_args.append(arg)
-
-    converted_kwargs = None
-    if kwargs is not None:
-        converted_kwargs = {}
-        for name, value in kwargs.items():
-            if hasattr(value, 'attributes'):
-                kwarg_dict = _convert_obj_to_dict(value)
-                converted_kwargs[name] = kwarg_dict
-            else:
-                converted_kwargs[name] = value
-
-    return converted_args, converted_kwargs
 
 
 @unique
@@ -484,7 +459,8 @@ class InstrumentCreationSpec:
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -506,7 +482,8 @@ class CallSpec:
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -530,7 +507,8 @@ class ParameterSerializeSpec:
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -630,7 +608,8 @@ class ServerInstruction:
             ret['serialization_opts'] = self.serialization_opts.toJson()
 
         ret['set_parameters'] = self.set_parameters
-        ret['args'], ret['kwargs'] = args_and_kwargs_to_dict(self.args, self.kwargs)
+        ret['args'] = iterable_to_serialized_dict(self.args)
+        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
         ret['_class_type'] = self._class_type
 
         return ret
@@ -687,7 +666,14 @@ class ServerResponse:
         if isinstance(self.message, get_args(BluePrintType)):
             ret['message'] = self.message.toJson()
         elif hasattr(self.message, 'attributes'):
-            ret['message'] = _convert_obj_to_dict(self.message)
+            ret['message'] = _convert_arbitrary_obj_to_dict(self.message)
+        elif not isinstance(self.message, str) and isinstance(self.message, Iterable):
+            if isinstance(self.message, dict):
+                message_dict = dict_to_serialized_dict(self.message)
+                ret['message'] = str(message_dict)
+            else:
+                message_iterable = iterable_to_serialized_dict(self.message)
+                ret['message'] = str(message_iterable)
         else:
             ret['message'] = str(self.message)
         if isinstance(self.error, Exception):
@@ -698,6 +684,115 @@ class ServerResponse:
         ret['_class_type'] = self._class_type
 
         return ret
+
+
+def _convert_arbitrary_obj_to_dict(obj: object) -> Dict[str, Any]:
+    """
+    Converts an arbitrary objects into a dictionary. Assumes that the object contains an attribute called
+    'attributes' in which it lists all the attributes it needs for the object to be able to be serialized and that
+    all of those attributes are natively JSON serializable. These should also be accepted as keyword arguments in the
+    constructor of the object.
+    """
+    obj_dict = {}
+    for attr in obj.attributes:
+        obj_dict[attr] = getattr(obj, attr)
+    obj_dict['_class_type'] = f'{obj.__module__}.{obj.__class__.__name__}'
+    return obj_dict
+
+
+def _convert_dict_to_obj(item_dict: dict) -> Any:
+    """
+    Instantiates an object from an object dictionary. The reverse of the _convert_obj_to_dict. The constructor of the
+    object should accept all of the items in the dictionary in the constructor.
+
+    Assumes that the dictionary has a key '_class_type' indicating what class it should be instantiated from.
+    """
+    class_type = item_dict['_class_type']
+
+    # if a dot is present indicates the class is arbitrary and needs to be imported
+    if '.' in class_type:
+        parts = class_type.split('.')
+        mod = importlib.import_module('.'.join(parts[:-1]))
+        cls = getattr(mod, parts[-1])
+        item_dict.pop('_class_type')
+        return cls(**item_dict)
+
+    try:
+        instantiated_obj = eval(f'{class_type}(**item_dict)')
+    # built-ins (like complex) will not want the _class_type argument
+    except TypeError:
+        cls = item_dict.pop('_class_type')
+        instantiated_obj = eval(f'{cls}(**item_dict)')
+
+    return instantiated_obj
+
+
+def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
+    """
+    Goes through an iterable (lists, tuples, sets) and serialize each object inside of it. If trying to serialize an
+    arbitrary object, this object must have a class attribute "attributes" for the serialization to happen correctly.
+
+    returns a list with the args as serialized dictionaries.
+
+    The current rules:
+        - Any arbitrary object that is being serialized here must have a class attribute listing all the classes attributes that
+        the constructor needs to create an identical instance of that class
+        - The serialized dictionary need to have the field: '_class_type', to indicate what it is that needs to be
+        instantiated.
+    """
+    converted_iterable = None
+    if iterable is not None:
+        converted_iterable = []
+        for item in iterable:
+            # Check if the object is iterable since the objects inside the iterable should be serialized too.
+            if not isinstance(item, str) and isinstance(item, Iterable):
+                if isinstance(item, dict):
+                    serialized_iterable = dict_to_serialized_dict(dct=item)
+                else:
+                    serialized_iterable = iterable_to_serialized_dict(iterable=item)
+                converted_iterable.append(serialized_iterable)
+
+            elif hasattr(item, 'attributes'):
+                arg_dict = _convert_arbitrary_obj_to_dict(item)
+                converted_iterable.append(arg_dict)
+
+            elif isinstance(item, complex):
+                arg_dict = dict(real=item.real, imag=item.imag, _class_type='complex')
+                converted_iterable.append(arg_dict)
+
+            else:
+                converted_iterable.append(str(item))
+
+    return converted_iterable
+
+
+def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
+    """
+    Same idea as iterable_to_serialized_dict but for dictionaries.
+    """
+
+    converted_dict = None
+    if dct is not None:
+        converted_dict = {}
+        for name, value in dct.items():
+            # check if the object is iterable since the objects inside the iterable should be serialized too.
+            if not isinstance(value, str) and isinstance(value, Iterable):
+                if isinstance(value, dict):
+                    serialized_iterable = dict_to_serialized_dict(dct=value)
+                else:
+                    serialized_iterable = iterable_to_serialized_dict(iterable=value)
+                converted_dict[name] = serialized_iterable
+
+            elif hasattr(value, 'attributes'):
+                kwarg_dict = _convert_arbitrary_obj_to_dict(value)
+                converted_dict[name] = kwarg_dict
+            elif isinstance(value, complex):
+                kwarg_dict = dict(real=value.real, imag=value.imag, _class_type='complex')
+                converted_dict[name] = kwarg_dict
+            else:
+                converted_dict[name] = str(value)
+
+    return converted_dict
 
 
 def to_dict(data) -> Union[Dict[str, str], str]:
@@ -711,81 +806,79 @@ def to_dict(data) -> Union[Dict[str, str], str]:
     return data.toJson()
 
 
-def _is_numeric(val) -> Optional[Union[int, float]]:
+def _is_numeric(val) -> Optional[Union[float, complex]]:
     """
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
+    try:
+        if val is not None and not '.' in val:
+            int_conversion = int(val)
+            return int_conversion
+    except Exception:
+        pass
+
     try:
         float_conversion = float(val)
         return float_conversion
     except Exception:
         pass
 
+    try:
+        complex_conversion = complex(val)
+        return complex_conversion
+    except Exception:
+        pass
+
     return None
 
 
-def from_dict(data: Union[dict, str]) -> Any:
+def deserialize_obj(data: Any):
     """
-    Converts dictionaries into the objects the dictionaries came from. It is used to convert messages and blueprints
-    back into objects instead of dictionaries.
+    Tries to deserialize any object. If the object is a dictionary and contains the key '_class_type' it means that
+    that dictionary represents a serialized object that needs to be instantiated. The function will try and deserailize
+    any other item in the dictionary.
+    """
+    if data is None or data == 'None':
+        return None
 
-    the dictionary must have the key "_class_type" indicating the type of the class.
-    """
-    if isinstance(data, str):
+    elif isinstance(data, dict):
+        deserialized_dict = {}
+        for key, value in data.items():
+            deserialized_dict[key] = deserialize_obj(value)
+        if '_class_type' in deserialized_dict:
+            obj_instance = _convert_dict_to_obj(deserialized_dict)
+            return obj_instance
+
+        return deserialized_dict
+
+    numeric_form = _is_numeric(data)
+    if numeric_form is not None:
+        return numeric_form
+    elif data == 'True':
+        return True
+    elif data == 'False':
+        return False
+    elif data == '{}':
+        return {}
+    elif data == '[]':
+        return []
+
+    elif isinstance(data, str):
+        if len(data) > 0:
+            # Try and load other items in the string it since it might be a nested item
+            if (data[0] == '{' and data[-1] == '}') or (data[0] == '[' and data[-1] == ']'):
+                try:
+                    loaded_json = json.loads(data.replace("'", '"'))
+                    return deserialize_obj(loaded_json)
+                except json.JSONDecodeError as e:
+                    logger.debug('str could not be decoded, treating it as a str')
+
         return data
 
-    if '_class_type' not in data:
-        raise AttributeError(f'message does not indicates its type: {data}')
+    elif isinstance(data, Iterable):
+        deserialized_iterable = []
+        for item in data:
+            deserialized_iterable.append(deserialize_obj(item))
+        # Returns the same type of iterable
+        return type(data)(deserialized_iterable)
 
-    # Convert some things that the JSON decoder misses.
-    # This happens because we have nested objects, blueprints inside of blueprints for example.
-    for key, value in data.items():
-        numeric_form = _is_numeric(value)
-        if numeric_form is not None:
-            data[key] = numeric_form
-        elif value == 'None':
-            data[key] = None
-        elif value == 'True':
-            data[key] = True
-        elif value == 'False':
-            data[key] = False
-        elif value == '{}':
-            data[key] = {}
-        elif isinstance(value, dict):
-            if '_class_type' in value:
-                data[key] = from_dict(value)
-
-        # args can come inside of lists, needing to convert each item in that list
-        elif isinstance(value, list):
-            new_list = []
-            for arg in value:
-                if isinstance(arg, dict) and '_class_type' in arg:
-                    converted_arg = from_dict(arg)
-                    new_list.append(converted_arg)
-                else:
-                    new_list.append(arg)
-            data[key] = new_list
-
-        elif isinstance(value, str):
-            if len(value) > 0:
-                # The json encoder will convert nested dictionaries and lists into strings with the items inside.
-                if (value[0] == '{' and value[-1] == '}') or (value[0] == '[' and value[-1] == ']'):
-                    try:
-                        # If there is a nested object that needs to be re instantiated, it will be a string first
-                        # and by our rules it will have the key _class_type
-                        loaded_json = json.loads(value.replace("'", '"'))
-                        if '_class_type' in loaded_json:
-                            data[key] = from_dict(loaded_json)
-                        else:
-                            data[key] = loaded_json
-
-                    except json.JSONDecodeError as e:
-                        logger.error(f'Could not decode: "{value}".'
-                                     f' It does not conform to JSON standard, Might not be correct once used: {e}.')
-    # If data is a class in this module, we just need to eval the class type
-    if isinstance(data['_class_type'], str):
-        return eval(f'{data["_class_type"]}(**data)')
-    # if there is a dictionary in class type it is a generic class and it needs to be imported before we can create a
-    # new instance of it.
-    else:
-        return _convert_dict_to_obj(data)

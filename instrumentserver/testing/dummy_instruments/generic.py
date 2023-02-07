@@ -137,10 +137,16 @@ class DummyInstrumentRandomNumber(Instrument):
 
 
 class FieldVectorIns(Instrument):
+    """
+    class used to develop json serialization and guis
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.field_vector = FieldVector(x=1, y=1, z=1)
+        self.complex_value = 1 + 1j
+
+        self.complex_lst = [1 + 1j, -2 - 2j]
 
         self.add_parameter(name="field",
                            label='target field',
@@ -149,11 +155,37 @@ class FieldVectorIns(Instrument):
                            set_cmd=self.set_field,
                            )
 
+        self.add_parameter(name='complex',
+                           label='complex value',
+                           unit='',
+                           get_cmd=self.get_complex,
+                           set_cmd=self.set_complex,
+                           )
+
+        self.add_parameter(name='complex_list',
+                           label='complex list',
+                           unit='',
+                           get_cmd=self.get_complex_list,
+                           set_cmd=self.set_complex_list,
+                           )
+
     def get_field(self):
         return self.field_vector
 
     def set_field(self, field_vector: FieldVector):
         self.field_vector = field_vector
+
+    def get_complex(self):
+        return self.complex_value
+
+    def set_complex(self, value: complex):
+        self.complex_value = value
+
+    def get_complex_list(self):
+        return self.complex_lst
+
+    def set_complex_list(self, value):
+        self.complex_lst = value
 
     def generic_function(self):
         print(f'this generic function has been called')

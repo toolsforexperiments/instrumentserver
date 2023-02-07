@@ -345,7 +345,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.toolBar.addAction(self.saveParamsAction)
 
         # A test client, just a simple helper object.
-        self.client = EmbeddedClient()
+        self.client = EmbeddedClient(raise_exceptions=False)
         self.client.recv_timeout = 10_000
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")

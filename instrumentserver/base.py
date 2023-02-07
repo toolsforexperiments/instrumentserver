@@ -1,7 +1,7 @@
 import zmq
 import json
 
-from .blueprints import to_dict, from_dict
+from .blueprints import to_dict, deserialize_obj
 
 
 def encode(data):
@@ -9,7 +9,7 @@ def encode(data):
 
 
 def decode(data):
-    return from_dict(json.loads(data))
+    return deserialize_obj(json.loads(data))
 
 
 def send(socket, data):
