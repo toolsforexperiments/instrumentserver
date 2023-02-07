@@ -769,7 +769,7 @@ def _is_numeric(val) -> Optional[Union[float, complex]]:
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
     try:
-        if isinstance(val, str) and '.' in val:
+        if val is not None and not '.' in val:
             int_conversion = int(val)
             return int_conversion
     except Exception:
