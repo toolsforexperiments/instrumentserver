@@ -193,7 +193,7 @@ class InstrumentModuleBluePrint:
             self.parameters = {}
             for paramName, param in parameters.items():
                 if isinstance(param, dict):
-                    self.parameters[paramName] = from_dict(param)
+                    self.parameters[paramName] = deserialize_obj(param)
                 elif isinstance(param, ParameterBluePrint):
                     self.parameters[paramName] = param
                 else:
@@ -204,7 +204,7 @@ class InstrumentModuleBluePrint:
             self.methods = {}
             for methName, meth in methods.items():
                 if isinstance(meth, dict):
-                    self.methods[methName] = from_dict(meth)
+                    self.methods[methName] = deserialize_obj(meth)
                 elif isinstance(meth, MethodBluePrint):
                     self.methods[methName] = meth
                 else:
@@ -215,7 +215,7 @@ class InstrumentModuleBluePrint:
             self.submodules = {}
             for submodName, submod in submodules.items():
                 if isinstance(submod, dict):
-                    self.submodules[submodName] = from_dict(submod)
+                    self.submodules[submodName] = deserialize_obj(submod)
                 elif isinstance(submod, InstrumentModuleBluePrint):
                     self.submodules[submodName] = submod
                 else:
@@ -387,12 +387,22 @@ def _convert_obj_to_dict(obj: object) -> Dict[str, Any]:
     return obj_dict
 
 
-def _convert_dict_to_obj(item_dict: dict):
+def _convert_dict_to_obj(item_dict: dict) -> Any:
     """
     Instantiates an object from an object dictionary. The reverse of the _convert_obj_to_dict. The constructor of the
     object should accept all of the items in the dictionary in the constructor.
     """
     class_type = item_dict['_class_type']
+    # This indicates that the class is either a built-in or in this module
+    if isinstance(class_type, str):
+        try:
+            instantiated_obj = eval(f'{class_type}(**item_dict)')
+        # built-ins will not want the _class_type argument
+        except TypeError:
+            cls = item_dict.pop('_class_type')
+            instantiated_obj = eval(f'{cls}(**item_dict)')
+        return instantiated_obj
+
     if 'module' in class_type and 'type' in class_type:
         mod = importlib.import_module(class_type['module'])
         cls = getattr(mod, class_type['type'])
@@ -759,6 +769,13 @@ def _is_numeric(val) -> Optional[Union[float, complex]]:
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
     try:
+        if isinstance(val, str) and '.' in val:
+            int_conversion = int(val)
+            return int_conversion
+    except Exception:
+        pass
+
+    try:
         float_conversion = float(val)
         return float_conversion
     except Exception:
@@ -773,84 +790,53 @@ def _is_numeric(val) -> Optional[Union[float, complex]]:
     return None
 
 
-def from_dict(data: Union[dict, str]) -> Any:
+def deserialize_obj(data: Any):
     """
-    Converts dictionaries into the objects the dictionaries came from. It is used to convert messages and blueprints
-    back into objects instead of dictionaries.
-
-    the dictionary must have the key "_class_type" indicating the type of the class.
+    Tries to deserialize any object. If the object is a dictionary and contains the key '_class_type' it means that
+    that dictionary represents a serialized object that needs to be instantiated. The function will try and deserailize
+    any other item in the dictionary.
     """
+    if data is None or data == 'None':
+        return None
 
-    def _instantiate_iterable(iter):
-        """
-        Goes through an iterable instantiating any value that is inside.
-        """
-        new_list = []
-        for item in iter:
-            if isinstance(item, dict) and '_class_type' in item:
-                converted_arg = from_dict(item)
-                new_list.append(converted_arg)
-            else:
-                new_list.append(item)
-        return new_list
+    elif isinstance(data, dict):
+        deserialized_dict = {}
+        for key, value in data.items():
+            deserialized_dict[key] = deserialize_obj(value)
+        if '_class_type' in deserialized_dict:
+            obj_instance = _convert_dict_to_obj(deserialized_dict)
+            return obj_instance
 
-    if isinstance(data, str):
+        return deserialized_dict
+
+    numeric_form = _is_numeric(data)
+    if numeric_form is not None:
+        return numeric_form
+    elif data == 'True':
+        return True
+    elif data == 'False':
+        return False
+    elif data == '{}':
+        return {}
+    elif data == '[]':
+        return []
+
+    elif isinstance(data, str):
+        if len(data) > 0:
+        # Try and load other items in the string it since it might be a nested item
+            if (data[0] == '{' and data[-1] == '}') or (data[0] == '[' and data[-1] == ']'):
+                try:
+                    loaded_json = json.loads(data.replace("'", '"'))
+                    return deserialize_obj(loaded_json)
+                except json.JSONDecodeError as e:
+                    logger.debug('str could not be decoded, treating it as a str')
+
         return data
 
-    if '_class_type' not in data:
-        raise AttributeError(f'message does not indicates its type: {data}')
+    elif isinstance(data, Iterable):
+        deserialized_iterable = []
+        for item in data:
+            deserialized_iterable.append(deserialize_obj(item))
+        # Returns the same type of iterable
+        return type(data)(deserialized_iterable)
 
-    # Convert some things that the JSON decoder misses.
-    # This happens because we have nested objects, blueprints inside of blueprints for example.
-    for key, value in data.items():
-        numeric_form = _is_numeric(value)
-        if numeric_form is not None:
-            data[key] = numeric_form
-        elif value == 'None':
-            data[key] = None
-        elif value == 'True':
-            data[key] = True
-        elif value == 'False':
-            data[key] = False
-        elif value == '{}':
-            data[key] = {}
-        elif isinstance(value, dict):
-            if '_class_type' in value:
-                data[key] = from_dict(value)
-
-        # args can come inside of lists, needing to convert each item in that list
-        elif isinstance(value, list):
-            data[key] = _instantiate_iterable(value)
-
-        elif isinstance(value, str):
-            if len(value) > 0:
-                # The json encoder will convert nested dictionaries and lists into strings with the items inside.
-                if (value[0] == '{' and value[-1] == '}') or (value[0] == '[' and value[-1] == ']'):
-                    try:
-                        # If there is a nested object that needs to be re instantiated, it will be a string first
-                        # and by our rules it will have the key _class_type
-                        loaded_json = json.loads(value.replace("'", '"'))
-                        # If the loaded json is an instance of a class that needs to be instantiated or an iterable with
-                        # objects inside, we need to load those too.
-                        if '_class_type' in loaded_json:
-                            data[key] = from_dict(loaded_json)
-                        elif isinstance(loaded_json, Iterable):
-                            data[key] = _instantiate_iterable(loaded_json)
-                        else:
-                            data[key] = loaded_json
-
-                    except json.JSONDecodeError as e:
-                        logger.error(f'Could not decode: "{value}".'
-                                     f' It does not conform to JSON standard, Might not be correct once used: {e}.')
-    # If data is a class in this module, we just need to eval the class type
-    if isinstance(data['_class_type'], str):
-        # The class might not want the _class_type as an argument
-        try:
-            return eval(f'{data["_class_type"]}(**data)')
-        except TypeError:
-            _class_type = data.pop('_class_type')
-            return eval(f'{_class_type}(**data)')
-    # if there is a dictionary in class type it is a generic class and it needs to be imported before we can create a
-    # new instance of it.
-    else:
-        return _convert_dict_to_obj(data)
