@@ -1,4 +1,4 @@
-import instrumentserver.testing.dummy_instruments.generic
+import numpy as np
 import qcodes as qc
 from qcodes.math_utils.field_vector import FieldVector
 
@@ -9,7 +9,7 @@ from instrumentserver.blueprints import (bluePrintFromInstrumentModule,
                                          deserialize_obj,
                                          ParameterBroadcastBluePrint,
                                          iterable_to_serialized_dict,
-                                         dict_to_serialized_dict,
+                                         dict_to_serialized_dict, to_dict,
                                          )
 from instrumentserver.testing.dummy_instruments.generic import DummyInstrumentWithSubmodule
 from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
@@ -141,3 +141,11 @@ def test_sending_complex_numbers(cli):
     new_list = [5 + 5j, -6 - 6j]
     field_vector_ins.set_complex_list(new_list)
     assert new_list == field_vector_ins.get_complex_list()
+
+    new_list = [5 + 5j, -6, -6j]
+    field_vector_ins.set_complex_list(new_list)
+    assert new_list == field_vector_ins.get_complex_list()
+
+    numpy_array = np.array([1, 2, 3, 4, 5])
+    field_vector_ins.set_complex_list(numpy_array)
+    assert np.array_equal(numpy_array, field_vector_ins.complex_list())

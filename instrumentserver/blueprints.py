@@ -823,7 +823,7 @@ def deserialize_obj(data: Any):
 
     elif isinstance(data, str):
         if len(data) > 0:
-        # Try and load other items in the string it since it might be a nested item
+            # Try and load other items in the string it since it might be a nested item
             if (data[0] == '{' and data[-1] == '}') or (data[0] == '[' and data[-1] == ']'):
                 try:
                     loaded_json = json.loads(data.replace("'", '"'))
