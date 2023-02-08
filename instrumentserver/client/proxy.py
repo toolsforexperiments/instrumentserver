@@ -522,5 +522,12 @@ class _QtAdapter(QtCore.QObject):
 
 
 class QtClient(_QtAdapter, Client):
-    def __init__(self, parent=None, host='localhost', port=DEFAULT_PORT, connect=True):
-        super().__init__(parent, host, port, connect)
+    def __init__(self, parent=None,
+                 host='localhost',
+                 port=DEFAULT_PORT,
+                 connect=True,
+                 timeout=5000,
+                 raise_exceptions=True):
+        # Calling the parents like this ensures that the arguments arrive to the parents properly.
+        _QtAdapter.__init__(self, parent=parent)
+        Client.__init__(self, host, port, connect, timeout, raise_exceptions)
