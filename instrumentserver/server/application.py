@@ -14,7 +14,7 @@ from .core import (
     InstrumentModuleBluePrint, ParameterBluePrint
 )
 from .. import QtCore, QtWidgets, QtGui
-from ..gui.misc import DetachableTabWidget
+from ..gui.misc import DetachableTabWidget, BaseDialog
 from ..gui.parameters import AnyInputForMethod
 from ..gui.instruments import GenericInstrument
 
@@ -126,14 +126,15 @@ class ServerStatus(QtWidgets.QWidget):
 
 
 # TODO: Come up with a better name
-# TODO: have it such that you cannot change the vertical length of it
-class CreateInstrumentDialog(QtWidgets.QDialog):
+class CreateInstrumentDialog(BaseDialog):
 
     createInstrument = QtCore.Signal(str, str, tuple)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(flags=(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowCloseButtonHint), *args, **kwargs)
 
+        tittleText = 'Create New Instrument'
+        self.setWindowTitle(tittleText)
         layout = QtWidgets.QVBoxLayout(self)
 
         formLayout = QtWidgets.QFormLayout()
@@ -144,11 +145,11 @@ class CreateInstrumentDialog(QtWidgets.QDialog):
 
         formLayout.addRow(QtWidgets.QLabel('Instrument Type:'), self.typeEdit)
         formLayout.addRow(QtWidgets.QLabel('Instrument Name:'), self.nameEdit)
-        formLayout.addRow(QtWidgets.QLabel('arguments and keyword arguments:'), self.argsEdit)
+        formLayout.addRow(QtWidgets.QLabel('Args and Kwargs:'), self.argsEdit)
 
         layout.addLayout(formLayout)
 
-        self.acceptButton = QtWidgets.QPushButton("Create baby create")
+        self.acceptButton = QtWidgets.QPushButton("Create")
         self.acceptButton.setDefault(True)
         buttonSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
         self.acceptButton.setSizePolicy(buttonSizePolicy)
@@ -170,7 +171,7 @@ class CreateInstrumentDialog(QtWidgets.QDialog):
         """
         Opens another dialog indicating the problem with the creation of the instrument
         """
-        dialog = QtWidgets.QDialog(parent=self)
+        dialog = BaseDialog(parent=self)
         dialog.setWindowTitle("Instrument Creation Error")
         layout = QtWidgets.QVBoxLayout(dialog)
 
