@@ -58,6 +58,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
 from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args
 
+import numpy as np
 import qcodes as qc
 from qcodes import (
     Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
@@ -745,11 +746,13 @@ def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
         converted_iterable = []
         for item in iterable:
             # Check if the object is iterable since the objects inside the iterable should be serialized too.
-            if not isinstance(item, str) and isinstance(item, Iterable):
-                if isinstance(item, dict):
-                    serialized_iterable = dict_to_serialized_dict(dct=item)
-                else:
-                    serialized_iterable = iterable_to_serialized_dict(iterable=item)
+            # All of the specific iterable objects should go before the generic if to catch them before.
+            if isinstance(item, dict):
+                serialized_iterable = dict_to_serialized_dict(dct=item)
+                converted_iterable.append(serialized_iterable)
+
+            elif not isinstance(item, str) and isinstance(item, Iterable):
+                serialized_iterable = iterable_to_serialized_dict(iterable=item)
                 converted_iterable.append(serialized_iterable)
 
             elif hasattr(item, 'attributes'):
@@ -763,6 +766,9 @@ def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
             else:
                 converted_iterable.append(str(item))
 
+        if isinstance(iterable, np.ndarray):
+            converted_iterable = dict(object=converted_iterable, _class_type="numpy.array")
+
     return converted_iterable
 
 
@@ -775,12 +781,14 @@ def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
     if dct is not None:
         converted_dict = {}
         for name, value in dct.items():
-            # check if the object is iterable since the objects inside the iterable should be serialized too.
-            if not isinstance(value, str) and isinstance(value, Iterable):
-                if isinstance(value, dict):
-                    serialized_iterable = dict_to_serialized_dict(dct=value)
-                else:
-                    serialized_iterable = iterable_to_serialized_dict(iterable=value)
+            # Check if the object is iterable since the objects inside the iterable should be serialized too.
+            # All of the specific iterable objects should go before the generic if to catch them before.
+            if isinstance(value, dict):
+                serialized_iterable = dict_to_serialized_dict(dct=value)
+                converted_dict[name] = serialized_iterable
+
+            elif not isinstance(value, str) and isinstance(value, Iterable):
+                serialized_iterable = iterable_to_serialized_dict(iterable=value)
                 converted_dict[name] = serialized_iterable
 
             elif hasattr(value, 'attributes'):
