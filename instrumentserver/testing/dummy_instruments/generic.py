@@ -29,11 +29,16 @@ class DummyChannel(Instrument):
         print(f'kwargs: {kwargs}')
         return True
 
+
 class DummyInstrumentWithSubmodule(Instrument):
     """A dummy instrument with submodules."""
 
-    def __init__(self, name: str, *args, **kwargs):
+    def __init__(self, name: str, address=None, first_arg=None, second_arg=None, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
+        self.address = address
+
+        self.first_arg = first_arg
+        self.second_arg = second_arg
 
         self.add_parameter('param0',
                            set_cmd=None,
@@ -69,7 +74,7 @@ class DummyInstrumentWithSubmodule(Instrument):
         print(f'the dummy chanel: {self.name} has been activated with:')
         print(f'args: {args}')
         print(f'kwargs: {kwargs}')
-        return "I am being returned"
+        return self.address, self.first_arg, self.second_arg
 
 
 class DummyInstrumentTimeout(Instrument):
