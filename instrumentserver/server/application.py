@@ -36,9 +36,13 @@ class StationList(QtWidgets.QTreeWidget):
 
     cols = ['Name', 'Type']
 
-    #: Signal(str) --
-    #: emitted when a parameter or Instrument is selected.
+    #: Signal(str) -- emitted when a parameter or Instrument is selected.
+    #: Argument is the name of the selected instrument
     componentSelected = QtCore.Signal(str)
+
+    #: Signal(str) -- emitted when the user requested closing an instrument
+    #: Argument is the name of the instrument that should be closed
+    closeRequested = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -48,6 +52,16 @@ class StationList(QtWidgets.QTreeWidget):
         self.setSortingEnabled(True)
         self.clear()
 
+        self.deleteAction = QtWidgets.QAction("Close Instrument")
+        self.deleteAction.setShortcuts(['Del', 'backspace'])
+        self.addAction(self.deleteAction)
+
+        self.contextMenu = QtWidgets.QMenu(self)
+        self.contextMenu.addAction(self.deleteAction)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+        self.customContextMenuRequested.connect(lambda x: self.contextMenu.exec_(self.mapToGlobal(x)))
+        self.deleteAction.triggered.connect(self.onDeleteAction)
         self.itemSelectionChanged.connect(self._processSelection)
 
     def addInstrument(self, bp: InstrumentModuleBluePrint):
@@ -69,6 +83,21 @@ class StationList(QtWidgets.QTreeWidget):
             return
         item = items[0]
         self.componentSelected.emit(item.text(0))
+
+    @QtCore.Slot()
+    def onDeleteAction(self):
+        # need to check if widget has focues because of the keyboard shortcuts
+        if self.hasFocus():
+            items = self.selectedItems()
+            for item in items:
+                msgBox = QtWidgets.QMessageBox()
+                msgBox.setWindowTitle("Confirm Close Instrument")
+                msgBox.setText(f'Are you sure you want to close instrument "{item.text(0)}"')
+                msgBox.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                msgBox.setDefaultButton(QtWidgets.QMessageBox.No)
+                ret = msgBox.exec()
+                if ret == QtWidgets.QMessageBox.Yes:
+                    self.closeRequested.emit(item.text(0))
 
 
 class StationObjectInfo(QtWidgets.QTextEdit):
@@ -365,6 +394,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.instrumentCreator = InstrumentsCreator(self.client, self._guiConfig)
         self.stationList.componentSelected.connect(self.displayComponentInfo)
         self.stationList.itemDoubleClicked.connect(self.addInstrumentTab)
+        self.stationList.closeRequested.connect(self.closeInstrument)
 
         stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         stationWidgets.addWidget(self.stationList)
@@ -448,6 +478,7 @@ class ServerGui(QtWidgets.QMainWindow):
         )
         self.stationServer.messageReceived.connect(self._messageReceived)
         self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)
+        self.stationServer.funcCalled.connect(self.onFuncCalled)
 
         self.stationServerThread.start()
 
@@ -475,12 +506,11 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationList.addInstrument(instrumentBluePrint)
         self._bluePrints[instrumentBluePrint.name] = instrumentBluePrint
 
-        # add the gui config for opening generic GUI's and keep track of the config/
+        # add the gui config for opening generic GUI's and keep track of the config
         self._guiConfig[instrumentBluePrint.name] = dict(gui=GUIFIELD,
                                                          type=instrumentBluePrint.instrument_module_class + '.' + instrumentBluePrint.base_class,
                                                          args=insArgs,
                                                          init=insKwargs)
-
 
     def removeInstrumentFromGui(self, name: str):
         """Remove an instrument from the station list."""
@@ -563,6 +593,17 @@ class ServerGui(QtWidgets.QMainWindow):
     def onTabDeleted(self, name: str) -> None:
         if name in self.instrumentTabsOpen:
             del self.instrumentTabsOpen[name]
+
+    @QtCore.Slot(str, object, object, object)
+    def onFuncCalled(self, n, args, kw, ret):
+        if n == 'close_and_remove_instrument':
+            for ins in args:
+                self.removeInstrumentFromGui(ins)
+
+    @QtCore.Slot(str)
+    def closeInstrument(self, ins):
+        if ins in self.client.list_instruments():
+            self.client.close_instrument(ins)
 
 def startServerGuiApplication(guiConfig: Optional[Dict[str, Dict[str, Any]]] = None,
                               **serverKwargs: Any) -> "ServerGui":
