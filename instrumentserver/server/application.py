@@ -600,6 +600,9 @@ class ServerGui(QtWidgets.QMainWindow):
         """Remove an instrument from the station list."""
         self.stationList.removeObject(name)
         del self._bluePrints[name]
+        if name in self.instrumentTabsOpen:
+            self.tabs.removeTab(self.tabs.indexOf(self.instrumentTabsOpen[name]))
+            del self.instrumentTabsOpen[name]
 
     def refreshStationComponents(self):
         """Clear and re-populate the widget holding the station components, using
