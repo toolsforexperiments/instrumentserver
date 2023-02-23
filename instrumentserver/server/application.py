@@ -272,7 +272,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
     #   the name in the line edit indicating what the actual name in the station should be.
     basedInstrumentRequested = QtCore.Signal(str, str, str)
 
-    cols = ["Instrument Type", "Instrument Name", "Create Instrument"]
+    cols = ["Instrument Type & Preset", "Instrument Name", "Create Instrument"]
 
     def __init__(self, guiConfig: Optional[dict] = None, *args):
         super().__init__(*args)
@@ -285,15 +285,26 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         # you need to add the action to the widget so that it can detect the shortcut
         self.addAction(self.basedInstrumentAction)
 
+        # No shortcut for this delete since qt doesn't like having multiple shortcuts on the same key
+        self.deletePossibleInstrumentAction = QtWidgets.QAction("Delete")
+
+
         self.contextMenu = QtWidgets.QMenu(self)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.contextMenu.addAction(self.basedInstrumentAction)
+        self.contextMenu.addSeparator()
+        self.contextMenu.addAction(self.deletePossibleInstrumentAction)
         self.customContextMenuRequested.connect(lambda x: self.contextMenu.exec_(self.mapToGlobal(x)))
 
         self.basedInstrumentAction.triggered.connect(self.onBasedInstrumentAction)
+        self.deletePossibleInstrumentAction.triggered.connect(self.onRemoveInstrumentFromTree)
 
+        self.config = {}
         if guiConfig is not None:
             self.loadConfig(guiConfig)
+            self.config = guiConfig
+
+        self.expandAll()
 
     def loadConfig(self, config: dict):
         for key, value in config.items():
@@ -304,23 +315,36 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         self.resizeColumnToContents(1)
 
     def addInstrumentToTree(self, fullInsType: str = 'InstrumentType', insName: str = 'MyInstrument', configName: Optional[str]=None):
+        """
+        Each type is grouped together under a parent item of that type. If that parent item does not exist yet it
+        creates it
+        """
         insType = fullInsType.split('.')[-1]
-        items = self.findItems(insType.split('.')[-1], QtCore.Qt.MatchExactly | QtCore.Qt.MatchExactly, 0)
+        items = self.findItems(insType, QtCore.Qt.MatchExactly | QtCore.Qt.MatchExactly, 0)
 
         # Only add the instrument if there are no other instruments of the same type already
         if len(items) == 0:
-            lst = [insType, insName, 'create']
-            lineEdit = QtWidgets.QLineEdit()
-            lineEdit.returnPressed.connect(lambda: createButton.clicked.emit())
-            lineEdit.setText(insName)
-            item = PossibleInstrumentDisplayItem(lst, fullInsType=fullInsType, configName=configName, lineEdit=lineEdit)
-            self.addTopLevelItem(item)
+            parent = PossibleInstrumentDisplayItem(text=[insType, '', ''], fullInsType=fullInsType,)
+            self.addTopLevelItem(parent)
+            self.expand(self.indexFromItem(parent, 0))
+        else:
+            parent = items[0]
 
-            createButton = QtWidgets.QPushButton("Create")
-            self.setItemWidget(item, 1, lineEdit)
-            self.setItemWidget(item, 2, createButton)
+        if configName is None and insName in self.config:
+            configName = insName
 
-            createButton.clicked.connect(lambda: self.createButtonPressed.emit(configName, fullInsType, lineEdit.text()))
+        lst = [configName, insName, 'create']
+        lineEdit = QtWidgets.QLineEdit()
+        lineEdit.returnPressed.connect(lambda: createButton.clicked.emit())
+        lineEdit.setText(insName)
+        item = PossibleInstrumentDisplayItem(lst, fullInsType=fullInsType, configName=configName, lineEdit=lineEdit)
+        parent.addChild(item)
+
+        createButton = QtWidgets.QPushButton("Create")
+        self.setItemWidget(item, 1, lineEdit)
+        self.setItemWidget(item, 2, createButton)
+
+        createButton.clicked.connect(lambda: self.createButtonPressed.emit(configName, fullInsType, lineEdit.text()))
 
     def onBasedInstrumentAction(self):
         items = self.selectedItems()
@@ -329,6 +353,27 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
             if item.lineEdit is not None:
                 insName = item.lineEdit.text()
             self.basedInstrumentRequested.emit(item.configName, item.fullInsType, insName)
+
+    @QtCore.Slot()
+    def onRemoveInstrumentFromTree(self):
+        """
+        Removes both the potential instrument from the widget and the presets from the config dictionary.
+        """
+        items = self.selectedItems()
+        for item in items:
+            if item.childCount() == 0:
+                parent = item.parent()
+                if item.configName is not None and item.configName in self.config:
+                    del self.config[item.configName]
+                parent.removeChild(item)
+                if parent.childCount() == 0:
+                    self.takeTopLevelItem((self.indexOfTopLevelItem(parent)))
+            else:
+                for i in range(item.childCount()):
+                    child = item.child(i)
+                    if child.configName in self.config:
+                        del self.config[child.configName]
+                self.takeTopLevelItem(self.indexOfTopLevelItem(item))
 
 
 class InstrumentsCreator(QtWidgets.QWidget):
@@ -406,13 +451,10 @@ class InstrumentsCreator(QtWidgets.QWidget):
     @QtCore.Slot(str, str, str)
     def onPossibleInstrumentDisplayClicked(self, configName, insType, insName):
         if configName in self.guiConfig:
-            insList = self.cli.list_instruments()
-            counter = 0
-            # Keep adding numbers until you find one that is not there
-            insNameCopy = insName  # keep a clean copy so the numbers don't add up
-            while insName in insList:
-                insName = insNameCopy + f'_{counter}'
-                counter += 1
+
+            if insName in self.cli.list_instruments():
+                self.newInstrumentFailed.emit(f'Instrument with name "{insName}" already exists')
+                return
 
             kwargs = dict() if 'init' not in self.guiConfig[configName] else dict(self.guiConfig[configName]['init'])
             args = [] if 'args' not in self.guiConfig[configName] else self.guiConfig[configName]['args']
@@ -423,7 +465,7 @@ class InstrumentsCreator(QtWidgets.QWidget):
             self.createNewInstrument(insType, insName, *args, **kwargs)
 
         else:
-            raise NotImplementedError("you cannot create instruments that are not in the config from here yet")
+            self.newInstrumentFailed.emit("you cannot create instruments that are not in the config from here yet")
 
     def createNewInstrument(self, insType, insName, *args, **kwargs):
         if insName in self.cli.list_instruments():
@@ -586,15 +628,22 @@ class ServerGui(QtWidgets.QMainWindow):
     def addInstrumentToGui(self, instrumentBluePrint: InstrumentModuleBluePrint, insArgs, insKwargs):
         """Add an instrument to the station list."""
         self.stationList.addInstrument(instrumentBluePrint)
-        self.instrumentCreator.possibleInstrumentDisplay.addInstrumentToTree(
-            instrumentBluePrint.instrument_module_class, instrumentBluePrint.name)
         self._bluePrints[instrumentBluePrint.name] = instrumentBluePrint
 
-        # add the gui config for opening generic GUI's and keep track of the config
-        self._guiConfig[instrumentBluePrint.name] = dict(gui=GUIFIELD,
-                                                         type=instrumentBluePrint.instrument_module_class + '.' + instrumentBluePrint.base_class,
-                                                         args=insArgs,
-                                                         init=insKwargs)
+        if instrumentBluePrint.name not in self._guiConfig:
+            # add the gui config for opening generic GUI's and keep track of the config
+            if insArgs is None or insArgs == []:
+                self._guiConfig[instrumentBluePrint.name] = dict(gui=GUIFIELD,
+                                                                 type=instrumentBluePrint.instrument_module_class,
+                                                                 init=insKwargs)
+            else:
+                self._guiConfig[instrumentBluePrint.name] = dict(gui=GUIFIELD,
+                                                                 type=instrumentBluePrint.instrument_module_class,
+                                                                 args=insArgs,
+                                                                 init=insKwargs)
+
+            self.instrumentCreator.possibleInstrumentDisplay.addInstrumentToTree(
+                instrumentBluePrint.instrument_module_class, instrumentBluePrint.name)
 
     def removeInstrumentFromGui(self, name: str):
         """Remove an instrument from the station list."""
