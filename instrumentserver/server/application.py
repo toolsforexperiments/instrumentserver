@@ -87,7 +87,7 @@ class StationList(QtWidgets.QTreeWidget):
 
     @QtCore.Slot()
     def onDeleteAction(self):
-        # need to check if widget has focues because of the keyboard shortcuts
+        # need to check if widget has focus because of the keyboard shortcuts
         if self.hasFocus():
             items = self.selectedItems()
             for item in items:
@@ -248,7 +248,6 @@ class PossibleInstrumentDisplayItem(QtWidgets.QTreeWidgetItem):
         self.fullInsType = fullInsType
 
 
-# TODO: Re implement the size hint such that it doesn't ask for more vertical space that it needs.
 class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
     """
     Widget that lists pre-set (either in the config or that the user adds programmatically) instruments to instantiate
@@ -288,7 +287,6 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         # No shortcut for this delete since qt doesn't like having multiple shortcuts on the same key
         self.deletePossibleInstrumentAction = QtWidgets.QAction("Delete")
 
-
         self.contextMenu = QtWidgets.QMenu(self)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.contextMenu.addAction(self.basedInstrumentAction)
@@ -322,7 +320,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         insType = fullInsType.split('.')[-1]
         items = self.findItems(insType, QtCore.Qt.MatchExactly | QtCore.Qt.MatchExactly, 0)
 
-        # Only add the instrument if there are no other instruments of the same type already
+        # Only add the instrument to the tree if there are no other instruments of the same type already
         if len(items) == 0:
             parent = PossibleInstrumentDisplayItem(text=[insType, '', ''], fullInsType=fullInsType,)
             self.addTopLevelItem(parent)
@@ -388,10 +386,11 @@ class InstrumentsCreator(QtWidgets.QWidget):
         configs get updated too.
     :param stationServer: The station server. We just need to connect to some of the signals that it sends
     """
-    #: Signal() -- emitted when the InstrumentCreator creates a new signal. Used to close the create instrument widget.
+    #: Signal()-- emitted when the InstrumentCreator creates a new signal. Used to close the creation instrument widget.
     newInstrumentCreated = QtCore.Signal()
 
-    # emits the exception
+    #: Signal() -- emitted when the creator tried to create a new instrument but failed.
+    #: Arguments -- The str message of the error/reason as to why it could not create the instrument
     newInstrumentFailed = QtCore.Signal(object)
 
     def __init__(self, cli: Client, guiConfig: dict, *args, **kwargs):
@@ -450,12 +449,17 @@ class InstrumentsCreator(QtWidgets.QWidget):
 
     @QtCore.Slot(str, str, str)
     def onPossibleInstrumentDisplayClicked(self, configName, insType, insName):
+        """
+        Creates new instrument based on a possible instrument. Only creates it if it can find the configName in the
+        config.
+        """
         if configName in self.guiConfig:
 
             if insName in self.cli.list_instruments():
                 self.newInstrumentFailed.emit(f'Instrument with name "{insName}" already exists')
                 return
 
+            # In the qcodes station config, the call the kwargs of the instrument 'init'
             kwargs = dict() if 'init' not in self.guiConfig[configName] else dict(self.guiConfig[configName]['init'])
             args = [] if 'args' not in self.guiConfig[configName] else self.guiConfig[configName]['args']
 
@@ -626,7 +630,11 @@ class ServerGui(QtWidgets.QMainWindow):
         self.serverStatus.addMessageAndReply(messageSummary, replySummary)
 
     def addInstrumentToGui(self, instrumentBluePrint: InstrumentModuleBluePrint, insArgs, insKwargs):
-        """Add an instrument to the station list."""
+        """
+        Add an instrument to the station list.
+
+        If the guiConfig does not have an instrument with that name, it adds it.
+        """
         self.stationList.addInstrument(instrumentBluePrint)
         self._bluePrints[instrumentBluePrint.name] = instrumentBluePrint
 
