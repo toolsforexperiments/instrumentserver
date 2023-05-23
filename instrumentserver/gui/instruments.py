@@ -200,10 +200,10 @@ class MethodDisplay(QtWidgets.QWidget):
             if kwargs is not None:
                 ret = self.fun(*args, **kwargs)
             else:
-                if isinstance(args, list) or isinstance(args, tuple):
+                if isinstance(args, list) or isinstance(args, tuple) or args != '':
                     ret = self.fun(*args)
                 else:
-                    ret = self.fun(args)
+                    ret = self.fun()
             self.runSuccessful.emit(str(ret))
             logger.info(f"'{self.fullName}' returned: {ret}")
 

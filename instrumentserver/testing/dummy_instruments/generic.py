@@ -29,11 +29,16 @@ class DummyChannel(Instrument):
         print(f'kwargs: {kwargs}')
         return True
 
+
 class DummyInstrumentWithSubmodule(Instrument):
     """A dummy instrument with submodules."""
 
-    def __init__(self, name: str, *args, **kwargs):
+    def __init__(self, name: str, address=None, first_arg=None, second_arg=None, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
+        self.address = address
+
+        self.first_arg = first_arg
+        self.second_arg = second_arg
 
         self.add_parameter('param0',
                            set_cmd=None,
@@ -69,7 +74,7 @@ class DummyInstrumentWithSubmodule(Instrument):
         print(f'the dummy chanel: {self.name} has been activated with:')
         print(f'args: {args}')
         print(f'kwargs: {kwargs}')
-        return "I am being returned"
+        return self.address, self.first_arg, self.second_arg
 
 
 class DummyInstrumentTimeout(Instrument):
@@ -140,13 +145,13 @@ class FieldVectorIns(Instrument):
     """
     class used to develop json serialization and guis
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name, starting_parameter=22, *args, **kwargs):
+        super().__init__(name=name, *args, **kwargs)
 
         self.field_vector = FieldVector(x=1, y=1, z=1)
         self.complex_value = 1 + 1j
-
         self.complex_lst = [1 + 1j, -2 - 2j]
+        self.starting_parameter = starting_parameter
 
         self.add_parameter(name="field",
                            label='target field',
@@ -168,6 +173,12 @@ class FieldVectorIns(Instrument):
                            get_cmd=self.get_complex_list,
                            set_cmd=self.set_complex_list,
                            )
+
+    def get_starting_parameter(self):
+        return self.starting_parameter
+
+    def set_starting_parameter(self, new_value):
+        pass
 
     def get_field(self):
         return self.field_vector

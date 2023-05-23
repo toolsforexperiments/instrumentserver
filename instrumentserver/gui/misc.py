@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from .. import QtWidgets, QtGui, resource, QtCore
+from .. import QtWidgets, QtGui, QtCore
 
 
 class AlertLabel(QtWidgets.QLabel):
@@ -244,3 +244,23 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
         # When moving the tabs, we don't want to emit the signal since the tab is not being closed, just moved.
         if not moving:
             self.onTabClosed.emit(name)
+
+
+class BaseDialog(QtWidgets.QDialog):
+    """
+    Base dialog for internal purposes. Has correct flags so that the question mark does not appear.
+    Also overload set tittle such that the size of the window gets adjusted in a way that the tittle is not clipped.
+
+    :param tittleBarButtonsWidth: The width of pixels that the icon, the width will be set such that it is this number
+        plus whatever the tittle is plus 15 extra pixels of margin.
+    """
+    def __init__(self, parent=None, flags=(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowCloseButtonHint), tittleBarButtonsWidth=108):
+        super().__init__(parent, flags=flags)
+        self.tittleBarButtonsWidth = tittleBarButtonsWidth
+
+    def setWindowTitle(self, p_str):
+        super().setWindowTitle(p_str)
+        tittleWidth = self.fontMetrics().boundingRect(p_str).size().width()
+        minWidth = self.tittleBarButtonsWidth + tittleWidth + 15
+        if self.width() < minWidth:
+            self.resize(minWidth, self.height())
