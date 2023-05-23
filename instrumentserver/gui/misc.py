@@ -184,7 +184,11 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
 
     def addUnclosableTab(self, widget, name):
         index = self.addTab(widget, name)
-        self._tabBar.tabButton(index, QtWidgets.QTabBar.ButtonPosition.RightSide).resize(0, 0)
+        closeButton = self._tabBar.tabButton(index, QtWidgets.QTabBar.ButtonPosition.RightSide)
+        # on Mac the button is on the left side
+        if closeButton is None:
+            closeButton = self._tabBar.tabButton(index, QtWidgets.QTabBar.ButtonPosition.LeftSide)
+        closeButton.resize(0, 0)
         self.unclosableTabs[name] = widget
 
     @QtCore.Slot(object, object)
