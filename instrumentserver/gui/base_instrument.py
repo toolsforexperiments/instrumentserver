@@ -2,7 +2,7 @@
 Quick Introduction
 ==================
 
-This module contains the all the base classes necessaries to display different properties dictionaries of instruments.
+This module contains all the base classes necessaries to display different properties dictionaries of instruments.
 The goal is to have a base design such that implementing further GUIS is simplified and can be done without repeating
 much code. To implement your own GUI you just need to inherit any particular part you want to customize.
 
@@ -59,7 +59,7 @@ Things to pay attention when implementing your own:
 InstrumentSortFilterProxyModel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This class is in charge of filtering and sorting of the model. For most things you should not have to care about this
+This class is in charge of filtering and sorting of the model. For most things, you should not have to care about this
 class.
 
 It might be helpful to know, before a new filtering happens, the proxy model emits the signal filterIncoming,
@@ -70,12 +70,12 @@ InstrumentTreeViewBase
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The view is in charge of displaying the model data. It uses the ProxyModel to filter and sort the items for it. The
-main thing you need to implement for this class is its delegate. Delegates are classes in charge of create the
+main thing you need to implement for this class is its delegate. Delegates are classes in charge of creating the
 widgets that are shown for each row of the view. Usually they are the way we represent the information we want to
 show and allows us to interact with it.
 
 When creating your own delegate, you need to inherit from the class QStyledItemDelegate.
-Other than the constructor the only class that your delegate should have implemented is the createEditor class.
+Other than the constructor, the only class that your delegate should have implemented is the createEditor class.
 This class is responsible to return an already created widget for a specific item.
 If any signal needs to be connected from or to this widget, it should happen in the createEditor function.
 
@@ -91,14 +91,14 @@ InstrumentDisplayBase
 ^^^^^^^^^^^^^^^^^^^^^
 
 This is the class that brings everything together. It is the widget that should be added to a layout.
-When calling the constructor you can pass any of the 4 previous classes to it to utilize your version of it, instead
+When calling the constructor, you can pass any of the 4 previous classes to it to utilize your version of it, instead
 of the base one.
 
 All items connect their own signals with their own slots, but if any class needs to connect to a slot of a different
 class, that happens in the connectSignal method If you need to implement any of your own signals, override this
 method and after calling the super version of it, connect your signals.
 
-To add more items to the toolbar for any extra functionality you can do so by overriding the makeToolbar method.
+To add more items to the toolbar for any extra functionality, you can do so by overriding the makeToolbar method.
 
 """
 
