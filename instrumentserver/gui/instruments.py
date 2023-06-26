@@ -406,40 +406,6 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         widget.paramWidget.setValue(value)
 
 
-class ProfileManager(QtWidgets.QWidget):
-
-    def __init__(self,
-                 parent: Optional[QtWidgets.QWidget] = None,
-                 flags: Union[QtCore.Qt.WindowFlags, QtCore.Qt.WindowType] = QtCore.Qt.WindowFlags()
-                 ):
-        super().__init__(parent, flags)
-
-        self.layout_ = QtWidgets.QHBoxLayout()
-
-        self.comboBox = QtWidgets.QComboBox(self)
-        self.addButton = QtWidgets.QPushButton(QtGui.QIcon(":/icons/plus-square.svg"), "add",)
-        self.deleteButton = QtWidgets.QPushButton(QtGui.QIcon(":/icons/delete.svg"), "delete",)
-
-        self.deleteButton.setStyleSheet("""
-            QPushButton {background-color: salmon;}
-        """)
-
-        self.deleteButton.setFixedWidth(self.addButton.sizeHint().width())
-        self.deleteButton.setFixedHeight(self.addButton.sizeHint().height())
-
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
-        self.addButton.setSizePolicy(sizePolicy)
-        self.deleteButton.setSizePolicy(sizePolicy)
-
-        self.comboBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-
-        self.layout_.addWidget(self.addButton, stretch=0)
-        self.layout_.addWidget(self.deleteButton, stretch=0)
-        self.layout_.addWidget(self.comboBox)
-
-        self.setLayout(self.layout_)
-
-
 class ParameterManagerGui(InstrumentParameters):
     #: Signal(str) --
     #: emitted when there's an error during parameter creation.
@@ -451,10 +417,7 @@ class ParameterManagerGui(InstrumentParameters):
 
     def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], **kwargs):
         super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
-
-        self.profileManager = ProfileManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
-        self.layout().insertWidget(0, self.profileManager)
         self.layout().addWidget(self.addParam)
         self.connectSignals()
 
