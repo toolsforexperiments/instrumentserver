@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any, Dict, Union, List
 from enum import Enum, unique, auto
 import logging
@@ -9,7 +10,6 @@ from qcodes.instrument.base import InstrumentBase
 from qcodes.utils import validators
 
 from . import serialize
-from .server.core import ParameterBluePrint, bluePrintFromParameter
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,11 @@ class ParameterManager(InstrumentBase):
     arbitrary parameters and groups of parameters.
 
     Allows extra-easy on-the-fly addition/removal of new parameters.
+
+    For the parameter manager to recognize other profiles in disk,
+    the profile filename needs to start with 'parameter_manager-'
+    and end with '.json' with the name of the profile in the middle.
+    For example, 'parameter_manager-qubit1.json' represents the profile qubit1
     """
 
     # TODO: method to instantiate entirely from paramDict
@@ -78,9 +83,23 @@ class ParameterManager(InstrumentBase):
     def __init__(self, name):
         super().__init__(name)
 
+        self._workingDirectory = Path(os.getcwd())
+
         #: default location and name of the parameters save file.
-        self._paramValuesFile = os.path.join(os.getcwd(), f'parameter_manager-{self.name}.json')
+        self.defaultProfile = f'parameter_manager-{self.name}.json'
+        self.selectedProfile = self.defaultProfile
+        self.profiles = []
+
         self.fromFile()
+
+    @property
+    def workingDirectory(self):
+        return self._workingDirectory
+
+    @workingDirectory.setter
+    def workingDirectory(self, path: Union[str, Path]):
+        self._workingDirectory = Path(path)
+        self.refresh_profiles()
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
@@ -93,6 +112,26 @@ class ParameterManager(InstrumentBase):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def cleanProfileName(name: str) -> str:
+        """
+        When passed the full file name of a parameter_manager profile, return only the middle
+        string representing the profile's name.
+        """
+        return name.replace('parameter_manager-', '').replace('.json', '')
+
+    @staticmethod
+    def fullProfileName(name: str) -> str:
+        """
+        Adds 'parameter_manager-' to the beginning of `name` and adds '.json' at the end.
+        """
+
+        if not name.startswith('parameter_manager-'):
+            name = 'parameter_manager-' + name
+        if not name.endswith('.json'):
+            name += '.json'
+        return name
+
     @classmethod
     def _to_tree(cls, pm: 'ParameterManager') -> Dict:
         ret = {}
@@ -101,6 +140,29 @@ class ParameterManager(InstrumentBase):
         for pn, p in pm.parameters.items():
             ret[pn] = p
         return ret
+
+    @classmethod
+    def does_profile_exist(cls, profiles, target):
+        found = False
+        for profile in profiles:
+            if target in profile:
+                found = True
+                break
+        return found
+
+    def refresh_profiles(self) -> List[str]:
+        """
+        Goes into the working directory and updates the list of profiles.
+
+        :return: List of profiles in the working directory
+        """
+        profiles = []
+        for filename in os.listdir(self.workingDirectory):
+            if filename.startswith("parameter_manager") and filename.endswith(".json"):
+                profiles.append(filename)
+
+        self.profiles = profiles
+        return profiles
 
     def to_tree(self):
         return ParameterManager._to_tree(self)
@@ -201,6 +263,12 @@ class ParameterManager(InstrumentBase):
 
         purge(self)
 
+    def remove_all_parameters(self):
+        """Remove all parameters from the instrument."""
+        for param in self.list():
+            self.remove_parameter(param, cleanup=False)
+        self.remove_empty_submodules()
+
     def parameter(self, name: str) -> "Parameter":
         """Get a parameter object from the manager.
 
@@ -228,18 +296,30 @@ class ParameterManager(InstrumentBase):
         """Load parameters from a parameter json file
         (see :mod:`.serialize`).
 
+        If the filepath starts with 'parameter_manager-' and ends with '.json',
+        selectedProfile is changed to the filename.
+
         :param filePath: Path to the json file. If ``None`` it looks in the instrument current location
                          directory for a file called "parametermanager_parameters.json".
         :param deleteMissing: If ``True``, delete parameters currently in the
             ParameterManager that are not listed in the file.
         """
         if filePath is None:
-            filePath = self._paramValuesFile
+            filePath = self.defaultProfile
 
         if os.path.exists(filePath):
             with open(filePath, 'r') as f:
                 pd = json.load(f)
             self.fromParamDict(pd)
+
+            filePath = Path(filePath)
+
+            if filePath.name.startswith("parameter_manager-") and filePath.name.endswith(".json"):
+                path = Path(filePath)
+                self.selectedProfile = path.name
+                if path.name not in self.profiles:
+                    self.profiles.append(path.name)
+
         else:
             logger.warning("parameter file not found, cannot load.")
 
@@ -286,17 +366,28 @@ class ParameterManager(InstrumentBase):
                                        includeMeta=includeMeta)
         return params
 
-    def toFile(self, filePath: str = None):
+    def toFile(self, filePath: str = None, name: str = None):
 
         """Save parameters from the instrument into a json file.
+        If the file being saved is a profile file (starts with 'parameter_manager-' and ends with '.json'),
+        the selectedProfile is changed to the filename.
 
         :param filePath: Path to the json file.
             If ``None`` it looks in the instrument current working
             directory for a file called "parameter_manager-<name_of_this_instrument>.json".
+        :param name: If the filePath passed is a directory, The name of the file that it will
+            create follows the convention of "parameter_manager-<name>.json". If none it will name it
+            the name of the instrument.
+
         """
 
         if filePath is None:
-            filePath = self._paramValuesFile
+            filePath = self.workingDirectory
+
+        if os.path.isdir(filePath):
+            if name is None:
+                name = self.name
+            filePath = os.path.join(filePath, f"parameter_manager-{name}.json")
 
         folder, file = os.path.split(filePath)
         params = self.toParamDict()
@@ -305,4 +396,18 @@ class ParameterManager(InstrumentBase):
         with open(filePath, 'w') as f:
             json.dump(params, f, indent=2, sort_keys=True)
 
+        file = str(file)
+        if file.startswith("parameter_manager-") and file.endswith(".json"):
+            self.selectedProfile = file
 
+    def switch_to_profile(self, profile: str):
+        """
+        Switches the server to the passed profile.
+        """
+        if not self.does_profile_exist(self.profiles, profile):
+            raise ValueError(f"Profile {profile} does not exist")
+
+        self.toFile(str(self.workingDirectory), self.cleanProfileName(str(self.selectedProfile)))
+        self.remove_all_parameters()
+        self.fromFile(str(self.workingDirectory.joinpath(self.fullProfileName(profile))))
+        self.selectedProfile = self.fullProfileName(profile)
