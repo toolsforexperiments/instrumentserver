@@ -8,6 +8,8 @@ def prep_param_manager(params, template=1):
         params.add_parameter(name='my_param', initial_value=123, unit='M')
         params.add_parameter(name='nested_param.child1', initial_value=456, unit='a')
         params.add_parameter(name='nested_param.child2', initial_value=789, unit='b')
+        params.add_parameter(name='nested_param.how.are.you', initial_value=111, unit='b')
+        params.add_parameter(name='nested_param.how.are.too', initial_value=222, unit='b')
     elif template == 2:
         params.add_parameter(name='his_param', initial_value=-123, unit='n')
         params.add_parameter(name='nested_param.son1', initial_value=-456, unit='c')
@@ -32,6 +34,19 @@ def test_param(param_manager):
 
     params.my_param(456)
     assert params.my_param() == 456
+
+
+def test_removing_all_params():
+    params = ParameterManager(name='params')
+
+    prep_param_manager(params)
+    prep_param_manager(params, template=2)
+    prep_param_manager(params, template=3)
+    prep_param_manager(params, template=4)
+
+    params.remove_all_parameters()
+
+    assert params.list() == []
 
 
 def test_finding_all_profiles(tmp_path):

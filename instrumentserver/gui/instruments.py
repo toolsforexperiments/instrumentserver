@@ -391,6 +391,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
         return w
 
 
+# TODO: Make sure that the refresh button refreshes the profiles as well as the model
 class ParameterManagerTreeView(InstrumentTreeViewBase):
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, [2], *args, **kwargs)
@@ -406,6 +407,26 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         widget.paramWidget.setValue(value)
 
 
+class ProfilesManager(QtWidgets.QWidget):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.layout_ = QtWidgets.QHBoxLayout(self)
+        self.profilesBox = QtWidgets.QComboBox(self)
+        self.profilesBox.setEditable(True)
+        self.layout_.addWidget(self.profilesBox)
+
+        self.params = self.parent().instrument
+
+        loadingProfile = None
+        for profile in self.params.list_profiles():
+            self.profilesBox.addItem(self.params.cleanProfileName(profile))
+            if loadingProfile is None:
+                loadingProfile = profile
+
+
+# TODO: Make sure that when you press the save button he UI knows that you are saving a new profile
+#  and not a generic one
 class ParameterManagerGui(InstrumentParameters):
     #: Signal(str) --
     #: emitted when there's an error during parameter creation.
@@ -417,9 +438,12 @@ class ParameterManagerGui(InstrumentParameters):
 
     def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], **kwargs):
         super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
+        self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
+        self.layout().insertWidget(0, self.profileManager)
         self.layout().addWidget(self.addParam)
         self.connectSignals()
+        self.loadProfile()
 
     def connectSignals(self):
         super().connectSignals()
@@ -427,6 +451,7 @@ class ParameterManagerGui(InstrumentParameters):
         self.addParam.newParamRequested.connect(self.addParameter)
         self.parameterCreationError.connect(self.addParam.setError)
         self.parameterCreated.connect(self.addParam.clear)
+        self.profileManager.profilesBox.currentIndexChanged.connect(self.loadProfile)
 
     def makeToolbar(self):
         toolbar = super().makeToolbar()
@@ -464,9 +489,15 @@ class ParameterManagerGui(InstrumentParameters):
             return
 
     @QtCore.Slot()
-    def loadFromFile(self):
+    def loadProfile(self, index=None):
+        profileName = self.profileManager.profilesBox.currentText()
+        self.instrument.switch_to_profile(profileName)
+        self.refreshAll()
+
+    @QtCore.Slot()
+    def loadFromFile(self, loadFile=None):
         try:
-            self.instrument.fromFile(deleteMissing=False)
+            self.instrument.fromFile(filePath=loadFile, deleteMissing=False)
             self.refreshAll()
 
         except Exception as e:

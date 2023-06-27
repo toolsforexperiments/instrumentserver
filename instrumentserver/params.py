@@ -89,6 +89,7 @@ class ParameterManager(InstrumentBase):
         self.defaultProfile = f'parameter_manager-{self.name}.json'
         self.selectedProfile = self.defaultProfile
         self.profiles = []
+        self.refresh_profiles()
 
         self.fromFile()
 
@@ -100,6 +101,9 @@ class ParameterManager(InstrumentBase):
     def workingDirectory(self, path: Union[str, Path]):
         self._workingDirectory = Path(path)
         self.refresh_profiles()
+
+    def getWorkingDirectory(self):
+        return self.workingDirectory
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
@@ -399,6 +403,12 @@ class ParameterManager(InstrumentBase):
         file = str(file)
         if file.startswith("parameter_manager-") and file.endswith(".json"):
             self.selectedProfile = file
+
+    def list_profiles(self) -> List[str]:
+        """
+        Returns a list of all profiles.
+        """
+        return self.profiles
 
     def switch_to_profile(self, profile: str):
         """
