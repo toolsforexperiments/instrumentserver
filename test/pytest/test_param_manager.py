@@ -166,9 +166,7 @@ def test_switching_profiles_automatic_save(tmp_path):
 
     params.switch_to_profile('first')
 
-    # Open the JSON file
     with open(tmp_path.joinpath('parameter_manager-second.json')) as file:
-        # Load the JSON data
         second = json.load(file)
 
     assert second['params.his_param']['value'] == 111
