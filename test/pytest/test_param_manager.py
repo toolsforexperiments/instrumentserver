@@ -58,6 +58,46 @@ def test_finding_all_profiles(tmp_path):
                                        'parameter_manager-fourth.json'])
 
 
+def test_saving_correct_profile(tmp_path):
+
+    params = ParameterManager(name='params')
+    params.workingDirectory = tmp_path
+
+    prep_param_manager(params)
+    params.toFile(name='first')
+    file_path = tmp_path.joinpath('parameter_manager-first.json')
+    assert file_path.exists()
+
+    params.my_param(8888)
+    params.toFile()
+
+    with open(file_path) as file:
+        data = json.load(file)
+
+    assert data['params.my_param']['value'] == 8888
+
+
+def test_loading_correct_profile(tmp_path):
+
+    params = ParameterManager(name='params')
+    params.workingDirectory = tmp_path
+
+    prep_param_manager(params)
+    params.toFile(name='first')
+    file_path = tmp_path.joinpath('parameter_manager-first.json')
+
+    with open(file_path) as file:
+        data = json.load(file)
+
+    data['params.my_param']['value'] = 9999
+
+    with open(file_path, 'w') as file:
+        json.dump(data, file)
+
+    params.fromFile()
+    assert params.my_param() == 9999
+
+
 def prep_switching_profiles(tmp_path):
     params = ParameterManager(name='params')
 
