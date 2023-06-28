@@ -86,7 +86,7 @@ class ParameterManager(InstrumentBase):
         self._workingDirectory = Path(os.getcwd())
 
         #: default location and name of the parameters save file.
-        self.selectedProfile = self.name
+        self.selectedProfile = self.fullProfileName(self.name)
         self.profiles = []
         self.refresh_profiles()
 
@@ -319,7 +319,7 @@ class ParameterManager(InstrumentBase):
 
             if filePath.name.startswith("parameter_manager-") and filePath.name.endswith(".json"):
                 path = Path(filePath)
-                profileName = self.cleanProfileName(path.name)
+                profileName = path.name
                 self.selectedProfile = profileName
                 if path.name not in self.profiles:
                     self.profiles.append(profileName)
@@ -391,7 +391,7 @@ class ParameterManager(InstrumentBase):
         if os.path.isdir(filePath):
             if name is None:
                 name = self.selectedProfile
-            filePath = os.path.join(filePath, f"parameter_manager-{name}.json")
+            filePath = os.path.join(filePath,  self.fullProfileName(name))
 
         folder, file = os.path.split(filePath)
         params = self.toParamDict()
@@ -402,7 +402,7 @@ class ParameterManager(InstrumentBase):
 
         file = str(file)
         if file.startswith("parameter_manager-") and file.endswith(".json"):
-            self.selectedProfile = self.cleanProfileName(file)
+            self.selectedProfile = file
 
     def list_profiles(self) -> List[str]:
         """
@@ -417,7 +417,7 @@ class ParameterManager(InstrumentBase):
         if not self.does_profile_exist(self.profiles, profile):
             raise ValueError(f"Profile {profile} does not exist")
 
-        self.toFile(str(self.workingDirectory), self.cleanProfileName(str(self.selectedProfile)))
+        self.toFile(str(self.workingDirectory), self.selectedProfile)
         self.remove_all_parameters()
         self.fromFile(str(self.workingDirectory.joinpath(self.fullProfileName(profile))))
         self.selectedProfile = self.fullProfileName(profile)
