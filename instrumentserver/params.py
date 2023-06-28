@@ -86,8 +86,7 @@ class ParameterManager(InstrumentBase):
         self._workingDirectory = Path(os.getcwd())
 
         #: default location and name of the parameters save file.
-        self.defaultProfile = f'parameter_manager-{self.name}.json'
-        self.selectedProfile = self.defaultProfile
+        self.selectedProfile = self.name
         self.profiles = []
         self.refresh_profiles()
 
@@ -309,7 +308,7 @@ class ParameterManager(InstrumentBase):
             ParameterManager that are not listed in the file.
         """
         if filePath is None:
-            filePath = self.defaultProfile
+            filePath = self.workingDirectory.joinpath(self.fullProfileName(self.selectedProfile))
 
         if os.path.exists(filePath):
             with open(filePath, 'r') as f:
@@ -320,9 +319,10 @@ class ParameterManager(InstrumentBase):
 
             if filePath.name.startswith("parameter_manager-") and filePath.name.endswith(".json"):
                 path = Path(filePath)
-                self.selectedProfile = path.name
+                profileName = self.cleanProfileName(path.name)
+                self.selectedProfile = profileName
                 if path.name not in self.profiles:
-                    self.profiles.append(path.name)
+                    self.profiles.append(profileName)
 
         else:
             logger.warning("parameter file not found, cannot load.")
@@ -390,7 +390,7 @@ class ParameterManager(InstrumentBase):
 
         if os.path.isdir(filePath):
             if name is None:
-                name = self.name
+                name = self.selectedProfile
             filePath = os.path.join(filePath, f"parameter_manager-{name}.json")
 
         folder, file = os.path.split(filePath)
@@ -402,7 +402,7 @@ class ParameterManager(InstrumentBase):
 
         file = str(file)
         if file.startswith("parameter_manager-") and file.endswith(".json"):
-            self.selectedProfile = file
+            self.selectedProfile = self.cleanProfileName(file)
 
     def list_profiles(self) -> List[str]:
         """
