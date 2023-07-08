@@ -391,6 +391,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
         return w
 
 
+# TODO: Make sure that the refresh button refreshes the profiles as well as the model
 class ParameterManagerTreeView(InstrumentTreeViewBase):
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, [2], *args, **kwargs)
@@ -406,6 +407,43 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         widget.paramWidget.setValue(value)
 
 
+class ProfilesManager(QtWidgets.QComboBox):
+
+    #: Signal()
+    #: Emitted when the selected index changed.
+    indexChanged = QtCore.Signal()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.setEditable(False)
+        self.params = self.parent().instrument
+        self.refreshing = False
+
+        loadingProfile = None
+        for profile in self.params.list_profiles():
+            self.addItem(self.params.cleanProfileName(profile))
+            if loadingProfile is None:
+                loadingProfile = profile
+
+        self.currentIndexChanged.connect(self.onCurrentIndexChanged)
+
+    def refresh(self):
+        self.refreshing = True
+        currentlySelected = self.currentText()
+        self.clear()
+        for profile in self.params.list_profiles():
+            self.addItem(self.params.cleanProfileName(profile))
+            if profile == currentlySelected:
+                self.setCurrentIndex(self.count() - 1)
+        self.refreshing = False
+
+    @QtCore.Slot(int)
+    def onCurrentIndexChanged(self, index):
+        if not self.refreshing:
+            self.indexChanged.emit()
+
+
 class ParameterManagerGui(InstrumentParameters):
     #: Signal(str) --
     #: emitted when there's an error during parameter creation.
@@ -417,9 +455,12 @@ class ParameterManagerGui(InstrumentParameters):
 
     def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], **kwargs):
         super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
+        self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
+        self.layout().insertWidget(0, self.profileManager)
         self.layout().addWidget(self.addParam)
         self.connectSignals()
+        self.loadProfile()
 
     def connectSignals(self):
         super().connectSignals()
@@ -427,6 +468,7 @@ class ParameterManagerGui(InstrumentParameters):
         self.addParam.newParamRequested.connect(self.addParameter)
         self.parameterCreationError.connect(self.addParam.setError)
         self.parameterCreated.connect(self.addParam.clear)
+        self.profileManager.indexChanged.connect(self.loadProfile)
 
     def makeToolbar(self):
         toolbar = super().makeToolbar()
@@ -447,6 +489,11 @@ class ParameterManagerGui(InstrumentParameters):
 
         return toolbar
 
+    def refreshAll(self):
+        super().refreshAll()
+        self.instrument.refresh_profiles()
+        self.profileManager.refresh()
+
     def removeParameter(self, fullName: str):
         if self.instrument.has_param(fullName):
             self.instrument.remove_parameter(fullName)
@@ -464,9 +511,16 @@ class ParameterManagerGui(InstrumentParameters):
             return
 
     @QtCore.Slot()
-    def loadFromFile(self):
+    def loadProfile(self):
+        profileName = self.profileManager.currentText()
+        self.instrument.switch_to_profile(profileName)
+        super().refreshAll()
+        self.instrument.refresh_profiles()
+
+    @QtCore.Slot()
+    def loadFromFile(self, loadFile=None):
         try:
-            self.instrument.fromFile(deleteMissing=False)
+            self.instrument.fromFile(filePath=loadFile, deleteMissing=False)
             self.refreshAll()
 
         except Exception as e:

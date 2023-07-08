@@ -309,7 +309,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             if sn not in self.bp.submodules:
                 delKeys.append(sn)
         for k in delKeys:
-            del self.submodules[sn]
+            del self.submodules[k]
 
     def _refreshProxySubmodules(self):
         delKeys = []
