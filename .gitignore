@@ -91,3 +91,6 @@ ENV/
 
 # pycharm stuff
 .idea
+
+# Mac stuff
+.DS_Store
