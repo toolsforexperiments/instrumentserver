@@ -68,9 +68,7 @@ def serverScript() -> None:
     pollWorker.setPollingDict(pollingRates)
     pollWorker.moveToThread(serverScript.pollingThread)
     serverScript.pollingThread.started.connect(pollWorker.run)
-    
     serverScript.pollingThread.start()
-
 
     if args.gui == 'False':
         server(port=args.port,
