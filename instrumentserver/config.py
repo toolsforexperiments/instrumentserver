@@ -9,6 +9,8 @@ import tempfile
 import ruamel.yaml
 from pathlib import Path
 
+from .client import Client
+
 # Centralised point of extra fields for the server with its default as value
 SERVERFIELDS = {'initialize': True}
 
@@ -30,6 +32,8 @@ def loadConfig(configPath: str):
     serverConfig = {}  # Config for the server
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
+
+    pollingRates = {}
 
     yaml = ruamel.yaml.YAML()
     rawConfig = yaml.load(configPath)
@@ -63,6 +67,12 @@ def loadConfig(configPath: str):
         else:
             guiConfig[instrumentName] = GUIFIELD
 
+        if 'pollingRate' in configDict:
+            pollingRateList = configDict.pop('pollingRate')
+            if pollingRateList != None:
+                for paramPollingRate in pollingRateList.items():
+                    pollingRates.update({(instrumentName + "." + paramPollingRate[0]): paramPollingRate[1]})
+
         fullConfig[instrumentName] = {'gui': guiConfig[instrumentName], **configDict, **serverConfig[instrumentName]}
 
     # Creating the file like object
@@ -77,7 +87,7 @@ def loadConfig(configPath: str):
     tempFilePath = tempFile.name
 
     # You need to return the tempFile itself so that the garbage collector doesn't touch it
-    return tempFilePath, serverConfig, fullConfig, tempFile
+    return tempFilePath, serverConfig, fullConfig, tempFile, pollingRates
 
 
 

@@ -19,7 +19,7 @@ from typing import Dict
 from .client import Client
 from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
-
+from .server.pollingWorker import pollingWorker
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
 logger = logging.getLogger('instrumentserver')
@@ -58,10 +58,19 @@ def serverScript() -> None:
     # Load and process the config file if any.
     configPath = args.config
 
-    stationConfig, serverConfig, guiConfig, tempFile = None, None, None, None
+    stationConfig, serverConfig, guiConfig, tempFile, pollingRates = None, None, None, None, None
     if configPath != '':
         # Separates the corresponding settings into the 4 necessary parts
-        stationConfig, serverConfig, guiConfig, tempFile = loadConfig(configPath)
+        stationConfig, serverConfig, guiConfig, tempFile, pollingRates = loadConfig(configPath)
+
+    serverScript.pollingThread = QtCore.QThread()
+    pollWorker = pollingWorker()
+    pollWorker.setPollingDict(pollingRates)
+    pollWorker.moveToThread(serverScript.pollingThread)
+    serverScript.pollingThread.started.connect(pollWorker.run)
+    
+    serverScript.pollingThread.start()
+
 
     if args.gui == 'False':
         server(port=args.port,
@@ -83,6 +92,9 @@ def serverScript() -> None:
         tempFile.close()
         Path(stationConfig).unlink(missing_ok=True)
 
+def quitPollingThread():
+    serverScript.pollingThread.quit()
+    logger.info("Polling thread finished")
 
 def parameterManagerScript() -> None:
     parser = argparse.ArgumentParser(description='Starting a parameter manager instrument GUI')

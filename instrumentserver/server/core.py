@@ -234,6 +234,9 @@ class StationServer(QtCore.QObject):
 
             self.messageReceived.emit(str(message), response_log)
 
+        from ..apps import quitPollingThread
+        quitPollingThread()
+        
         self.broadcastSocket.close()
         socket.close()
         self.finished.emit()
