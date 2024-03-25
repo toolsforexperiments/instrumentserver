@@ -91,7 +91,7 @@ def serverScript() -> None:
         tempFile.close()
         Path(stationConfig).unlink(missing_ok=True)
 
-def quitPollingThread():
+def _quitPollingThread():
     serverScript.pollingThread.quit()
     logger.info("Polling thread finished.")
 
