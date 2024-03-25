@@ -233,7 +233,10 @@ class StationServer(QtCore.QObject):
             send(socket, response_to_client)
 
             self.messageReceived.emit(str(message), response_log)
-
+        # Importing at the top of the file causes a circular import
+        from ..apps import _quitPollingThread
+        _quitPollingThread()
+        
         self.broadcastSocket.close()
         socket.close()
         self.finished.emit()
