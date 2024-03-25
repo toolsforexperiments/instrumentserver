@@ -9,8 +9,6 @@ import tempfile
 import ruamel.yaml
 from pathlib import Path
 
-from .client import Client
-
 # Centralised point of extra fields for the server with its default as value
 SERVERFIELDS = {'initialize': True}
 
@@ -32,7 +30,7 @@ def loadConfig(configPath: str):
     serverConfig = {}  # Config for the server
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
-    pollingRates = {} #polling rates for each parameter
+    pollingRates = {} # Polling rates for each parameter
 
     yaml = ruamel.yaml.YAML()
     rawConfig = yaml.load(configPath)

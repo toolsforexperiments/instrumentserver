@@ -19,7 +19,8 @@ from typing import Dict
 from .client import Client
 from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
-from .server.pollingWorker import pollingWorker
+from .server.pollingWorker import PollingWorker
+
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
 logger = logging.getLogger('instrumentserver')
@@ -64,7 +65,7 @@ def serverScript() -> None:
         stationConfig, serverConfig, guiConfig, tempFile, pollingRates = loadConfig(configPath)
 
     serverScript.pollingThread = QtCore.QThread()
-    pollWorker = pollingWorker()
+    pollWorker = PollingWorker()
     pollWorker.setPollingDict(pollingRates)
     pollWorker.moveToThread(serverScript.pollingThread)
     serverScript.pollingThread.started.connect(pollWorker.run)
@@ -92,7 +93,7 @@ def serverScript() -> None:
 
 def quitPollingThread():
     serverScript.pollingThread.quit()
-    logger.info("Polling thread finished")
+    logger.info("Polling thread finished.")
 
 def parameterManagerScript() -> None:
     parser = argparse.ArgumentParser(description='Starting a parameter manager instrument GUI')
