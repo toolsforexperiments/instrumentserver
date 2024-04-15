@@ -61,15 +61,15 @@ def serverScript() -> None:
 
     stationConfig, serverConfig, guiConfig, tempFile, pollingRates = None, None, None, None, None
     if configPath != '':
-        # Separates the corresponding settings into the 4 necessary parts
+        # Separates the corresponding settings into the 5 necessary parts
         stationConfig, serverConfig, guiConfig, tempFile, pollingRates = loadConfig(configPath)
 
-    serverScript.pollingThread = QtCore.QThread()
+    pollingThread = QtCore.QThread()
     pollWorker = PollingWorker()
     pollWorker.setPollingDict(pollingRates)
-    pollWorker.moveToThread(serverScript.pollingThread)
-    serverScript.pollingThread.started.connect(pollWorker.run)
-    serverScript.pollingThread.start()
+    pollWorker.moveToThread(pollingThread)
+    pollingThread.started.connect(pollWorker.run)
+    pollingThread.start()
 
     if args.gui == 'False':
         server(port=args.port,
@@ -77,23 +77,22 @@ def serverScript() -> None:
                addresses=args.listen_at,
                initScript=args.init_script,
                serverConfig=serverConfig,
-               stationConfig=stationConfig)
+               stationConfig=stationConfig,
+               pthread = pollingThread)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
                       initScript=args.init_script,
                       serverConfig=serverConfig,
                       stationConfig=stationConfig,
-                      guiConfig=guiConfig)
+                      guiConfig=guiConfig,
+                      pthread = pollingThread)
 
     # Close and delete the temporary files
     if tempFile is not None:
         tempFile.close()
         Path(stationConfig).unlink(missing_ok=True)
 
-def _quitPollingThread():
-    serverScript.pollingThread.quit()
-    logger.info("Polling thread finished.")
 
 def parameterManagerScript() -> None:
     parser = argparse.ArgumentParser(description='Starting a parameter manager instrument GUI')

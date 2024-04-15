@@ -66,7 +66,7 @@ def loadConfig(configPath: str):
 
         if 'pollingRate' in configDict:
             pollingRateList = configDict.pop('pollingRate')
-            if pollingRateList != None:
+            if pollingRateList is not None:
                 for paramPollingRate in pollingRateList.items():
                     pollingRates.update({(instrumentName + "." + paramPollingRate[0]): paramPollingRate[1]})
 
