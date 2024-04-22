@@ -97,7 +97,7 @@ class StationServer(QtCore.QObject):
                  initScript: Optional[str] = None,
                  serverConfig: Optional[Dict[str, Any]] = None,
                  stationConfig: Optional[str] = None,
-                 pthread: Any = None
+                 pollingThread: Any = None
                  ) -> None:
         super().__init__(parent)
 
@@ -137,8 +137,8 @@ class StationServer(QtCore.QObject):
                                                   f"kwargs: {str(kw)})'.")
         )
 
-        self.pollingThread = pthread
-        
+        self.pollingThread = pollingThread
+
 
     def _runInitScript(self):
         if os.path.exists(self.initScript):

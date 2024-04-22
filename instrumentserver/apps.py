@@ -4,6 +4,8 @@ import logging
 import importlib.util
 import signal
 from pathlib import Path
+import pandas
+import time
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
@@ -14,9 +16,8 @@ from bokeh.server.server import Server as BokehServer
 from .dashboard.dashboard import DashboardClass
 from .dashboard.logger import ParameterLogger
 from typing import Dict
-
-
-from .client import Client
+from .blueprints import ParameterBroadcastBluePrint
+from .client import Client, SubClient
 from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
 from .server.pollingWorker import PollingWorker
@@ -64,12 +65,13 @@ def serverScript() -> None:
         # Separates the corresponding settings into the 5 necessary parts
         stationConfig, serverConfig, guiConfig, tempFile, pollingRates = loadConfig(configPath)
 
-    pollingThread = QtCore.QThread()
-    pollWorker = PollingWorker()
-    pollWorker.setPollingDict(pollingRates)
-    pollWorker.moveToThread(pollingThread)
-    pollingThread.started.connect(pollWorker.run)
-    pollingThread.start()
+    if pollingRates is not None:
+        pollingThread = QtCore.QThread()
+        pollWorker = PollingWorker()
+        pollWorker.setPollingDict(pollingRates)
+        pollWorker.moveToThread(pollingThread)
+        pollingThread.started.connect(pollWorker.run)
+        pollingThread.start()
 
     if args.gui == 'False':
         server(port=args.port,
@@ -78,7 +80,7 @@ def serverScript() -> None:
                initScript=args.init_script,
                serverConfig=serverConfig,
                stationConfig=stationConfig,
-               pthread = pollingThread)
+               pollingThread = pollingThread)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
@@ -86,7 +88,7 @@ def serverScript() -> None:
                       serverConfig=serverConfig,
                       stationConfig=stationConfig,
                       guiConfig=guiConfig,
-                      pthread = pollingThread)
+                      pollingThread = pollingThread)
 
     # Close and delete the temporary files
     if tempFile is not None:
