@@ -97,7 +97,7 @@ class StationServer(QtCore.QObject):
                  initScript: Optional[str] = None,
                  serverConfig: Optional[Dict[str, Any]] = None,
                  stationConfig: Optional[str] = None,
-                 pollingThread: Any = None
+                 pollingThread: Optional[Dict[str, Any]] = None
                  ) -> None:
         super().__init__(parent)
 
@@ -125,6 +125,8 @@ class StationServer(QtCore.QObject):
         self.broadcastPort = self.port + 1
         self.broadcastSocket = None
 
+        self.pollingThread = pollingThread
+
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
         )
@@ -136,9 +138,6 @@ class StationServer(QtCore.QObject):
                                                   f"'{n}', args: {str(args)}, "
                                                   f"kwargs: {str(kw)})'.")
         )
-
-        self.pollingThread = pollingThread
-
 
     def _runInitScript(self):
         if os.path.exists(self.initScript):
@@ -237,6 +236,7 @@ class StationServer(QtCore.QObject):
             send(socket, response_to_client)
 
             self.messageReceived.emit(str(message), response_log)
+
         if self.pollingThread is not None and isinstance(self.pollingThread,QtCore.QThread):
             self.pollingThread.quit()
             logger.info("Polling thread finished")

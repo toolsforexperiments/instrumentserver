@@ -1,8 +1,12 @@
 import logging
+
 from .. import QtCore
+
 from ..client import Client
-logger = logging.getLogger(__name__)
 from ..helpers import nestedAttributeFromString
+
+logger = logging.getLogger(__name__)
+
 
 class PollingWorker(QtCore.QThread):
     def __init__(self):
