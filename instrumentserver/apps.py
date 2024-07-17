@@ -4,6 +4,8 @@ import logging
 import importlib.util
 import signal
 from pathlib import Path
+import pandas
+import time
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
@@ -14,11 +16,11 @@ from bokeh.server.server import Server as BokehServer
 from .dashboard.dashboard import DashboardClass
 from .dashboard.logger import ParameterLogger
 from typing import Dict
-
-
-from .client import Client
+from .blueprints import ParameterBroadcastBluePrint
+from .client import Client, SubClient
 from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
+from .server.pollingWorker import PollingWorker
 
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
@@ -58,10 +60,18 @@ def serverScript() -> None:
     # Load and process the config file if any.
     configPath = args.config
 
-    stationConfig, serverConfig, guiConfig, tempFile = None, None, None, None
+    stationConfig, serverConfig, guiConfig, tempFile, pollingRates = None, None, None, None, None
     if configPath != '':
-        # Separates the corresponding settings into the 4 necessary parts
-        stationConfig, serverConfig, guiConfig, tempFile = loadConfig(configPath)
+        # Separates the corresponding settings into the 5 necessary parts
+        stationConfig, serverConfig, guiConfig, tempFile, pollingRates = loadConfig(configPath)
+
+    if pollingRates is not None:
+        pollingThread = QtCore.QThread()
+        pollWorker = PollingWorker()
+        pollWorker.setPollingDict(pollingRates)
+        pollWorker.moveToThread(pollingThread)
+        pollingThread.started.connect(pollWorker.run)
+        pollingThread.start()
 
     if args.gui == 'False':
         server(port=args.port,
@@ -69,14 +79,16 @@ def serverScript() -> None:
                addresses=args.listen_at,
                initScript=args.init_script,
                serverConfig=serverConfig,
-               stationConfig=stationConfig)
+               stationConfig=stationConfig,
+               pollingThread = pollingThread)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
                       initScript=args.init_script,
                       serverConfig=serverConfig,
                       stationConfig=stationConfig,
-                      guiConfig=guiConfig)
+                      guiConfig=guiConfig,
+                      pollingThread = pollingThread)
 
     # Close and delete the temporary files
     if tempFile is not None:
