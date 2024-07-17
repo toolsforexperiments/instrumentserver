@@ -4,8 +4,6 @@ import logging
 import importlib.util
 import signal
 from pathlib import Path
-import pandas
-import time
 
 from . import QtWidgets, QtCore
 from .log import setupLogging
@@ -16,8 +14,8 @@ from bokeh.server.server import Server as BokehServer
 from .dashboard.dashboard import DashboardClass
 from .dashboard.logger import ParameterLogger
 from typing import Dict
-from .blueprints import ParameterBroadcastBluePrint
-from .client import Client, SubClient
+
+from .client import Client
 from .gui import widgetDialog, widgetMainWindow
 from .gui.instruments import ParameterManagerGui
 from .server.pollingWorker import PollingWorker
@@ -60,15 +58,14 @@ def serverScript() -> None:
     # Load and process the config file if any.
     configPath = args.config
 
-    stationConfig, serverConfig, guiConfig, tempFile, pollingRates = None, None, None, None, None
+    stationConfig, serverConfig, guiConfig, tempFile, pollingRates, pollingThread = None, None, None, None, None, None
     if configPath != '':
         # Separates the corresponding settings into the 5 necessary parts
         stationConfig, serverConfig, guiConfig, tempFile, pollingRates = loadConfig(configPath)
 
-    if pollingRates is not None:
+    if pollingRates is not None and pollingRates != {}:
         pollingThread = QtCore.QThread()
-        pollWorker = PollingWorker()
-        pollWorker.setPollingDict(pollingRates)
+        pollWorker = PollingWorker(pollingRates=pollingRates)
         pollWorker.moveToThread(pollingThread)
         pollingThread.started.connect(pollWorker.run)
         pollingThread.start()
@@ -80,7 +77,7 @@ def serverScript() -> None:
                initScript=args.init_script,
                serverConfig=serverConfig,
                stationConfig=stationConfig,
-               pollingThread = pollingThread)
+               pollingThread=pollingThread)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
@@ -88,7 +85,7 @@ def serverScript() -> None:
                       serverConfig=serverConfig,
                       stationConfig=stationConfig,
                       guiConfig=guiConfig,
-                      pollingThread = pollingThread)
+                      pollingThread=pollingThread)
 
     # Close and delete the temporary files
     if tempFile is not None:
