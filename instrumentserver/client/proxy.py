@@ -231,6 +231,17 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         self.cli.call(self.name + ".add_parameter", name, *arg, **kw)
         self.update()
 
+    def remove_parameter(self, name: str, *arg, **kw):
+        """Removes parameter from the proxy instrument.
+
+        Checking whether the paremeter exists or not is left to the instrument in the server. This is to avoid having
+        to check on every submodule for the parameter manager.
+        """
+        bp: InstrumentModuleBluePrint
+        bp = self.cli.getBluePrint(self.name)
+        self.cli.call(self.name + ".remove_parameter", name, *arg, **kw)
+        self.update()
+
     def _getProxyParameters(self) -> None:
         """Based on the parameter blueprint replied from server, add the
         instrument parameters to the proxy instrument class."""
