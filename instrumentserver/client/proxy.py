@@ -196,7 +196,14 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
                 self.remove_parameter = MethodType(remove_parameter, self)
 
         self.parameters.pop('IDN', None)  # we will redefine this later
+
+        # When a new parameter or method is added to client, qcodes checks if that item exists or not. This is done
+        #  by calling __getattr__ method. The problem is that when that method gets called and cannot find that item it
+        #  creates it, generating an infite loop. This flag stops that. It should be set to True before doing any change
+        #  to the proxy object and set to False after the change is done.
+        self.is_updating = True
         self.update()
+        self.is_updating = False
 
     def initKwargsFromBluePrint(self, bp):
         return {}
@@ -224,6 +231,17 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         self.cli.call(self.name + ".add_parameter", name, *arg, **kw)
         self.update()
 
+    def remove_parameter(self, name: str, *arg, **kw):
+        """Removes parameter from the proxy instrument.
+
+        Checking whether the paremeter exists or not is left to the instrument in the server. This is to avoid having
+        to check on every submodule for the parameter manager.
+        """
+        bp: InstrumentModuleBluePrint
+        bp = self.cli.getBluePrint(self.name)
+        self.cli.call(self.name + ".remove_parameter", name, *arg, **kw)
+        self.update()
+
     def _getProxyParameters(self) -> None:
         """Based on the parameter blueprint replied from server, add the
         instrument parameters to the proxy instrument class."""
@@ -233,8 +251,10 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         for pn, p in self.bp.parameters.items():
             if pn not in self.parameters:
                 pbp = self.cli.getBluePrint(f"{self.remotePath}.{pn}")
+                self.is_updating = True
                 super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
                                       port=self.port, bluePrint=pbp, setpoints_instrument=self)
+                self.is_updating = False
 
         delKeys = []
         for pn in self.parameters.keys():
@@ -251,9 +271,11 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         """
         for n, m in self.bp.methods.items():
             if not hasattr(self, n):
+                self.is_updating = True
                 fun = self._makeProxyMethod(m)
                 setattr(self, n, MethodType(fun, self))
                 self.functions[n] = getattr(self, n)
+                self.is_updating = False
 
     def _makeProxyMethod(self, bp: MethodBluePrint):
         def wrap(*a, **k):
@@ -332,14 +354,17 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             return super().__getattr__(item)
         except Exception as e:
             current_bp = self.cli.getBluePrint(self.remotePath)
-            if item in current_bp.parameters and item not in self.parameters:
-                self.bp = current_bp
-                self._getProxyParameters()
-                return getattr(self, item)
-            elif item in current_bp.submodules and item not in self.submodules:
-                self.bp = current_bp
-                self._getProxySubmodules()
-                return getattr(self, item)
+            if not self.is_updating:
+                if item in current_bp.parameters and item not in self.parameters:
+                    self.bp = current_bp
+                    self._getProxyParameters()
+                    return getattr(self, item)
+                elif item in current_bp.submodules and item not in self.submodules:
+                    self.bp = current_bp
+                    self._getProxySubmodules()
+                    return getattr(self, item)
+                else:
+                    raise e
             else:
                 raise e
 
