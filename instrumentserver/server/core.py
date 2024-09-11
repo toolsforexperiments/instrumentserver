@@ -97,7 +97,8 @@ class StationServer(QtCore.QObject):
                  initScript: Optional[str] = None,
                  serverConfig: Optional[Dict[str, Any]] = None,
                  stationConfig: Optional[str] = None,
-                 pollingThread: Optional[Dict[str, Any]] = None
+                 pollingThread: Optional[Dict[str, Any]] = None,
+                 ipAddresses: Optional[Dict[str, str]] = None
                  ) -> None:
         super().__init__(parent)
 
@@ -105,6 +106,9 @@ class StationServer(QtCore.QObject):
             addresses = []
         if initScript == None:
             initScript = ''
+        
+        if ipAddresses is not None and 'listeningAddress' in ipAddresses and ipAddresses.get('listeningAddress') is not None:
+            addresses.append(ipAddresses.get('listeningAddress'))
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
@@ -125,7 +129,13 @@ class StationServer(QtCore.QObject):
         self.broadcastPort = self.port + 1
         self.broadcastSocket = None
 
+        if ipAddresses is not None and 'externalBroadcast' in ipAddresses and ipAddresses.get('externalBroadcast') is not None:
+            self.externalBroadcastAddr = ipAddresses.get('externalBroadcast')
+        self.externalBroadcastSocket = None
+
         self.pollingThread = pollingThread
+
+        self.ipAddresses = ipAddresses
 
         self.parameterSet.connect(
             lambda n, v: logger.info(f"Parameter '{n}' set to: {str(v)}")
@@ -167,6 +177,9 @@ class StationServer(QtCore.QObject):
         logger.info(f"Starting publishing server at {broadcastAddr}")
         self.broadcastSocket = context.socket(zmq.PUB)
         self.broadcastSocket.bind(broadcastAddr)
+
+        self.externalBroadcastSocket = context.socket(zmq.PUB)
+        self.externalBroadcastSocket.bind(self.externalBroadcastAddr)
 
         self.serverRunning = True
         if self.initScript not in ['', None]:
@@ -380,6 +393,7 @@ class StationServer(QtCore.QObject):
         :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
         sendBroadcast(self.broadcastSocket, blueprint.name.split('.')[0], blueprint)
+        sendBroadcast(self.externalBroadcastSocket, blueprint.name.split('.')[0], blueprint)
         logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
                      f" with a value: {blueprint.value}.")
 
