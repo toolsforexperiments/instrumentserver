@@ -128,6 +128,7 @@ class StationServer(QtCore.QObject):
 
         self.broadcastPort = self.port + 1
         self.broadcastSocket = None
+        self.externalBroadcastAddr = None
 
         if ipAddresses is not None and 'externalBroadcast' in ipAddresses and ipAddresses.get('externalBroadcast') is not None:
             self.externalBroadcastAddr = ipAddresses.get('externalBroadcast')
@@ -179,7 +180,8 @@ class StationServer(QtCore.QObject):
         self.broadcastSocket.bind(broadcastAddr)
 
         self.externalBroadcastSocket = context.socket(zmq.PUB)
-        self.externalBroadcastSocket.bind(self.externalBroadcastAddr)
+        if self.externalBroadcastAddr is not None:
+            self.externalBroadcastSocket.bind(self.externalBroadcastAddr)
 
         self.serverRunning = True
         if self.initScript not in ['', None]:
@@ -393,7 +395,8 @@ class StationServer(QtCore.QObject):
         :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
         sendBroadcast(self.broadcastSocket, blueprint.name.split('.')[0], blueprint)
-        sendBroadcast(self.externalBroadcastSocket, blueprint.name.split('.')[0], blueprint)
+        if self.externalBroadcastAddr is not None:
+            sendBroadcast(self.externalBroadcastSocket, blueprint.name.split('.')[0], blueprint)
         logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
                      f" with a value: {blueprint.value}.")
 
