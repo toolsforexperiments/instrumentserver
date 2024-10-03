@@ -179,9 +179,12 @@ class StationServer(QtCore.QObject):
         self.broadcastSocket = context.socket(zmq.PUB)
         self.broadcastSocket.bind(broadcastAddr)
 
-        self.externalBroadcastSocket = context.socket(zmq.PUB)
         if self.externalBroadcastAddr is not None:
+            logger.info(f"Also publishing the server at {self.externalBroadcastAddr}")
+            self.externalBroadcastSocket = context.socket(zmq.PUB)
             self.externalBroadcastSocket.bind(self.externalBroadcastAddr)
+        else:
+            logger.info(f"Not broadcasting to external address")
 
         self.serverRunning = True
         if self.initScript not in ['', None]:

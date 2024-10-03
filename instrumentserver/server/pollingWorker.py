@@ -42,7 +42,7 @@ class PollingWorker(QtCore.QThread):
         for param in self.pollingRates:
             timer = QtCore.QTimer()
             timer.timeout.connect(lambda name=param: self.getParamValue(name))
-            timer.start(self.pollingRates.get(param) * 1000)
+            timer.start(int(self.pollingRates.get(param) * 1000))
             timers.append(timer)
 
         self.exec_()

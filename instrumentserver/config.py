@@ -32,7 +32,9 @@ def loadConfig(configPath: str):
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
     pollingRates = {}  # Polling rates for each parameter
-    ipAddresses = {} # IP Addresses to send broadcasts to, internal, external, and listening
+    ipAddresses = {} # Dictionary of IP Addresses to send broadcasts to:
+    # externalBroadcast: where to externally send parameter change broadcasts to, formatted like "tcp://address:port"
+    # listeningAddress: additional address to listen to messages received by the server, formatted like "address"
 
     yaml = ruamel.yaml.YAML()
     rawConfig = yaml.load(configPath)
