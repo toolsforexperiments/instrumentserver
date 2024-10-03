@@ -58,7 +58,7 @@ instruments:
 # Field for adding broadcasting and listening addresses to the instrument server
 networking:
   # Adds additional address to listen to messages received by the server, Example: "192.168.1.1"
-  listeningAddress:
+  listeningAddress: "192.168.1.1"
 
   # Adds an address to broadcast parameter changes to, Example: "tcp://192.168.1.1:6000"
-  externalBroadcast:
+  externalBroadcast: "tcp://192.168.1.1:6000"
