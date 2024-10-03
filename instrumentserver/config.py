@@ -32,6 +32,9 @@ def loadConfig(configPath: str):
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
     pollingRates = {}  # Polling rates for each parameter
+    ipAddresses = {} # Dictionary of IP Addresses to send broadcasts to:
+    # externalBroadcast: where to externally send parameter change broadcasts to, formatted like "tcp://address:port"
+    # listeningAddress: additional address to listen to messages received by the server, formatted like "address"
 
     yaml = ruamel.yaml.YAML()
     rawConfig = yaml.load(configPath)
@@ -73,6 +76,14 @@ def loadConfig(configPath: str):
 
         fullConfig[instrumentName] = {'gui': guiConfig[instrumentName], **configDict, **serverConfig[instrumentName]}
 
+    # Gets all of the broadcasting and listening addresses from the config file
+    if 'networking' in rawConfig:
+        addressDict = rawConfig['networking']
+        if addressDict is not None:
+            for address in addressDict.items():
+                ipAddresses.update({address[0]: address[1]})
+        rawConfig.pop('networking')
+
     # Creating the file like object
     with io.BytesIO() as ioBytesFile:
         yaml.dump(rawConfig, ioBytesFile)
@@ -85,4 +96,4 @@ def loadConfig(configPath: str):
     tempFilePath = tempFile.name
 
     # You need to return the tempFile itself so that the garbage collector doesn't touch it
-    return tempFilePath, serverConfig, fullConfig, tempFile, pollingRates
+    return tempFilePath, serverConfig, fullConfig, tempFile, pollingRates, ipAddresses
