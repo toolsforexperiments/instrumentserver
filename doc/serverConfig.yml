@@ -54,3 +54,11 @@ instruments:
     gui:
       # By having the parameter manager GUI as the gui type, we can have it directly in the server instead of on a separate window.
       type: instrumentserver.gui.instruments.ParameterManagerGui
+
+# Field for adding broadcasting and listening addresses to the instrument server
+networking:
+  # Adds additional address to listen to messages received by the server, Example: "192.168.1.1"
+  listeningAddress:
+
+  # Adds an address to broadcast parameter changes to, Example: "tcp://192.168.1.1:6000"
+  externalBroadcast:
