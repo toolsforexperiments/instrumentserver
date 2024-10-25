@@ -12,7 +12,5 @@ setup(name='instrumentserver',
       entry_points={"console_scripts": [
             "instrumentserver = instrumentserver.apps:serverScript",
             "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",
-            "instrumentserver-dashboard = instrumentserver.apps:bokehDashboard",
-            "instrumentserver-parameterlogger = instrumentserver.apps:parameterLogger",
-            "instrumentserver-dashboardlogger = instrumentserver.apps:loggerAndDashboard"]}
+            "instrumentserver-listener = instrumentserver.monitoring.listener:startListener"]}
       )

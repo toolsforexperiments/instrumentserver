@@ -1,0 +1,7 @@
+address: "tcp://192.168.56.1:6000"
+
+params: ["dummy_instrument_random_number.param0","dummy_instrument_random_number.param2"]
+
+csv_path: C:\Users\jmnol\OneDrive\Documents\GitHub\instrumentserver\instrumentserver\dashboardListener\data.csv
+
+listener_type: "CSV"
