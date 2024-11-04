@@ -32,16 +32,18 @@ class Listener(ABC):
         socket.setsockopt_string(zmq.SUBSCRIBE, "")
         logger.info("Listener Connected")
         listen = True
-        
-        while listen:
-            try:
-                # parses string message and decodes into ParameterBroadcastBluePrint
-                message = recvMultipart(socket)
-                self.listenerEvent(message[1])
-            except (KeyboardInterrupt, SystemExit):
-                # exit if keyboard interrupt
-                logger.info("Program Stopped Manually")
-                raise
+        try:
+            while listen:
+                try:
+                    # parses string message and decodes into ParameterBroadcastBluePrint
+                    message = recvMultipart(socket)
+                    self.listenerEvent(message[1])
+                except (KeyboardInterrupt, SystemExit):
+                    # exit if keyboard interrupt
+                    logger.info("Program Stopped Manually")
+                    raise
+        finally:
+            socket.close()
 
     @abstractmethod
     def listenerEvent(self, message: ParameterBroadcastBluePrint):
