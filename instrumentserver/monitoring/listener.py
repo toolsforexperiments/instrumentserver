@@ -1,16 +1,21 @@
 import zmq
 import ruamel.yaml
-
+import logging
 from pathlib import Path
 
 import datetime
 import pandas as pd
 import argparse
+import os.path
 
 from instrumentserver.base import recvMultipart
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
 
 from abc import ABC, abstractmethod
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class Listener(ABC):
     def __init__(self, addr):
@@ -18,22 +23,24 @@ class Listener(ABC):
 
     def run(self):
         # creates zmq subscriber at specified address
-        print(f"Connecting to {self.addr}")
+        logger.info(f"Connecting to {self.addr}")
         context = zmq.Context()
         socket = context.socket(zmq.SUB)
         socket.connect(self.addr)
 
         # listen for everything
         socket.setsockopt_string(zmq.SUBSCRIBE, "")
-
-        while True:
+        logger.info("Listener Connected")
+        listen = True
+        
+        while listen:
             try:
                 # parses string message and decodes into ParameterBroadcastBluePrint
                 message = recvMultipart(socket)
                 self.listenerEvent(message[1])
             except (KeyboardInterrupt, SystemExit):
                 # exit if keyboard interrupt
-                print("Program Stopped Manually")
+                logger.info("Program Stopped Manually")
                 raise
 
     @abstractmethod
@@ -44,7 +51,15 @@ class DFListener(Listener):
     def __init__(self, addr, paramList, path):
         super().__init__(addr)
         self.addr = addr
-        self.df = pd.DataFrame(columns=["time","name","value","unit"])
+
+        # checks if data file already exists
+        # if it does, reads the file to make the appropriate dataframe
+        if os.path.isfile(path):
+            self.df = pd.read_csv(path)
+            self.df = self.df.drop("Unnamed: 0", axis=1)
+        else:
+            self.df = pd.DataFrame(columns=["time","name","value","unit"])
+
         self.paramList = paramList
         self.path = path
 
@@ -52,11 +67,19 @@ class DFListener(Listener):
         super().run()
 
     def listenerEvent(self, message: ParameterBroadcastBluePrint):
-        if message.name in self.paramList:
+        
+        # listens only for parameters in the list, if it is empty, it listens to everything
+        if not self.paramList:
+            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
+            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
+            self.df.to_csv(self.path)
+        elif message.name in self.paramList:
+            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
             self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
             self.df.to_csv(self.path)
 
 def loadConfig(path):
+
     # load config file contents into data
     path = Path(path)
     yaml = ruamel.yaml.YAML(typ='safe')
@@ -75,24 +98,26 @@ def loadConfig(path):
     return addr, paramList, csvPath, type
     
 def startListener():
+
     parser = argparse.ArgumentParser(description='Starting the listener')
-    parser.add_argument("-p", "--path")
+    parser.add_argument("-c", "--config")
     args = parser.parse_args()
 
-    configPath = Path(args.path)
+    configPath = Path(args.config)
 
     # Load variables from config file
     if configPath != '' and configPath is not None:
         addr, paramList, csvPath, type = loadConfig(configPath)
     else:
-        print("please enter a valid path for the config file")
+        logger.info("please enter a valid path for the config file")
         return 0
 
+    #start listener that writes to CSV
     if type == "CSV":
         if addr is not None and paramList is not None and csvPath is not None:
             CSVListener = DFListener(addr, paramList, csvPath)
             CSVListener.run()
         else:
-            print("Make sure to fill out all fields in config file")
+            logger.info("Make sure to fill out all fields in config file")
     else:
-        print(f"Type {type} not supported")
+        logger.info(f"Type {type} not supported")
