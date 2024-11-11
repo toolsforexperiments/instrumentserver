@@ -1,0 +1,11 @@
+# config file version
+apiVersion: 1
+
+# list of datasources to insert/update
+datasources:
+- name: CSV Datasource 1
+  type: marcusolsson-csv-datasource
+  access: proxy
+  jsonData:
+    storage: local
+  url: /var/lib/grafana/data/data.csv
