@@ -1,0 +1,11 @@
+#address to listen for broadcasts at
+address: "tcp://192.168.56.1:6000"
+
+# list of parameters to listen for, if empty, will listen for all broadcasts
+params: ["dummy_instrument_random_number.param0","dummy_instrument_random_number.param2"]
+
+# path to write data to for the CSV listener
+csv_path: C:\Users\jmnol\OneDrive\Documents\InstrumentServerData\data.csv
+
+# type of listener (where the listener writes data to)
+listener_type: "CSV"
