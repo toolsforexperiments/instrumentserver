@@ -11,7 +11,7 @@ services:
 
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./data:/var/lib/grafana/data
+      - ./data:/etc/grafana/data
 
     entrypoint: ["/bin/sh", "-c", "export GF_SECURITY_ADMIN_PASSWORD=$(cat /run/secrets/grafana_password) && /run.sh"]
 

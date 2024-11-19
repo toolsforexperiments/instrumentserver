@@ -8,4 +8,4 @@ datasources:
   access: proxy
   jsonData:
     storage: local
-  url: /var/lib/grafana/data/data.csv
+  url: /etc/grafana/data/data.csv
