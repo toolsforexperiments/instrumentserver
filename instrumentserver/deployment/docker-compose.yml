@@ -16,7 +16,7 @@ services:
     entrypoint: ["/bin/sh", "-c", "export GF_SECURITY_ADMIN_PASSWORD=$(cat /run/secrets/grafana_password) && /run.sh"]
 
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_USER=pfafflab
 
     secrets:
       - grafana_password
