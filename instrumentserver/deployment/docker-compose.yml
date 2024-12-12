@@ -1,0 +1,30 @@
+services:
+
+  grafana:
+
+    image: custom-grafana
+    container_name: grafana
+    restart: unless-stopped
+
+    ports:
+     - '4000:3000'
+
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./data:/etc/grafana/data
+
+    entrypoint: ["/bin/sh", "-c", "export GF_SECURITY_ADMIN_PASSWORD=$(cat /run/secrets/grafana_password) && /run.sh"]
+
+    environment:
+      - GF_SECURITY_ADMIN_USER=pfafflab
+
+    secrets:
+      - grafana_password
+
+
+volumes:
+  grafana-storage: {}
+
+secrets:
+   grafana_password:
+     file: ./grafana_password.txt
