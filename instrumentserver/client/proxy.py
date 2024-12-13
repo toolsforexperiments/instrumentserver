@@ -190,8 +190,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # FIXME: This is not consistent with how mixin handles a `None` client. However, this seems like a more
         #  elegant solution than any time we need the client to check to be None, start a new context client instead.
         if cli is None:
-            c = Client(host=host, port=port)
-            self.cli = c
+            self.cli = Client(host=host, port=port)
 
         for mn in self.bp.methods.keys():
             if mn == 'remove_parameter':
