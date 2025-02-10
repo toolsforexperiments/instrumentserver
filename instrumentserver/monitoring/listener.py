@@ -14,6 +14,9 @@ from instrumentserver.blueprints import ParameterBroadcastBluePrint
 from abc import ABC, abstractmethod
 
 
+import influxdb_client
+from influxdb_client import InfluxDBClient, Point, WriteOptions
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -80,6 +83,42 @@ class DFListener(Listener):
             self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
             self.df.to_csv(self.path)
 
+class InfluxListener(Listener):
+
+    def __init__(self, addr, paramList):
+        super().__init__(addr)
+        self.addr = addr
+
+        token = "token"
+        self.org = "docs"
+        self.bucket = "testing"
+        url = "http://localhost:8086"
+
+        self.client = InfluxDBClient(url=url, token=token, org=self.org)
+        self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
+
+        self.paramList = paramList
+
+        self.df = pd.DataFrame(columns=["time","name","value","unit"])
+        self.df['time'] = pd.to_datetime(self.df['time'], unit='s')
+
+    def run(self):
+        super().run()
+
+    def listenerEvent(self, message: ParameterBroadcastBluePrint):
+        
+        # listens only for parameters in the list, if it is empty, it listens to everything
+        if not self.paramList:
+            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
+            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
+            point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
+        elif message.name in self.paramList:
+            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
+            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
+            point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
+
 def loadConfig(path):
 
     # load config file contents into data
@@ -119,6 +158,12 @@ def startListener():
         if addr is not None and paramList is not None and csvPath is not None:
             CSVListener = DFListener(addr, paramList, csvPath)
             CSVListener.run()
+        else:
+            logger.info("Make sure to fill out all fields in config file")
+    elif type == "Influx":
+        if addr is not None and paramList is not None:
+            DBListener = InfluxListener(addr, paramList)
+            DBListener.run()
         else:
             logger.info("Make sure to fill out all fields in config file")
     else:
