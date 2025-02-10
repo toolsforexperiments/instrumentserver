@@ -1,3 +1,4 @@
+
 #address to listen for broadcasts at
 address: "tcp://localhost:6001"
 
@@ -8,4 +9,16 @@ params: ["dummy_instrument_random_number.param0","dummy_instrument_random_number
 csv_path: C:\Users\jmnol\OneDrive\Documents\InstrumentServerData\data.csv
 
 # type of listener (where the listener writes data to)
-listener_type: "Influx"
+type: "Influx"
+
+# InfluxDB token for Influx listener
+token: "token"
+
+# InfluxDB org for Influx listener
+org: "pfafflab"
+
+# InfluxDB bucket for Influx listener
+bucket: "testing"
+
+# InfluxDB url for Influx listener
+url: "http://localhost:8086"

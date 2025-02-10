@@ -85,22 +85,19 @@ class DFListener(Listener):
 
 class InfluxListener(Listener):
 
-    def __init__(self, addr, paramList):
+    def __init__(self, addr, paramList, token, org, bucket, url):
         super().__init__(addr)
         self.addr = addr
 
-        token = "token"
-        self.org = "docs"
-        self.bucket = "testing"
-        url = "http://localhost:8086"
+        self.token = token
+        self.org = org
+        self.bucket = bucket
+        self.url = url
 
-        self.client = InfluxDBClient(url=url, token=token, org=self.org)
+        self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
 
         self.paramList = paramList
-
-        self.df = pd.DataFrame(columns=["time","name","value","unit"])
-        self.df['time'] = pd.to_datetime(self.df['time'], unit='s')
 
     def run(self):
         super().run()
@@ -110,12 +107,10 @@ class InfluxListener(Listener):
         # listens only for parameters in the list, if it is empty, it listens to everything
         if not self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
             point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
         elif message.name in self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
             point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
 
@@ -145,26 +140,28 @@ def startListener():
     args = parser.parse_args()
 
     configPath = Path(args.config)
+    yaml = ruamel.yaml.YAML()
 
     # Load variables from config file
     if configPath != '' and configPath is not None:
-        addr, paramList, csvPath, type = loadConfig(configPath)
+        configInput = yaml.load(configPath)
     else:
         logger.info("please enter a valid path for the config file")
         return 0
 
     #start listener that writes to CSV
-    if type == "CSV":
-        if addr is not None and paramList is not None and csvPath is not None:
-            CSVListener = DFListener(addr, paramList, csvPath)
-            CSVListener.run()
+    if 'type' in configInput: 
+        if configInput['type'] == "CSV":
+            if configInput['address'] is not None and configInput['params'] is not None and configInput['csv_path'] is not None:
+                CSVListener = DFListener(configInput['address'], configInput['params'], configInput['csv_path'])
+                CSVListener.run()
+            else:
+                logger.info("Make sure to fill out all fields in config file")
+        elif configInput['type'] == "Influx": 
+            if configInput['address'] is not None and configInput['params'] is not None and configInput['token'] is not None and configInput['org'] is not None and configInput['bucket'] is not None and configInput['url']:
+                DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'])
+                DBListener.run()
+            else:
+                logger.info("Make sure to fill out all fields in config file")
         else:
-            logger.info("Make sure to fill out all fields in config file")
-    elif type == "Influx":
-        if addr is not None and paramList is not None:
-            DBListener = InfluxListener(addr, paramList)
-            DBListener.run()
-        else:
-            logger.info("Make sure to fill out all fields in config file")
-    else:
-        logger.info(f"Type {type} not supported")
+            logger.info(f"Type {type} not supported")
