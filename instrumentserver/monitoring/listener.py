@@ -158,7 +158,7 @@ def startListener():
             else:
                 logger.info("Make sure to fill out all fields in config file")
         elif configInput['type'] == "Influx": 
-            if configInput['address'] is not None and configInput['params'] is not None and configInput['token'] is not None and configInput['org'] is not None and configInput['bucket'] is not None and configInput['url']:
+            if configInput['address'] is not None and configInput['params'] is not None and configInput['token'] is not None and configInput['org'] is not None and configInput['bucket'] is not None and configInput['url'] is not None:
                 DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'])
                 DBListener.run()
             else:
