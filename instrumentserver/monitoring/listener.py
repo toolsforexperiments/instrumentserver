@@ -164,4 +164,4 @@ def startListener():
             else:
                 logger.info("Make sure to fill out all fields in config file")
         else:
-            logger.info(f"Type {type} not supported")
+            logger.info(f"Type {configInput['type']} not supported")
