@@ -13,8 +13,6 @@ from instrumentserver.blueprints import ParameterBroadcastBluePrint
 
 from abc import ABC, abstractmethod
 
-
-import influxdb_client
 from influxdb_client import InfluxDBClient, Point, WriteOptions
 
 logging.basicConfig(level=logging.DEBUG)
@@ -146,7 +144,7 @@ def startListener():
     if configPath != '' and configPath is not None:
         configInput = yaml.load(configPath)
     else:
-        logger.info("please enter a valid path for the config file")
+        logger.info("Please enter a valid path for the config file")
         return 0
 
     #start listener that writes to CSV
