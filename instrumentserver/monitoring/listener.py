@@ -13,6 +13,7 @@ from instrumentserver.blueprints import ParameterBroadcastBluePrint
 
 from abc import ABC, abstractmethod
 
+from influxdb_client import InfluxDBClient, Point, WriteOptions
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -80,6 +81,37 @@ class DFListener(Listener):
             self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
             self.df.to_csv(self.path)
 
+class InfluxListener(Listener):
+
+    def __init__(self, addr, paramList, token, org, bucket, url):
+        super().__init__(addr)
+        self.addr = addr
+
+        self.token = token
+        self.org = org
+        self.bucket = bucket
+        self.url = url
+
+        self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
+        self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
+
+        self.paramList = paramList
+
+    def run(self):
+        super().run()
+
+    def listenerEvent(self, message: ParameterBroadcastBluePrint):
+        
+        # listens only for parameters in the list, if it is empty, it listens to everything
+        if not self.paramList:
+            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
+            point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
+        elif message.name in self.paramList:
+            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
+            point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
+
 def loadConfig(path):
 
     # load config file contents into data
@@ -106,20 +138,28 @@ def startListener():
     args = parser.parse_args()
 
     configPath = Path(args.config)
+    yaml = ruamel.yaml.YAML()
 
-    # Load variables from config file
+    # load variables from config file
     if configPath != '' and configPath is not None:
-        addr, paramList, csvPath, type = loadConfig(configPath)
+        configInput = yaml.load(configPath)
     else:
-        logger.info("please enter a valid path for the config file")
+        logger.info("Please enter a valid path for the config file")
         return 0
 
-    #start listener that writes to CSV
-    if type == "CSV":
-        if addr is not None and paramList is not None and csvPath is not None:
-            CSVListener = DFListener(addr, paramList, csvPath)
-            CSVListener.run()
+    # start listener that writes to CSV or Influx Database
+    if 'type' in configInput: 
+        if configInput['type'] == "CSV":
+            if configInput['address'] is not None and configInput['params'] is not None and configInput['csv_path'] is not None:
+                CSVListener = DFListener(configInput['address'], configInput['params'], configInput['csv_path'])
+                CSVListener.run()
+            else:
+                logger.info("Make sure to fill out all fields in config file")
+        elif configInput['type'] == "Influx": 
+            if configInput['address'] is not None and configInput['params'] is not None and configInput['token'] is not None and configInput['org'] is not None and configInput['bucket'] is not None and configInput['url'] is not None:
+                DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'])
+                DBListener.run()
+            else:
+                logger.info("Make sure to fill out all fields in config file")
         else:
-            logger.info("Make sure to fill out all fields in config file")
-    else:
-        logger.info(f"Type {type} not supported")
+            logger.info(f"Type {configInput['type']} not supported")
