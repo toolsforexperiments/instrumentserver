@@ -140,14 +140,14 @@ def startListener():
     configPath = Path(args.config)
     yaml = ruamel.yaml.YAML()
 
-    # Load variables from config file
+    # load variables from config file
     if configPath != '' and configPath is not None:
         configInput = yaml.load(configPath)
     else:
         logger.info("Please enter a valid path for the config file")
         return 0
 
-    #start listener that writes to CSV
+    # start listener that writes to CSV or Influx Database
     if 'type' in configInput: 
         if configInput['type'] == "CSV":
             if configInput['address'] is not None and configInput['params'] is not None and configInput['csv_path'] is not None:
