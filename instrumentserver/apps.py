@@ -75,14 +75,18 @@ def serverScript() -> None:
                addresses=args.listen_at,
                initScript=args.init_script,
                serverConfig=serverConfig,
-               stationConfig=stationConfig)
+               stationConfig=stationConfig,
+               pollingThread=pollingThread,
+               ipAddresses=ipAddresses)
     else:
         serverWithGui(port=args.port,
                       addresses=args.listen_at,
                       initScript=args.init_script,
                       serverConfig=serverConfig,
                       stationConfig=stationConfig,
-                      guiConfig=guiConfig)
+                      guiConfig=guiConfig,
+                      pollingThread=pollingThread,
+                      ipAddresses=ipAddresses)
 
     # Close and delete the temporary files
     if tempFile is not None:
