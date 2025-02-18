@@ -432,7 +432,9 @@ def startServer(port: int = 5555,
                 addresses: List[str] = [],
                 initScript: Optional[str] = None,
                 serverConfig: Optional[Dict[str, Any]] = None,
-                stationConfig: Optional[str] = None,) -> \
+                stationConfig: Optional[str] = None,
+                pollingThread: QtCore.QThread = None,
+                ipAddresses: Dict[str, str] = None) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 
@@ -443,7 +445,9 @@ def startServer(port: int = 5555,
                            addresses=addresses,
                            initScript=initScript,
                            serverConfig=serverConfig,
-                           stationConfig=stationConfig)
+                           stationConfig=stationConfig,
+                           pollingThread=pollingThread,
+                           ipAddresses=ipAddresses)
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
