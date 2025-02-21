@@ -16,7 +16,7 @@ SERVERFIELDS = {'initialize': True}
 GUIFIELD = {'type': 'instrumentserver.gui.instruments.GenericInstrument', 'kwargs': {}}
 
 
-def loadConfig(configPath: str):
+def loadConfig(configPath: str) -> tuple[str, dict, dict, tempfile.NamedTemporaryFile, dict, dict]:
     """
     Loads the config for the instrumentserver. From 1 config file it splits the respective fields into 3 different
     objects: a serverConfig (the configurations for the server), a stationConfig(the qcodes station config file clean

@@ -185,7 +185,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
     def __init__(self, instrument,
                  attr: str,
-                 itemClass: ItemBase = ItemBase,
+                 itemClass: type[ItemBase] = ItemBase,
                  itemsStar:Optional[List[str]] = [],
                  itemsTrash: Optional[List[str]] = [],
                  itemsHide: Optional[List[str]] = [],
@@ -197,7 +197,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         # Indicates the name of the attributes we are creating the model: Parameters or methods for now.
         self.attr = attr
         self.objectDictionary = getattr(self.instrument, self.attr)
-        self.itemClass: ItemBase = itemClass
+        self.itemClass = itemClass
 
         self.itemsStar = itemsStar
         self.itemsTrash = itemsTrash
@@ -411,9 +411,11 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         """
         Calls for the super() unless trash is active and the item or one of its parent is trash.
         """
-        parent = self.sourceModel().itemFromIndex(source_parent)
+        model = self.sourceModel()
+        assert isinstance(model, InstrumentModelBase)
+        parent = model.itemFromIndex(source_parent)
         if parent is None:
-            item = self.sourceModel().item(source_row, 0)
+            item = model.item(source_row, 0)
         else:
             item = parent.child(source_row, 0)
 
@@ -421,6 +423,9 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         # When the application is first starting, the  proxy model does not have the trash attribute.
         if hasattr(self, 'trash'):
             if self.trash:
+                # Assertion is there to satisfy mypy. item can be None, that is why we check before making the assertion
+                if item is not None:
+                    assert isinstance(item, ItemBase)
                 if self._isParentTrash(parent) or item.trash:
                     return False
 
@@ -435,8 +440,11 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         # When the application is first starting, the  proxy model does not have the star attribute.
         if hasattr(self, 'star'):
             if self.star:
-                leftItem = self.sourceModel().itemFromIndex(left)
-                rightItem = self.sourceModel().itemFromIndex(right)
+                model = self.sourceModel()
+                print("model", type(model))
+                assert isinstance(model, InstrumentModelBase)
+                leftItem = model.itemFromIndex(left)
+                rightItem = model.itemFromIndex(right)
                 if hasattr(leftItem, 'star') and hasattr(rightItem, 'star'):
                     if self.sortOrder() == QtCore.Qt.DescendingOrder:
                         if rightItem.star and not leftItem.star:
@@ -463,7 +471,7 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
     #: emitted when this item got its star action triggered.
     itemStarToggle = QtCore.Signal(ItemBase)
 
-    def __init__(self, model, delegateColumns: Optional[List[int]]=None, parent: Optional[QtCore.QObject] = None):
+    def __init__(self, model, delegateColumns: Optional[List[int]]=None, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent=parent)
 
         # Indicates if a column is using delegates.
@@ -479,7 +487,10 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
 
         # Because we are filtering we set a proxy model as the model, however, there are times we want to work with
         # the real model
-        self.modelActual: InstrumentModelBase = self.model().sourceModel()
+        m = self.model()
+        assert isinstance(m, InstrumentSortFilterProxyModel)
+        assert hasattr(m, 'sourceModel')
+        self.modelActual = m.sourceModel()
 
         # We need to turn sorting off so that the view sorting does not interfere with the proxy model sorting.
         self.setSortingEnabled(False)
@@ -512,12 +523,15 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         """
         Fills the collapsed state dictionary to be recovered after a filter event occured.
         """
+        assert isinstance(self.modelActual, InstrumentModelBase)
         if parentItem is None:
             for i in range(self.modelActual.rowCount()):
                 index = self.modelActual.index(i, 0)
                 item = self.modelActual.itemFromIndex(index)
                 persistentIndex = QtCore.QPersistentModelIndex(index)
-                proxyIndex = self.model().mapFromSource(index)
+                m = self.model()
+                assert isinstance(m, InstrumentSortFilterProxyModel)
+                proxyIndex = m.mapFromSource(index)
                 if proxyIndex.isValid():
                     self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
                     if item.hasChildren():
@@ -527,7 +541,9 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                 child = parentItem.child(i, 0)
                 childIndex = self.modelActual.indexFromItem(child)
                 persistentIndex = QtCore.QPersistentModelIndex(childIndex)
-                proxyIndex = self.model().mapFromSource(childIndex)
+                m = self.model()
+                assert isinstance(m, InstrumentSortFilterProxyModel)
+                proxyIndex = m.mapFromSource(childIndex)
                 if proxyIndex.isValid():
                     self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
                     if child.hasChildren():
@@ -670,7 +686,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
                  proxyModelType = InstrumentSortFilterProxyModel,
                  viewType = InstrumentTreeViewBase,
                  callSignals: bool = True,
-                 parent: Optional[QtCore.QObject] = None,
+                 parent: Optional[QtWidgets.QWidget] = None,
                  **modelKwargs):
         super().__init__(parent=parent)
 

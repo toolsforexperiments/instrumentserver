@@ -5,8 +5,9 @@ from enum import Enum, unique, auto
 import logging
 
 import json
-from qcodes import Instrument, Parameter
+from qcodes import Parameter
 from qcodes.instrument.base import InstrumentBase
+from qcodes.parameters import ParameterBase
 from qcodes.utils import validators
 
 from . import serialize
@@ -52,7 +53,8 @@ def paramTypeFromVals(vals: validators.Validator) -> Union[ParameterTypes, None]
         vals = validators.Anything()
 
     for k, v in parameterTypes.items():
-        if isinstance(vals, v['validatorType']):
+        validator_type = v['validatorType']
+        if isinstance(validator_type, type) and isinstance(vals, validator_type):
             return k
 
     return None
@@ -137,8 +139,9 @@ class ParameterManager(InstrumentBase):
 
     @classmethod
     def _to_tree(cls, pm: 'ParameterManager') -> Dict:
-        ret = {}
+        ret: dict[str, Any] = {}
         for smn, sm in pm.submodules.items():
+            assert isinstance(sm, ParameterManager)
             ret[smn] = cls._to_tree(sm)
         for pn, p in pm.parameters.items():
             ret[pn] = p
@@ -170,7 +173,7 @@ class ParameterManager(InstrumentBase):
     def to_tree(self):
         return ParameterManager._to_tree(self)
 
-    def _get_param(self, param_name: str) -> Parameter:
+    def _get_param(self, param_name: str) -> ParameterBase:
         parent = self._get_parent(param_name)
         try:
             param = parent.parameters[param_name.split('.')[-1]]
@@ -191,10 +194,10 @@ class ParameterManager(InstrumentBase):
                 raise ValueError(f"{n} is a parameter, and cannot have child parameters.")
             if n not in parent.submodules:
                 if create_parent:
-                    parent.add_submodule(n, ParameterManager(n))
+                    parent.add_submodule(n, ParameterManager(n))  # type: ignore # This one is technically breaking the type hints from qcodes itself, but it seems to work fine.
                 else:
                     raise ValueError(f'{n} does not exist.')
-            parent = parent.submodules[n]
+            parent = parent.submodules[n]  # type: ignore # This one is technically breaking the type hints from qcodes itself, but it seems to work fine.
         return parent
 
     def has_param(self, param_name: str):
@@ -204,7 +207,7 @@ class ParameterManager(InstrumentBase):
         except ValueError:
             return False
 
-    def add_parameter(self, name: str, **kw: Any) -> None:
+    def add_parameter(self, name: str, **kw: Any) -> None:  # type: ignore # Breaks LSP principle, code works, don't want to change it.
         """Add a parameter.
 
         :param name: Name of the parameter.
@@ -272,7 +275,7 @@ class ParameterManager(InstrumentBase):
             self.remove_parameter(param, cleanup=False)
         self.remove_empty_submodules()
 
-    def parameter(self, name: str) -> "Parameter":
+    def parameter(self, name: str) -> ParameterBase:
         """Get a parameter object from the manager.
 
         :param name: the full name
@@ -295,7 +298,7 @@ class ParameterManager(InstrumentBase):
 
         return tolist(tree)
 
-    def fromFile(self, filePath: str = None, deleteMissing: bool = True):
+    def fromFile(self, filePath: str | None = None, deleteMissing: bool = True):
         """Load parameters from a parameter json file
         (see :mod:`.serialize`).
 
@@ -315,10 +318,9 @@ class ParameterManager(InstrumentBase):
                 pd = json.load(f)
             self.fromParamDict(pd)
 
-            filePath = Path(filePath)
+            path = Path(filePath)
 
-            if filePath.name.startswith("parameter_manager-") and filePath.name.endswith(".json"):
-                path = Path(filePath)
+            if path.name.startswith("parameter_manager-") and path.name.endswith(".json"):
                 profileName = path.name
                 self.selectedProfile = profileName
                 if path.name not in self.profiles:
@@ -356,7 +358,9 @@ class ParameterManager(InstrumentBase):
             if self.has_param(pn):
                 self.parameter(pn)(val)
                 if unit is not None:
-                    self.parameter(pn).unit = unit
+                    param = self.parameter(pn)
+                    assert hasattr(param, "unit")
+                    param.unit = unit
 
             else:
                 self.add_parameter(pn, initial_value=val, unit=unit)
@@ -370,7 +374,7 @@ class ParameterManager(InstrumentBase):
                                        includeMeta=includeMeta)
         return params
 
-    def toFile(self, filePath: str = None, name: str = None):
+    def toFile(self, filePath: str | None = None, name: str | None = None):
 
         """Save parameters from the instrument into a json file.
         If the file being saved is a profile file (starts with 'parameter_manager-' and ends with '.json'),

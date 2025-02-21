@@ -30,5 +30,5 @@ dialog = widgetDialog(ParameterManagerGui(pm))
 Instrument.close_all()
 
 cli = Client()
-pm = ProxyInstrument('pm', cli=cli, remotePath='pm')
-dialog = widgetDialog(ParameterManagerGui(pm))
+pm2 = ProxyInstrument('pm', cli=cli, remotePath='pm')
+dialog = widgetDialog(ParameterManagerGui(pm2))
