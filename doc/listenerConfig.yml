@@ -22,3 +22,6 @@ bucket: "testing"
 
 # InfluxDB url for Influx listener
 url: "http://localhost:8086"
+
+# measurement Name for Influx listener
+measurementName: "measurement"
