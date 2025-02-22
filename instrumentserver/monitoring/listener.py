@@ -58,7 +58,7 @@ class DFListener(Listener):
 
         # checks if data file already exists
         # if it does, reads the file to make the appropriate dataframe
-        
+
         if os.path.isfile(path):
             self.df = pd.read_csv(path)
             self.df = self.df.drop("Unnamed: 0", axis=1)
@@ -104,14 +104,17 @@ class InfluxListener(Listener):
     def listenerEvent(self, message: ParameterBroadcastBluePrint):
         
         # listens only for parameters in the list, if it is empty, it listens to everything
-        if not self.paramList:
+
+        if not self.paramList or message.name in self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
+            point = Point("my_measurement").tag("name", message.name)
+            try :
+                point = point.field("value", float(message.value))
+            except ValueError:
+                point = point.field("value_string", message.value)
+            point = point.time(datetime.datetime.now())
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
-        elif message.name in self.paramList:
-            logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
-            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
+
 
 def checkInfluxConfig(configInput: Dict[str, Any]):
 
@@ -155,14 +158,10 @@ def startListener():
             if checkCSVConfig(configInput):
                 CSVListener = DFListener(configInput['address'], configInput['params'], configInput['csv_path'])
                 CSVListener.run()
-            else:
-                logger.warning("Make sure to fill out all fields in config file")
         elif configInput['type'] == "Influx": 
             if checkInfluxConfig(configInput):
                 DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'])
                 DBListener.run()
-            else:
-                logger.warning("Make sure to fill out all fields in config file")
         else:
             logger.warning(f"Type {configInput['type']} not supported")
     else:
