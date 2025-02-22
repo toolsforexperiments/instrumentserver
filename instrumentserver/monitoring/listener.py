@@ -20,10 +20,11 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class Listener(ABC):
-    def __init__(self, addr):
+    def __init__(self, addr: str):
         self.addr = addr     
 
     def run(self):
+
         # creates zmq subscriber at specified address
         logger.info(f"Connecting to {self.addr}")
         context = zmq.Context()
@@ -34,6 +35,7 @@ class Listener(ABC):
         socket.setsockopt_string(zmq.SUBSCRIBE, "")
         logger.info("Listener Connected")
         listen = True
+
         try:
             while listen:
                 try:
@@ -52,21 +54,20 @@ class Listener(ABC):
         pass
 
 class DFListener(Listener):
-    def __init__(self, addr, paramList, path):
+    def __init__(self, addr: str, paramList: list, path: str):
         super().__init__(addr)
         self.addr = addr
+        self.path = path
 
         # checks if data file already exists
         # if it does, reads the file to make the appropriate dataframe
-
-        if os.path.isfile(path):
-            self.df = pd.read_csv(path)
+        if os.path.isfile(self.path):
+            self.df = pd.read_csv(self.path)
             self.df = self.df.drop("Unnamed: 0", axis=1)
         else:
             self.df = pd.DataFrame(columns=["time","name","value","unit"])
 
-        self.paramList = paramList
-        self.path = path
+        self.paramList = list(paramList)
 
     def run(self):
         super().run()
@@ -85,7 +86,7 @@ class DFListener(Listener):
 
 class InfluxListener(Listener):
 
-    def __init__(self, addr, paramList, token, org, bucket, url):
+    def __init__(self, addr: str, paramList: list, token: str, org: str, bucket: str, url: str, measurementName: str):
         super().__init__(addr)
 
         self.addr = addr
@@ -93,7 +94,8 @@ class InfluxListener(Listener):
         self.org = org
         self.bucket = bucket
         self.url = url
-        self.paramList = paramList
+        self.paramList = list(paramList)
+        self.measurementName = measurementName
 
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
@@ -107,7 +109,7 @@ class InfluxListener(Listener):
 
         if not self.paramList or message.name in self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            point = Point("my_measurement").tag("name", message.name)
+            point = Point(self.measurementName).tag("name", message.name)
             try :
                 point = point.field("value", float(message.value))
             except ValueError:
@@ -119,11 +121,13 @@ class InfluxListener(Listener):
 def checkInfluxConfig(configInput: Dict[str, Any]):
 
     # check if all fields are present in the config file
-    influxFields = ["address", "params", "token", "org", "bucket", "url"]
+    influxFields = ['address', 'params', 'token', 'org', 'bucket', 'url']
     for field in influxFields:
         if field not in configInput or configInput[field] is None:
             logger.info(f"Missing field {field} in config file")
             return False
+    if 'measurementName' not in configInput or configInput['measurementName'] is None:
+        configInput['measurementName'] = 'my_measurement'
     return True
 
 def checkCSVConfig(configInput: Dict[str, Any]):
@@ -160,7 +164,7 @@ def startListener():
                 CSVListener.run()
         elif configInput['type'] == "Influx": 
             if checkInfluxConfig(configInput):
-                DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'])
+                DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'], configInput['measurementName'])
                 DBListener.run()
         else:
             logger.warning(f"Type {configInput['type']} not supported")
