@@ -10,6 +10,7 @@ import os.path
 
 from instrumentserver.base import recvMultipart
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from typing import Dict, Any
 
 from abc import ABC, abstractmethod
 
@@ -57,6 +58,7 @@ class DFListener(Listener):
 
         # checks if data file already exists
         # if it does, reads the file to make the appropriate dataframe
+        
         if os.path.isfile(path):
             self.df = pd.read_csv(path)
             self.df = self.df.drop("Unnamed: 0", axis=1)
@@ -85,17 +87,16 @@ class InfluxListener(Listener):
 
     def __init__(self, addr, paramList, token, org, bucket, url):
         super().__init__(addr)
-        self.addr = addr
 
+        self.addr = addr
         self.token = token
         self.org = org
         self.bucket = bucket
         self.url = url
+        self.paramList = paramList
 
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
-
-        self.paramList = paramList
 
     def run(self):
         super().run()
@@ -112,25 +113,26 @@ class InfluxListener(Listener):
             point = Point("my_measurement").tag("name", message.name).field("value", message.value).time(datetime.datetime.now())
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
 
-def loadConfig(path):
+def checkInfluxConfig(configInput: Dict[str, Any]):
 
-    # load config file contents into data
-    path = Path(path)
-    yaml = ruamel.yaml.YAML(typ='safe')
-    data = yaml.load(path)
+    # check if all fields are present in the config file
+    influxFields = ["address", "params", "token", "org", "bucket", "url"]
+    for field in influxFields:
+        if field not in configInput or configInput[field] is None:
+            logger.info(f"Missing field {field} in config file")
+            return False
+    return True
 
-    # extract address from data
-    if 'address' in data:
-        addr = data.get('address')
-    if 'params' in data:
-        paramList = data.get('params')
-    if 'csv_path' in data:
-        csvPath = data.get('csv_path')
-    if 'listener_type' in data:
-        type = data.get('listener_type')
+def checkCSVConfig(configInput: Dict[str, Any]):
 
-    return addr, paramList, csvPath, type
-    
+    # check if all fields are present in the config file
+    csvField = ["address", "params", "csv_path"]
+    for field in csvField:
+        if field not in configInput or configInput[field] is None:
+            logger.info(f"Missing field {field} in config file")
+            return False
+    return True
+
 def startListener():
 
     parser = argparse.ArgumentParser(description='Starting the listener')
@@ -144,22 +146,24 @@ def startListener():
     if configPath != '' and configPath is not None:
         configInput = yaml.load(configPath)
     else:
-        logger.info("Please enter a valid path for the config file")
+        logger.warning("Please enter a valid path for the config file")
         return 0
 
     # start listener that writes to CSV or Influx Database
     if 'type' in configInput: 
         if configInput['type'] == "CSV":
-            if configInput['address'] is not None and configInput['params'] is not None and configInput['csv_path'] is not None:
+            if checkCSVConfig(configInput):
                 CSVListener = DFListener(configInput['address'], configInput['params'], configInput['csv_path'])
                 CSVListener.run()
             else:
-                logger.info("Make sure to fill out all fields in config file")
+                logger.warning("Make sure to fill out all fields in config file")
         elif configInput['type'] == "Influx": 
-            if configInput['address'] is not None and configInput['params'] is not None and configInput['token'] is not None and configInput['org'] is not None and configInput['bucket'] is not None and configInput['url'] is not None:
+            if checkInfluxConfig(configInput):
                 DBListener = InfluxListener(configInput['address'], configInput['params'], configInput['token'], configInput['org'], configInput['bucket'], configInput['url'])
                 DBListener.run()
             else:
-                logger.info("Make sure to fill out all fields in config file")
+                logger.warning("Make sure to fill out all fields in config file")
         else:
-            logger.info(f"Type {configInput['type']} not supported")
+            logger.warning(f"Type {configInput['type']} not supported")
+    else:
+        logger.warning("Please enter a valid type in the config file")
