@@ -3,7 +3,7 @@ import ruamel.yaml
 import logging
 from pathlib import Path
 
-import datetime
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 import argparse
 import os.path
@@ -100,6 +100,9 @@ class InfluxListener(Listener):
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
 
+        timezone_offset = -6.0  # Central Standard Time (UTC−06:00)
+        self.timezoneInfo = timezone(timedelta(hours=timezone_offset))
+
     def run(self):
         super().run()
 
@@ -114,7 +117,7 @@ class InfluxListener(Listener):
                 point = point.field("value", float(message.value))
             except ValueError:
                 point = point.field("value_string", message.value)
-            point = point.time(datetime.datetime.now())
+            point = point.time(datetime.now(self.timezoneInfo))
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
 
 
