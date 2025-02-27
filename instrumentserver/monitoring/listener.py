@@ -156,6 +156,7 @@ class InfluxListener(Listener):
         # listens only for parameters in the list, if it is empty, it listens to everything
         if not self.paramList or message.name in self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
+            print(datetime.now(self.timezone_info))
             point = Point(measurementName).tag("name", message.name)
             try :
                 point = point.field("value", float(message.value))
