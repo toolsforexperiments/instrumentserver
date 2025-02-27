@@ -3,7 +3,7 @@
 addresses: ["tcp://128.174.164.60:6000","tcp://10.192.182.159:6000"]
 
 # list of parameters to listen for, if empty, will listen for all broadcasts
-params: []
+params: ["dummy_instrument_random_number.param0","dummy_instrument_random_number.param2"]
 
 # path to write data to for the CSV listener
 csv_path: C:\Users\jmnol\OneDrive\Documents\InstrumentServerData\data.csv
@@ -25,3 +25,6 @@ url: "http://localhost:8086"
 
 # measurement Name for Influx listener, keyed by instrument name
 measurementNameDict: {"fridge_nh": "niflheim_telemetry", "fridge_kk": "kelvin_klein_telemetry"}
+
+# timezone for Influx listener
+timezone_name: "CDT"

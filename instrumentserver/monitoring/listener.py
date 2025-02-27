@@ -7,6 +7,8 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 import argparse
 import os.path
+import pytz
+from dataclasses import dataclass
 
 from instrumentserver.base import recvMultipart
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
@@ -58,11 +60,49 @@ class Listener(ABC):
     def listenerEvent(self, message: ParameterBroadcastBluePrint):
         pass
 
+@dataclass
+class CSVConfig:
+    addresses: list
+    params: list
+    csv_path: str
+
+    @classmethod
+    def from_dict(cls, config_dict):
+        return cls(
+            addresses=config_dict['addresses'],
+            params=config_dict['params'],
+            csv_path=config_dict['csv_path']
+        )
+    
+@dataclass
+class InfluxConfig:
+    addresses: list
+    params: list
+    token: str
+    org: str
+    bucketDict: Dict[str,str]
+    url: str
+    measurementNameDict: Dict[str,str]
+    timezone_name: str = 'CDT'
+
+    @classmethod
+    def from_dict(cls, config_dict):
+        return cls(
+            addresses=config_dict['addresses'],
+            params=config_dict['params'],
+            token=config_dict['token'],
+            org=config_dict['org'],
+            bucketDict=config_dict['bucketDict'],
+            url=config_dict['url'],
+            measurementNameDict=config_dict['measurementNameDict']
+        )
+
+
 class DFListener(Listener):
-    def __init__(self, addresses: list, paramList: list, path: str):
-        super().__init__(addresses)
-        self.addresses = addresses
-        self.path = path
+    def __init__(self, csvConfig: CSVConfig):
+        super().__init__(csvConfig.addresses)
+        self.addresses = csvConfig.addresses
+        self.path = csvConfig.path
 
         # checks if data file already exists
         # if it does, reads the file to make the appropriate dataframe
@@ -72,7 +112,7 @@ class DFListener(Listener):
         else:
             self.df = pd.DataFrame(columns=["time","name","value","unit"])
 
-        self.paramList = list(paramList)
+        self.paramList = list(csvConfig.params)
 
     def run(self):
         super().run()
@@ -91,22 +131,21 @@ class DFListener(Listener):
 
 class InfluxListener(Listener):
 
-    def __init__(self, addresses: list, paramList: list, token: str, org: str, bucketDict: Dict[str,str], url: str, measurementNameDict: Dict[str,str]):
-        super().__init__(addresses)
+    def __init__(self, influxConfig: InfluxConfig):
+        super().__init__(influxConfig.addresses)
 
-        self.addresses = addresses
-        self.token = token
-        self.org = org
-        self.bucketDict = bucketDict
-        self.url = url
-        self.paramList = list(paramList)
-        self.measurementNameDict = measurementNameDict
+        self.addresses = influxConfig.addresses
+        self.token = influxConfig.token
+        self.org = influxConfig.org
+        self.bucketDict = influxConfig.bucketDict
+        self.url = influxConfig.url
+        self.paramList = list(influxConfig.params)
+        self.measurementNameDict = influxConfig.measurementNameDict
 
         self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
         self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1))
 
-        timezone_offset = -6.0  # Central Standard Time (UTC−06:00)
-        self.timezoneInfo = timezone(timedelta(hours=timezone_offset))
+        self.timezone_info = get_timezone_info(influxConfig.timezone_name)
 
     def run(self):
         super().run()
@@ -122,7 +161,7 @@ class InfluxListener(Listener):
                 point = point.field("value", float(message.value))
             except ValueError:
                 point = point.field("value_string", message.value)
-            point = point.time(datetime.now(self.timezoneInfo))
+            point = point.time(datetime.now(self.timezone_info))
             self.write_api.write(bucket=bucket, org=self.org, record=point)
 
 
@@ -148,6 +187,15 @@ def checkCSVConfig(configInput: Dict[str, Any]):
             return False
     return True
 
+def get_timezone_info(timezone_name):
+    try:
+        tz = pytz.timezone(timezone_name)
+        return tz
+    except pytz.UnknownTimeZoneError:
+        print(f"Unknown timezone: {timezone_name}")
+        return None
+    
+
 def startListener():
 
     parser = argparse.ArgumentParser(description='Starting the listener')
@@ -168,11 +216,11 @@ def startListener():
     if 'type' in configInput: 
         if configInput['type'] == "CSV":
             if checkCSVConfig(configInput):
-                CSVListener = DFListener(configInput['addresses'], configInput['params'], configInput['csv_path'])
+                CSVListener = DFListener(CSVConfig.from_dict(configInput))
                 CSVListener.run()
         elif configInput['type'] == "Influx": 
             if checkInfluxConfig(configInput):
-                DBListener = InfluxListener(configInput['addresses'], configInput['params'], configInput['token'], configInput['org'], configInput['bucketDict'], configInput['url'], configInput['measurementNameDict'])
+                DBListener = InfluxListener(InfluxConfig.from_dict(configInput))
                 DBListener.run()
         else:
             logger.warning(f"Type {configInput['type']} not supported")
