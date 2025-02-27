@@ -10,3 +10,4 @@ scipy
 pandas
 xarray
 packaging
+influxdb-client

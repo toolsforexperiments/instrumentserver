@@ -1,5 +1,6 @@
-#address to listen for broadcasts at
-address: "tcp://192.168.56.1:6000"
+
+# addresses to listen for broadcasts at
+addresses: ["tcp://128.174.164.60:6000","tcp://10.192.182.159:6000"]
 
 # list of parameters to listen for, if empty, will listen for all broadcasts
 params: ["dummy_instrument_random_number.param0","dummy_instrument_random_number.param2"]
@@ -8,4 +9,22 @@ params: ["dummy_instrument_random_number.param0","dummy_instrument_random_number
 csv_path: C:\Users\jmnol\OneDrive\Documents\InstrumentServerData\data.csv
 
 # type of listener (where the listener writes data to)
-listener_type: "CSV"
+type: "Influx"
+
+# InfluxDB token for Influx listener
+token: "pretty_fridges"
+
+# InfluxDB org for Influx listener
+org: "pfafflab"
+
+# InfluxDB buckets for Influx listener, keyed by instrument name
+bucketDict: {"fridge_nh": "niflheim","fridge_kk": "kelvin_klein"}
+
+# InfluxDB url for Influx listener
+url: "http://localhost:8086"
+
+# measurement Name for Influx listener, keyed by instrument name
+measurementNameDict: {"fridge_nh": "niflheim_telemetry", "fridge_kk": "kelvin_klein_telemetry"}
+
+# timezone for Influx listener
+timezone_name: "CDT"

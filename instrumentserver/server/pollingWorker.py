@@ -38,6 +38,9 @@ class PollingWorker(QtCore.QThread):
         for item in delList:
             del self.pollingRates[item]
         
+        # Prints which parameters are being polled
+        logger.info(f"Broadcasting the following parameters: {list(self.pollingRates.keys())}")
+
         # Creates timers for each param in the dict
         for param in self.pollingRates:
             timer = QtCore.QTimer()
