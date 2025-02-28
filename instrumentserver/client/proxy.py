@@ -490,6 +490,10 @@ class Client(BaseClient):
         else:
             logger.warning(f"File {filePath} does not exist. No params loaded.")
 
+    def _getGuiConfig(self, instrumentName: str) -> Dict[str, Any]:
+        """ Gets the GUI config for an instrument from the object. Should only be used in a detached server GUI."""
+        msg = ServerInstruction(operation=Operation.get_gui_config, requested_path=instrumentName)
+        return self.ask(msg)
 
 class SubClient(QtCore.QObject):
     """

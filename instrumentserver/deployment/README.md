@@ -42,13 +42,13 @@
 ## Starting the Dashboard
 ### Creating the custom grafana Docker image
 - The first step after each file has been configured is to create the custom image
-- In the directory containing the Dockerfile and grafana.ini, run 'sudo docker build -t <insert-image-name> .'
+- In the directory containing the Dockerfile and grafana.ini, run 'sudo docker build -t (insert-image-name) .'
 - Note: There is a '.' at the end of the command
-- Replace <insert-image-name> with your desired custom image name
+- Replace (insert-image-name) with your desired custom image name
 - Update the 'image' field in [docker-compose.yml](#docker-composeyml) to reflect your image name
 ### Using Docker Compose
 - Once you have created the Grafana Image and have finished configuring [docker-compose.yml](#docker-composeyml), in the same directory, run 'sudo docker compose up -d'
-- The grafana server should now be accessible using your IP address and port "http://<IP ADDRESS>:<PORT>"
+- The grafana server should now be accessible using your IP address and port "http://(IP ADDRESS):(PORT)"
 - A login screen should appear, use your chosen [admin username and password](#setting-admin-username-and-password)
 ### Configuration within Grafana
 - Once you have opened Grafana, the datasource should already be created under "Connections/Datasources"

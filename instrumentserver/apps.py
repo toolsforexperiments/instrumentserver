@@ -15,6 +15,9 @@ from .gui import widgetMainWindow
 from .gui.instruments import ParameterManagerGui
 from .server.pollingWorker import PollingWorker
 
+from instrumentserver.server.application import DetachedServerGui
+
+
 setupLogging(addStreamHandler=True,
              logFile=os.path.abspath('instrumentserver.log'))
 logger = logging.getLogger('instrumentserver')
@@ -71,6 +74,7 @@ def serverScript() -> None:
                initScript=args.init_script,
                serverConfig=serverConfig,
                stationConfig=stationConfig,
+               guiConfig=guiConfig,
                pollingThread=pollingThread,
                ipAddresses=ipAddresses)
     else:
@@ -109,6 +113,19 @@ def parameterManagerScript() -> None:
         pm.update()
 
     _ = widgetMainWindow(ParameterManagerGui(pm), 'Parameter Manager')
+    app.exec_()
+
+
+def detachedServerScript() -> None:
+
+    parser = argparse.ArgumentParser(description='Starting a detached instance of the GUI for the server')
+    parser.add_argument("--host", default="localhost")
+    parser.add_argument("--port", default=5555)
+    args = parser.parse_args()
+
+    app = QtWidgets.QApplication([])
+    window = DetachedServerGui(host=args.host, port=args.port)
+    window.show()
     app.exec_()
 
 

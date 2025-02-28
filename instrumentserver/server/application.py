@@ -751,6 +751,99 @@ class ServerGui(QtWidgets.QMainWindow):
         if ins in self.client.list_instruments():
             self.client.close_instrument(ins)
 
+
+class DetachedServerGui(QtWidgets.QMainWindow):
+    """A detached version of the server gui."""
+
+    def __init__(self, host: str = 'localhost', port: int = 5555):
+        super().__init__()
+
+        self.instrumentTabsOpen = {}
+
+        self.client = Client(host, port, timeout=3000000)
+        self.subClient = None
+
+        self.setWindowTitle('Instrument server detached')
+
+        self.tabs = DetachableTabWidget(self)
+        self.tabs.onTabClosed.connect(self.onTabDeleted)
+
+        self.setCentralWidget(self.tabs)
+        self.stationList = StationList()
+        self.stationObjInfo = StationObjectInfo()
+
+        self.stationList.componentSelected.connect(self.displayComponentInfo)
+        self.stationList.itemDoubleClicked.connect(self.addInstrumentTab)
+
+        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        stationWidgets.addWidget(self.stationList)
+        stationWidgets.addWidget(self.stationObjInfo)
+        stationWidgets.setSizes([300, 500])
+
+        self.tabs.addUnclosableTab(stationWidgets, 'Station')
+
+        # Toolbar.
+        self.toolBar = self.addToolBar('Tools')
+        self.toolBar.setIconSize(QtCore.QSize(16, 16))
+
+        # Station tools.
+        self.toolBar.addWidget(QtWidgets.QLabel('Station:'))
+        self.refreshStationAction = QtWidgets.QAction(
+            QtGui.QIcon(":/icons/refresh.svg"), 'Refresh', self)
+        self.refreshStationAction.triggered.connect(self.refreshStationComponents)
+        self.toolBar.addAction(self.refreshStationAction)
+
+        self.refreshStationComponents()
+
+    def refreshStationComponents(self):
+        """Clear and re-populate the widget holding the station components, using
+        the objects that are currently registered in the station."""
+        self.stationList.clear()
+        for ins in self.client.list_instruments():
+            bp = self.client.getBluePrint(ins)
+            self.stationList.addInstrument(bp)
+        self.stationList.resizeColumnToContents(0)
+
+    @QtCore.Slot(str)
+    def displayComponentInfo(self, name: Union[str, None]):
+        if name is not None and name in self.client.list_instruments():
+            self.stationObjInfo.setObject(self.client.getBluePrint(name))
+
+    @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
+    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int):
+        name = item.text(0)
+        if name not in self.instrumentTabsOpen:
+            ins = self.client.find_or_create_instrument(name)
+            widgetClass = GenericInstrument
+            kwargs = {}
+            try:
+                guiConfig = self.client._getGuiConfig(name)
+                moduleName = '.'.join(guiConfig['gui']['type'].split('.')[:-1])
+                widgetClassName = guiConfig['gui']['type'].split('.')[-1]
+                module = importlib.import_module(moduleName)
+                widgetClass = getattr(module, widgetClassName)
+
+                if 'kwargs' in guiConfig['gui']:
+                    kwargs = self._guiConfig[name]['gui']['kwargs']
+
+            # If the instrument does not have a guiconfig an exception is raised. just use defaults values
+            except Exception as e:
+                pass
+
+            insWidget = widgetClass(ins, parent=self, **kwargs)
+            index = self.tabs.addTab(insWidget, ins.name)
+            self.instrumentTabsOpen[ins.name] = insWidget
+            self.tabs.setCurrentIndex(index)
+
+        elif name in self.instrumentTabsOpen:
+            self.tabs.setCurrentWidget(self.instrumentTabsOpen[name])
+
+    @QtCore.Slot(str)
+    def onTabDeleted(self, name: str) -> None:
+        if name in self.instrumentTabsOpen:
+            del self.instrumentTabsOpen[name]
+
+
 def startServerGuiApplication(guiConfig: Optional[Dict[str, Dict[str, Any]]] = None,
                               **serverKwargs: Any) -> "ServerGui":
     """Create a server gui window.
