@@ -9,8 +9,11 @@ setup(name='instrumentserver',
       license='MIT',
       packages=['instrumentserver'],
       zip_safe=False,
-      entry_points={"console_scripts": [
-            "instrumentserver = instrumentserver.apps:serverScript",
-            "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",
-            "instrumentserver-listener = instrumentserver.monitoring.listener:startListener"]}
+      entry_points={
+            "console_scripts": [
+                  "instrumentserver = instrumentserver.apps:serverScript",
+                  "instrumentserver-detached = instrumentserver.apps:detachedServerScript",
+                  "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",
+                  "instrumentserver-listener = instrumentserver.monitoring.listener:startListener",
+                  ]}
       )

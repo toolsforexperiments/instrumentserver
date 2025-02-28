@@ -39,6 +39,11 @@ def loadConfig(configPath: str):
     yaml = ruamel.yaml.YAML()
     rawConfig = yaml.load(configPath)
 
+    if "instruments" not in rawConfig:
+        raise AttributeError("All configurations must be inside the 'instruments' field. "
+                             "Try adding 'instruments:' at the top of the config file and "
+                             "indenting everything underneath.")
+
     # Removing any extra fields
     for instrumentName, configDict in rawConfig['instruments'].items():
         serverConfig[instrumentName] = {}

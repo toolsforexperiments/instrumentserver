@@ -18,6 +18,7 @@ import importlib
 import inspect
 import logging
 import random
+import json
 from pathlib import Path
 from dataclasses import dataclass, field, fields
 from enum import Enum, unique
@@ -97,6 +98,7 @@ class StationServer(QtCore.QObject):
                  initScript: Optional[str] = None,
                  serverConfig: Optional[Dict[str, Any]] = None,
                  stationConfig: Optional[str] = None,
+                 guiConfig: Optional[dict[str, Any]] = None,
                  pollingThread: Optional[Dict[str, Any]] = None,
                  ipAddresses: Optional[Dict[str, str]] = None
                  ) -> None:
@@ -106,7 +108,7 @@ class StationServer(QtCore.QObject):
             addresses = []
         if initScript == None:
             initScript = ''
-        
+
         if ipAddresses is not None and 'listeningAddress' in ipAddresses and ipAddresses.get('listeningAddress') is not None:
             addresses.append(ipAddresses.get('listeningAddress'))
 
@@ -114,6 +116,9 @@ class StationServer(QtCore.QObject):
         self.serverRunning = False
         self.port = int(port)
         self.serverConfig = serverConfig
+
+        # We need to store the guiConfig so that a detached gui can access the configuration.
+        self.guiConfig = guiConfig
         self.station = Station(config_file=stationConfig)
 
         # For now the only server configs are whether to start an instrument.
@@ -295,6 +300,9 @@ class StationServer(QtCore.QObject):
         elif operation == Operation.set_params:
             func = self._fromParamDict
             args = [instruction.set_parameters]
+        elif operation == Operation.get_gui_config:
+            func = self._getGuiConfig
+            args = [instruction.requested_path]
         else:
             raise NotImplementedError
 
@@ -315,6 +323,7 @@ class StationServer(QtCore.QObject):
         """
         comps = self.station.components
         info = [key for key in comps.keys()]
+        logger.info("Get existing instruments requested: " + str(info))
         return info
 
     def _createInstrument(self, spec: InstrumentCreationSpec) -> None:
@@ -388,6 +397,19 @@ class StationServer(QtCore.QObject):
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
 
+    def _getGuiConfig(self, instrumentName: str) -> str:
+        """
+        Get the GUI configuration for a specified instrument.
+        """
+        if instrumentName not in self.station.components:
+            raise ValueError(f"Instrument {instrumentName} not found in station.")
+
+        # This should not happen since the config assigns a default GUI to all instruments.
+        if instrumentName not in self.guiConfig:
+            raise ValueError(f"No GUI configuration found for {instrumentName}.")
+
+        return json.dumps(self.guiConfig[instrumentName])
+
     def _broadcastParameterChange(self, blueprint: ParameterBroadcastBluePrint):
         """
         Broadcast any changes to parameters in the server.
@@ -433,6 +455,7 @@ def startServer(port: int = 5555,
                 initScript: Optional[str] = None,
                 serverConfig: Optional[Dict[str, Any]] = None,
                 stationConfig: Optional[str] = None,
+                guiConfig: Optional[dict[str, Any]] = None,
                 pollingThread: QtCore.QThread = None,
                 ipAddresses: Dict[str, str] = None) -> \
         Tuple[StationServer, QtCore.QThread]:
@@ -446,6 +469,7 @@ def startServer(port: int = 5555,
                            initScript=initScript,
                            serverConfig=serverConfig,
                            stationConfig=stationConfig,
+                           guiConfig=guiConfig,
                            pollingThread=pollingThread,
                            ipAddresses=ipAddresses)
     thread = QtCore.QThread()

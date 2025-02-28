@@ -438,6 +438,9 @@ class Operation(Enum):
     #: Set station parameters from a dictionary.
     set_params = 'set_params'
 
+    #: Gets the GUI configuration for an instrument.
+    get_gui_config = 'get_gui_config'
+
 
 @dataclass
 class InstrumentCreationSpec:
@@ -584,6 +587,10 @@ class ServerInstruction:
         if self.operation is Operation.call:
             if not isinstance(self.call_spec, CallSpec):
                 raise ValueError('Invalid call spec.')
+
+        if self.operation is Operation.get_gui_config:
+            if not isinstance(self.requested_path, str):
+                raise ValueError('Invalid requested path.')
 
     def toJson(self):
         ret = {'operation': str(self.operation.name)}
