@@ -5,8 +5,7 @@ from .. import QtWidgets, QtGui, QtCore
 
 class AlertLabel(QtWidgets.QLabel):
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None,
-                 pixmapSize: Optional[Tuple[int, int]] = (20, 20)):
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None, pixmapSize: Tuple[int, int] = (20, 20)):
         super().__init__(parent)
 
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
@@ -115,7 +114,7 @@ class SeparableTabBar(QtWidgets.QTabBar):
             mimeData.setData('action', b'application/tab-detach')
             drag.setMimeData(mimeData)
 
-            pixmap = self.parentWidget().currentWidget().grab()
+            pixmap = self.parentWidget().currentWidget().grab()  # type: ignore[attr-defined] # I am pretty sure the stubs are wrong for this one, running through the debugger all the methods exists.
             targetPixmap = QtGui.QPixmap(pixmap.size())
             targetPixmap.fill(QtCore.Qt.transparent)
             painter = QtGui.QPainter(targetPixmap)

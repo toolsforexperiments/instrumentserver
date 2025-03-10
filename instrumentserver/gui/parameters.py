@@ -1,7 +1,7 @@
 import logging
 import math
 import numbers
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Callable
 
 from qcodes import Parameter
 
@@ -42,7 +42,7 @@ class ParameterWidget(QtWidgets.QWidget):
         self.setAutoFillBackground(True)
 
         self._parameter = parameter
-        self._getMethod = lambda: None
+        self._getMethod: Callable[[], Optional[Any]] = lambda: None
         self._setMethod = lambda x: None
 
         layout = QtWidgets.QGridLayout(self)
@@ -72,23 +72,26 @@ class ParameterWidget(QtWidgets.QWidget):
             # input widget
             ptype = paramTypeFromVals(parameter.vals)
             vals = parameter.vals
+            self.paramWidget: NumberInput | AnyInput | QtWidgets.QLineEdit | QtWidgets.QCheckBox | QtWidgets.QLabel
 
-            if ptype is ParameterTypes.integer:
-                self.paramWidget = QtWidgets.QSpinBox(self)
-                self.paramWidget.setMinimum(
-                    -int(1e10) if not math.isfinite(vals._min_value) or
-                                  abs(vals._min_value) > 1e10 else vals._min_value
-                )
-                self.paramWidget.setMaximum(
-                    int(1e10) if not math.isfinite(vals._max_value) or
-                                 abs(vals._max_value) > 1e10 else vals._max_value
-                )
-                self.paramWidget.setValue(parameter())
-                self.paramWidget.valueChanged.connect(self.setPending)
-                self._getMethod = self.paramWidget.value
-                self._setMethod = self.paramWidget.setValue
+            # FIXME: Currently blueprints don't pass validators meaning that we will never reach any of these if statements.
+            #  This should get uncommented when the blueprints are fixed.
+            # if ptype is ParameterTypes.integer:
+            #     self.paramWidget = QtWidgets.QSpinBox(self)
+            #     self.paramWidget.setMinimum(
+            #         -int(1e10) if not math.isfinite(vals._min_value) or
+            #                       abs(vals._min_value) > 1e10 else vals._min_value
+            #     )
+            #     self.paramWidget.setMaximum(
+            #         int(1e10) if not math.isfinite(vals._max_value) or
+            #                      abs(vals._max_value) > 1e10 else vals._max_value
+            #     )
+            #     self.paramWidget.setValue(parameter())
+            #     self.paramWidget.valueChanged.connect(self.setPending)
+            #     self._getMethod = self.paramWidget.value
+            #     self._setMethod = self.paramWidget.setValue
 
-            elif ptype is ParameterTypes.numeric or ptype is ParameterTypes.complex:
+            if ptype is ParameterTypes.numeric or ptype is ParameterTypes.complex:
                 self.paramWidget = NumberInput(self)
                 self.paramWidget.setValue(parameter())
                 self.paramWidget.textChanged.connect(self.setPending)
@@ -123,9 +126,11 @@ class ParameterWidget(QtWidgets.QWidget):
         else:
             self.setButton.setDisabled(True)
             self.paramWidget = QtWidgets.QLabel(self)
-            self._setMethod = lambda x: self.paramWidget.setText(str(x))
+            self._setMethod = lambda x: self.paramWidget.setText(str(x)) \
+                if isinstance(self.paramWidget, QtWidgets.QLabel) else None
 
         layout.addWidget(self.paramWidget, 0, 0)
+        additionalWidgets = additionalWidgets or []
         for i, w in enumerate(additionalWidgets):
             layout.addWidget(w, 0, 4 + i)
 

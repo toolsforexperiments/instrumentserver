@@ -88,7 +88,7 @@ class ProxyMixin:
         )
         return self.askServer(req)
 
-    def snapshot(self, *args, **kwargs):
+    def get_snapshot(self, *args, **kwargs):
         req = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(
@@ -192,19 +192,11 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         if cli is None:
             self.cli = Client(host=host, port=port)
 
-        for mn in self.bp.methods.keys():
-            if mn == 'remove_parameter':
-                def remove_parameter(obj, name: str):
-                    obj.cli.call(f'{obj.remotePath}.remove_parameter', name)
-                    obj.update()
-
-                self.remove_parameter = MethodType(remove_parameter, self)
-
         self.parameters.pop('IDN', None)  # we will redefine this later
 
         # When a new parameter or method is added to client, qcodes checks if that item exists or not. This is done
         #  by calling __getattr__ method. The problem is that when that method gets called and cannot find that item it
-        #  creates it, generating an infite loop. This flag stops that. It should be set to True before doing any change
+        #  creates it, generating an infinite loop. This flag stops that. It should be set to True before doing any change
         #  to the proxy object and set to False after the change is done.
         self.is_updating = True
         self.update()
@@ -232,6 +224,8 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             raise ValueError(f'Parameter: {name} already present in the proxy.')
 
         bp: InstrumentModuleBluePrint
+        if self.cli is None:
+            raise ValueError("No client is connected to the proxy instrument.")
         bp = self.cli.getBluePrint(self.name)
         self.cli.call(self.name + ".add_parameter", name, *arg, **kw)
         self.update()
@@ -243,6 +237,8 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         to check on every submodule for the parameter manager.
         """
         bp: InstrumentModuleBluePrint
+        if self.cli is None:
+            raise ValueError("No client is connected to the proxy instrument.")
         bp = self.cli.getBluePrint(self.name)
         self.cli.call(self.name + ".remove_parameter", name, *arg, **kw)
         self.update()
@@ -250,6 +246,9 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
     def _getProxyParameters(self) -> None:
         """Based on the parameter blueprint replied from server, add the
         instrument parameters to the proxy instrument class."""
+
+        if self.cli is None:
+            raise ValueError("No client is connected to the proxy instrument.")
 
         # note: we can always provide setpoints_instruments, because in case
         # the parameter doesn't, `setpoints` will just be `None`.
@@ -314,7 +313,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # make sure the method knows the wrap function.
         # TODO: this is not complete!
         globs = {'wrap': wrap, 'qcodes': qc}
-        _ret = exec(new_func_str, globs)
+        exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
         return globs[bp.name]
@@ -441,7 +440,7 @@ class Client(BaseClient):
         )
         return self.ask(msg)
 
-    def snapshot(self, instrument: str = None, *args, **kwargs):
+    def get_snapshot(self, instrument: str | None = None, *args, **kwargs):
         msg = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(
@@ -452,7 +451,7 @@ class Client(BaseClient):
         )
         return self.ask(msg)
 
-    def getParamDict(self, instrument: str = None,
+    def getParamDict(self, instrument: str | None = None,
                      attrs: List[str] = ['value'], *args, **kwargs):
         msg = ServerInstruction(
             operation=Operation.get_param_dict,
@@ -503,7 +502,7 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
     update = QtCore.Signal(ParameterBroadcastBluePrint)
 
-    def __init__(self, instruments: List[str] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
+    def __init__(self, instruments: Optional[List[str]] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
         """
         Creates a new subscription client.
 

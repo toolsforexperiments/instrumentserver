@@ -90,7 +90,8 @@ def serverScript() -> None:
     # Close and delete the temporary files
     if tempFile is not None:
         tempFile.close()
-        Path(stationConfig).unlink(missing_ok=True)
+        if stationConfig is not None:
+            Path(stationConfig).unlink(missing_ok=True)
 
 
 def parameterManagerScript() -> None:

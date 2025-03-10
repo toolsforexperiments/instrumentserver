@@ -5,8 +5,9 @@ variables since we parse the config using those.
 """
 import io
 import tempfile
+from typing import IO, Any
 
-import ruamel.yaml
+import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
 from pathlib import Path
 
 # Centralised point of extra fields for the server with its default as value
@@ -16,7 +17,7 @@ SERVERFIELDS = {'initialize': True}
 GUIFIELD = {'type': 'instrumentserver.gui.instruments.GenericInstrument', 'kwargs': {}}
 
 
-def loadConfig(configPath: str) -> tuple[str, dict, dict, tempfile.NamedTemporaryFile, dict, dict]:
+def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict, dict]:
     """
     Loads the config for the instrumentserver. From 1 config file it splits the respective fields into 3 different
     objects: a serverConfig (the configurations for the server), a stationConfig(the qcodes station config file clean
@@ -28,7 +29,7 @@ def loadConfig(configPath: str) -> tuple[str, dict, dict, tempfile.NamedTemporar
     file, it gets deleted automatically
     """
     configPath = Path(configPath)
-    serverConfig = {}  # Config for the server
+    serverConfig: dict = {}  # Config for the server
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
     pollingRates = {}  # Polling rates for each parameter

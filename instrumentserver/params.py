@@ -48,7 +48,7 @@ parameterTypes = {
 }
 
 
-def paramTypeFromVals(vals: validators.Validator) -> Union[ParameterTypes, None]:
+def paramTypeFromVals(vals: validators.Validator | None) -> Union[ParameterTypes, None]:
     if vals is None:
         vals = validators.Anything()
 

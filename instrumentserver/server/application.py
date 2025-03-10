@@ -758,7 +758,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
     def __init__(self, host: str = 'localhost', port: int = 5555):
         super().__init__()
 
-        self.instrumentTabsOpen = {}
+        self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
         self.client = Client(host, port, timeout=3000000)
         self.subClient = None
@@ -824,7 +824,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
                 widgetClass = getattr(module, widgetClassName)
 
                 if 'kwargs' in guiConfig['gui']:
-                    kwargs = self._guiConfig[name]['gui']['kwargs']
+                    kwargs = guiConfig[name]['gui']['kwargs']
 
             # If the instrument does not have a guiconfig an exception is raised. just use defaults values
             except Exception as e:

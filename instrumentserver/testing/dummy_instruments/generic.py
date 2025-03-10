@@ -1,3 +1,6 @@
+# mypy: ignore-errors
+# No need to mypy check dummy testing instruments.
+
 from typing import List
 
 from qcodes import Instrument
@@ -49,6 +52,12 @@ class DummyInstrumentWithSubmodule(Instrument):
                            set_cmd=None,
                            vals=validators.Numbers(-1, 1),
                            initial_value=1)
+
+        self.add_parameter('int_param1', unit='v',
+                           set_cmd=None,
+                           vals=validators.Ints(-200, 200),
+                           initial_value=1)
+
         for chan_name in ('A', 'B', 'C'):
             channel = DummyChannel('Chan{}'.format(chan_name))
             self.add_submodule(chan_name, channel)

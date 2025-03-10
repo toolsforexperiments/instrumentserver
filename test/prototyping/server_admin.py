@@ -6,6 +6,7 @@ import logging
 from qcodes import Instrument
 from instrumentserver.server import *
 from instrumentserver.client import *
+from pprint import pprint
 
 # from instrumentserver import log
 # log.setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)
@@ -50,5 +51,5 @@ with Client() as cli:
 
 #%% get the snapshot from the station
 with Client() as cli:
-    snap = cli.snapshot()
+    snap = cli.get_snapshot()
 pprint(snap)

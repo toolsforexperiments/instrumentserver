@@ -92,7 +92,7 @@ def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List
         - 'doc': Docstring of the method
         - 'return': string representation of the return type.
     """
-    funcs = {}
+    funcs: dict = {}
     for attr_name in dir(ins):
         if attr_name[0] != '_' and attr_name not in dir(Instrument):
             obj = getattr(ins, attr_name)
