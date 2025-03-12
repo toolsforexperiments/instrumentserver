@@ -1,5 +1,5 @@
 import instrumentserver.testing.dummy_instruments.generic
-import pytest
+import pytest  # type: ignore[import-not-found]
 
 from instrumentserver.server.core import startServer
 from instrumentserver.client.proxy import Client

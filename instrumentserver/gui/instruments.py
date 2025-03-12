@@ -67,12 +67,12 @@ class AddParameterWidget(QtWidgets.QWidget):
 
         if typeInput:
             self.typeSelect = QtWidgets.QComboBox(self)
-            names = []
+            names: list[str] = []
             for t, v in parameterTypes.items():
-                names.append(v['name'])
+                names.append(str(v['name']))
             for n in sorted(names):
                 self.typeSelect.addItem(n)
-            self.typeSelect.setCurrentText(parameterTypes[ParameterTypes.numeric]['name'])
+            self.typeSelect.setCurrentText(str(parameterTypes[ParameterTypes.numeric]['name']))
             lbl = QtWidgets.QLabel("Type:")
             lbl.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
             layout.addWidget(lbl, 1, 0)
@@ -294,6 +294,7 @@ class ModelParameters(InstrumentModelBase):
             if len(item) == 0:
                 self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
             else:
+                assert isinstance(item[0], ItemBase)
                 # The model can't actually modify the widget since it knows nothing about the view itself.
                 self.itemNewValue.emit(item[0].name, bp.value)
 
@@ -457,8 +458,10 @@ class ParameterManagerGui(InstrumentParameters):
         super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
         self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
-        self.layout().insertWidget(0, self.profileManager)
-        self.layout().addWidget(self.addParam)
+        layout = self.layout()
+        assert isinstance(layout, QtWidgets.QVBoxLayout)
+        layout.insertWidget(0, self.profileManager)
+        layout.addWidget(self.addParam)
         self.connectSignals()
         self.loadProfile()
 
@@ -573,8 +576,10 @@ class MethodsDelegate(DelegateBase):
         element = item.element
         ret = MethodDisplay(element, item.name, parent=widget)
 
+        parent = self.parent()
+        assert hasattr(parent, 'clearAlertsAction')
         # connecting the widget with the clear alert signal
-        self.parent().clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)
+        parent.clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)
 
         self.methods[item.name] = ret
         return ret

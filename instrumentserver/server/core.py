@@ -99,18 +99,20 @@ class StationServer(QtCore.QObject):
                  serverConfig: Optional[Dict[str, Any]] = None,
                  stationConfig: Optional[str] = None,
                  guiConfig: Optional[dict[str, Any]] = None,
-                 pollingThread: Optional[Dict[str, Any]] = None,
+                 pollingThread: Optional[QtCore.QThread] = None,
                  ipAddresses: Optional[Dict[str, str]] = None
                  ) -> None:
         super().__init__(parent)
 
         if addresses is None:
             addresses = []
-        if initScript == None:
+        if initScript is None:
             initScript = ''
 
-        if ipAddresses is not None and 'listeningAddress' in ipAddresses and ipAddresses.get('listeningAddress') is not None:
-            addresses.append(ipAddresses.get('listeningAddress'))
+        if (ipAddresses is not None 
+            and 'listeningAddress' in ipAddresses 
+            and (listening_addr := ipAddresses.get('listeningAddress')) is not None):
+            addresses.append(listening_addr)
 
         self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
@@ -132,12 +134,12 @@ class StationServer(QtCore.QObject):
         self.initScript = initScript
 
         self.broadcastPort = self.port + 1
-        self.broadcastSocket = None
+        self.broadcastSocket: zmq.Socket | None = None
         self.externalBroadcastAddr = None
 
         if ipAddresses is not None and 'externalBroadcast' in ipAddresses and ipAddresses.get('externalBroadcast') is not None:
             self.externalBroadcastAddr = ipAddresses.get('externalBroadcast')
-        self.externalBroadcastSocket = None
+        self.externalBroadcastSocket: zmq.Socket | None = None
 
         self.pollingThread = pollingThread
 
@@ -164,7 +166,7 @@ class StationServer(QtCore.QObject):
             logger.warning(f"path to initscript ({self.initScript}) not found.")
 
     @QtCore.Slot()
-    def startServer(self) -> None:
+    def startServer(self) -> bool:
         """Start the server. This function does not return until the ZMQ server
         has been shut down."""
 
@@ -200,7 +202,7 @@ class StationServer(QtCore.QObject):
         while self.serverRunning:
             message = recv(socket)
             message_ok = True
-            response_to_client = None
+            response_to_client: ServerResponse | tuple[ServerResponse, str] | None = None
             response_log = None
 
             # Allow the test client from within the same process to make sure the
@@ -269,8 +271,7 @@ class StationServer(QtCore.QObject):
         self.finished.emit()
         return True
 
-    def executeServerInstruction(self, instruction: ServerInstruction) \
-            -> Tuple[ServerResponse, str]:
+    def executeServerInstruction(self, instruction: ServerInstruction) -> ServerResponse:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
@@ -278,8 +279,9 @@ class StationServer(QtCore.QObject):
         :param instruction: The instruction object.
         :returns: The results returned from performing the operation.
         """
-        args = []
-        kwargs = {}
+        args: list[Any] = []
+        kwargs: dict[str, Any] = {}
+        func: Callable
 
         operation = Operation(instruction.operation)
         # We call a helper function depending on the operation that is requested.
@@ -338,7 +340,7 @@ class StationServer(QtCore.QObject):
         kwargs = dict() if spec.kwargs is None else spec.kwargs
 
         new_instrument = qc.find_or_create_instrument(
-            instrument_class=cls, name=spec.name, *args, **kwargs)
+            cls, spec.name, *args, **kwargs)
         if new_instrument.name not in self.station.components:
             self.station.add_component(new_instrument)
 
@@ -376,23 +378,35 @@ class StationServer(QtCore.QObject):
                                                 MethodBluePrint]:
         obj = nestedAttributeFromString(self.station, path)
         if isinstance(obj, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
-            return bluePrintFromInstrumentModule(path, obj)
+            instrument_blueprint = bluePrintFromInstrumentModule(path, obj)
+            if instrument_blueprint is None:
+                raise ValueError(f'Failed to create blueprint for instrument module {path}')
+            return instrument_blueprint
         elif isinstance(obj, tuple(PARAMETER_BASE_CLASSES)):
-            return bluePrintFromParameter(path, obj)
+            parameter_blueprint = bluePrintFromParameter(path, obj)
+            if parameter_blueprint is None:
+                raise ValueError(f'Failed to create blueprint for parameter {path}')
+            return parameter_blueprint
         elif callable(obj):
-            return bluePrintFromMethod(path, obj)
+            method_blueprint = bluePrintFromMethod(path, obj)
+            if method_blueprint is None:
+                raise ValueError(f'Failed to create blueprint for method {path}')
+            return method_blueprint
         else:
             raise ValueError(f'Cannot create a blueprint for {type(obj)}')
 
     def _toParamDict(self, opts: ParameterSerializeSpec) -> Dict[str, Any]:
+        obj: list[Any] | Station
         if opts.path is None:
             obj = self.station
         else:
             obj = [nestedAttributeFromString(self.station, opts.path)]
 
         includeMeta = [k for k in opts.attrs if k != 'value']
-        return serialize.toParamDict(obj, *opts.args, includeMeta=includeMeta,
-                                     **opts.kwargs)
+        args = opts.args if opts.args else []
+        kwargs = dict(opts.kwargs) if opts.kwargs else {}
+        kwargs.update(includeMeta=includeMeta)
+        return serialize.toParamDict(obj, *args, **kwargs)
 
     def _fromParamDict(self, params: Dict[str, Any]):
         return serialize.fromParamDict(params, self.station)
@@ -401,11 +415,14 @@ class StationServer(QtCore.QObject):
         """
         Get the GUI configuration for a specified instrument.
         """
+        if self.station is None:
+            raise ValueError("Station is not initialized.")
+        
         if instrumentName not in self.station.components:
             raise ValueError(f"Instrument {instrumentName} not found in station.")
 
         # This should not happen since the config assigns a default GUI to all instruments.
-        if instrumentName not in self.guiConfig:
+        if self.guiConfig is None or instrumentName not in self.guiConfig:
             raise ValueError(f"No GUI configuration found for {instrumentName}.")
 
         return json.dumps(self.guiConfig[instrumentName])
@@ -456,8 +473,8 @@ def startServer(port: int = 5555,
                 serverConfig: Optional[Dict[str, Any]] = None,
                 stationConfig: Optional[str] = None,
                 guiConfig: Optional[dict[str, Any]] = None,
-                pollingThread: QtCore.QThread = None,
-                ipAddresses: Dict[str, str] = None) -> \
+                pollingThread: Optional[QtCore.QThread] = None,
+                ipAddresses: Optional[Dict[str, str]] = None) -> \
         Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 

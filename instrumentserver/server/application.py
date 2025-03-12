@@ -322,7 +322,8 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
 
         # Only add the instrument to the tree if there are no other instruments of the same type already
         if len(items) == 0:
-            parent = PossibleInstrumentDisplayItem(text=[insType, '', ''], fullInsType=fullInsType,)
+            parent: PossibleInstrumentDisplayItem | QtWidgets.QTreeWidgetItem = (
+                PossibleInstrumentDisplayItem(text=[insType, '', ''], fullInsType=fullInsType,))
             self.addTopLevelItem(parent)
             self.expand(self.indexFromItem(parent, 0))
         else:
@@ -331,6 +332,8 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         if configName is None and insName in self.config:
             configName = insName
 
+        createButton = QtWidgets.QPushButton("Create")
+
         lst = [configName, insName, 'create']
         lineEdit = QtWidgets.QLineEdit()
         lineEdit.returnPressed.connect(lambda: createButton.clicked.emit())
@@ -338,7 +341,6 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         item = PossibleInstrumentDisplayItem(lst, fullInsType=fullInsType, configName=configName, lineEdit=lineEdit)
         parent.addChild(item)
 
-        createButton = QtWidgets.QPushButton("Create")
         self.setItemWidget(item, 1, lineEdit)
         self.setItemWidget(item, 2, createButton)
 
@@ -493,7 +495,7 @@ class ServerGui(QtWidgets.QMainWindow):
         super().__init__()
 
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
-        self._bluePrints = {}
+        self._bluePrints: dict[str, InstrumentModuleBluePrint] = {}
         self._serverKwargs = serverKwargs
         if guiConfig is None:
             self._guiConfig = {}
@@ -503,7 +505,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationServer = None
         self.stationServerThread = None
 
-        self.instrumentTabsOpen = {}
+        self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
         self.setWindowTitle('Instrument server')
 
@@ -756,7 +758,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
     def __init__(self, host: str = 'localhost', port: int = 5555):
         super().__init__()
 
-        self.instrumentTabsOpen = {}
+        self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
         self.client = Client(host, port, timeout=3000000)
         self.subClient = None
@@ -822,7 +824,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
                 widgetClass = getattr(module, widgetClassName)
 
                 if 'kwargs' in guiConfig['gui']:
-                    kwargs = self._guiConfig[name]['gui']['kwargs']
+                    kwargs = guiConfig[name]['gui']['kwargs']
 
             # If the instrument does not have a guiconfig an exception is raised. just use defaults values
             except Exception as e:
@@ -927,17 +929,19 @@ def instrumentToHtml(bp: InstrumentModuleBluePrint):
     ret += """<div class='category_name'>Parameters</div>
 <ul>
     """
-    for pn in sorted(bp.parameters):
-        pbp = bp.parameters[pn]
-        ret += f"<li>{parameterToHtml(pbp, 2)}</li>"
-    ret += "</ul>"
+    if bp.parameters is not None:
+        for pn in sorted(bp.parameters):
+            pbp = bp.parameters[pn]
+            ret += f"<li>{parameterToHtml(pbp, 2)}</li>"
+        ret += "</ul>"
 
     ret += """<div class='category_name'>Methods</div>
 <ul>
 """
-    for mn in sorted(bp.methods):
-        mbp = bp.methods[mn]
-        ret += f"""
+    if bp.methods is not None:
+        for mn in sorted(bp.methods):
+            mbp = bp.methods[mn]
+            ret += f"""
 <li>
     <div class="method_container">
     <div class='object_name'>{mbp.name}</div>
@@ -953,10 +957,11 @@ def instrumentToHtml(bp: InstrumentModuleBluePrint):
     <div class='category_name'>Submodules</div>
     <ul>
     """
-    for sn in sorted(bp.submodules):
-        sbp = bp.submodules[sn]
-        ret += "<li>" + instrumentToHtml(sbp) + "</li>"
-    ret += """
+    if bp.submodules is not None:
+        for sn in sorted(bp.submodules):
+            sbp = bp.submodules[sn]
+            ret += "<li>" + instrumentToHtml(sbp) + "</li>"
+        ret += """
     </ul>
     </div>
     """

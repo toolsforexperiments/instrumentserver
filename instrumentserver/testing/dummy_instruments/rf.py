@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import constants
+from scipy import constants  # type: ignore[import-untyped] # We don't need mypy checks for this dependency that is only used here.
 
 from qcodes import Instrument, ParameterWithSetpoints, find_or_create_instrument
 from qcodes.utils import validators

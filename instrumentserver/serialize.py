@@ -109,7 +109,10 @@ def toParamDict(input: SerializableType,
 
     """
     if isinstance(input, Station):
-        snap = input.snapshot()
+        if hasattr(input, "get_snapshot"):
+            snap = input.get_snapshot()
+        else:
+            snap = input.snapshot()
         input = [getattr(input, k) for k in snap['instruments'].keys()] \
             + [getattr(input, k) for k in snap['parameters'].keys()] \
             + [getattr(input, k) for k in snap['components'].keys()]
@@ -250,8 +253,11 @@ def _singleParameterToJson(parameter: Parameter,
                            simpleFormat: bool = True) -> Dict:
     """Create a JSON representation of a parameter."""
 
-    ret = {parameter.name: None}
-    snap = parameter.snapshot(update=get)
+    ret: dict[str, Any] = {parameter.name: None}
+    if hasattr(parameter, "get_snapshot"):
+        snap = parameter.get_snapshot(update=get)
+    else:
+        snap = parameter.snapshot(update=get)
     if len(includeMeta) == 0 and simpleFormat:
         ret[parameter.name] = snap.get('value', None)
     else:
@@ -274,7 +280,10 @@ def _singleInstrumentParametersToJson(instrument: InstrumentBase,
         excludeParameters.append("IDN")
 
     ret = {}
-    snap = instrument.snapshot(update=get)
+    if hasattr(instrument, "get_snapshot"):
+        snap = instrument.get_snapshot(update=get)
+    else:
+        snap = instrument.snapshot(update=get)
     for name, param in instrument.parameters.items():
         if name not in excludeParameters:
             if len(includeMeta) == 0 and simpleFormat:
@@ -289,7 +298,8 @@ def _singleInstrumentParametersToJson(instrument: InstrumentBase,
 
     for name, submod in instrument.submodules.items():
         ret.update(_singleInstrumentParametersToJson(
-            submod, get=get, addPrefix=f"{addPrefix + name}.",
+            # FIXME: Fix this mypy ignore
+            submod, get=get, addPrefix=f"{addPrefix + name}.",  # type: ignore[arg-type]
             simpleFormat=simpleFormat, includeMeta=includeMeta))
     return ret
 
@@ -313,8 +323,7 @@ def _getParamFromList(parent: Any, childrenList: List[str]) -> Parameter:
 
 
 def _getObjectByName(name: str,
-                     src: Union[Station,
-                                List[Union[Instrument, Parameter]]]):
+                     src: SerializableType):
     """Get an object from a container by specifying its name."""
 
     if isinstance(src, Station):

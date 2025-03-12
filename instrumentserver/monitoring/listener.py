@@ -1,24 +1,22 @@
-import zmq
-import ruamel.yaml
-import logging
-from pathlib import Path
-
-from datetime import datetime, timezone, timedelta
-import pandas as pd
 import argparse
+import logging
 import os.path
-import pytz
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Dict
+
+import pandas as pd
+import pytz
+import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
+import zmq
+from influxdb_client import InfluxDBClient, Point, WriteOptions
 
 from instrumentserver.base import recvMultipart
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
-from typing import Dict, Any
 
-from abc import ABC, abstractmethod
-
-from influxdb_client import InfluxDBClient, Point, WriteOptions
-
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class Listener(ABC):
@@ -56,9 +54,6 @@ class Listener(ABC):
         finally:
             socket.close()
 
-    @abstractmethod
-    def listenerEvent(self, message: ParameterBroadcastBluePrint):
-        pass
 
 @dataclass
 class CSVConfig:
@@ -102,7 +97,7 @@ class DFListener(Listener):
     def __init__(self, csvConfig: CSVConfig):
         super().__init__(csvConfig.addresses)
         self.addresses = csvConfig.addresses
-        self.path = csvConfig.path
+        self.path = csvConfig.csv_path
 
         # checks if data file already exists
         # if it does, reads the file to make the appropriate dataframe
@@ -122,11 +117,11 @@ class DFListener(Listener):
         # listens only for parameters in the list, if it is empty, it listens to everything
         if not self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
+            self.df.loc[len(self.df)]=[datetime.now(),message.name,message.value,message.unit]
             self.df.to_csv(self.path)
         elif message.name in self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
-            self.df.loc[len(self.df)]=[datetime.datetime.now(),message.name,message.value,message.unit]
+            self.df.loc[len(self.df)]=[datetime.now(),message.name,message.value,message.unit]
             self.df.to_csv(self.path)
 
 class InfluxListener(Listener):
@@ -157,8 +152,8 @@ class InfluxListener(Listener):
         if not self.paramList or message.name in self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
             point = Point(measurementName).tag("name", message.name)
-            try :
-                point = point.field("value", float(message.value))
+            try:
+                point = point.field("value", float(str(message.value)))
             except ValueError:
                 point = point.field("value_string", message.value)
             point = point.time(datetime.now(self.timezone_info))

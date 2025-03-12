@@ -14,7 +14,7 @@ def widgetDialog(w: QtWidgets.QWidget):
     dg.setWindowTitle('instrumentserver')
     dg.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint)
     dg.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint)
-    dg.widget = w
+    dg.widget = w  # type: ignore[attr-defined] # I am pretty sure the stubs are wrong for this one.
 
     css = getStyleSheet()
     w.setStyleSheet(css)
