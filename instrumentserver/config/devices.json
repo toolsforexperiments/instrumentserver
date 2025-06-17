@@ -1,0 +1,7 @@
+{
+    "artys7": {
+        "instrument_class": "instrumentserver.device.ArtyS7.ArtyS7.ArtyS7",
+        "serial_port": "COM4",
+        "sequencer_repo": "C:/Users/USER/Desktop/Codes/qumare_repo/SequencerCodes/"
+    }
+} 

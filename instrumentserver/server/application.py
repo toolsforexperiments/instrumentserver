@@ -7,6 +7,7 @@ from typing import Union, Optional, Any, Dict
 
 from instrumentserver.client import QtClient
 from instrumentserver.log import LogLevels, LogWidget, log
+from instrumentserver.init_client import DeviceInitializer
 
 from .core import (
     StationServer,
@@ -484,16 +485,59 @@ class InstrumentsCreator(QtWidgets.QWidget):
             self.newInstrumentFailed.emit(str(e))
 
 
+class DeviceStatusDialog(BaseDialog):
+    """Dialog showing the status of initialized devices."""
+    
+    def __init__(self, device_manager: DeviceInitializer, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Device Status")
+        self.device_manager = device_manager
+        
+        layout = QtWidgets.QVBoxLayout(self)
+        
+        # Device list
+        self.device_list = QtWidgets.QListWidget()
+        layout.addWidget(self.device_list)
+        
+        # Status label
+        self.status_label = QtWidgets.QLabel()
+        layout.addWidget(self.status_label)
+        
+        # Buttons
+        button_layout = QtWidgets.QHBoxLayout()
+        self.refresh_btn = QtWidgets.QPushButton("Refresh")
+        self.refresh_btn.clicked.connect(self.refresh_devices)
+        self.close_btn = QtWidgets.QPushButton("Close")
+        self.close_btn.clicked.connect(self.accept)
+        
+        button_layout.addWidget(self.refresh_btn)
+        button_layout.addWidget(self.close_btn)
+        layout.addLayout(button_layout)
+        
+        self.resize(400, 300)
+        self.refresh_devices()
+    
+    def refresh_devices(self):
+        self.device_list.clear()
+        devices = self.device_manager.list_devices()
+        for name, device in devices.items():
+            self.device_list.addItem(f"{name}: {device.__class__.__name__}")
+        self.status_label.setText(f"Found {len(devices)} device(s)")
+
+
 class ServerGui(QtWidgets.QMainWindow):
     """Main window of the qcodes station server."""
-
+    
     serverPortSet = QtCore.Signal(int)
-
+    
     def __init__(self, startServer: Optional[bool] = True,
                  guiConfig: Optional[dict] = None,
                  **serverKwargs: Any):
         super().__init__()
-
+        
+        # Initialize device manager
+        self.device_manager = None
+        
         self._paramValuesFile = os.path.abspath(os.path.join('.', 'parameters.json'))
         self._bluePrints: dict[str, InstrumentModuleBluePrint] = {}
         self._serverKwargs = serverKwargs
@@ -523,7 +567,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo = StationObjectInfo()
         self.instrumentCreator = InstrumentsCreator(self.client, self._guiConfig)
         self.stationList.componentSelected.connect(self.displayComponentInfo)
-        self.stationList.itemDoubleClicked.connect(self.addInstrumentTab)
+        self.stationList.itemDoubleClicked.connect(self.addInstrumentToGui)
         self.stationList.closeRequested.connect(self.closeInstrument)
 
         stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
@@ -566,6 +610,19 @@ class ServerGui(QtWidgets.QMainWindow):
         self.saveParamsAction.triggered.connect(self.saveParamsToFile)
         self.toolBar.addAction(self.saveParamsAction)
 
+        # Add Devices menu
+        self.devices_menu = self.menuBar().addMenu("Devices")
+        
+        # Initialize Devices action
+        init_action = QtWidgets.QAction("Initialize Devices", self)
+        init_action.triggered.connect(self.initialize_devices)
+        self.devices_menu.addAction(init_action)
+        
+        # Show Device Status action
+        status_action = QtWidgets.QAction("Show Device Status", self)
+        status_action.triggered.connect(self.show_device_status)
+        self.devices_menu.addAction(status_action)
+
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")
         )
@@ -587,6 +644,8 @@ class ServerGui(QtWidgets.QMainWindow):
         if hasattr(self, 'stationServerThread'):
             if self.stationServerThread.isRunning():
                 self.client.ask(self.stationServer.SAFEWORD)
+        if self.device_manager is not None:
+            self.device_manager.close_all()
         event.accept()
 
     def startServer(self):
@@ -703,38 +762,6 @@ class ServerGui(QtWidgets.QMainWindow):
             bp = None
         self.stationObjInfo.setObject(bp)
 
-    @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
-    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int):
-        """
-        Gets called when the user double clicks and item of the instrument list.
-         Adds a new generic instrument GUI window to the tab bar.
-         If the tab already exists switches to that one.
-        """
-        name = item.text(0)
-        if name not in self.instrumentTabsOpen:
-            ins = self.client.find_or_create_instrument(name)
-            widgetClass = GenericInstrument
-            kwargs = {}
-            # The user might create an instrument that is not in the config file
-            if name in self._guiConfig:
-                # import the widget
-                moduleName = '.'.join(self._guiConfig[name]['gui']['type'].split('.')[:-1])
-                widgetClassName = self._guiConfig[name]['gui']['type'].split('.')[-1]
-                module = importlib.import_module(moduleName)
-                widgetClass = getattr(module, widgetClassName)
-
-                # get any kwargs if the config file has any
-                if 'kwargs' in self._guiConfig[name]['gui']:
-                    kwargs = self._guiConfig[name]['gui']['kwargs']
-
-            insWidget = widgetClass(ins, parent=self, **kwargs)
-            index = self.tabs.addTab(insWidget, ins.name)
-            self.instrumentTabsOpen[ins.name] = insWidget
-            self.tabs.setCurrentIndex(index)
-
-        elif name in self.instrumentTabsOpen:
-            self.tabs.setCurrentWidget(self.instrumentTabsOpen[name])
-
     @QtCore.Slot(str)
     def onTabDeleted(self, name: str) -> None:
         if name in self.instrumentTabsOpen:
@@ -751,6 +778,73 @@ class ServerGui(QtWidgets.QMainWindow):
         if ins in self.client.list_instruments():
             self.client.close_instrument(ins)
 
+    def initialize_devices(self):
+        """Initialize devices from a configuration file."""
+        default_config = os.path.join(os.path.dirname(__file__), "..", "config", "devices.json")
+
+        if os.path.exists(default_config):
+            try:
+                if self.device_manager is None:
+                    self.device_manager = DeviceInitializer(default_config)
+                else:
+                    self.device_manager.close_all()
+                    self.device_manager = DeviceInitializer(default_config)
+
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Success",
+                    f"Successfully initialized devices from {default_config}",
+                )
+                self.show_device_status()
+                return
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Failed to initialize devices: {str(e)}",
+                )
+                return
+
+        config_file = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Select Device Configuration",
+            os.path.join(os.path.dirname(__file__), "..", "config"),
+            "JSON Files (*.json)",
+        )[0]
+
+        if config_file:
+            try:
+                if self.device_manager is None:
+                    self.device_manager = DeviceInitializer(config_file)
+                else:
+                    self.device_manager.close_all()
+                    self.device_manager = DeviceInitializer(config_file)
+
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Success",
+                    f"Successfully initialized devices from {config_file}",
+                )
+                self.show_device_status()
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Failed to initialize devices: {str(e)}",
+                )
+
+    def show_device_status(self):
+        """Show the device status dialog."""
+        if self.device_manager is None:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Warning",
+                "No devices have been initialized yet.",
+            )
+            return
+
+        dialog = DeviceStatusDialog(self.device_manager, self)
+        dialog.exec_()
 
 class DetachedServerGui(QtWidgets.QMainWindow):
     """A detached version of the server gui."""
@@ -842,7 +936,6 @@ class DetachedServerGui(QtWidgets.QMainWindow):
     def onTabDeleted(self, name: str) -> None:
         if name in self.instrumentTabsOpen:
             del self.instrumentTabsOpen[name]
-
 
 def startServerGuiApplication(guiConfig: Optional[Dict[str, Dict[str, Any]]] = None,
                               **serverKwargs: Any) -> "ServerGui":
