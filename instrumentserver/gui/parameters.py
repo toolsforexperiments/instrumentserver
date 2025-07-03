@@ -216,7 +216,10 @@ QPushButton:checked { background-color: palegreen }
             return self.input.text()
 
     def setValue(self, val: Any):
-        self.input.setText(str(val))
+        try:
+            self.input.setText(str(val))
+        except RuntimeError as e:
+            logger.debug(f"Could not set value {val} in AnyInput element does not exists, raised {type(e)}: {e.args}")
 
     @QtCore.Slot(str)
     def _processTextEdited(self, val: str):
