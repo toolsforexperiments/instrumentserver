@@ -256,8 +256,10 @@ class NumberInput(QtWidgets.QLineEdit):
             return None
 
     def setValue(self, value: numbers.Number):
-        self.setText(str(value))
-
+        try:
+            self.setText(str(value))
+        except RuntimeError as e:
+            logger.debug(f"Could not set value {value} in NumberInput, raised {type(e)}: {e.args}")
 
 class AnyInputForMethod(AnyInput):
     """

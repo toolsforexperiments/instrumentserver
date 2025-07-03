@@ -330,7 +330,10 @@ class ParametersTreeView(InstrumentTreeViewBase):
     @QtCore.Slot(object, object)
     def onItemNewValue(self, itemName, value):
         widget = self.delegate.parameters[itemName]
-        widget.paramWidget.setValue(value)
+        try:
+            widget.paramWidget.setValue(value)
+        except RuntimeError as e:
+            logger.debug(f"Could not set value for {itemName} to {value}. Object is not being shown right now.")
 
 
 class InstrumentParameters(InstrumentDisplayBase):

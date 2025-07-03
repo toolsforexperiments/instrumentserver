@@ -7,7 +7,7 @@ The goal is to have a base design such that implementing further GUIS is simplif
 much code. To implement your own GUI you just need to inherit any particular part you want to customize.
 
 The assembled widget uses a TreeView to display some attribute of the passed instrument.
-It will go through the submodules contained in it and display them accordingly
+It will go through the submodules contained in it and display them accordingly.
 
 All the classes here assume that arguments present in them will exist in inherited ones. E.g.: all classes
 assume that the items used have a property star and trash. If your implementation of ItemBase deletes those properties
