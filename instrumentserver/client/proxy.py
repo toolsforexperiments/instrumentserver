@@ -404,6 +404,11 @@ class Client(BaseClient):
         if instrument_class is None:
             raise ValueError('Need a class to create a new instrument.')
 
+        if not isinstance(instrument_class, str):
+            raise TypeError('Class name must be a string with the import path of the class. '
+                             'If trying to start the parameter manager for example use "instrumentserver.params.ParameterManager" instead of '
+                             'passing the class itself.')
+
         req = ServerInstruction(
             operation=Operation.create_instrument,
             create_instrument_spec=InstrumentCreationSpec(
