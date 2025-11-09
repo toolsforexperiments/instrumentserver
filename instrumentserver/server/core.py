@@ -169,6 +169,10 @@ class StationServer(QtCore.QObject):
         self._wakeup_r, self._wakeup_w = socket.socketpair()
         self._wakeup_r.setblocking(False)
         self._wakeup_w.setblocking(False)
+        
+        # Per-instrument locks to avoid races when multiple threads talk to the same instrument concurrently
+        self._instrument_locks: dict[str, threading.RLock] = {}
+        self._instrument_locks_lock = threading.Lock()
 
     def _runInitScript(self):
         if os.path.exists(self.initScript):
@@ -407,40 +411,60 @@ class StationServer(QtCore.QObject):
 
         args = [] if spec.args is None else spec.args
         kwargs = dict() if spec.kwargs is None else spec.kwargs
+    
+        # lock based on the intended instrument name
+        lock = self._get_lock_for_target(spec.name)
+        if lock is None:
+            # in case name isn't in station yet, just guard creation with the dict lock
+            lock = self._instrument_locks_lock  # coarse but fine for this rare operation
 
-        new_instrument = qc.find_or_create_instrument(
-            cls, spec.name, *args, **kwargs)
-        if new_instrument.name not in self.station.components:
-            self.station.add_component(new_instrument)
-
-            self.instrumentCreated.emit(bluePrintFromInstrumentModule(new_instrument.name, new_instrument),
-                                        args, kwargs)
+        with lock:
+            new_instrument = qc.find_or_create_instrument(
+                cls, spec.name, *args, **kwargs)
+                
+            if new_instrument.name not in self.station.components:
+                self.station.add_component(new_instrument)
+    
+                self.instrumentCreated.emit(bluePrintFromInstrumentModule(new_instrument.name, new_instrument),
+                                            args, kwargs)
 
     def _callObject(self, spec: CallSpec) -> Any:
         """Call some callable found in the station."""
         obj = nestedAttributeFromString(self.station, spec.target)
         args = spec.args if spec.args is not None else []
         kwargs = spec.kwargs if spec.kwargs is not None else {}
-        ret = obj(*args, **kwargs)
-
-        # Check if a new parameter is being created.
-        self._newOrDeleteParameterDetection(spec, args, kwargs)
-
-        if isinstance(obj, Parameter):
-            if len(args) > 0:
-                self.parameterSet.emit(spec.target, args[0])
-
-                # Broadcast changes in parameter values.
-                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
+        
+        def _invoke():
+            ret = obj(*args, **kwargs)
+    
+            # Check if a new parameter is being created.
+            self._newOrDeleteParameterDetection(spec, args, kwargs)
+    
+            if isinstance(obj, Parameter):
+                if len(args) > 0:
+                    self.parameterSet.emit(spec.target, args[0])
+    
+                    # Broadcast changes in parameter values.
+                    self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
+                else:
+                    self.parameterGet.emit(spec.target, ret)
+    
+                    # Broadcast calls of parameters.
+                    self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
             else:
-                self.parameterGet.emit(spec.target, ret)
-
-                # Broadcast calls of parameters.
-                self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
+                self.funcCalled.emit(spec.target, args, kwargs, ret)
+    
+            return ret
+        
+        # Get the appropriate per-instrument lock, if any
+        lock = self._get_lock_for_target(spec.target)
+        if lock is None:
+            # Not an instrument (e.g. Station-level call); just invoke
+            return _invoke()
         else:
-            self.funcCalled.emit(spec.target, args, kwargs, ret)
-
-        return ret
+            # Serialize access to this instrument across threads
+            with lock:
+                return _invoke()
 
     def _getBluePrint(self, path: str) -> Union[InstrumentModuleBluePrint,
                                                 ParameterBluePrint,
@@ -534,7 +558,32 @@ class StationServer(QtCore.QObject):
             pb = ParameterBroadcastBluePrint(name,
                                              'parameter-deletion')
             self._broadcastParameterChange(pb)
+    
+    def _get_lock_for_target(self, target: str) -> Optional[threading.RLock]:
+        """
+        Given a call target like 'dac1.ch1.offset' or 'awg.ch2.set_sq_wave',
+        return a per-instrument lock if the root is one of the station components.
+        Otherwise, return None (no locking needed).
+        """
+        # todo: here we assume each instrument can only be used by one thread at a time, which is generally the safer option.
+        #  There might exists hardware that actually supports independent, concurrent control of different channels,
+        #  in which case we might want to add a tag to the instrument and disable the locking here.
+        if not target:
+            return None
 
+        # First token before the first dot: assumed to be instrument name
+        root = target.split('.')[0]
+        
+        # Only lock if this actually corresponds to an instrument in the station
+        if root not in self.station.components:
+            return None
+
+        with self._instrument_locks_lock:
+            lock = self._instrument_locks.get(root)
+            if lock is None:
+                lock = threading.RLock()
+                self._instrument_locks[root] = lock
+            return lock
 
 def startServer(port: int = 5555,
                 allowUserShutdown: bool = False,
