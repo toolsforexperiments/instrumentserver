@@ -92,13 +92,21 @@ class DummyInstrumentTimeout(Instrument):
         super().__init__(name, *args, **kwargs)
 
         self.random = np.random.randint(10000)
+        self._param1 = 1
+        self._param2 = 2
+
+        self.add_parameter('random_int', get_cmd=self.get_random)
+        self.add_parameter('param1', get_cmd=lambda : self._param1, set_cmd=lambda p: setattr(self, '_param1', p))
+        self.add_parameter('param2', get_cmd=lambda : self._param2, set_cmd=lambda p: setattr(self, '_param2', p))
+
 
     def get_random(self):
         return self.random
 
-    def get_random_timeout(self):
-        time.sleep(10)
-        return self.random
+    def get_random_timeout(self, wait_time=10):
+        time.sleep(wait_time)
+        return self.get_random()
+
 
 
 class DummyInstrumentRandomNumber(Instrument):

@@ -15,5 +15,13 @@ setup(name='instrumentserver',
                   "instrumentserver-detached = instrumentserver.apps:detachedServerScript",
                   "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",
                   "instrumentserver-listener = instrumentserver.monitoring.listener:startListener",
-                  ]}
+                  ]},
+      install_requires = [
+            'zmq',
+            'qcodes',
+            'qtpy',
+            'pyqt5',
+            'bokeh',
+            'scipy'
+      ]
       )

@@ -13,16 +13,22 @@ Core functionality of the instrument server.
 #   operations for adding parameters/submodules/functions
 # TODO: can we also create methods remotely?
 
+# TODO: client white list
+
 import os
 import importlib
-import inspect
+import json
 import logging
 import random
-import json
+import queue
+import socket
+
 from pathlib import Path
 from dataclasses import dataclass, field, fields
 from enum import Enum, unique
 from typing import Dict, Any, Union, Optional, Tuple, List, Callable
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 import zmq
 
@@ -38,7 +44,7 @@ from ..blueprints import (ParameterBluePrint, MethodBluePrint, InstrumentModuleB
                           INSTRUMENT_MODULE_BASE_CLASSES, PARAMETER_BASE_CLASSES, Operation,
                           InstrumentCreationSpec, CallSpec, ParameterSerializeSpec, ServerInstruction, ServerResponse,)
 
-from ..base import send, recv, sendBroadcast
+from ..base import send_router, recv_router, sendBroadcast
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
 __author__ = 'Wolfgang Pfaff', 'Chao Zhou'
@@ -156,6 +162,13 @@ class StationServer(QtCore.QObject):
                                                   f"'{n}', args: {str(args)}, "
                                                   f"kwargs: {str(kw)})'.")
         )
+        
+        # a queue for responses that are ready to be sent to client
+        self._response_queue = queue.Queue()
+        # a socket pair for immediate wakeup of the main thread that sends response to client
+        self._wakeup_r, self._wakeup_w = socket.socketpair()
+        self._wakeup_r.setblocking(False)
+        self._wakeup_w.setblocking(False)
 
     def _runInitScript(self):
         if os.path.exists(self.initScript):
@@ -173,12 +186,17 @@ class StationServer(QtCore.QObject):
         logger.info(f"Starting server.")
         logger.info(f"The safe word is: {self.SAFEWORD}")
         context = zmq.Context()
-        socket = context.socket(zmq.REP)
+        socket = context.socket(zmq.ROUTER)
+        # make a zmq poller for detecting activate sockets
+        poller = zmq.Poller()
+        poller.register(socket, zmq.POLLIN)
+        poller.register(self._wakeup_r, zmq.POLLIN)
 
         for a in self.listenAddresses:
             addr = f"tcp://{a}:{self.port}"
             socket.bind(addr)
             logger.info(f"Listening at {addr}")
+            self.serverStarted.emit(addr)
 
         # creating and binding publishing socket to broadcast changes
         broadcastAddr = f"tcp://*:{self.broadcastPort}"
@@ -197,81 +215,132 @@ class StationServer(QtCore.QObject):
         if self.initScript not in ['', None]:
             logger.info(f"Running init script")
             self._runInitScript()
-        self.serverStarted.emit(addr)
-
-        while self.serverRunning:
-            message = recv(socket)
-            message_ok = True
-            response_to_client: ServerResponse | tuple[ServerResponse, str] | None = None
-            response_log = None
-
-            # Allow the test client from within the same process to make sure the
-            # server shuts down. This is
-            if message == self.SAFEWORD:
-                response_log = 'Server has received the safeword and will shut down.'
-                response_to_client = ServerResponse(message=response_log)
-                self.serverRunning = False
-                logger.warning(response_log)
-
-            elif self.allowUserShutdown and message == 'SHUTDOWN':
-                response_log = 'Server shutdown requested by client.'
-                response_to_client = ServerResponse(message=response_log)
-                self.serverRunning = False
-                logger.warning(response_log)
-
-            # If the message is a string we just echo it back.
-            # This is used for testing sometimes, but has no functionality.
-            elif isinstance(message, str):
-                response_log = f"Server has received: {message}. No further action."
-                response_to_client = ServerResponse(message=response_log)
-                logger.debug(response_log)
-
-            # We assume this is a valid instruction set now.
-            elif isinstance(message, ServerInstruction):
-                instruction = message
+            
+        # create a thread pool for handling incoming client requests concurrently
+        with ThreadPoolExecutor() as pool:
+            while self.serverRunning or not self._response_queue.empty():
                 try:
-                    instruction.validate()
-                    logger.debug(f"Received request for operation: "
-                                 f"{str(instruction.operation)}")
-                    logger.debug(f"Instruction received: "
-                                 f"{str(instruction)}")
+                    # check if there is either incoming request from client, or a processing worker has finished
+                    socks = dict(poller.poll(10))
+                    
+                    # handle router socket events (incoming requests)
+                    if self.serverRunning and socket in socks and (socks[socket] & zmq.POLLIN):
+                        identity, message = recv_router(socket)
+                        pool.submit(self._handleRouterMessage, identity, message)
+                    
+                    # handle wakeup events (one or more workers finished)
+                    if self._wakeup_r in socks and (socks[self._wakeup_r] & zmq.POLLIN):
+                        # Drain the wakeup pipe so it doesn't stay "always readable"
+                        try:
+                            # Read whatever is there; content doesn't matter
+                            self._wakeup_r.recv(1024)
+                        except BlockingIOError:
+                            pass
+                    
+                    # drain completed responses from workers
+                    while True:
+                        try:
+                            identity, response_to_client, response_log, shutdown = self._response_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                        
+                        try:
+                            send_router(socket, identity, response_to_client)
+                        except Exception as e:
+                            logger.error(f"Failed to send response to client: {e}")
+                        
+                        # emit log signal
+                        self.messageReceived.emit(str(response_to_client.message), response_log)
+                        
+                        # flip the shutdown flag in the main thread
+                        if shutdown:
+                            self.serverRunning = False
+                
                 except Exception as e:
-                    message_ok = False
-                    response_log = f'Received invalid message. Error raised: {str(e)}'
-                    response_to_client = ServerResponse(message=None, error=e)
+                    logger.exception(f"Unexpected error in server loop: {e}")
+                    break
+        
+        socket.close()
+        self._wakeup_r.close()
+        self._wakeup_w.close()
+        self.broadcastSocket.close()
+        self.finished.emit()
+        logger.info("StationServer shut down cleanly.")
+        return True
+    
+    def _handleRouterMessage(self, identity, message):
+        """
+        Handle a router message and put the response message in the response queue.
+        
+        """
+        message_ok = True
+        response_to_client = None
+        response_log = None
+        shutdown = False # flag for letting the main thread shut down the server
+
+        # Allow the test client from within the same process to make sure the
+        # server shuts down.
+        if message == self.SAFEWORD:
+            response_log = 'Server has received the safeword and will shut down.'
+            response_to_client = ServerResponse(message=response_log)
+            shutdown = True
+            logger.warning(response_log)
+
+        elif self.allowUserShutdown and message == 'SHUTDOWN':
+            response_log = 'Server shutdown requested by client.'
+            response_to_client = ServerResponse(message=response_log)
+            shutdown = True
+            logger.warning(response_log)
+
+        # If the message is a string we just echo it back.
+        # This is used for testing sometimes, but has no functionality.
+        elif isinstance(message, str):
+            response_log = f"Server has received: {message}. No further action."
+            response_to_client = ServerResponse(message=response_log)
+            logger.debug(response_log)
+
+        # We assume this is a valid instruction set now.
+        elif isinstance(message, ServerInstruction):
+            instruction = message
+            try:
+                instruction.validate()
+                logger.debug(f"Received request for operation: "
+                             f"{str(instruction.operation)}")
+                logger.debug(f"Instruction received: "
+                             f"{str(instruction)}")
+            except Exception as e:
+                message_ok = False
+                response_log = f'Received invalid message. Error raised: {str(e)}'
+                response_to_client = ServerResponse(message=None, error=e)
+                logger.warning(response_log)
+
+            if message_ok:
+                # We don't need to use a try-block here, because
+                # errors are already handled in executeServerInstruction.
+                response_to_client = self.executeServerInstruction(instruction)
+                response_log = f"Response to client: {str(response_to_client)}"
+                if response_to_client.error is None:
+                    logger.debug(f"Response sent to client.")
+                    logger.debug(response_log)
+                else:
                     logger.warning(response_log)
 
-                if message_ok:
-                    # We don't need to use a try-block here, because
-                    # errors are already handled in executeServerInstruction.
-                    response_to_client = self.executeServerInstruction(instruction)
-                    response_log = f"Response to client: {str(response_to_client)}"
-                    if response_to_client.error is None:
-                        logger.debug(f"Response sent to client.")
-                        logger.debug(response_log)
-                    else:
-                        logger.warning(response_log)
-
-            else:
-                response_log = f"Invalid message type."
-                response_to_client = ServerResponse(message=None, error=response_log)
-                logger.warning(f"Invalid message type: {type(message)}.")
-                logger.debug(f"Invalid message received: {str(message)}")
-
-            send(socket, response_to_client)
-
-            self.messageReceived.emit(str(message), response_log)
-
-        if self.pollingThread is not None and isinstance(self.pollingThread,QtCore.QThread):
-            self.pollingThread.quit()
-            logger.info("Polling thread finished")
+        else:
+            response_log = f"Invalid message type."
+            response_to_client = ServerResponse(message=None, error=response_log)
+            logger.warning(f"Invalid message type: {type(message)}.")
+            logger.debug(f"Invalid message received: {str(message)}")
         
-        self.broadcastSocket.close()
-        socket.close()
-        self.finished.emit()
-        return True
-
-    def executeServerInstruction(self, instruction: ServerInstruction) -> ServerResponse:
+        self._response_queue.put((identity, response_to_client, response_log, shutdown))
+        # wake up the server loop so it can send the response immediately
+        try:
+            self._wakeup_w.send(b"\0")
+        except OSError:
+            # If we're shutting down / socket closed, ignore
+            pass
+    
+    def executeServerInstruction(self, instruction: ServerInstruction) \
+            -> Tuple[ServerResponse, str]:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
@@ -376,6 +445,7 @@ class StationServer(QtCore.QObject):
     def _getBluePrint(self, path: str) -> Union[InstrumentModuleBluePrint,
                                                 ParameterBluePrint,
                                                 MethodBluePrint]:
+        logger.debug(f"Fetching blueprint for: {path}")
         obj = nestedAttributeFromString(self.station, path)
         if isinstance(obj, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
             instrument_blueprint = bluePrintFromInstrumentModule(path, obj)

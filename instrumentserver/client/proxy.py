@@ -6,10 +6,13 @@ Created on Sat Apr 18 16:13:40 2020
 """
 import inspect
 import json
+import yaml
 import logging
 import os
 from types import MethodType
 from typing import Any, Union, Optional, Dict, List
+import threading
+from contextlib import contextmanager
 
 import qcodes as qc
 import zmq
@@ -60,7 +63,10 @@ class ProxyMixin:
 
         if remotePath is not None and bluePrint is None:
             self.remotePath = remotePath
-            self.bp = self._getBluePrintFromServer(self.remotePath)
+            if self.cli is None:
+                self.bp = self._getBluePrintFromServer(self.remotePath)
+            else:
+                self.bp = self.cli.getBluePrint(self.remotePath)
         elif bluePrint is not None:
             self.bp = bluePrint
             self.remotePath = self.bp.path
@@ -167,11 +173,11 @@ class ProxyParameter(ProxyMixin, Parameter):
 
 
 class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
-    """Construct a proxy module using the given blue print. Each proxy
+    """Construct a proxy module using the given blueprint. Each proxy
     instantiation represents a virtual module (instrument of submodule of
     instrument).
 
-    :param bluePrint: The blue print that the describes the module.
+    :param bluePrint: The blueprint that the describes the module.
     :param host: The name of the host where the server lives.
     :param port: The port number of the server.
     """
@@ -192,24 +198,54 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         if cli is None:
             self.cli = Client(host=host, port=port)
 
+        for mn in self.bp.methods.keys():
+            if mn == 'remove_parameter':
+                def remove_parameter(obj, name: str):
+                    obj.cli.call(f'{obj.remotePath}.remove_parameter', name)
+                    obj.update()
+
+                self.remove_parameter = MethodType(remove_parameter, self)
+
         self.parameters.pop('IDN', None)  # we will redefine this later
 
         # When a new parameter or method is added to client, qcodes checks if that item exists or not. This is done
         #  by calling __getattr__ method. The problem is that when that method gets called and cannot find that item it
         #  creates it, generating an infinite loop. This flag stops that. It should be set to True before doing any change
         #  to the proxy object and set to False after the change is done.
-        self.is_updating = True
-        self.update()
         self.is_updating = False
+        with self._updating():
+            self.update()
+
+    @contextmanager
+    def _updating(self):
+        old = self.is_updating
+        self.is_updating = True
+        try:
+            yield
+        finally:
+            self.is_updating = old
+
 
     def initKwargsFromBluePrint(self, bp):
         return {}
 
     def update(self):
+        self.cli.invalidateBlueprint(self.remotePath)
         self.bp = self.cli.getBluePrint(self.remotePath)
         self._getProxyParameters()
         self._getProxyMethods()
         self._getProxySubmodules()
+    
+    def set_parameters(self, **param_dict:dict):
+        """
+        Set instrument parameters in batch with a dict, keyed by parameter names.
+
+        """
+        for k, v in param_dict.items():
+            try:
+                self.parameters[k](v)
+            except KeyError:
+                raise KeyError(f"{self.bp.instrument_module_class} instrument does not have parameter '{k}'")
 
     def add_parameter(self, name: str, *arg, **kw):
         """Add a parameter to the proxy instrument.
@@ -255,10 +291,9 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         for pn, p in self.bp.parameters.items():
             if pn not in self.parameters:
                 pbp = self.cli.getBluePrint(f"{self.remotePath}.{pn}")
-                self.is_updating = True
-                super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
-                                      port=self.port, bluePrint=pbp, setpoints_instrument=self)
-                self.is_updating = False
+                with self._updating():
+                    super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
+                                          port=self.port, bluePrint=pbp, setpoints_instrument=self)
 
         delKeys = []
         for pn in self.parameters.keys():
@@ -275,11 +310,10 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         """
         for n, m in self.bp.methods.items():
             if not hasattr(self, n):
-                self.is_updating = True
-                fun = self._makeProxyMethod(m)
-                setattr(self, n, MethodType(fun, self))
-                self.functions[n] = getattr(self, n)
-                self.is_updating = False
+                with self._updating():
+                    fun = self._makeProxyMethod(m)
+                    setattr(self, n, MethodType(fun, self))
+                    self.functions[n] = getattr(self, n)
 
     def _makeProxyMethod(self, bp: MethodBluePrint):
         def wrap(*a, **k):
@@ -313,7 +347,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # make sure the method knows the wrap function.
         # TODO: this is not complete!
         globs = {'wrap': wrap, 'qcodes': qc}
-        exec(new_func_str, globs)
+        _ret = exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
         return globs[bp.name]
@@ -378,12 +412,20 @@ ProxyInstrument = ProxyInstrumentModule
 
 class Client(BaseClient):
     """Client with common server requests as convenience functions."""
+    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True):
+        super().__init__(host, port, connect, timeout, raise_exceptions)
+        self._bp_cache = {}
+        self._bp_cache_lock = threading.Lock()
 
     def list_instruments(self) -> Dict[str, str]:
         """ Get the existing instruments on the server.
         """
-        msg = ServerInstruction(operation=Operation.get_existing_instruments)
-        return self.ask(msg)
+        message = ServerInstruction(operation=Operation.get_existing_instruments)
+        try:
+            return self.ask(message)
+        except Exception as e:
+            logger.error(f"Failed to send or receive message to server at {self.host}:{self.port}", exc_info=True)
+            raise RuntimeError("Communication with server failed. See logs for details.") from e
 
     def find_or_create_instrument(self, name: str, instrument_class: Optional[str] = None,
                                   *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
@@ -439,11 +481,38 @@ class Client(BaseClient):
         return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
 
     def getBluePrint(self, path):
+        """
+        get blueprint from server
+        :param path:
+        :return:
+        """
+        with self._bp_cache_lock:
+            bp = self._bp_cache.get(path)
+        if bp is not None:
+            return bp
+
         msg = ServerInstruction(
             operation=Operation.get_blueprint,
             requested_path=path,
         )
-        return self.ask(msg)
+        bp = self.ask(msg)
+        with self._bp_cache_lock:
+            self._bp_cache[path] = bp
+        return bp
+
+    def invalidateBlueprint(self, path=None):
+        """
+        invalidate a parameter in the blueprint cache
+        :param path:
+        :return:
+        """
+        with self._bp_cache_lock:
+            if path is None:
+                self._bp_cache.clear()
+            else:
+                for k in list(self._bp_cache):
+                    if k == path or k.startswith(path + '.'):
+                        del self._bp_cache[k]
 
     def get_snapshot(self, instrument: str | None = None, *args, **kwargs):
         msg = ServerInstruction(
@@ -564,7 +633,7 @@ class QtClient(_QtAdapter, Client):
                  host='localhost',
                  port=DEFAULT_PORT,
                  connect=True,
-                 timeout=5000,
+                 timeout=5,
                  raise_exceptions=True):
         # Calling the parents like this ensures that the arguments arrive to the parents properly.
         _QtAdapter.__init__(self, parent=parent)
