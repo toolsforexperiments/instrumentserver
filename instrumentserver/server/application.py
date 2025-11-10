@@ -3,6 +3,7 @@ import importlib
 import logging
 import os
 import time
+import sys
 from typing import Union, Optional, Any, Dict
 
 from instrumentserver.client import QtClient
@@ -12,7 +13,7 @@ from .core import (
     StationServer,
     InstrumentModuleBluePrint, ParameterBluePrint
 )
-from .. import QtCore, QtWidgets, QtGui, Client
+from .. import QtCore, QtWidgets, QtGui, Client, getInstrumentserverPath
 from ..gui.misc import DetachableTabWidget, BaseDialog
 from ..gui.parameters import AnyInputForMethod
 from ..gui.instruments import GenericInstrument
@@ -508,6 +509,11 @@ class ServerGui(QtWidgets.QMainWindow):
         self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
         self.setWindowTitle('Instrument server')
+        # Set unique Windows App ID so that this app can have separate taskbar entry than other Qt apps
+        if sys.platform == "win32":
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("InstrumentServer.Server")
+        self.setWindowIcon(QtGui.QIcon(getInstrumentserverPath("resource", "icons") + "/server_app_icon.svg"))
 
         # A test client, just a simple helper object.
         self.client = EmbeddedClient(raise_exceptions=False, timeout=5000)
@@ -727,6 +733,7 @@ class ServerGui(QtWidgets.QMainWindow):
                 if 'kwargs' in self._guiConfig[name]['gui']:
                     kwargs = self._guiConfig[name]['gui']['kwargs']
 
+            kwargs["sub_port"] = kwargs.get("sub_port", self.stationServer.port + 1)
             insWidget = widgetClass(ins, parent=self, **kwargs)
             index = self.tabs.addTab(insWidget, ins.name)
             self.instrumentTabsOpen[ins.name] = insWidget

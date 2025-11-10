@@ -285,7 +285,7 @@ def _singleInstrumentParametersToJson(instrument: InstrumentBase,
     else:
         snap = instrument.snapshot(update=get)
     for name, param in instrument.parameters.items():
-        if name not in excludeParameters:
+        if (name not in excludeParameters) and (not param.snapshot_exclude):
             if len(includeMeta) == 0 and simpleFormat:
                 ret[addPrefix + name] = snap['parameters'][name].get('value', None)
             else:

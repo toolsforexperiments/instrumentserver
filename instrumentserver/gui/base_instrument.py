@@ -426,7 +426,7 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
                 # Assertion is there to satisfy mypy. item can be None, that is why we check before making the assertion
                 if item is not None:
                     assert isinstance(item, ItemBase)
-                if self._isParentTrash(parent) or item.trash:
+                if self._isParentTrash(parent) or getattr(item, "trash", False): # item could be None when it's trashed and hidden
                     return False
 
         return super().filterAcceptsRow(source_row, source_parent)
