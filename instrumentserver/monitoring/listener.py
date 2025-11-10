@@ -11,8 +11,12 @@ import pandas as pd
 import pytz
 import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
 import zmq
-from influxdb_client import InfluxDBClient, Point, WriteOptions
+try:
+    from influxdb_client import InfluxDBClient, Point, WriteOptions
+except ImportError:
+    pass
 
+from instrumentserver import  QtCore
 from instrumentserver.base import recvMultipart
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
 
@@ -221,3 +225,62 @@ def startListener():
             logger.warning(f"Type {configInput['type']} not supported")
     else:
         logger.warning("Please enter a valid type in the config file")
+
+
+class QtListener(QtCore.QObject):
+    finished = QtCore.Signal()
+    serverSignal = QtCore.Signal(object)
+
+    def __init__(self, addresses, parent=None):
+        """
+        Listener for server broadcast of parameter changes.
+        Written based on monitoring.listener.Listener without ABC for use with Qt.
+        todo: integrate this more cleanly with the base class...
+        :param addresses: addresses to listen to, by default, should be main server address with port + 1
+        :param parent:
+        """
+        super().__init__(parent)
+        self.addresses = addresses
+        self._stop = False
+        self._ctx = None
+        self._sock = None
+
+    @QtCore.Slot()
+    def run(self):
+        logger.info(f"Connecting to broadcaster {self.addresses}")
+        self._ctx = zmq.Context.instance()
+        self._sock = self._ctx.socket(zmq.SUB)
+        try:
+            for addr in self.addresses:
+                self._sock.connect(addr)
+                self._sock.setsockopt_string(zmq.SUBSCRIBE, "")
+            # Make recv interruptible so we can stop gracefully
+            self._sock.setsockopt(zmq.RCVTIMEO, 200)  # ms
+            logger.info("Listener Connected")
+
+            while not self._stop:
+                try:
+                    parts = recvMultipart(self._sock)  # e.g. [topic, payload, ...]
+                    payload = parts[1] if len(parts) > 1 else parts[0]
+                    self.listenerEvent(payload)
+                except zmq.Again:
+                    # timeout -> loop to check _stop
+                    continue
+                except (KeyboardInterrupt, SystemExit):
+                    logger.info("Program Stopped Manually")
+                    break
+        finally:
+            try:
+                if self._sock is not None:
+                    self._sock.close(linger=0)
+            finally:
+                self._sock = None
+            self.finished.emit()
+
+
+    @QtCore.Slot()
+    def stop(self):
+        self._stop = True
+
+    def listenerEvent(self, message: ParameterBroadcastBluePrint):
+        self.serverSignal.emit(message)
