@@ -1,3 +1,3 @@
 from .core import sendRequest
-from .proxy import ProxyInstrument, Client, QtClient, SubClient
+from .proxy import ProxyInstrument, Client, QtClient, SubClient, ClientStation
 

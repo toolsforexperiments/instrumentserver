@@ -110,3 +110,75 @@ def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List
     return funcs
 
 
+def flat_to_nested_dict(flat_dict: Dict) -> Dict:
+    """
+    Converts a flat dictionary with keys separated by dots into a nested dictionary.
+
+    :param flat_dict: A flat dictionary where keys are strings with dot-separated parts.
+    :return: A nested dictionary reconstructed from the flat structure.
+
+    Example:
+
+    .. code-block:: python
+
+        flat = {
+            "a.b.c": 1,
+            "a.b.d": 2,
+            "x": 3
+        }
+
+        result = flat_to_nested_dict(flat)
+
+        # result:
+        {"a": {"b": {"c": 1,"d": 2}},"x": 3}
+    """
+    nested = {}
+    for key, value in flat_dict.items():
+        parts = key.split('.')
+        d = nested
+        for part in parts[:-1]:
+            d = d.setdefault(part, {})
+        d[parts[-1]] = value
+    return nested
+
+
+def is_flat_dict(d:dict) -> bool:
+    """
+    Detects if a dictionary is flat (i.e. all values are non-dicts).
+    """
+    return all(not isinstance(v, dict) for v in d.values())
+
+def flatten_dict(d, sep='.'):
+    """
+    Detects if a dictionary is flat (i.e. all values are non-dicts).
+    If it is not flat, recursively flattens it using dot-separated keys.
+
+    :param d: A dictionary, potentially nested.
+    :param sep: Separator to use for the flattened keys.
+    :return: A flat dictionary if input was nested; original dictionary if already flat.
+
+    Example:
+
+    .. code-block:: python
+
+        flatten_dict({"a": 1, "b.c": 2})
+        # returns: {"a": 1, "b.c": 2}
+
+        flatten_dict({"a": {"b": 1}, "x": 3})
+        # returns: {"a.b": 1, "x": 3}
+    """
+
+    if is_flat_dict(d):
+        return d
+
+    def flatten(nested, parent_key=''):
+        items = {}
+        for k, v in nested.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.update(flatten(v, new_key))
+            else:
+                items[new_key] = v
+        return items
+
+    return flatten(d)
