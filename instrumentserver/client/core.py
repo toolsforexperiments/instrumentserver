@@ -1,16 +1,15 @@
 import logging
 import warnings
 import zmq
+import uuid
 
-from instrumentserver import DEFAULT_PORT, QtCore
+from instrumentserver import DEFAULT_PORT
 from instrumentserver.base import send, recv
 from instrumentserver.server.core import ServerResponse
 
 
 logger = logging.getLogger(__name__)
 
-
-# TODO: allow for the client to operate as context manager.
 
 
 class BaseClient:
@@ -21,12 +20,12 @@ class BaseClient:
     :param host: The host address of the server, defaults to localhost.
     :param port: The port of the server, defaults to the value of DEFAULT_PORT.
     :param connect: If true, the server connects as it is being constructed, defaults to True.
-    :param timeout: Amount of time that the client waits for an answer before declaring timeout in ms.
-                    Defaults to 5000.
+    :param timeout: Amount of time that the client waits for an answer before declaring timeout in seconds.
+                    Defaults to 20s.
     :param raise_exceptions: If true the client will raise an exception when the server sends one to it, defaults to True.
     """
 
-    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=5000, raise_exceptions=True):
+    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True):
         self.connected = False
         self.context = None
         self.socket = None
@@ -34,8 +33,7 @@ class BaseClient:
         self.port = port
         self.addr = f"tcp://{host}:{port}"
         self.raise_exceptions = raise_exceptions
-        #: Timeout for server replies.
-        self.recv_timeout = timeout
+        self.recv_timeout_ms = int(timeout * 1e3)
 
         if connect:
             self.connect()
@@ -51,8 +49,9 @@ class BaseClient:
     def connect(self):
         logger.info(f"Connecting to {self.addr}")
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.RCVTIMEO, self.recv_timeout)
+        self.socket = self.context.socket(zmq.DEALER)
+        self.socket.setsockopt(zmq.RCVTIMEO, self.recv_timeout_ms)
+        self.socket.setsockopt(zmq.IDENTITY, uuid.uuid4().hex.encode()) #todo: more meaningful id?
         self.socket.connect(self.addr)
         self.connected = True
 
@@ -66,37 +65,54 @@ class BaseClient:
             ret = recv(self.socket)
             logger.debug(f"Response received.")
             logger.debug(f"Response: {str(ret)}")
-
-            if isinstance(ret, ServerResponse):
-                err = ret.error
-                if err is not None:
-                    if isinstance(err, str):
-                        logger.error(err)
-                    elif isinstance(err, Warning):
-                        warnings.warn(err)
-                    elif isinstance(err, Exception):
-                        if self.raise_exceptions:
-                            raise err
-                        else:
-                            logger.error(f'Server raised the following exception: {err}')
-                    else:
-                        if self.raise_exceptions:
-                            raise TypeError(f'Unknown Error Type: {str(err)}')
-                        else:
-                            logger.error(f'Unknown Error Type: {str(err)}')
+        except zmq.error.Again:
+            self._reset_connection()
+            if self.raise_exceptions:
+                raise RuntimeError("Server did not reply before timeout.")
+            else:
+                logger.error("Server did not reply before timeout.")
+                return None
+            
+        if isinstance(ret, ServerResponse):
+            err = ret.error
+            if err is not None:
+                self._handle_server_error(err)
             return ret.message
 
-        except zmq.error.Again as e:
-            # if there is a timeout, close the socket and connect again
-            self.socket.close()
+        return ret
+    
+    def _reset_connection(self):
+        try:
+            if self.socket is not None:
+                self.socket.close(linger=0)
+        finally:
+            self.connected = False
             self.connect()
+            
+    def _handle_server_error(self, err):
+        if isinstance(err, str):
+            logger.error(err)
             if self.raise_exceptions:
-                raise RuntimeError(f'Server did not reply before timeout.')
-            else:
-                logger.error(f'Server did not reply before timeout.')
-
+                raise RuntimeError(err)
+        elif isinstance(err, Warning):
+            warnings.warn(err)
+        elif isinstance(err, Exception):
+            if self.raise_exceptions:
+                raise err
+            logger.error(f"Server raised exception: {err}")
+        else:
+            msg = f"Unknown error type from server: {err!r}"
+            if self.raise_exceptions:
+                raise TypeError(msg)
+            logger.error(msg)
+    
     def disconnect(self):
-        self.socket.close()
+        if self.socket is not None:
+            try:
+                self.socket.close(linger=0)
+            except Exception:
+                pass
+            self.socket = None
         self.connected = False
 
 
