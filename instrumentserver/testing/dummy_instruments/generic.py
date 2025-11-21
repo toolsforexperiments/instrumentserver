@@ -94,12 +94,18 @@ class DummyInstrumentTimeout(Instrument):
         self.random = np.random.randint(10000)
         self._param1 = 1
         self._param2 = 2
+        self._p1_get_counter = 0
 
         self.add_parameter('random_int', get_cmd=self.get_random)
-        self.add_parameter('param1', get_cmd=lambda : self._param1, set_cmd=lambda p: setattr(self, '_param1', p))
+        self.add_parameter('param1', get_cmd= self._get_param1, set_cmd=lambda p: setattr(self, '_param1', p))
         self.add_parameter('param2', get_cmd=lambda : self._param2, set_cmd=lambda p: setattr(self, '_param2', p))
 
-
+    def _get_param1(self):
+        # for testing potentially redundant/duplicate get calls
+        print(f"-------------- getting {self.name}.param1, count {self._p1_get_counter}----------------")
+        self._p1_get_counter += 1
+        return self._param1
+    
     def get_random(self):
         return self.random
 
