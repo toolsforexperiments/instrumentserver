@@ -10,6 +10,7 @@ import yaml
 import logging
 import os
 from types import MethodType
+import collections
 from typing import Any, Union, Optional, Dict, List
 import threading
 from contextlib import contextmanager
@@ -346,7 +347,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
         # make sure the method knows the wrap function.
         # TODO: this is not complete!
-        globs = {'wrap': wrap, 'qcodes': qc}
+        globs = {'wrap': wrap, 'qcodes': qc, 'collections': collections}
         _ret = exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
