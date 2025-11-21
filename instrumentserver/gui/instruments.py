@@ -683,7 +683,7 @@ class GenericInstrument(QtWidgets.QWidget):
         self._layout.addWidget(self.splitter)
         self.splitter.addWidget(self.parametersList)
         self.splitter.addWidget(self.methodsList)
-        # self.parametersList.model.refreshAll() # Chao: removed as we will call that later in the constructor of the param widget
+      
 
         # Resize param name, unit, and function name columns after entries loaded
         self.parametersList.view.resizeColumnToContents(0)
