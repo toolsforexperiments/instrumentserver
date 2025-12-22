@@ -578,14 +578,17 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
     update = QtCore.Signal(ParameterBroadcastBluePrint)
 
+    #: Signal emitted when the listener finishes (for proper cleanup)
+    finished = QtCore.Signal()
+
     def __init__(self, instruments: Optional[List[str]] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
         """
         Creates a new subscription client.
 
         :param instruments: List of instruments the subclient will listen for.
-                            If empty it will listen to all broadcasts done by the server.
-        :param host: The host location of the updates.
-        :param port: Should not be changed. It always is the server normal port +1.
+                            If empty/None it will listen to all broadcasts done by the server.
+        :param sub_host: The host location of the updates.
+        :param sub_port: Should not be changed. It always is the server normal port +1.
         """
         super().__init__()
         self.host = sub_host
@@ -594,7 +597,11 @@ class SubClient(QtCore.QObject):
         self.instruments = instruments
 
         self.connected = False
+        self._stop = False
+        self._ctx = None
+        self._sock = None
 
+    @QtCore.Slot()
     def connect(self):
         """
         Connects the subscription client with the broadcast
@@ -603,26 +610,57 @@ class SubClient(QtCore.QObject):
         It should always be run on a separate thread or the program will get stuck in the loop.
         """
         logger.info(f"Connecting to {self.addr}")
-        context = zmq.Context()
-        socket = context.socket(zmq.SUB)
-        socket.connect(self.addr)
+        self._ctx = zmq.Context.instance()
+        self._sock = self._ctx.socket(zmq.SUB)
 
-        # subscribe to the specified instruments
-        if self.instruments is None:
-            socket.setsockopt_string(zmq.SUBSCRIBE, '')
-        else:
-            for ins in self.instruments:
-                socket.setsockopt_string(zmq.SUBSCRIBE, ins)
+        try:
+            self._sock.connect(self.addr)
 
-        self.connected = True
+            # subscribe to the specified instruments
+            if self.instruments is None:
+                self._sock.setsockopt_string(zmq.SUBSCRIBE, '')
+            else:
+                for ins in self.instruments:
+                    self._sock.setsockopt_string(zmq.SUBSCRIBE, ins)
 
-        while self.connected:
-            message = recvMultipart(socket)
-            self.update.emit(message[1])
+            # Make recv interruptible so we can stop gracefully
+            self._sock.setsockopt(zmq.RCVTIMEO, 200)  # ms
 
-        self.disconnect()
+            self.connected = True
+
+            while self.connected and not self._stop:
+                try:
+                    message = recvMultipart(self._sock)
+                    self.update.emit(message[1])
+                except zmq.Again:
+                    # timeout -> loop to check _stop
+                    continue
+                except (KeyboardInterrupt, SystemExit):
+                    logger.info("Program Stopped Manually")
+                    break
+        finally:
+            try:
+                if self._sock is not None:
+                    self._sock.close(linger=0)
+            finally:
+                self._sock = None
+            self.finished.emit()
 
         return True
+
+    @QtCore.Slot()
+    def stop(self):
+        """
+        Stops the listener gracefully.
+        """
+        self._stop = True
+        self.connected = False
+
+    def disconnect(self):
+        """
+        Alias for stop() for backwards compatibility.
+        """
+        self.stop()
 
 
 class _QtAdapter(QtCore.QObject):

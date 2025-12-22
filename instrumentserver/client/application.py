@@ -14,13 +14,13 @@ from qtpy.QtCore import Qt
 
 from instrumentserver import QtCore, QtWidgets, QtGui, getInstrumentserverPath
 from instrumentserver.client import QtClient, Client, ClientStation
+from instrumentserver.client.proxy import SubClient
 from instrumentserver.gui.instruments import GenericInstrument
 from instrumentserver.gui.misc import DetachableTabWidget
 from instrumentserver.log import LogLevels, LogWidget, log
 from instrumentserver.log import logger as get_instrument_logger
 from instrumentserver.server.application import StationList, StationObjectInfo
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
-from instrumentserver.monitoring.listener import QtListener
 
 # instrument class key in configuration files for configurations that will be applied to all instruments
 DEFAULT_INSTRUMENT_KEY = "__default__"
@@ -116,14 +116,13 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
         # set up the listener thread and worker that listens to update messages emitted by the server (from all clients)
         self.listenerThread = QtCore.QThread()
-        broadcast_addr = self.cli.addr[:-1] + str(int(self.cli.addr[-1])+1) # broadcast port is by default +1
-        self.listener = QtListener([broadcast_addr])
+        self.listener = SubClient(instruments=None, sub_host=self.cli.host, sub_port=self.cli.port+1)
         self.listener.moveToThread(self.listenerThread)
-        self.listenerThread.started.connect(self.listener.run)
+        self.listenerThread.started.connect(self.listener.connect)
         self.listener.finished.connect(self.listenerThread.quit)
         self.listener.finished.connect(self.listener.deleteLater)
         self.listener.finished.connect(self.listenerThread.deleteLater)
-        self.listener.serverSignal.connect(self.listenerEvent)
+        self.listener.update.connect(self.listenerEvent)
         self.listenerThread.start()
 
         # expand hide config
