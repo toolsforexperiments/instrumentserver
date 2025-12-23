@@ -1,12 +1,8 @@
 from typing import Optional, Union
 import sys
 import json
-import fnmatch
 import logging
-import re
-from html import escape
 
-import yaml
 from qcodes import Instrument
 from qtpy.QtWidgets import QFileDialog, QMenu, QWidget, QSizePolicy, QSplitter
 from qtpy.QtGui import QGuiApplication
@@ -180,9 +176,12 @@ class ClientStationGui(QtWidgets.QMainWindow):
         name = item.text(0)
         if name not in self.instrumentTabsOpen:
             instrument = self.station.get_instrument(name)
-            hide_dict = self._parse_hide_attributes(instrument)
+
+            # Get GUI config kwargs directly from station config (patterns already merged by config.py)
+            gui_kwargs = self.station.full_config.get(name, {}).get('gui', {}).get('kwargs', {})
+
             ins_widget = GenericInstrument(instrument, self, sub_host=self.cli.host, sub_port=self.cli.port+1,
-                                           **hide_dict)
+                                           **gui_kwargs)
 
             # add tab
             ins_widget.setObjectName(name)
@@ -200,42 +199,6 @@ class ClientStationGui(QtWidgets.QMainWindow):
         else:
             bp = None
         self.stationObjInfo.setObject(bp)
-
-    def _parse_hide_attributes(self, instrument:Instrument):
-        """
-        Parse the parameters and methods to hide.
-        Gets already-merged patterns from station config and expands wildcards.
-        """
-        # Get merged GUI config for this instrument from station
-        inst_name = instrument.name
-        gui_config = self.station.full_config.get(inst_name, {}).get('gui', {}).get('kwargs', {})
-
-        # Collect all hide patterns (already merged by config.py)
-        hide_patterns = set()
-        hide_patterns.update(gui_config.get('parameters-hide', []))
-        hide_patterns.update(gui_config.get('methods-hide', []))
-
-        # get all parameter and method names
-        params = instrument.parameters.keys()
-        methods = instrument.functions.keys()
-        submodules = instrument.submodules.keys()
-
-        # expand wildcards and find matching items to hide
-        params_hide = set()
-        methods_hide = set()
-        submodules_hide = set()
-        for pattern in hide_patterns:
-            params_hide.update(fnmatch.filter(params, pattern))
-            methods_hide.update(fnmatch.filter(methods, pattern))
-            submodules_hide.update(fnmatch.filter(submodules, pattern))
-
-        # get submodule parameters and functions to hide
-        for sm in submodules_hide:  # assuming no submodule in submodules for now...
-            params_hide.update([sm + "." + k for k in instrument.submodules[sm].parameters.keys()])
-            methods_hide.update([sm + "." + k for k in instrument.submodules[sm].functions.keys()])
-
-        hide_dict = {'parameters-hide': list(params_hide), 'methods-hide': list(methods_hide)}
-        return hide_dict
 
     @QtCore.Slot(int)
     def onTabChanged(self, index):

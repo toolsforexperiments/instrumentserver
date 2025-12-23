@@ -102,6 +102,7 @@ To add more items to the toolbar for any extra functionality, you can do so by o
 
 """
 
+import fnmatch
 from pprint import pprint
 from typing import Optional, List, Dict
 
@@ -210,6 +211,26 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         self.loadItems()
         self.loadingItems = False
 
+    @staticmethod
+    def _matches_any_pattern(name: str, patterns: List[str]) -> bool:
+        """
+        Check if a name matches any glob pattern in the list.
+
+        Supports standard glob patterns:
+        - `*` matches any number of characters
+        - `?` matches a single character
+        - `[seq]` matches any character in seq
+        - `[!seq]` matches any character not in seq
+
+        :param name: The item name to check
+        :param patterns: List of glob patterns to match against (e.g., 'power_*', '*_frequency')
+        :return: True if name matches any pattern, False otherwise
+        """
+        for pattern in patterns:
+            if fnmatch.fnmatch(name, pattern):
+                return True
+        return False
+
     def loadItems(self, module=None, prefix=None):
         """
         The argument for either submodules or the instrument itself.
@@ -226,11 +247,11 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
             # constructor
             if prefix is not None:
                 objectName = '.'.join([prefix, objectName])
-            if objectName not in self.itemsHide:
+            if not self._matches_any_pattern(objectName, self.itemsHide):
                 item = self.addItem(fullName=objectName, star=False, trash=False, element=obj)
-                if objectName in self.itemsTrash:
+                if self._matches_any_pattern(objectName, self.itemsTrash):
                     self.onItemTrashToggle(item)
-                if objectName in self.itemsStar:
+                if self._matches_any_pattern(objectName, self.itemsStar):
                     self.onItemStarToggle(item)
 
         for submodName, submod in module.submodules.items():
@@ -282,11 +303,11 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 subModItem = self.itemClass(name=smName, star=False, trash=False, showDelegate=False, element=None)
                 # submodules get directly added here and not in the load function, so need to have it here too.
                 if self.loadingItems:
-                    if smName not in self.itemsHide:
+                    if not self._matches_any_pattern(smName, self.itemsHide):
                         self.insertItemTo(parent, subModItem)
-                        if smName in self.itemsTrash:
+                        if self._matches_any_pattern(smName, self.itemsTrash):
                             self.onItemTrashToggle(subModItem)
-                        if smName in self.itemsStar:
+                        if self._matches_any_pattern(smName, self.itemsStar):
                             self.onItemStarToggle(subModItem)
                 else:
                     self.insertItemTo(parent, subModItem)
@@ -441,7 +462,6 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         if hasattr(self, 'star'):
             if self.star:
                 model = self.sourceModel()
-                print("model", type(model))
                 assert isinstance(model, InstrumentModelBase)
                 leftItem = model.itemFromIndex(left)
                 rightItem = model.itemFromIndex(right)

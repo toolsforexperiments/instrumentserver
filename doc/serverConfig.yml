@@ -1,3 +1,25 @@
+# Server Configuration File
+# ========================
+#
+# This file configures instruments and GUI defaults for the InstrumentServer.
+#
+# GLOB PATTERN MATCHING
+# ---------------------
+# All hide/star/trash configuration lists support glob pattern matching:
+#   *           Matches any number of characters
+#               Example: "power_*" matches "power_level", "power_offset", "power_max"
+#
+#   ?           Matches exactly one character
+#               Example: "ch?_gain" matches "ch1_gain", "ch2_gain", "chA_gain"
+#
+#   [seq]       Matches any character in the sequence
+#               Example: "trace_[0-3]" matches "trace_0", "trace_1", "trace_2", "trace_3"
+#
+#   [!seq]      Matches any character NOT in the sequence
+#               Example: "param_[!xy]" matches "param_a", "param_z" but NOT "param_x" or "param_y"
+#
+# You can use exact names or glob patterns in any hide/star/trash list.
+#
 # From qcodes station config, the first field must be instruments for instruments config
 instruments:
   # Name of the instrument
