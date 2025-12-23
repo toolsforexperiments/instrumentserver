@@ -18,17 +18,25 @@ instruments:
       # any item under kwargs will be passed to the constructor of the widget as kwargs.
       # The following are kwargs specifically for the generic widget
       kwargs:
+        # Instance-specific config: These settings apply ONLY to this 'dummy' instance
+        # They will be MERGED with gui_defaults for this class (DummyInstrumentWithSubmodule)
+        #
+        # For this 'dummy' instance, the final merged config will include:
+        #   From __default__: [IDN, device_id, timeout] (but IDN is overridden below)
+        #   From DummyInstrumentWithSubmodule class: [param*, A] (param* will match param0, param1, etc.)
+        #   From this instance: [A, B.ch0, IDN] (below)
+        # Final parameters-hide = [device_id, timeout, param*, A, B.ch0, IDN]
 
         # Any parameters inside parameters-hide will never be loaded or shown.
         parameters-hide:
-          - A
-          - B.ch0
-          - IDN
+          - A              # Instance-specific: hide parameter A
+          - B.ch0          # Instance-specific: hide submodule parameter
+          - IDN            # Instance-specific: explicitly hide IDN (also in __default__)
 
         # Any parameters inside parameters-star will start being starred.
         parameters-star:
-          - param0
-          - C
+          - param0         # Instance-specific: star param0
+          - C              # Merged with class default which also stars C
 
         # Any parameters inside parameters-trash will start trashed.
         parameters-trash:
@@ -54,6 +62,65 @@ instruments:
     gui:
       # By having the parameter manager GUI as the gui type, we can have it directly in the server instead of on a separate window.
       type: instrumentserver.gui.instruments.ParameterManagerGui
+
+# GUI defaults: Class-based configuration that applies to all instances of a given instrument class
+# These are merged with instance-specific gui.kwargs configs (instance settings take precedence)
+# Merge order: __default__ → ClassName → instance-specific
+gui_defaults:
+  # __default__ applies to ALL instruments (unless overridden)
+  __default__:
+    # Hide common parameters across all instruments
+    parameters-hide:
+      - IDN              # Hide identification parameter
+      - device_id        # Hide device ID
+      - timeout          # Hide timeout setting
+
+    # Hide common methods across all instruments
+    methods-hide:
+      - get_idn          # Hide get_idn method
+      - snapshot         # Hide snapshot method
+      - print_readable_snapshot
+
+  # Class-specific defaults - applies to all instances of DummyInstrumentWithSubmodule
+  DummyInstrumentWithSubmodule:
+    parameters-hide:
+      - param*           # Wildcard: hide all parameters starting with 'param'
+      - A                # Hide specific parameter 'A'
+
+    methods-hide:
+      - test_*           # Wildcard: hide all methods starting with 'test_'
+
+    # These would be starred by default for all DummyInstrumentWithSubmodule instances
+    parameters-star:
+      - C
+
+    methods-star:
+      - dummy_function
+
+  # Another class example - ResonatorResponse
+  ResonatorResponse:
+    parameters-hide:
+      - calibration_*    # Hide all calibration parameters
+      - raw_data         # Hide raw data parameter
+
+    parameters-star:
+      - frequency        # Star important parameters by default
+      - power
+
+  # Example for a real instrument class
+  Keysight_E5080B:
+    parameters-hide:
+      - power_*          # Hide all power-related parameters
+      - if_bandwidth_*   # Hide IF bandwidth parameters
+
+    methods-hide:
+      - reset            # Hide reset method
+      - clear_status
+
+    parameters-star:
+      - start_frequency  # Star the most important parameters
+      - stop_frequency
+      - center_frequency
 
 # Field for adding broadcasting and listening addresses to the instrument server
 networking:

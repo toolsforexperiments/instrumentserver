@@ -1,8 +1,0 @@
-test1:
-  instrument_class: 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout'
-
-test2:
-  instrument_class: 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout'
-
-parameter_manager:
-  instrument_class: 'instrumentserver.params.ParameterManager'

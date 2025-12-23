@@ -27,6 +27,9 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
     the added fields are removed from the loaded dictionary. After that it is converted to a byte stream and written
     into a temporary file. what is returned here is the path to that temporary file, after the station loads the
     file, it gets deleted automatically
+
+    The config also supports a 'gui_defaults' section for class-based GUI configuration that applies to all
+    instances of a given instrument class. These defaults are merged with instance-specific configs.
     """
     configPath = Path(configPath)
     serverConfig: dict = {}  # Config for the server
@@ -44,6 +47,11 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
         raise AttributeError("All configurations must be inside the 'instruments' field. "
                              "Try adding 'instruments:' at the top of the config file and "
                              "indenting everything underneath.")
+
+    # Parse gui_defaults section (class-based GUI configuration)
+    gui_defaults = {}
+    if 'gui_defaults' in rawConfig:
+        gui_defaults = rawConfig.pop('gui_defaults')
 
     # Removing any extra fields
     for instrumentName, configDict in rawConfig['instruments'].items():
@@ -81,6 +89,46 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
                 pollingRates.update({instrumentName + "." + param: rate for param, rate in ratesDict.items()})
 
         fullConfig[instrumentName] = {'gui': guiConfig[instrumentName], **configDict, **serverConfig[instrumentName]}
+
+    # Merge gui_defaults into guiConfig for each instrument
+    if gui_defaults:
+        for instrumentName in guiConfig.keys():
+            # Get instrument class name from the type field
+            instrument_type = fullConfig[instrumentName].get('type', '')
+            class_name = instrument_type.split('.')[-1] if instrument_type else ''
+
+            # Initialize kwargs if not present
+            if 'kwargs' not in guiConfig[instrumentName]:
+                guiConfig[instrumentName]['kwargs'] = {}
+
+            # Merge patterns in order: __default__ → class → instance
+            # For each GUI config key (parameters-hide, methods-hide, etc.)
+            for config_key in ['parameters-hide', 'methods-hide', 'parameters-star', 'parameters-trash',
+                               'methods-star', 'methods-trash']:
+                merged_patterns = []
+
+                # 1. Add patterns from __default__
+                if '__default__' in gui_defaults:
+                    default_config = gui_defaults['__default__']
+                    if config_key in default_config:
+                        merged_patterns.extend(default_config[config_key])
+
+                # 2. Add patterns from class-specific defaults
+                if class_name and class_name in gui_defaults:
+                    class_config = gui_defaults[class_name]
+                    if config_key in class_config:
+                        merged_patterns.extend(class_config[config_key])
+
+                # 3. Add patterns from instance-specific config
+                if config_key in guiConfig[instrumentName]['kwargs']:
+                    merged_patterns.extend(guiConfig[instrumentName]['kwargs'][config_key])
+
+                # Store merged patterns if any exist
+                if merged_patterns:
+                    guiConfig[instrumentName]['kwargs'][config_key] = merged_patterns
+
+            # Update fullConfig with merged GUI config
+            fullConfig[instrumentName]['gui'] = guiConfig[instrumentName]
 
     # Gets all of the broadcasting and listening addresses from the config file
     if 'networking' in rawConfig:

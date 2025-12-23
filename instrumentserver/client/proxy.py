@@ -682,7 +682,7 @@ class QtClient(_QtAdapter, Client):
 
 class ClientStation:
     def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True,
-                 init_instruments: Union[str, Dict[str, dict]] = None,
+                 config_path: str = None,
                  param_path: str = None):
         """
         A lightweight container for managing a collection of proxy instruments on the client side.
@@ -697,15 +697,26 @@ class ClientStation:
         :param connect: If true, the server connects as it is being constructed, defaults to True.
         :param timeout: Amount of time that the client waits for an answer before declaring timeout in seconds.
                         Defaults to 20s.
-        :param init_instruments: Either a dictionary or a YAML file path specifying instruments to initialize,
-                                 keyed by instrument names.
-                                 **Example:**
-                                 {"my_vna": {
-                                    "instrument_class": "qcodes_drivers.Keysight_E5080B.Keysight_E5080B",
-                                    "address": "TCPIP0::10.66.86.251::INSTR"
-                                    },
-                                  "my_yoko": {...}
-                                }
+        :param config_path: Path to YAML config file specifying instruments to initialize.
+                            Uses the same format as the server config file.
+
+                            **Example config file:**
+                            ```yaml
+                            instruments:
+                              my_vna:
+                                type: qcodes_drivers.Keysight_E5080B.Keysight_E5080B
+                                address: "TCPIP0::10.66.86.251::INSTR"
+                                gui:
+                                  kwargs:
+                                    parameters-hide: [param1, param2]
+                                    methods-hide: [method1]
+
+                            gui_defaults:
+                              __default__:
+                                parameters-hide: [IDN]
+                              Keysight_E5080B:
+                                parameters-hide: [power_*]
+                            ```
         :param param_path: Optional default file path to use when saving or loading parameters.
 
         """
@@ -718,14 +729,22 @@ class ClientStation:
         self.client = self._make_client(connect=connect)
         self.param_path = param_path
 
-        # create proxy instruments based on init_instruments
+        # create proxy instruments based on config
         self.instruments: Dict[str, ProxyInstrument] = {}
-        if isinstance(init_instruments, str):
-            with open(init_instruments, 'r') as f:
-                init_instruments = yaml.load(f, Loader=yaml.Loader)
+        self.full_config = {}  # Store full config including merged GUI settings
+        instrument_config = {}
 
-        self._create_instruments(init_instruments)
-        self._init_instruments = init_instruments
+        if config_path is not None:
+            # Use config.py to parse server config format
+            from instrumentserver.config import loadConfig
+            _, serverConfig, fullConfig, tempFile, _, _ = loadConfig(config_path)
+            tempFile.close()  # Clean up temp file
+
+            self.full_config = fullConfig
+            instrument_config = fullConfig
+
+        self._create_instruments(instrument_config)
+        self._config_path = config_path
 
     def _make_client(self, connect=True):
         cli = Client(host=self._host, port=self._port, connect=connect,
@@ -734,13 +753,20 @@ class ClientStation:
 
     def _create_instruments(self, instrument_dict: dict):
         """
-        create proxy instruments based on the parameters in instrument_dict
+        Create proxy instruments based on the parameters in instrument_dict.
+        Uses 'type' field from server config format.
         """
         for name, conf in instrument_dict.items():
-            kwargs = {k: v for k, v in conf.items() if k != 'instrument_class'}
+            # Extract type (None if not present - will just get existing instrument)
+            instrument_class = conf.get('type')
+
+            # Pass all other fields as kwargs (except server/GUI-specific fields)
+            kwargs = {k: v for k, v in conf.items()
+                     if k not in ['type', 'initialize', 'gui']}
+
             instrument = self.client.find_or_create_instrument(
                 name=name,
-                instrument_class=conf['instrument_class'],
+                instrument_class=instrument_class,
                 **kwargs
             )
             self.instruments[name] = instrument
@@ -760,7 +786,7 @@ class ClientStation:
             except Exception as e:
                 logger.error(f"Error calling {func}: {e}. Trying to remake instrument client ", exc_info=True)
                 self.client = self._make_client(connect=True)
-                self._create_instruments(self._init_instruments)
+                self._create_instruments(self.full_config)
                 logger.info(f"Successfully remade instrument client.")
                 retval = func(self, *args, **kwargs)
             return retval

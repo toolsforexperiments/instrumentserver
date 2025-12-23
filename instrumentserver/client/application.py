@@ -96,13 +96,12 @@ class ServerWidget(QtWidgets.QWidget):
 
 
 class ClientStationGui(QtWidgets.QMainWindow):
-    def __init__(self, station: ClientStation, hide_config:Union[str, dict]=None):
+    def __init__(self, station: ClientStation):
         """
         GUI frontend for viewing and managing instruments in a ClientStation.
 
         :param station: An instance of ClientStation containing proxy instruments.
-        :param hide_config: Dict or path to a yaml file that specifies the parameters and methods to hide for each
-            instrument class, keyed by the instrument class names.
+                       GUI configuration (hide patterns, etc.) is read from the station's config.
         """
         super().__init__()
         self.setWindowTitle("Instrument Client GUI")
@@ -124,16 +123,6 @@ class ClientStationGui(QtWidgets.QMainWindow):
         self.listener.finished.connect(self.listenerThread.deleteLater)
         self.listener.update.connect(self.listenerEvent)
         self.listenerThread.start()
-
-        # expand hide config
-        if isinstance(hide_config, str):
-            with open(hide_config, 'r') as f:
-                self.hide_config = yaml.safe_load(f)
-        else:
-            self.hide_config = hide_config
-
-        if self.hide_config is None:
-            self.hide_config = {}
 
         self.instrumentTabsOpen = {}
 
@@ -214,20 +203,17 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
     def _parse_hide_attributes(self, instrument:Instrument):
         """
-        parse the parameters and methods to hide
+        Parse the parameters and methods to hide.
+        Gets already-merged patterns from station config and expands wildcards.
         """
+        # Get merged GUI config for this instrument from station
+        inst_name = instrument.name
+        gui_config = self.station.full_config.get(inst_name, {}).get('gui', {}).get('kwargs', {})
 
-        # get instrument class name
-        if hasattr(instrument, 'bp'):
-            cls_name = instrument.bp.instrument_module_class
-            cls_name = cls_name.split(".")[-1]
-        else:
-            cls_name = instrument.__class__.__name__
-
-        # get hide list and expand wildcards
-        ins_hide_patterns = self.hide_config.get(cls_name, [])
-        default_hide_patterns = self.hide_config.get(DEFAULT_INSTRUMENT_KEY, [])
-        hide_patterns = set(ins_hide_patterns + default_hide_patterns)
+        # Collect all hide patterns (already merged by config.py)
+        hide_patterns = set()
+        hide_patterns.update(gui_config.get('parameters-hide', []))
+        hide_patterns.update(gui_config.get('methods-hide', []))
 
         # get all parameter and method names
         params = instrument.parameters.keys()
