@@ -457,7 +457,7 @@ class ProfilesManager(QtWidgets.QComboBox):
         self.clear()
         for profile in self.params.list_profiles():
             self.addItem(self.params.cleanProfileName(profile))
-            if profile == currentlySelected:
+            if self.params.cleanProfileName(profile) == currentlySelected:
                 self.setCurrentIndex(self.count() - 1)
         self.refreshing = False
 
