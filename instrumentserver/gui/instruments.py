@@ -304,7 +304,11 @@ class ModelParameters(InstrumentModelBase):
             item = self.findItems(fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
             if len(item) == 0:
                 if fullName not in self.itemsHide:
-                    self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
+                    try:
+                        self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
+                    except AttributeError:
+                        # Parameter/submodule no longer exists (likely due to profile switch)
+                        logger.debug(f"Ignoring broadcast for non-existent parameter: {fullName}")
             else:
                 assert isinstance(item[0], ItemBase)
                 # The model can't actually modify the widget since it knows nothing about the view itself.
