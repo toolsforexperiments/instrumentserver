@@ -544,6 +544,10 @@ class Client(BaseClient):
         filePath = os.path.abspath(filePath)
         folder, file = os.path.split(filePath)
         params = self.getParamDict(*args, **kwargs)
+
+        # Convert to nested format before saving,
+        if is_flat_dict(params):
+            params = flat_to_nested_dict(params)
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(filePath, 'w') as f:
@@ -561,6 +565,9 @@ class Client(BaseClient):
         if os.path.exists(filePath):
             with open(filePath, 'r') as f:
                 params = json.load(f)
+            # Convert to flat format before sending to server (setParameters expects flat)
+            if not is_flat_dict(params):
+                params = flatten_dict(params)
             self.setParameters(params)
         else:
             logger.warning(f"File {filePath} does not exist. No params loaded.")
@@ -857,24 +864,16 @@ class ClientStation:
         self.client.setParameters(flatten_dict(params_set))
 
     @_remake_client_station_when_fail
-    def save_parameters(self, file_path: str = None, flat=False, instruments:List[str] = None):
+    def save_parameters(self, file_path: str = None, instruments:List[str] = None):
         """
-        Save all instrument parameters to a JSON file.
+        Save all instrument parameters to a JSON file in nested format.
 
         :param file_path: path to the json file, defaults to self.param_path
-        :param flat: when True, save parameters as a flat dictionary with "." separated keys.
-        :param instruments: list of instrument names. If None, all instrument parameters are returned.
-        :return:
+        :param instruments: Ignored - all instruments on the server are saved.
         """
         file_path = file_path if file_path is not None else self.param_path
-        inst_params = self.get_parameters(instruments)
-        if flat:
-            inst_params = flatten_dict(inst_params)
-
-        with open(file_path, 'w') as f:
-            json.dump(inst_params, f, indent=2)
-
-        return inst_params
+        # Delegate to client's paramsToFile
+        self.client.paramsToFile(file_path)
 
     @_remake_client_station_when_fail
     def load_parameters(self, file_path: str, select_instruments:List[str] = None):
@@ -882,26 +881,11 @@ class ClientStation:
         Load instrument parameters from a JSON file.
 
         :param file_path: path to the json file, defaults to self.param_path
-        :param select_instruments: List of instrument names to load parameters for.
-            Defaults to all instruments in the json file.
-        :return:
+        :param select_instruments: Ignored - all instruments from file are loaded.
         """
         file_path = file_path if file_path is not None else self.param_path
-        with open(file_path, 'r') as f:
-            inst_params = json.load(f)
-
-        inst_params = flat_to_nested_dict(inst_params)
-
-        if select_instruments is None:
-            params_set = inst_params
-        else:
-            params_set = {}
-            for k in select_instruments:
-                params_set[k] = inst_params[k]
-
-        self.set_parameters(params_set)
-
-        return params_set
+        # Delegate to client's paramsFromFile
+        self.client.paramsFromFile(file_path)
 
     def __getitem__(self, item):
         return self.instruments[item]
