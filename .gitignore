@@ -62,7 +62,11 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-doc/_build/
+docs/build/
+# These files are generated automatically by autosummary
+docs/**/*.rst
+docs/**/generated
+site/
 
 # PyBuilder
 target/

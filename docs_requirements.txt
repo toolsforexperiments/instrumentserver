@@ -1,13 +1,30 @@
-sphinx_autodoc_typehints
-sphinx==2.4.4
-sphinx_rtd_theme
-sphinx-jsonschema
-nbsphinx
-nbconvert==6.5.1
-ipython
-jupyter
-scipy
-pandas
-xarray
-packaging
-influxdb-client
+# Core Sphinx dependencies
+sphinx>=5.0
+sphinx-autobuild>=2021.3.20
+
+# Theme
+pydata-sphinx-theme>=0.13.0
+
+# Markdown support
+myst-parser>=0.18.0
+
+# API documentation
+sphinx-autodoc-typehints>=1.19.0
+sphinx.ext.autodoc
+sphinx.ext.napoleon
+
+# Jupyter notebook support
+nbsphinx>=0.8.0
+nbconvert>=7.0.0
+jupyter>=1.0.0
+ipython>=7.0.0
+
+# Cross-references and linking
+sphinx.ext.intersphinx
+sphinx.ext.viewcode
+
+# Dependencies for examples
+scipy>=1.0
+pandas>=1.0
+xarray>=0.16
+packaging>=20.0
