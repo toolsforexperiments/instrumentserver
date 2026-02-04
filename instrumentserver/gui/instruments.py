@@ -350,7 +350,7 @@ class ParametersTreeView(InstrumentTreeViewBase):
 
 
 class InstrumentParameters(InstrumentDisplayBase):
-    def __init__(self, instrument, viewType=ParametersTreeView, callSignals: bool = True, **kwargs):
+    def __init__(self, instrument, parent=None, viewType=ParametersTreeView, callSignals: bool = True, **kwargs):
         if 'instrument' in kwargs:
             del kwargs['instrument']
         modelKwargs = {}
@@ -368,6 +368,7 @@ class InstrumentParameters(InstrumentDisplayBase):
             modelKwargs['sub_port'] = kwargs.pop('sub_port')
 
         super().__init__(instrument=instrument,
+                         parent=parent,
                          attr='parameters',
                          itemType=ItemParameters,
                          modelType=ModelParameters,
@@ -476,8 +477,8 @@ class ParameterManagerGui(InstrumentParameters):
     #:  emitted when a parameter was created successfully
     parameterCreated = QtCore.Signal()
 
-    def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], **kwargs):
-        super().__init__(instrument, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
+    def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], parent=None,  **kwargs):
+        super().__init__(instrument, parent=None, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
         self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
         layout = self.layout()

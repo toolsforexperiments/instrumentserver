@@ -1,0 +1,36 @@
+instruments:
+  rr:
+    # The class of the instrument
+    type: instrumentserver.testing.dummy_instruments.rf.ResonatorResponse
+    # If initialize is true, the server will create an instance of this instrument at startup
+    initialize: True
+
+  parameter_manager:
+    type: instrumentserver.params.ParameterManager
+    initialize: True
+
+    gui:
+      # By having the parameter manager GUI as the gui type, we can have it directly in the server instead of on a separate window.
+      type: instrumentserver.gui.instruments.ParameterManagerGui
+
+  test1:
+    type: 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout'
+
+  test2:
+    type: 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout'
+
+gui_defaults:
+  __default__:
+    parameters-hide:
+        - IDN
+    parameters-star:
+        - B
+        - "*frequency*"
+
+  Keysight_E5071C:
+    parameters-hide:
+      - power_*
+
+  ParameterManager:
+    parameters-hide:
+      - una

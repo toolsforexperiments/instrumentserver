@@ -18,5 +18,6 @@
     <file alias="icons/star-crossed.svg">resource/icons/star-crossed.svg</file>
     <file alias="icons/trash.svg">resource/icons/trash.svg</file>
     <file alias="icons/trash-crossed.svg">resource/icons/trash-crossed.svg</file>
+    <file alias="icons/folder.svg">resource/icons/folder.svg</file>
 </qresource>
 </RCC>

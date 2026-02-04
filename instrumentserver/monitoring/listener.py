@@ -11,7 +11,10 @@ import pandas as pd
 import pytz
 import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
 import zmq
-from influxdb_client import InfluxDBClient, Point, WriteOptions
+try:
+    from influxdb_client import InfluxDBClient, Point, WriteOptions
+except ImportError:
+    pass
 
 from instrumentserver.base import recvMultipart
 from instrumentserver.blueprints import ParameterBroadcastBluePrint

@@ -180,39 +180,6 @@ def fromParamDict(paramDict: Dict[str, Any],
 
 # Tools
 
-def saveParamsToFile(input: SerializableType,
-                     filePath: str, **kw: Any) -> None:
-    """Save (instrument) parameters to file.
-
-    First obtains the parameters from :func:`toParamDict`, then saves its output.
-
-    :param input: qcodes station or list of instruments/parameters.
-    :param filePath: Output file path.
-    :param kw: Options, all passed to :func:`toParamDict`.
-    :returns:
-    """
-    ret = toParamDict(input, **kw)
-    filePath = os.path.abspath(filePath)
-    folder, file = os.path.split(filePath)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    with open(filePath, 'w') as f:
-        json.dump(ret, f, indent=2, sort_keys=True)
-
-
-def loadParamsFromFile(filePath: str,
-                       target: SerializableType) -> None:
-    """Load (instrument) parameters from file.
-
-    Loads the json from file, then tries to restore the state into the target,
-    using :func:`fromParamDict`.
-    """
-    ret = None
-    with open(filePath, 'r') as f:
-        ret = json.load(f)
-    fromParamDict(ret, target)
-
-
 def isSimpleFormat(paramDict: Dict[str, Any]):
     """Checks if the supplied paramDict is in the simplified format.
 
