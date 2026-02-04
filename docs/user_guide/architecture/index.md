@@ -102,6 +102,3 @@ All messages are serialized to JSON for network transmission:
 - ParameterBluePrint (parameter metadata)
 - InstrumentModuleBluePrint (instrument metadata)
 
-```{toctree}
-:hidden:
-```
