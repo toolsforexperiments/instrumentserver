@@ -11,9 +11,15 @@ html_theme.sidebar_secondary.remove: true
 
 [GitHub Repository](https://github.com/toolsforexperiments/instrumentserver) | [About](about.md)
 
+:::{warning}
+The documentation site is currently under construction. This site is still very early so not all information here is up to date. Expect more changes incoming 🏗️👷
+:::
+
 ## Overview
 
-InstrumentServer is a distributed system for remote access to QCoDeS instruments. It enables multi-client instrument control through a ZMQ-based server-client architecture with real-time parameter broadcasting and concurrent request handling.
+InstrumentServer is a distributed system for remote access to QCoDeS instruments. It enables multi-client instrument control through a ZMQ-based server-client architecture with real-time parameter broadcasting and concurrent request handling. 
+
+For more information on how the server works please see our [overview page](./first_steps/overview.md)
 
 ### Key Features
 
