@@ -1,7 +1,9 @@
+from pathlib import Path
 from typing import Optional, Union
 import sys
 import json
 import logging
+import importlib
 
 from qcodes import Instrument
 from qtpy.QtWidgets import QFileDialog, QMenu, QWidget, QSizePolicy, QSplitter
@@ -177,11 +179,27 @@ class ClientStationGui(QtWidgets.QMainWindow):
         if name not in self.instrumentTabsOpen:
             instrument = self.station.get_instrument(name)
 
-            # Get GUI config kwargs directly from station config (patterns already merged by config.py)
-            gui_kwargs = self.station.full_config.get(name, {}).get('gui', {}).get('kwargs', {})
+            # Get GUI config from station config (patterns already merged by config.py)
+            instrument_config = self.station.full_config.get(name, {})
+            gui_config = instrument_config.get('gui', {})
+            gui_kwargs = gui_config.get('kwargs', {})
 
-            ins_widget = GenericInstrument(instrument, self, sub_host=self.cli.host, sub_port=self.cli.port+1,
-                                           **gui_kwargs)
+            widgetClass = GenericInstrument
+
+            # Check if a custom GUI type is specified
+            if 'type' in gui_config:
+                try:
+                    # import the widget
+                    moduleName = '.'.join(gui_config['type'].split('.')[:-1])
+                    widgetClassName = gui_config['type'].split('.')[-1]
+                    module = importlib.import_module(moduleName)
+                    widgetClass = getattr(module, widgetClassName)
+                except (ImportError, AttributeError) as e:
+                    logger.warning(f"Failed to load custom GUI '{gui_config['type']}' for '{name}': {e}. Using default GenericInstrument.")
+                    widgetClass = GenericInstrument
+
+            ins_widget = widgetClass(instrument, parent=self, sub_host=self.cli.host, sub_port=self.cli.port+1,
+                                     **gui_kwargs)
 
             # add tab
             ins_widget.setObjectName(name)
@@ -230,6 +248,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
         self.paramPathEdit = QtWidgets.QLineEdit(pathWidget)
         self.paramPathEdit.setPlaceholderText("Parameter file path")
+        self.paramPathEdit.setText(str(Path.cwd()/"client_params.json"))
         self.paramPathEdit.setClearButtonEnabled(True)
         self.paramPathEdit.setMinimumWidth(280)
         h = self.paramPathEdit.fontMetrics().height() + 10
