@@ -342,3 +342,10 @@ class ClientStationGui(QtWidgets.QMainWindow):
         if name in self.instrumentTabsOpen:
             self.tabs.removeTab(self.tabs.indexOf(self.instrumentTabsOpen[name]))
             del self.instrumentTabsOpen[name]
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        """Cleanup listener thread before closing the window."""
+        self.listener.stop()
+        self.listenerThread.quit()
+        self.listenerThread.wait(3000)  # Wait up to 3 seconds for thread to finish
+        super().closeEvent(event)
