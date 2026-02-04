@@ -1,0 +1,1127 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>instrumentserver.server.core &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/server/core';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/_modules/instrumentserver/server/core.html" />
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.server.core</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for instrumentserver.server.core</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">instrumentserver.server.core</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">Core functionality of the instrument server.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: add a signal for when instruments are closed?</span>
+<span class="c1"># TODO: validator only when the parameter is settable?</span>
+<span class="c1"># TODO: for full functionality in the proxy, we probably need to introduce</span>
+<span class="c1">#   operations for adding parameters/submodules/functions</span>
+<span class="c1"># TODO: can we also create methods remotely?</span>
+
+<span class="c1"># TODO: client white list</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">queue</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">fields</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">qc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Station</span><span class="p">,</span> <span class="n">Instrument</span><span class="p">,</span> <span class="n">InstrumentChannel</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterWithSetpoints</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.instrument.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstrumentBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.utils.validators</span><span class="w"> </span><span class="kn">import</span> <span class="n">Validator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">serialize</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">ParameterBluePrint</span><span class="p">,</span> <span class="n">MethodBluePrint</span><span class="p">,</span> <span class="n">InstrumentModuleBluePrint</span><span class="p">,</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">,</span>
+                          <span class="n">bluePrintFromMethod</span><span class="p">,</span> <span class="n">bluePrintFromInstrumentModule</span><span class="p">,</span> <span class="n">bluePrintFromParameter</span><span class="p">,</span>
+                          <span class="n">INSTRUMENT_MODULE_BASE_CLASSES</span><span class="p">,</span> <span class="n">PARAMETER_BASE_CLASSES</span><span class="p">,</span> <span class="n">Operation</span><span class="p">,</span>
+                          <span class="n">InstrumentCreationSpec</span><span class="p">,</span> <span class="n">CallSpec</span><span class="p">,</span> <span class="n">ParameterSerializeSpec</span><span class="p">,</span> <span class="n">ServerInstruction</span><span class="p">,</span> <span class="n">ServerResponse</span><span class="p">,)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">send_router</span><span class="p">,</span> <span class="n">recv_router</span><span class="p">,</span> <span class="n">sendBroadcast</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">nestedAttributeFromString</span><span class="p">,</span> <span class="n">objectClassPath</span><span class="p">,</span> <span class="n">typeClassPath</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s1">&#39;Wolfgang Pfaff&#39;</span><span class="p">,</span> <span class="s1">&#39;Chao Zhou&#39;</span>
+<span class="n">__license__</span> <span class="o">=</span> <span class="s1">&#39;MIT&#39;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="StationServer">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.server.core.html#instrumentserver.server.core.StationServer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StationServer</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The main server object.</span>
+
+<span class="sd">    Encapsulated in a separate object so we can run it in a separate thread.</span>
+
+<span class="sd">    Port should always be an odd number to allow the next even number to be its corresponding</span>
+<span class="sd">    publishing port.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># We use this to quit the server.</span>
+    <span class="c1"># If this string is sent as message to the server, it&#39;ll shut down and close</span>
+    <span class="c1"># the socket. Should only be used from within this module.</span>
+    <span class="c1"># It&#39;s randomized in the instantiated server for a little bit of safety.</span>
+    <span class="n">SAFEWORD</span> <span class="o">=</span> <span class="s1">&#39;BANANA&#39;</span>
+
+    <span class="c1">#: Signal(str, str) -- emit messages for display in the gui (or other stuff the gui</span>
+    <span class="c1">#: wants to do with it.</span>
+    <span class="c1">#: Arguments: the message received, and the reply sent.</span>
+    <span class="n">messageReceived</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+
+    <span class="c1">#: Signal(int) -- emitted when the server is started.</span>
+    <span class="c1">#: Arguments: the port.</span>
+    <span class="n">serverStarted</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="c1">#: Signal() -- emitted when we shut down.</span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
+    <span class="c1">#: Signal(Dict) -- emitted when a new instrument was created.</span>
+    <span class="c1">#: Argument is the blueprint of the instrument, the args and kwargs used to create it.</span>
+    <span class="n">instrumentCreated</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1">#: Signal(str, Any) -- emitted when a parameter was set</span>
+    <span class="c1">#: Arguments: full parameter location as string, value.</span>
+    <span class="n">parameterSet</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+
+    <span class="c1">#: Signal(str, Any) -- emitted when a parameter was retrieved</span>
+    <span class="c1">#: Arguments: full parameter location as string, value.</span>
+    <span class="n">parameterGet</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+
+    <span class="c1">#: Signal(str, List[Any], Dict[str, Any], Any) -- emitted when a function was called</span>
+    <span class="c1">#: Arguments: full function location as string, arguments, kw arguments, return value.</span>
+    <span class="n">funcCalled</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">parent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5555</span><span class="p">,</span>
+                 <span class="n">allowUserShutdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">addresses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+                 <span class="n">initScript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">serverConfig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">stationConfig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">guiConfig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pollingThread</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">ipAddresses</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">addresses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">addresses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">initScript</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initScript</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">ipAddresses</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> 
+            <span class="ow">and</span> <span class="s1">&#39;listeningAddress&#39;</span> <span class="ow">in</span> <span class="n">ipAddresses</span> 
+            <span class="ow">and</span> <span class="p">(</span><span class="n">listening_addr</span> <span class="o">:=</span> <span class="n">ipAddresses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;listeningAddress&#39;</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">addresses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">listening_addr</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">SAFEWORD</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choices</span><span class="p">([</span><span class="nb">chr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">65</span><span class="p">,</span> <span class="mi">91</span><span class="p">)],</span> <span class="n">k</span><span class="o">=</span><span class="mi">16</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serverRunning</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serverConfig</span> <span class="o">=</span> <span class="n">serverConfig</span>
+
+        <span class="c1"># We need to store the guiConfig so that a detached gui can access the configuration.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guiConfig</span> <span class="o">=</span> <span class="n">guiConfig</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">Station</span><span class="p">(</span><span class="n">config_file</span><span class="o">=</span><span class="n">stationConfig</span><span class="p">)</span>
+
+        <span class="c1"># For now the only server configs are whether to start an instrument.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serverConfig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">instrumentName</span><span class="p">,</span> <span class="n">settings</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">serverConfig</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s1">&#39;initialize&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">load_instrument</span><span class="p">(</span><span class="n">instrumentName</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowUserShutdown</span> <span class="o">=</span> <span class="n">allowUserShutdown</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">listenAddresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="s1">&#39;127.0.0.1&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">addresses</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initScript</span> <span class="o">=</span> <span class="n">initScript</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">broadcastPort</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">broadcastSocket</span><span class="p">:</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Socket</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastAddr</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">ipAddresses</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;externalBroadcast&#39;</span> <span class="ow">in</span> <span class="n">ipAddresses</span> <span class="ow">and</span> <span class="n">ipAddresses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;externalBroadcast&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastAddr</span> <span class="o">=</span> <span class="n">ipAddresses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;externalBroadcast&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastSocket</span><span class="p">:</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Socket</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pollingThread</span> <span class="o">=</span> <span class="n">pollingThread</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ipAddresses</span> <span class="o">=</span> <span class="n">ipAddresses</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameterSet</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter &#39;</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">&#39; set to: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameterGet</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter &#39;</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">&#39; retrieved: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funcCalled</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">n</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kw</span><span class="p">,</span> <span class="n">ret</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Function called:&quot;</span>
+                                                  <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">&#39;, args: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+                                                  <span class="sa">f</span><span class="s2">&quot;kwargs: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span><span class="si">}</span><span class="s2">)&#39;.&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># a queue for responses that are ready to be sent to client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_queue</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="c1"># a socket pair for immediate wakeup of the main thread that sends response to client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_w</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socketpair</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_w</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="c1"># Per-instrument locks to avoid races when multiple threads talk to the same instrument concurrently</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_runInitScript</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initScript</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initScript</span><span class="p">)</span>
+            <span class="n">env</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">station</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
+            <span class="n">exec</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">env</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;path to initscript (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">initScript</span><span class="si">}</span><span class="s2">) not found.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="StationServer.startServer">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.server.core.html#instrumentserver.server.core.StationServer.startServer">[docs]</a>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">startServer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the server. This function does not return until the ZMQ server</span>
+<span class="sd">        has been shut down.&quot;&quot;&quot;</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting server.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The safe word is: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">SAFEWORD</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
+        <span class="n">socket</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">ROUTER</span><span class="p">)</span>
+        <span class="c1"># make a zmq poller for detecting activate sockets</span>
+        <span class="n">poller</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Poller</span><span class="p">()</span>
+        <span class="n">poller</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">zmq</span><span class="o">.</span><span class="n">POLLIN</span><span class="p">)</span>
+        <span class="n">poller</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span><span class="p">,</span> <span class="n">zmq</span><span class="o">.</span><span class="n">POLLIN</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">listenAddresses</span><span class="p">:</span>
+            <span class="n">addr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;tcp://</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">socket</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Listening at </span><span class="si">{</span><span class="n">addr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">serverStarted</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+
+        <span class="c1"># creating and binding publishing socket to broadcast changes</span>
+        <span class="n">broadcastAddr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;tcp://*:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">broadcastPort</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting publishing server at </span><span class="si">{</span><span class="n">broadcastAddr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">broadcastSocket</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">PUB</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">broadcastSocket</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">broadcastAddr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastAddr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Also publishing the server at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastAddr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastSocket</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">PUB</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastSocket</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastAddr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not broadcasting to external address&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">serverRunning</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initScript</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running init script&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_runInitScript</span><span class="p">()</span>
+            
+        <span class="c1"># create a thread pool for handling incoming client requests concurrently</span>
+        <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">serverRunning</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_response_queue</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># check if there is either incoming request from client, or a processing worker has finished</span>
+                    <span class="n">socks</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">poller</span><span class="o">.</span><span class="n">poll</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+                    
+                    <span class="c1"># handle router socket events (incoming requests)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serverRunning</span> <span class="ow">and</span> <span class="n">socket</span> <span class="ow">in</span> <span class="n">socks</span> <span class="ow">and</span> <span class="p">(</span><span class="n">socks</span><span class="p">[</span><span class="n">socket</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">zmq</span><span class="o">.</span><span class="n">POLLIN</span><span class="p">):</span>
+                        <span class="n">identity</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="n">recv_router</span><span class="p">(</span><span class="n">socket</span><span class="p">)</span>
+                        <span class="n">pool</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_handleRouterMessage</span><span class="p">,</span> <span class="n">identity</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+                    
+                    <span class="c1"># handle wakeup events (one or more workers finished)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span> <span class="ow">in</span> <span class="n">socks</span> <span class="ow">and</span> <span class="p">(</span><span class="n">socks</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">zmq</span><span class="o">.</span><span class="n">POLLIN</span><span class="p">):</span>
+                        <span class="c1"># Drain the wakeup pipe so it doesn&#39;t stay &quot;always readable&quot;</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="c1"># Read whatever is there; content doesn&#39;t matter</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+                            <span class="k">pass</span>
+                    
+                    <span class="c1"># drain completed responses from workers</span>
+                    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">identity</span><span class="p">,</span> <span class="n">response_to_client</span><span class="p">,</span> <span class="n">response_log</span><span class="p">,</span> <span class="n">shutdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_response_queue</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
+                        <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">send_router</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="n">identity</span><span class="p">,</span> <span class="n">response_to_client</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to send response to client: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        
+                        <span class="c1"># emit log signal</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">messageReceived</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">response_to_client</span><span class="o">.</span><span class="n">message</span><span class="p">),</span> <span class="n">response_log</span><span class="p">)</span>
+                        
+                        <span class="c1"># flip the shutdown flag in the main thread</span>
+                        <span class="k">if</span> <span class="n">shutdown</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">serverRunning</span> <span class="o">=</span> <span class="kc">False</span>
+                
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected error in server loop: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+        
+        <span class="n">socket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_r</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_w</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">broadcastSocket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;StationServer shut down cleanly.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handleRouterMessage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle a router message and put the response message in the response queue.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">message_ok</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">response_to_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">response_log</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">shutdown</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># flag for letting the main thread shut down the server</span>
+
+        <span class="c1"># Allow the test client from within the same process to make sure the</span>
+        <span class="c1"># server shuts down.</span>
+        <span class="k">if</span> <span class="n">message</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">SAFEWORD</span><span class="p">:</span>
+            <span class="n">response_log</span> <span class="o">=</span> <span class="s1">&#39;Server has received the safeword and will shut down.&#39;</span>
+            <span class="n">response_to_client</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">response_log</span><span class="p">)</span>
+            <span class="n">shutdown</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">response_log</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowUserShutdown</span> <span class="ow">and</span> <span class="n">message</span> <span class="o">==</span> <span class="s1">&#39;SHUTDOWN&#39;</span><span class="p">:</span>
+            <span class="n">response_log</span> <span class="o">=</span> <span class="s1">&#39;Server shutdown requested by client.&#39;</span>
+            <span class="n">response_to_client</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">response_log</span><span class="p">)</span>
+            <span class="n">shutdown</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">response_log</span><span class="p">)</span>
+
+        <span class="c1"># If the message is a string we just echo it back.</span>
+        <span class="c1"># This is used for testing sometimes, but has no functionality.</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">response_log</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Server has received: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">. No further action.&quot;</span>
+            <span class="n">response_to_client</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">response_log</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">response_log</span><span class="p">)</span>
+
+        <span class="c1"># We assume this is a valid instruction set now.</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">ServerInstruction</span><span class="p">):</span>
+            <span class="n">instruction</span> <span class="o">=</span> <span class="n">message</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">instruction</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received request for operation: &quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">instruction</span><span class="o">.</span><span class="n">operation</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction received: &quot;</span>
+                             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">message_ok</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">response_log</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Received invalid message. Error raised: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="n">response_to_client</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">response_log</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">message_ok</span><span class="p">:</span>
+                <span class="c1"># We don&#39;t need to use a try-block here, because</span>
+                <span class="c1"># errors are already handled in executeServerInstruction.</span>
+                <span class="n">response_to_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">executeServerInstruction</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span>
+                <span class="n">response_log</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Response to client: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">response_to_client</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="n">response_to_client</span><span class="o">.</span><span class="n">error</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Response sent to client.&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">response_log</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">response_log</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">response_log</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid message type.&quot;</span>
+            <span class="n">response_to_client</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">response_log</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid message type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid message received: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">identity</span><span class="p">,</span> <span class="n">response_to_client</span><span class="p">,</span> <span class="n">response_log</span><span class="p">,</span> <span class="n">shutdown</span><span class="p">))</span>
+        <span class="c1"># wake up the server loop so it can send the response immediately</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_w</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\0</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="c1"># If we&#39;re shutting down / socket closed, ignore</span>
+            <span class="k">pass</span>
+    
+<div class="viewcode-block" id="StationServer.executeServerInstruction">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.server.core.html#instrumentserver.server.core.StationServer.executeServerInstruction">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">executeServerInstruction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction</span><span class="p">:</span> <span class="n">ServerInstruction</span><span class="p">)</span> \
+            <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServerResponse</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is the interpreter function that the server will call to translate the</span>
+<span class="sd">        dictionary received from the proxy to instrument calls.</span>
+
+<span class="sd">        :param instruction: The instruction object.</span>
+<span class="sd">        :returns: The results returned from performing the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span>
+
+        <span class="n">operation</span> <span class="o">=</span> <span class="n">Operation</span><span class="p">(</span><span class="n">instruction</span><span class="o">.</span><span class="n">operation</span><span class="p">)</span>
+        <span class="c1"># We call a helper function depending on the operation that is requested.</span>
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">get_existing_instruments</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getExistingInstruments</span>
+        <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">create_instrument</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_createInstrument</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">instruction</span><span class="o">.</span><span class="n">create_instrument_spec</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callObject</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">instruction</span><span class="o">.</span><span class="n">call_spec</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">get_blueprint</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getBluePrint</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">instruction</span><span class="o">.</span><span class="n">requested_path</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">get_param_dict</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_toParamDict</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">instruction</span><span class="o">.</span><span class="n">serialization_opts</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">set_params</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fromParamDict</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">instruction</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">operation</span> <span class="o">==</span> <span class="n">Operation</span><span class="o">.</span><span class="n">get_gui_config</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getGuiConfig</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">instruction</span><span class="o">.</span><span class="n">requested_path</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">returns</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">returns</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">ServerResponse</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">err</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getExistingInstruments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the existing instruments in the station.</span>
+
+<span class="sd">        :returns: A list that contains the instrument name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">comps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">components</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">comps</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Get existing instruments requested: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">info</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_createInstrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">InstrumentCreationSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new instrument on the server.&quot;&quot;&quot;</span>
+        <span class="n">sep_class</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">instrument_class</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">modName</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sep_class</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">clsName</span> <span class="o">=</span> <span class="n">sep_class</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">modName</span><span class="p">)</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">clsName</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">spec</span><span class="o">.</span><span class="n">args</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">spec</span><span class="o">.</span><span class="n">kwargs</span>
+    
+        <span class="c1"># lock based on the intended instrument name</span>
+        <span class="n">lock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lock_for_target</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">lock</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># in case name isn&#39;t in station yet, just guard creation with the dict lock</span>
+            <span class="n">lock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks_lock</span>  <span class="c1"># coarse but fine for this rare operation</span>
+
+        <span class="k">with</span> <span class="n">lock</span><span class="p">:</span>
+            <span class="n">new_instrument</span> <span class="o">=</span> <span class="n">qc</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+                <span class="bp">cls</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="n">new_instrument</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">add_component</span><span class="p">(</span><span class="n">new_instrument</span><span class="p">)</span>
+    
+                <span class="bp">self</span><span class="o">.</span><span class="n">instrumentCreated</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">bluePrintFromInstrumentModule</span><span class="p">(</span><span class="n">new_instrument</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">new_instrument</span><span class="p">),</span>
+                                            <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_callObject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">CallSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call some callable found in the station.&quot;&quot;&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">nestedAttributeFromString</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">args</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">kwargs</span> <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+        
+        <span class="k">def</span><span class="w"> </span><span class="nf">_invoke</span><span class="p">():</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    
+            <span class="c1"># Check if a new parameter is being created.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_newOrDeleteParameterDetection</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parameterSet</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+                    <span class="c1"># Broadcast changes in parameter values.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span><span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="s1">&#39;parameter-update&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parameterGet</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
+    
+                    <span class="c1"># Broadcast calls of parameters.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span><span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="s1">&#39;parameter-call&#39;</span><span class="p">,</span> <span class="n">ret</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">funcCalled</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
+    
+            <span class="k">return</span> <span class="n">ret</span>
+        
+        <span class="c1"># Get the appropriate per-instrument lock, if any</span>
+        <span class="n">lock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lock_for_target</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">lock</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Not an instrument (e.g. Station-level call); just invoke</span>
+            <span class="k">return</span> <span class="n">_invoke</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Serialize access to this instrument across threads</span>
+            <span class="k">with</span> <span class="n">lock</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_invoke</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">InstrumentModuleBluePrint</span><span class="p">,</span>
+                                                <span class="n">ParameterBluePrint</span><span class="p">,</span>
+                                                <span class="n">MethodBluePrint</span><span class="p">]:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fetching blueprint for: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">nestedAttributeFromString</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">INSTRUMENT_MODULE_BASE_CLASSES</span><span class="p">)):</span>
+            <span class="n">instrument_blueprint</span> <span class="o">=</span> <span class="n">bluePrintFromInstrumentModule</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">instrument_blueprint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Failed to create blueprint for instrument module </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">instrument_blueprint</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">PARAMETER_BASE_CLASSES</span><span class="p">)):</span>
+            <span class="n">parameter_blueprint</span> <span class="o">=</span> <span class="n">bluePrintFromParameter</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">parameter_blueprint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Failed to create blueprint for parameter </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">parameter_blueprint</span>
+        <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="n">method_blueprint</span> <span class="o">=</span> <span class="n">bluePrintFromMethod</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">method_blueprint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Failed to create blueprint for method </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">method_blueprint</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cannot create a blueprint for </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_toParamDict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="p">:</span> <span class="n">ParameterSerializeSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">obj</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">Station</span>
+        <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="p">[</span><span class="n">nestedAttributeFromString</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">path</span><span class="p">)]</span>
+
+        <span class="n">includeMeta</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">attrs</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s1">&#39;value&#39;</span><span class="p">]</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span> <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">kwargs</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">includeMeta</span><span class="o">=</span><span class="n">includeMeta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">serialize</span><span class="o">.</span><span class="n">toParamDict</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fromParamDict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="k">return</span> <span class="n">serialize</span><span class="o">.</span><span class="n">fromParamDict</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getGuiConfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrumentName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the GUI configuration for a specified instrument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Station is not initialized.&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">instrumentName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instrument </span><span class="si">{</span><span class="n">instrumentName</span><span class="si">}</span><span class="s2"> not found in station.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># This should not happen since the config assigns a default GUI to all instruments.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">guiConfig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">instrumentName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">guiConfig</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No GUI configuration found for </span><span class="si">{</span><span class="n">instrumentName</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_broadcastParameterChange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blueprint</span><span class="p">:</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Broadcast any changes to parameters in the server.</span>
+<span class="sd">        The message is composed of a 2 part array. The first item is the name of the instrument the parameter is from,</span>
+<span class="sd">        with the second item being the string of the blueprint in dict format.</span>
+<span class="sd">        This is done to allow subscribers to subscribe to specific instruments.</span>
+
+<span class="sd">        :param blueprint: The parameter broadcast blueprint that is being broadcast</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sendBroadcast</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">broadcastSocket</span><span class="p">,</span> <span class="n">blueprint</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">blueprint</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastAddr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sendBroadcast</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">externalBroadcastSocket</span><span class="p">,</span> <span class="n">blueprint</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">blueprint</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">blueprint</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has broadcast an update of type: </span><span class="si">{</span><span class="n">blueprint</span><span class="o">.</span><span class="n">action</span><span class="si">}</span><span class="s2">,&quot;</span>
+                     <span class="sa">f</span><span class="s2">&quot; with a value: </span><span class="si">{</span><span class="n">blueprint</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_newOrDeleteParameterDetection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detects if the call action is being used to create a new parameter or deletes an existing parameter.</span>
+<span class="sd">        If so, it creates the parameter broadcast blueprint and broadcast it.</span>
+
+<span class="sd">        :param spec: CallSpec object being passed to the call method.</span>
+<span class="sd">        :param args: args being passed to the call method.</span>
+<span class="sd">        :param kwargs: kwargs being passed to the call method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;add_parameter&#39;</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">pb</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">name</span><span class="p">,</span>
+                                             <span class="s1">&#39;parameter-creation&#39;</span><span class="p">,</span>
+                                             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;initial_value&#39;</span><span class="p">],</span>
+                                             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span><span class="n">pb</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;remove_parameter&#39;</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">pb</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">name</span><span class="p">,</span>
+                                             <span class="s1">&#39;parameter-deletion&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span><span class="n">pb</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_lock_for_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a call target like &#39;dac1.ch1.offset&#39; or &#39;awg.ch2.set_sq_wave&#39;,</span>
+<span class="sd">        return a per-instrument lock if the root is one of the station components.</span>
+<span class="sd">        Otherwise, return None (no locking needed).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># todo: here we assume each instrument can only be used by one thread at a time, which is generally the safer option.</span>
+        <span class="c1">#  There might exists hardware that actually supports independent, concurrent control of different channels,</span>
+        <span class="c1">#  in which case we might want to add a tag to the instrument and disable the locking here.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">target</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># First token before the first dot: assumed to be instrument name</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="c1"># Only lock if this actually corresponds to an instrument in the station</span>
+        <span class="k">if</span> <span class="n">root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks_lock</span><span class="p">:</span>
+            <span class="n">lock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lock</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks</span><span class="p">[</span><span class="n">root</span><span class="p">]</span> <span class="o">=</span> <span class="n">lock</span>
+            <span class="k">return</span> <span class="n">lock</span></div>
+
+
+<div class="viewcode-block" id="startServer">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.server.core.html#instrumentserver.server.core.startServer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">startServer</span><span class="p">(</span><span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5555</span><span class="p">,</span>
+                <span class="n">allowUserShutdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">addresses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+                <span class="n">initScript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">serverConfig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">stationConfig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">guiConfig</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">pollingThread</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">ipAddresses</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> \
+        <span class="n">Tuple</span><span class="p">[</span><span class="n">StationServer</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a server and run in a separate thread.</span>
+
+<span class="sd">    :returns: The server object and the thread it&#39;s running in.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">StationServer</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+                           <span class="n">allowUserShutdown</span><span class="o">=</span><span class="n">allowUserShutdown</span><span class="p">,</span>
+                           <span class="n">addresses</span><span class="o">=</span><span class="n">addresses</span><span class="p">,</span>
+                           <span class="n">initScript</span><span class="o">=</span><span class="n">initScript</span><span class="p">,</span>
+                           <span class="n">serverConfig</span><span class="o">=</span><span class="n">serverConfig</span><span class="p">,</span>
+                           <span class="n">stationConfig</span><span class="o">=</span><span class="n">stationConfig</span><span class="p">,</span>
+                           <span class="n">guiConfig</span><span class="o">=</span><span class="n">guiConfig</span><span class="p">,</span>
+                           <span class="n">pollingThread</span><span class="o">=</span><span class="n">pollingThread</span><span class="p">,</span>
+                           <span class="n">ipAddresses</span><span class="o">=</span><span class="n">ipAddresses</span><span class="p">)</span>
+    <span class="n">thread</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">()</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">moveToThread</span><span class="p">(</span><span class="n">thread</span><span class="p">)</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">thread</span><span class="o">.</span><span class="n">quit</span><span class="p">)</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">started</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">startServer</span><span class="p">)</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">server</span><span class="p">,</span> <span class="n">thread</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

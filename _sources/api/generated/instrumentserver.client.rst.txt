@@ -1,0 +1,15 @@
+﻿instrumentserver.client
+=======================
+
+.. automodule:: instrumentserver.client
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   application
+   core
+   proxy

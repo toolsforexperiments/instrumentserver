@@ -1,0 +1,1170 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>instrumentserver.server.application &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/instrumentserver.server.application';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/api/generated/instrumentserver.server.application.html" />
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="instrumentserver.server.core" href="instrumentserver.server.core.html" />
+    <link rel="prev" title="instrumentserver.server" href="instrumentserver.server.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">instrumentserver.server.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.client.html">instrumentserver.client</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.application.html">instrumentserver.client.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.core.html">instrumentserver.client.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.proxy.html">instrumentserver.client.proxy</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.monitoring.html">instrumentserver.monitoring</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.monitoring.listener.html">instrumentserver.monitoring.listener</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="instrumentserver.server.html" class="nav-link">instrumentserver.server</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.server.application</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-instrumentserver.server.application">
+<span id="instrumentserver-server-application"></span><h1>instrumentserver.server.application<a class="headerlink" href="#module-instrumentserver.server.application" title="Link to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.bluePrintToHtml" title="instrumentserver.server.application.bluePrintToHtml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bluePrintToHtml</span></code></a>(bp)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.instrumentToHtml" title="instrumentserver.server.application.instrumentToHtml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentToHtml</span></code></a>(bp)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.onExceptionDialog" title="instrumentserver.server.application.onExceptionDialog"><code class="xref py py-obj docutils literal notranslate"><span class="pre">onExceptionDialog</span></code></a>(exception)</p></td>
+<td><p>Opens a dialog displaying an exception.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.parameterToHtml" title="instrumentserver.server.application.parameterToHtml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameterToHtml</span></code></a>(bp[, headerLevel])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.startServerGuiApplication" title="instrumentserver.server.application.startServerGuiApplication"><code class="xref py py-obj docutils literal notranslate"><span class="pre">startServerGuiApplication</span></code></a>([guiConfig])</p></td>
+<td><p>Create a server gui window.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.CreateInstrumentDialog" title="instrumentserver.server.application.CreateInstrumentDialog"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CreateInstrumentDialog</span></code></a>(insType, insName, ...)</p></td>
+<td><p>Dialog asking the user for instrument type, instrument name and any args and kwargs for its creation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.DetachedServerGui" title="instrumentserver.server.application.DetachedServerGui"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DetachedServerGui</span></code></a>([host, port])</p></td>
+<td><p>A detached version of the server gui.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.EmbeddedClient" title="instrumentserver.server.application.EmbeddedClient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EmbeddedClient</span></code></a>([parent, host, port, ...])</p></td>
+<td><p>A simple client we can use to communicate with the server object inside the server application.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.InstrumentsCreator" title="instrumentserver.server.application.InstrumentsCreator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InstrumentsCreator</span></code></a>(cli, guiConfig, *args, ...)</p></td>
+<td><p>Widget that is able to instantiate new instruments in the instrumentserver.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.PossibleInstrumentDisplayItem" title="instrumentserver.server.application.PossibleInstrumentDisplayItem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PossibleInstrumentDisplayItem</span></code></a>(text, fullInsType)</p></td>
+<td><p>Items used in the PossibleInstrumentDisplay.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.PossibleInstrumentsDisplay" title="instrumentserver.server.application.PossibleInstrumentsDisplay"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay</span></code></a>([guiConfig])</p></td>
+<td><p>Widget that lists pre-set (either in the config or that the user adds programmatically) instruments to instantiate in the server.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.ServerGui" title="instrumentserver.server.application.ServerGui"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ServerGui</span></code></a>([startServer, guiConfig])</p></td>
+<td><p>Main window of the qcodes station server.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.ServerStatus" title="instrumentserver.server.application.ServerStatus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ServerStatus</span></code></a>([parent])</p></td>
+<td><p>A widget that shows the status of the instrument server.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.server.application.StationList" title="instrumentserver.server.application.StationList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationList</span></code></a>([parent])</p></td>
+<td><p>A widget that displays all objects in a qcodes station.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.server.application.StationObjectInfo" title="instrumentserver.server.application.StationObjectInfo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationObjectInfo</span></code></a>([parent])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.CreateInstrumentDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">CreateInstrumentDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">insType:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargsStr:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flags=&lt;PyQt5.QtCore.Qt.WindowFlags</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#CreateInstrumentDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.CreateInstrumentDialog" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDialog</span></code></p>
+<p>Dialog asking the user for instrument type, instrument name and any args and kwargs for its creation.
+You can pass any of the 3 fields to it to have those filled before the dialog appears.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>insType</strong> – Optional, The path to the instrument</p></li>
+<li><p><strong>insName</strong> – Optional, The name of the instrument</p></li>
+<li><p><strong>kwargsStr</strong> – Optional, String with te args and kwargs separated by commas.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.CreateInstrumentDialog.createInstrument">
+<span class="sig-name descname"><span class="pre">createInstrument</span></span><a class="headerlink" href="#instrumentserver.server.application.CreateInstrumentDialog.createInstrument" title="Link to this definition">#</a></dt>
+<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pyqtSignal(<a href="#id1"><span class="problematic" id="id2">*</span></a>types, name</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str = …, revision</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.CreateInstrumentDialog.onAcceptButton">
+<span class="sig-name descname"><span class="pre">onAcceptButton</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#CreateInstrumentDialog.onAcceptButton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.CreateInstrumentDialog.onAcceptButton" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.DetachedServerGui">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">DetachedServerGui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'localhost'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5555</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#DetachedServerGui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QMainWindow</span></code></p>
+<p>A detached version of the server gui.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.DetachedServerGui.addInstrumentTab">
+<span class="sig-name descname"><span class="pre">addInstrumentTab</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QTreeWidgetItem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#DetachedServerGui.addInstrumentTab"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui.addInstrumentTab" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.DetachedServerGui.displayComponentInfo">
+<span class="sig-name descname"><span class="pre">displayComponentInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#DetachedServerGui.displayComponentInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui.displayComponentInfo" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.DetachedServerGui.onTabDeleted">
+<span class="sig-name descname"><span class="pre">onTabDeleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#DetachedServerGui.onTabDeleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui.onTabDeleted" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.DetachedServerGui.refreshStationComponents">
+<span class="sig-name descname"><span class="pre">refreshStationComponents</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#DetachedServerGui.refreshStationComponents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui.refreshStationComponents" title="Link to this definition">#</a></dt>
+<dd><p>Clear and re-populate the widget holding the station components, using
+the objects that are currently registered in the station.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.EmbeddedClient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">EmbeddedClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'localhost'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5555</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connect</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_exceptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#EmbeddedClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.EmbeddedClient" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="instrumentserver.client.proxy.html#instrumentserver.client.proxy.QtClient" title="instrumentserver.client.proxy.QtClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">QtClient</span></code></a></p>
+<p>A simple client we can use to communicate with the server object
+inside the server application.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.EmbeddedClient.ask">
+<span class="sig-name descname"><span class="pre">ask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#EmbeddedClient.ask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.EmbeddedClient.ask" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.EmbeddedClient.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#EmbeddedClient.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.EmbeddedClient.start" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">InstrumentsCreator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cli</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client" title="instrumentserver.client.proxy.Client"><span class="pre">Client</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">guiConfig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#InstrumentsCreator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QWidget</span></code></p>
+<p>Widget that is able to instantiate new instruments in the instrumentserver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cli</strong> – client used to communicate with the server.</p></li>
+<li><p><strong>guiConfig</strong> – The initial config of the station. This is used to know what instruments to add as potential
+display and keep track of new instruments being created to store their args and kwargs in case the user want to
+instantiate them again. Note that even though we pass the gui config around, it is the same object,
+meaning that when the main window updates the config, all of the
+configs get updated too.</p></li>
+<li><p><strong>stationServer</strong> – The station server. We just need to connect to some of the signals that it sends</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator.createNewInstrument">
+<span class="sig-name descname"><span class="pre">createNewInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">insType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#InstrumentsCreator.createNewInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator.createNewInstrument" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator.newInstrumentCreated">
+<span class="sig-name descname"><span class="pre">newInstrumentCreated</span></span><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator.newInstrumentCreated" title="Link to this definition">#</a></dt>
+<dd><p>Signal()– emitted when the InstrumentCreator creates a new signal. Used to close the creation instrument widget.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator.newInstrumentFailed">
+<span class="sig-name descname"><span class="pre">newInstrumentFailed</span></span><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator.newInstrumentFailed" title="Link to this definition">#</a></dt>
+<dd><p>Signal() – emitted when the creator tried to create a new instrument but failed.
+Arguments – The str message of the error/reason as to why it could not create the instrument</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator.onCreateNewInstrumentClicked">
+<span class="sig-name descname"><span class="pre">onCreateNewInstrumentClicked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insType</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#InstrumentsCreator.onCreateNewInstrumentClicked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator.onCreateNewInstrumentClicked" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator.onDialogNewInstrument">
+<span class="sig-name descname"><span class="pre">onDialogNewInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">insType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argsKwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#InstrumentsCreator.onDialogNewInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator.onDialogNewInstrument" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.InstrumentsCreator.onPossibleInstrumentDisplayClicked">
+<span class="sig-name descname"><span class="pre">onPossibleInstrumentDisplayClicked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#InstrumentsCreator.onPossibleInstrumentDisplayClicked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.InstrumentsCreator.onPossibleInstrumentDisplayClicked" title="Link to this definition">#</a></dt>
+<dd><p>Creates new instrument based on a possible instrument. Only creates it if it can find the configName in the
+config.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentDisplayItem">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">PossibleInstrumentDisplayItem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fullInsType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configName</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineEdit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#PossibleInstrumentDisplayItem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentDisplayItem" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTreeWidgetItem</span></code></p>
+<p>Items used in the PossibleInstrumentDisplay. Need to have a custom one to store extra info.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">PossibleInstrumentsDisplay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">guiConfig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#PossibleInstrumentsDisplay"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTreeWidget</span></code></p>
+<p>Widget that lists pre-set (either in the config or that the user adds programmatically) instruments to instantiate
+in the server.</p>
+<p>In it you can change the name of the new instances of instruments but the arguments are already pre-set either in
+the config or are the original args and kwargs passed when the instrument was created.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.addInstrumentToTree">
+<span class="sig-name descname"><span class="pre">addInstrumentToTree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fullInsType</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'InstrumentType'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'MyInstrument'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#PossibleInstrumentsDisplay.addInstrumentToTree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.addInstrumentToTree" title="Link to this definition">#</a></dt>
+<dd><p>Each type is grouped together under a parent item of that type. If that parent item does not exist yet it
+creates it</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.basedInstrumentRequested">
+<span class="sig-name descname"><span class="pre">basedInstrumentRequested</span></span><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.basedInstrumentRequested" title="Link to this definition">#</a></dt>
+<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pyqtSignal(<a href="#id3"><span class="problematic" id="id4">*</span></a>types, name</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str = …, revision</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.cols">
+<span class="sig-name descname"><span class="pre">cols</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['Instrument</span> <span class="pre">Type</span> <span class="pre">&amp;</span> <span class="pre">Preset',</span> <span class="pre">'Instrument</span> <span class="pre">Name',</span> <span class="pre">'Create</span> <span class="pre">Instrument']</span></em><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.cols" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.createButtonPressed">
+<span class="sig-name descname"><span class="pre">createButtonPressed</span></span><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.createButtonPressed" title="Link to this definition">#</a></dt>
+<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pyqtSignal(<a href="#id5"><span class="problematic" id="id6">*</span></a>types, name</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str = …, revision</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.loadConfig">
+<span class="sig-name descname"><span class="pre">loadConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#PossibleInstrumentsDisplay.loadConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.loadConfig" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.onBasedInstrumentAction">
+<span class="sig-name descname"><span class="pre">onBasedInstrumentAction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#PossibleInstrumentsDisplay.onBasedInstrumentAction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.onBasedInstrumentAction" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.onRemoveInstrumentFromTree">
+<span class="sig-name descname"><span class="pre">onRemoveInstrumentFromTree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#PossibleInstrumentsDisplay.onRemoveInstrumentFromTree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.onRemoveInstrumentFromTree" title="Link to this definition">#</a></dt>
+<dd><p>Removes both the potential instrument from the widget and the presets from the config dictionary.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">ServerGui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">startServer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guiConfig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">serverKwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QMainWindow</span></code></p>
+<p>Main window of the qcodes station server.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.addInstrumentTab">
+<span class="sig-name descname"><span class="pre">addInstrumentTab</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QTreeWidgetItem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.addInstrumentTab"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.addInstrumentTab" title="Link to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>Gets called when the user double clicks and item of the instrument list.</dt><dd><p>Adds a new generic instrument GUI window to the tab bar.
+If the tab already exists switches to that one.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.addInstrumentToGui">
+<span class="sig-name descname"><span class="pre">addInstrumentToGui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instrumentBluePrint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint" title="instrumentserver.blueprints.InstrumentModuleBluePrint"><span class="pre">InstrumentModuleBluePrint</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">insArgs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insKwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.addInstrumentToGui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.addInstrumentToGui" title="Link to this definition">#</a></dt>
+<dd><p>Add an instrument to the station list.</p>
+<p>If the guiConfig does not have an instrument with that name, it adds it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QCloseEvent</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.closeEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.closeEvent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.closeInstrument">
+<span class="sig-name descname"><span class="pre">closeInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ins</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.closeInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.closeInstrument" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.displayComponentInfo">
+<span class="sig-name descname"><span class="pre">displayComponentInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.displayComponentInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.displayComponentInfo" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.getServerIfRunning">
+<span class="sig-name descname"><span class="pre">getServerIfRunning</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.getServerIfRunning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.getServerIfRunning" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.loadParamsFromFile">
+<span class="sig-name descname"><span class="pre">loadParamsFromFile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.loadParamsFromFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.loadParamsFromFile" title="Link to this definition">#</a></dt>
+<dd><p>Load the values of all parameters present in the server’s params json file
+to parameters registered in the station (incl those in instruments).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.log">
+<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">LogLevels.info</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.log" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.onFuncCalled">
+<span class="sig-name descname"><span class="pre">onFuncCalled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ret</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.onFuncCalled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.onFuncCalled" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.onTabDeleted">
+<span class="sig-name descname"><span class="pre">onTabDeleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.onTabDeleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.onTabDeleted" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.refreshStationComponents">
+<span class="sig-name descname"><span class="pre">refreshStationComponents</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.refreshStationComponents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.refreshStationComponents" title="Link to this definition">#</a></dt>
+<dd><p>Clear and re-populate the widget holding the station components, using
+the objects that are currently registered in the station.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.removeInstrumentFromGui">
+<span class="sig-name descname"><span class="pre">removeInstrumentFromGui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.removeInstrumentFromGui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.removeInstrumentFromGui" title="Link to this definition">#</a></dt>
+<dd><p>Remove an instrument from the station list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.saveParamsToFile">
+<span class="sig-name descname"><span class="pre">saveParamsToFile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.saveParamsToFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.saveParamsToFile" title="Link to this definition">#</a></dt>
+<dd><p>Save the values of all parameters registered in the station (incl
+those in instruments) to the server’s param json file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.serverPortSet">
+<span class="sig-name descname"><span class="pre">serverPortSet</span></span><a class="headerlink" href="#instrumentserver.server.application.ServerGui.serverPortSet" title="Link to this definition">#</a></dt>
+<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
+<p>types is normally a sequence of individual types.  Each type is either a
+type object or a string that is the name of a C++ type.  Alternatively
+each type could itself be a sequence of types each describing a different
+overloaded signal.
+name is the optional C++ name of the signal.  If it is not specified then
+the name of the class attribute that is bound to the signal is used.
+revision is the optional revision of the signal that is exported to QML.
+If it is not specified then 0 is used.
+arguments is the optional sequence of the names of the signal’s arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pyqtSignal(<a href="#id7"><span class="problematic" id="id8">*</span></a>types, name</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str = …, revision</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.startServer">
+<span class="sig-name descname"><span class="pre">startServer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.startServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.startServer" title="Link to this definition">#</a></dt>
+<dd><p>Start the instrument server in a separate thread.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerStatus">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">ServerStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerStatus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerStatus" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QWidget</span></code></p>
+<p>A widget that shows the status of the instrument server.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerStatus.addMessageAndReply">
+<span class="sig-name descname"><span class="pre">addMessageAndReply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerStatus.addMessageAndReply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerStatus.addMessageAndReply" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.ServerStatus.setListeningAddress">
+<span class="sig-name descname"><span class="pre">setListeningAddress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerStatus.setListeningAddress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerStatus.setListeningAddress" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">StationList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#StationList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.StationList" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTreeWidget</span></code></p>
+<p>A widget that displays all objects in a qcodes station.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList.addInstrument">
+<span class="sig-name descname"><span class="pre">addInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint" title="instrumentserver.blueprints.InstrumentModuleBluePrint"><span class="pre">InstrumentModuleBluePrint</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#StationList.addInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.StationList.addInstrument" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList.closeRequested">
+<span class="sig-name descname"><span class="pre">closeRequested</span></span><a class="headerlink" href="#instrumentserver.server.application.StationList.closeRequested" title="Link to this definition">#</a></dt>
+<dd><p>Signal(str) – emitted when the user requested closing an instrument
+Argument is the name of the instrument that should be closed</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList.cols">
+<span class="sig-name descname"><span class="pre">cols</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['Name',</span> <span class="pre">'Type']</span></em><a class="headerlink" href="#instrumentserver.server.application.StationList.cols" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList.componentSelected">
+<span class="sig-name descname"><span class="pre">componentSelected</span></span><a class="headerlink" href="#instrumentserver.server.application.StationList.componentSelected" title="Link to this definition">#</a></dt>
+<dd><p>Signal(str) – emitted when a parameter or Instrument is selected.
+Argument is the name of the selected instrument</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList.onDeleteAction">
+<span class="sig-name descname"><span class="pre">onDeleteAction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#StationList.onDeleteAction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.StationList.onDeleteAction" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationList.removeObject">
+<span class="sig-name descname"><span class="pre">removeObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#StationList.removeObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.StationList.removeObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationObjectInfo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">StationObjectInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#StationObjectInfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.StationObjectInfo" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QTextEdit</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.server.application.StationObjectInfo.setObject">
+<span class="sig-name descname"><span class="pre">setObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint" title="instrumentserver.blueprints.InstrumentModuleBluePrint"><span class="pre">InstrumentModuleBluePrint</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#StationObjectInfo.setObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.StationObjectInfo.setObject" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.server.application.bluePrintToHtml">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">bluePrintToHtml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBluePrint" title="instrumentserver.blueprints.ParameterBluePrint"><span class="pre">ParameterBluePrint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint" title="instrumentserver.blueprints.InstrumentModuleBluePrint"><span class="pre">InstrumentModuleBluePrint</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#bluePrintToHtml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.bluePrintToHtml" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.server.application.instrumentToHtml">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">instrumentToHtml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint" title="instrumentserver.blueprints.InstrumentModuleBluePrint"><span class="pre">InstrumentModuleBluePrint</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#instrumentToHtml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.instrumentToHtml" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.server.application.onExceptionDialog">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">onExceptionDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exception</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#onExceptionDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.onExceptionDialog" title="Link to this definition">#</a></dt>
+<dd><p>Opens a dialog displaying an exception.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>exception</strong> – The text the dialog will show</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.server.application.parameterToHtml">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">parameterToHtml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBluePrint" title="instrumentserver.blueprints.ParameterBluePrint"><span class="pre">ParameterBluePrint</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">headerLevel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#parameterToHtml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.parameterToHtml" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.server.application.startServerGuiApplication">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">startServerGuiApplication</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">guiConfig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">serverKwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.server.application.ServerGui" title="instrumentserver.server.application.ServerGui"><span class="pre">ServerGui</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#startServerGuiApplication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.startServerGuiApplication" title="Link to this definition">#</a></dt>
+<dd><p>Create a server gui window.</p>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="instrumentserver.server.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">instrumentserver.server</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="instrumentserver.server.core.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">instrumentserver.server.core</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.CreateInstrumentDialog"><code class="docutils literal notranslate"><span class="pre">CreateInstrumentDialog</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.CreateInstrumentDialog.createInstrument"><code class="docutils literal notranslate"><span class="pre">CreateInstrumentDialog.createInstrument</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.CreateInstrumentDialog.onAcceptButton"><code class="docutils literal notranslate"><span class="pre">CreateInstrumentDialog.onAcceptButton()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.DetachedServerGui"><code class="docutils literal notranslate"><span class="pre">DetachedServerGui</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.DetachedServerGui.addInstrumentTab"><code class="docutils literal notranslate"><span class="pre">DetachedServerGui.addInstrumentTab()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.DetachedServerGui.displayComponentInfo"><code class="docutils literal notranslate"><span class="pre">DetachedServerGui.displayComponentInfo()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.DetachedServerGui.onTabDeleted"><code class="docutils literal notranslate"><span class="pre">DetachedServerGui.onTabDeleted()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.DetachedServerGui.refreshStationComponents"><code class="docutils literal notranslate"><span class="pre">DetachedServerGui.refreshStationComponents()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.EmbeddedClient"><code class="docutils literal notranslate"><span class="pre">EmbeddedClient</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.EmbeddedClient.ask"><code class="docutils literal notranslate"><span class="pre">EmbeddedClient.ask()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.EmbeddedClient.start"><code class="docutils literal notranslate"><span class="pre">EmbeddedClient.start()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator.createNewInstrument"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator.createNewInstrument()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator.newInstrumentCreated"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator.newInstrumentCreated</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator.newInstrumentFailed"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator.newInstrumentFailed</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator.onCreateNewInstrumentClicked"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator.onCreateNewInstrumentClicked()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator.onDialogNewInstrument"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator.onDialogNewInstrument()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.InstrumentsCreator.onPossibleInstrumentDisplayClicked"><code class="docutils literal notranslate"><span class="pre">InstrumentsCreator.onPossibleInstrumentDisplayClicked()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentDisplayItem"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentDisplayItem</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.addInstrumentToTree"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.addInstrumentToTree()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.basedInstrumentRequested"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.basedInstrumentRequested</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.cols"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.cols</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.createButtonPressed"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.createButtonPressed</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.loadConfig"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.loadConfig()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.onBasedInstrumentAction"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.onBasedInstrumentAction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.onRemoveInstrumentFromTree"><code class="docutils literal notranslate"><span class="pre">PossibleInstrumentsDisplay.onRemoveInstrumentFromTree()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui"><code class="docutils literal notranslate"><span class="pre">ServerGui</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.addInstrumentTab"><code class="docutils literal notranslate"><span class="pre">ServerGui.addInstrumentTab()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.addInstrumentToGui"><code class="docutils literal notranslate"><span class="pre">ServerGui.addInstrumentToGui()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.closeEvent"><code class="docutils literal notranslate"><span class="pre">ServerGui.closeEvent()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.closeInstrument"><code class="docutils literal notranslate"><span class="pre">ServerGui.closeInstrument()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.displayComponentInfo"><code class="docutils literal notranslate"><span class="pre">ServerGui.displayComponentInfo()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.getServerIfRunning"><code class="docutils literal notranslate"><span class="pre">ServerGui.getServerIfRunning()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.loadParamsFromFile"><code class="docutils literal notranslate"><span class="pre">ServerGui.loadParamsFromFile()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.log"><code class="docutils literal notranslate"><span class="pre">ServerGui.log()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.onFuncCalled"><code class="docutils literal notranslate"><span class="pre">ServerGui.onFuncCalled()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.onTabDeleted"><code class="docutils literal notranslate"><span class="pre">ServerGui.onTabDeleted()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.refreshStationComponents"><code class="docutils literal notranslate"><span class="pre">ServerGui.refreshStationComponents()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.removeInstrumentFromGui"><code class="docutils literal notranslate"><span class="pre">ServerGui.removeInstrumentFromGui()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.saveParamsToFile"><code class="docutils literal notranslate"><span class="pre">ServerGui.saveParamsToFile()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.serverPortSet"><code class="docutils literal notranslate"><span class="pre">ServerGui.serverPortSet</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerGui.startServer"><code class="docutils literal notranslate"><span class="pre">ServerGui.startServer()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerStatus"><code class="docutils literal notranslate"><span class="pre">ServerStatus</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerStatus.addMessageAndReply"><code class="docutils literal notranslate"><span class="pre">ServerStatus.addMessageAndReply()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.ServerStatus.setListeningAddress"><code class="docutils literal notranslate"><span class="pre">ServerStatus.setListeningAddress()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList"><code class="docutils literal notranslate"><span class="pre">StationList</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList.addInstrument"><code class="docutils literal notranslate"><span class="pre">StationList.addInstrument()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList.closeRequested"><code class="docutils literal notranslate"><span class="pre">StationList.closeRequested</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList.cols"><code class="docutils literal notranslate"><span class="pre">StationList.cols</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList.componentSelected"><code class="docutils literal notranslate"><span class="pre">StationList.componentSelected</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList.onDeleteAction"><code class="docutils literal notranslate"><span class="pre">StationList.onDeleteAction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationList.removeObject"><code class="docutils literal notranslate"><span class="pre">StationList.removeObject()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationObjectInfo"><code class="docutils literal notranslate"><span class="pre">StationObjectInfo</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.StationObjectInfo.setObject"><code class="docutils literal notranslate"><span class="pre">StationObjectInfo.setObject()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.bluePrintToHtml"><code class="docutils literal notranslate"><span class="pre">bluePrintToHtml()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.instrumentToHtml"><code class="docutils literal notranslate"><span class="pre">instrumentToHtml()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.onExceptionDialog"><code class="docutils literal notranslate"><span class="pre">onExceptionDialog()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.parameterToHtml"><code class="docutils literal notranslate"><span class="pre">parameterToHtml()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.server.application.startServerGuiApplication"><code class="docutils literal notranslate"><span class="pre">startServerGuiApplication()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/api/generated/instrumentserver.server.application.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

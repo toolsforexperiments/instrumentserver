@@ -1,0 +1,18 @@
+instrumentserver.client.core
+============================
+
+.. automodule:: instrumentserver.client.core
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      sendRequest
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaseClient
+   

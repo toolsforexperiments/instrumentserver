@@ -1,0 +1,751 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Instrumentserver Overview &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'first_steps/overview';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/first_steps/overview.html" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="User Guide" href="../user_guide/index.html" />
+    <link rel="prev" title="First Steps" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Instrumentserver Overview</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">First Steps</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Instrumentserver Overview</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="instrumentserver-overview">
+<h1>Instrumentserver Overview<a class="headerlink" href="#instrumentserver-overview" title="Link to this heading">#</a></h1>
+<p>The aim of Instrumentserver is to facilitate <a class="reference external" href="https://qcodes.github.io/Qcodes/">QCoDeS</a> access across a variety of process and devices.
+We communicate with the server through a TCP/IP connection allowing us to talk to it from any independent process or
+separate device in the same network.</p>
+<p>Instrumentserver also includes a virtual instrument called Parameter Manager, whose job is to be a centralized and
+single source of truth for various parameters values with a user-friendly graphical interface to facilitate changing
+parameters.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This guide is not up to date. Some new core features are not currently documented like configuration files and
+new features are in development. If you have questions on how to use these, please contact Marcos at: <a class="reference internal" href="#"><span class="xref myst">marcosf2&#64;illinois.edu</span></a>.</p>
+</div>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
+<p>At the moment Instrumentserver is not on pip or conda so the only way of installing it is to install it from github directly.
+To do that first clone the <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver">github repo</a>,
+and install into the desired environment using the
+<a class="reference external" href="https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-e">editable pip install</a>.</p>
+</section>
+<section id="quick-overview">
+<h2>Quick Overview<a class="headerlink" href="#quick-overview" title="Link to this heading">#</a></h2>
+<section id="instrumentserver">
+<h3>Instrumentserver<a class="headerlink" href="#instrumentserver" title="Link to this heading">#</a></h3>
+<p>To open the instrument server we simple run the command on a terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver
+</pre></div>
+</div>
+<p>This will open the GUI of the server and start running it.</p>
+<p><img alt="Instrumentserver GUI" src="../_images/empty_server.png" /></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The server can be run without a gui by passing the <code class="docutils literal notranslate"><span class="pre">--gui</span> <span class="pre">False</span></code> argument.</p>
+</div>
+<p>If running the instrumentserver without the gui, the gui can be opened separately using the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver-detached
+</pre></div>
+</div>
+<p>By default, instrumentserver listens to the local host IP address (127.0.0.1) and the port 5555. To be able to communicate
+with the server through other devices in the network we have to specify the IP address we want the server to listen to.
+For this we pass the argument <code class="docutils literal notranslate"><span class="pre">-a</span> <span class="pre">&lt;IP_address&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;port_number&gt;</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver<span class="w"> </span>-a<span class="w"> </span><span class="m">192</span>.168.1.1<span class="w"> </span>-p<span class="w"> </span><span class="m">12345</span>
+</pre></div>
+</div>
+<p>This will make the server listen to both the local host and the IP address 192.168.1.1 with port 12345.</p>
+<p>We communicate with the server with Python code. This can be done anywhere that python can run, an IPython console, a Jupyter notebook, etc.
+The easiest way of creating a <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/b9270871364febcfb2ca8ce00b6182ee1762448b/instrumentserver/client/proxy.py#L375">Client instance</a> and
+running the <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/b9270871364febcfb2ca8ce00b6182ee1762448b/instrumentserver/client/proxy.py#L384">find_or_create_instrument</a> method.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Remember to pass the instrument specific arguments and keyword arguments necessary for the specific QCoDeS instrument
+you are trying to open.</p>
+</div>
+<p>This will look for the specified instrument with the given name in the server or create it if the instrument does not
+exist, and return it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dummy_instrument</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span><span class="n">instrument_class</span><span class="o">=</span><span class="s1">&#39;instrumentserver.testing.dummy_instruments.generic.DummyChannel&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dummy_instrument&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If we are trying to talk to a server running in a different device in the network we need to specify the IP address
+and port with the arguments host and port when creating the <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/b9270871364febcfb2ca8ce00b6182ee1762448b/instrumentserver/client/proxy.py#L375">Client</a>.</p>
+</div>
+<p>After this we can see that the instrument has been created in the server.</p>
+<p><img alt="dummy instrument" src="../_images/dummy_instrument.png" /></p>
+<p>After that we can use the instrument like a normal QCoDeS instrument. We can create a <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/b9270871364febcfb2ca8ce00b6182ee1762448b/instrumentserver/client/proxy.py#L375">Client</a>
+from any process and get the dummy_instrument by simply using the <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/b9270871364febcfb2ca8ce00b6182ee1762448b/instrumentserver/client/proxy.py#L384">find_or_create_instrument</a> method:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dummy_instrument</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;dummy_instrument&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="parameter-manager">
+<h3>Parameter Manager<a class="headerlink" href="#parameter-manager" title="Link to this heading">#</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The parameter manager can also be opened from a config file, more instructions on how to do this will come in the near future.</p>
+</div>
+<p>Instrumentserver also comes with the virtual instrument Parameter Manager.
+The Parameter Manager allows us to store values in an instrument inside of the Instrumentserver, allowing us to access them from any process or devices in the same network.
+The idea of it is to have a single source of truth for parameters whose values change frequently, and it provides a GUI from which you can change the values and easily see what they are.</p>
+<p>To open the Parameter Manager we first need to open the Instrumentserver.
+Once we have the server open, we can run the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver-param-manager
+</pre></div>
+</div>
+<p>This will create an instance of the virtual instrument in the Instrumentserver and will open the GUI for the Parameter Manager.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>At the moment the parameter manager can only be opened from the device that is currently hosting the server.
+If you are utilizing a different port, this can be specified by passing the terminal argument <code class="docutils literal notranslate"><span class="pre">--port</span></code> followed by the port.</p>
+</div>
+<p>We’ll simply get an empty window now.
+The bottom of the window allows us to add arbitrary parameters and values, where dots serve as hierarchy separators (like objects and their children in python).</p>
+<p><img alt="parameter manager" src="../_images/parameter_manager.png" /></p>
+<p>We can add some parameters and then retrieve them from anywhere that can run python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">params</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span><span class="s1">&#39;parameter_manager&#39;</span><span class="p">)</span> <span class="c1"># &#39;parameter_manager` is the name the startup script gives the instrument by default</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">params</span><span class="o">.</span><span class="n">qubit</span><span class="o">.</span><span class="n">pipulse</span><span class="o">.</span><span class="n">len</span><span class="p">()</span>
+<span class="go">40</span>
+</pre></div>
+</div>
+<p>We can change parameters by calling the same function but passing as an argument the new value:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">params</span><span class="o">.</span><span class="n">qubit</span><span class="o">.</span><span class="n">pipulse</span><span class="o">.</span><span class="n">len</span><span class="p">(</span><span class="mi">789</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can add or remove parameters with code too:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">params</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s1">&#39;qubit.anharmonicity&#39;</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=-</span><span class="mf">150.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;MHz&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">params</span><span class="o">.</span><span class="n">remove_parameter</span><span class="p">(</span><span class="s1">&#39;qubit.pipulse.amp&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All of these changes get updated live in the GUI:</p>
+<p><img alt="updated manager" src="../_images/updated_manager.png" /></p>
+<p>Changing things in the GUI will also be reflected in the code.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Changing something from the GUI only changes the code if we are calling the parameter manager directly.
+If we store a value in a separate variable and then change the GUI, the value in the variable might not get updated.
+Because of this, we always recommend to call the Parameter Manager directly instead of saving the values in variables.</p>
+</div>
+</section>
+</section>
+<section id="config-files">
+<h2>Config Files<a class="headerlink" href="#config-files" title="Link to this heading">#</a></h2>
+<p>The instrumentserver also contains functionality for config files. These config files contain set-up for QCoDeS instruments. These config files can then be used by the instrumentserver
+on start-up to have the desired instruments already created without having to manually add them after starting the server.</p>
+<p>To open the instrument server with a config file, we can use the ‘-c’ flag to specify a config file, followed by the path to the config file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver<span class="w"> </span>-c<span class="w"> </span>serverConfig.yml
+</pre></div>
+</div>
+<p>Below is a sample config file to initialize a DummyInstrument and an Oxford Triton dilution refrigerator</p>
+<p><code class="docutils literal notranslate"><span class="pre">instruments</span></code>: this field will contain each instrument you wish to create. Under this field should be the names of each instrument you are creating</p>
+<p><code class="docutils literal notranslate"><span class="pre">type</span></code>: This specifies which QCoDeS driver the instrumentserver should use to create the instrument. Can either be a local file or a community-created driver</p>
+<p><code class="docutils literal notranslate"><span class="pre">address</span></code>: the tcp/ip address of the instrument on the same network as the instrumentserver</p>
+<p><code class="docutils literal notranslate"><span class="pre">port</span></code>: which port (of the instrument) to communicate with (can generally be found in the manual of the instrument)</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">instruments</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dummy_instrument_random_number</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber</span>
+<span class="w">    </span><span class="nt">initialize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">  </span><span class="nt">fridge_test</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">labcore.instruments.qcodes_drivers.Oxford.triton.OxfordTriton</span>
+<span class="w">    </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.256.256</span>
+<span class="w">    </span><span class="nt">init</span><span class="p">:</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">33576</span>
+</pre></div>
+</div>
+<p>This is the result of running the instrument server with this config file:</p>
+<p><img alt="two_instruments" src="../_images/two_instruments.png" /></p>
+<section id="parameter-manager-with-config-files">
+<h3>Parameter Manager with Config Files<a class="headerlink" href="#parameter-manager-with-config-files" title="Link to this heading">#</a></h3>
+<p>The instrumentserver also comes with the virtual instrument Parameter Manager.
+The Parameter Manager allows us to store values in an instrument inside of the Instrumentserver, allowing access from any process or device in the same network.
+The idea of it is to have a single source of truth for parameters whose values change frequently, and it provides a GUI from which you can change the values and easily see what they are.</p>
+<p>The following is an example config file to add the parameter manager as a virtual instrument</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">instruments</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">parameter_manager</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.params.ParameterManager</span>
+<span class="w">    </span><span class="nt">initialize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="nt">gui</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.gui.instruments.ParameterManagerGui</span>
+</pre></div>
+</div>
+<p><img alt="parameter_manager_2" src="../_images/param_manager_2.png" /></p>
+<p><img alt="parameter_manager_3" src="../_images/param_manager_3.png" /></p>
+<p>The instrumentserver also supports loading parameters from a file. They can also be created manually either from the terminal or the GUI.</p>
+<p><img alt="load_from_file" src="../_images/load_from_file.png" /></p>
+<p>Below is an example of a parameter file</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;parameter_manager.active.qubit&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;unit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qC&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;parameter_manager.opx.const_amp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;unit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">First Steps</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../user_guide/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">User Guide</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-overview">Quick Overview</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver">Instrumentserver</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-manager">Parameter Manager</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#config-files">Config Files</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-manager-with-config-files">Parameter Manager with Config Files</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/first_steps/overview.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

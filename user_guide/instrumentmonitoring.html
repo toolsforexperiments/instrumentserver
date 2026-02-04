@@ -1,0 +1,1008 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Instrument Monitoring &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/instrumentmonitoring';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/user_guide/instrumentmonitoring.html" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Code Examples" href="../examples/index.html" />
+    <link rel="prev" title="Configuration Files" href="configuration.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Files</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Instrument Monitoring</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Instrument Monitoring</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="instrument-monitoring">
+<h1>Instrument Monitoring<a class="headerlink" href="#instrument-monitoring" title="Link to this heading">#</a></h1>
+<p>The following is a guide to set up a dashboard for the monitoring of instruments. It contains capabilities for data storage, data visualization, and real-time alerts. More information on the tool is provided in the next section.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following guide assumes the user has the instrumentserver installed and has basic familiarity with it and using config files, labcore installed, basic familiarity with Docker, and a basic understanding of what Grafana and InfluxDB are</p>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>This tool is designed to be able to facilitate the monitoring of instruments. It consists of multiple parts that must be set up:</p>
+<p><img alt="Overview" src="../_images/instrumentmonitoring.png" /></p>
+<p>Above is a diagram showcasing the architecture for a dashboard for the monitoring of two separate instruments. The architecture consists of two PCs that communicate with the instrument using qCoDeS, which broadcast the data they receive to a central computer where the dashboard is hosted.</p>
+<p><a class="reference internal" href="#docker"><span class="std std-ref">Docker</span></a></p>
+<p>Docker is the service used to host Grafana and InfluxDB locally. Both of the services have a server that runs inside of a Docker container on your internet-connected device, and will be accessible through the network the computer is connected to. Both Influx and Grafana will be accessible with an internet connection to the computer running Docker.</p>
+<p><a class="reference internal" href="#grafana"><span class="std std-ref">Grafana</span></a></p>
+<p>Grafana is the service used to visualize the data gathered from your instrument(s) of choice. It has functionality to both have visualization through dashboards, and also alerting capabilities through Slack integration and more. Below is an example of what a Grafana dashboard may look like.</p>
+<p>Grafana is hosted locally on a internet-connected device, and can then be viewed while connected to the network and logging in to your Grafana account. It will live in a Docker container. (More on that later)</p>
+<p><img alt="Example Dashboard" src="../_images/dashboard.png" /></p>
+<p>Below is a sample alert send out by Grafana on Slack. The alert notifies that a parameter (in this case MC) has passed a threshold. This is for a dilution refrigerator, and the parameter in this case is a value from a temperature sensor. This one, MC, is in the mixing chamber.</p>
+<p><img alt="Example Alert" src="../_images/sample_alert.png" /></p>
+<p><a class="reference internal" href="#influxdb"><span class="std std-ref">InfluxDB</span></a></p>
+<p>InfluxDB is the database used to store data fetched from instruments. It stores the data in time-series format (each data point has a time). It can then be accessed by Grafana in order to construct time-series plots of the various parameters in the database (as shown above).</p>
+<p>InfluxDB should be hosted on the same device as Grafana. It will also be in a Docker container. (again, more on that later)</p>
+<p><a class="reference internal" href="#the-instrumentserver"><span class="std std-ref">The Instrumentserver</span></a></p>
+<p>The instrumentserver runs on a computer that can talk with your instrument through a network connection. The instrumentserver will ask your instrument for the data you specify, which will then be sent back to the instrumentserver by the instrument.</p>
+<p>Based on a yaml config file, the instrumentserver can then ask for the correct data from the instrument and broadcast it to the internet (to be used for visualizations).</p>
+<p>In the instrumentserver, for each instrument, the user provides a list of parameters to get values or states from, with a corresponding rate (in seconds) for how often to poll the parameter.</p>
+<p><a class="reference internal" href="#the-listener"><span class="std std-ref">The Listener</span></a></p>
+<p>The listener is ran on the same computer that is running the Docker containers for Grafana and InfluxDB. It subscribes to the broadcasts from the instrumentservers, and then writes the data to the InfluxDB database. The listener can also be configured to write to a CSV file, however InfluxDB is recommended.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following portion assumes the user has the instrumentserver installed and labcore installed.</p>
+</div>
+</section>
+<section id="quick-start-guide">
+<h2>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Link to this heading">#</a></h2>
+<p>This section is a guide to quickly set up an instrument monitoring dashboard for an arbitrary number of instruments.</p>
+<section id="step-1-instrumentserver-setup">
+<h3>Step 1: Instrumentserver setup<a class="headerlink" href="#step-1-instrumentserver-setup" title="Link to this heading">#</a></h3>
+<p>First, locate or create a qCoDeS driver for your instrument. Also, make sure the instrument is connected to some sort of network (generally a switch), and find its IP address on the private network. Also, locate the correct port to communicate with the instrument (generally found in the manual for the instrument).</p>
+<p>Once you have all of this information, set up a PC (windows, linux, etc.) that is connected to the same network (switch) as the instrument you want to monitor. Install the instrumentserver and labcore on this PC.</p>
+<p>Decide on a port you want to broadcast data through on the PC. Then create a config file for the instrumentserver using the above qCoDeS driver, ports, etc. Check out the section for the instrumentserver <a class="reference internal" href="#config-file"><span class="std std-ref">config file</span></a>.</p>
+<p>Then, start the instrumentserver. See <a class="reference internal" href="#starting-the-instrument-server"><span class="std std-ref">starting the instrumentserver</span></a>.</p>
+</section>
+<section id="step-2-influxdb-and-grafana">
+<h3>Step 2: InfluxDB and Grafana<a class="headerlink" href="#step-2-influxdb-and-grafana" title="Link to this heading">#</a></h3>
+<p>Set up a PC that you would like to host the dashboard on. Install labcore and the instrumentserver on this PC.
+Install docker and start the docker engine. Follow the <a class="reference internal" href="#docker"><span class="std std-ref">docker section</span></a> to set up a docker compose file. Make sure that InfluxDB and Grafana are able to be accessed.</p>
+</section>
+<section id="step-3-the-listener">
+<h3>Step 3: The Listener<a class="headerlink" href="#step-3-the-listener" title="Link to this heading">#</a></h3>
+<p>On the same PC that Grafana and Influx were started on:</p>
+<p>Keep track of the address and port that the instrumentserver is broadcasting to in the previous section. Use this information, the information you used to set up InfluxDB, plus the parameters you want to monitor to fill out the config file.</p>
+<p>You can then <a class="reference internal" href="#starting-the-listener"><span class="std std-ref">start the listener</span></a>.</p>
+</section>
+<section id="step-4-grafana-customization">
+<h3>Step 4: Grafana Customization<a class="headerlink" href="#step-4-grafana-customization" title="Link to this heading">#</a></h3>
+<p>If the previous steps were done correctly with no issues, the Influx database should start to be populated. Then, one can follow the guide at <a class="reference external" href="https://grafana.com/grafana/dashboards/">https://grafana.com/grafana/dashboards/</a> in order to create a dashboard using InfluxDB as data source. The grafana documentation also has guides on setting up alerting to Slack and other services.</p>
+</section>
+</section>
+<section id="the-instrumentserver">
+<h2>The Instrumentserver<a class="headerlink" href="#the-instrumentserver" title="Link to this heading">#</a></h2>
+<p>In order to use the dashboard, we will need to have an instance of the instrumentserver running to fetch data from the fridge computer.</p>
+<section id="config-file">
+<h3>Config File<a class="headerlink" href="#config-file" title="Link to this heading">#</a></h3>
+<p>Below is an example instrumentserver configuration file that can be used for the dashboard.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">instruments</span><span class="p">:</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">fridge_nh</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">labcore.instruments.qcodes_drivers.Oxford.triton.OxfordTriton</span>
+<span class="w">    </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.1</span>
+<span class="w">    </span><span class="nt">init</span><span class="p">:</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">33576</span>
+<span class="w">      </span><span class="nt">temp_channel_mapping</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PT2_HEAD&quot;</span>
+<span class="w">          </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PT2_PLATE&quot;</span>
+<span class="w">          </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;STILL_PLATE&quot;</span>
+<span class="w">          </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;COLD_PLATE&quot;</span>
+<span class="w">          </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PT1_HEAD&quot;</span>
+<span class="w">          </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PT1_PLATE&quot;</span>
+<span class="w">          </span><span class="nt">T8</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MC_PLATE_RUO2&quot;</span>
+
+<span class="w">    </span><span class="nt">pollingRate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">comp_state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">PT1_PLATE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">PT2_PLATE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">STILL_PLATE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">COLD_PLATE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">MC_PLATE_RUO2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">turb1_state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">turb1_speed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+
+<span class="nt">networking</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">externalBroadcast</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tcp://128.174.123.123:6000&quot;</span>
+</pre></div>
+</div>
+<p>As usual, we declare an qCoDeS instrument. In this case we are using an Oxford Triton Dilution Refrigerator. The driver for this instrument is in labcore:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">labcore</span><span class="o">.</span><span class="n">instruments</span><span class="o">.</span><span class="n">qcodes_drivers</span><span class="o">.</span><span class="n">Oxford</span><span class="o">.</span><span class="n">triton</span><span class="o">.</span><span class="n">OxfordTriton</span>
+</pre></div>
+</div>
+<p>In general, one can find a community-made driver (if it exists), or create one.</p>
+<p><code class="docutils literal notranslate"><span class="pre">address</span></code>: fill out the field with the IPv4 address of the instrument (on the same network as the computer you are running the instrumentserver on)</p>
+<p><code class="docutils literal notranslate"><span class="pre">init</span></code>: there are two items that must be filled out:</p>
+<p><code class="docutils literal notranslate"><span class="pre">port</span></code>: From the manual of the instrument being used, provide the port to communicate with. (For Oxford Triton, this port is <code class="docutils literal notranslate"><span class="pre">33576</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">pollingRate</span></code>: provide a dictionary for how often to poll each parameter given. For each parameter that you wish to fetch data for, add it as a new line in the dictionary, followed by the interval (in seconds) to fetch it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">networking</span></code>: For the dashboard, only one field is required, <code class="docutils literal notranslate"><span class="pre">externalBroadcast</span></code>. Locate the IPv4 address of the computer you are running the instrumentserver on for the internet network you wish to broadcast the data to. Include the port to broadcast to as well.</p>
+<p>Specific to Oxford Triton (from the driver):
+<code class="docutils literal notranslate"><span class="pre">temp_channel_mapping</span></code>: Create a dictionary containing the mapping between name and temperature channel for each channel you would like a named parameter for. In the provided config, 7 Temperature Channels are used to create named parameters. Channels can be found on the Lakeshore thermometry dialog on the fridge computer.</p>
+</section>
+<section id="starting-the-instrument-server">
+<h3>Starting the Instrument Server<a class="headerlink" href="#starting-the-instrument-server" title="Link to this heading">#</a></h3>
+<p>Use the following to start the instrumentserver. Replace serverConfig.yml with the path to the config file you created above.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver<span class="w"> </span>-c<span class="w"> </span>serverConfig.yml<span class="w"> </span>--gui<span class="w"> </span>False
+</pre></div>
+</div>
+<p>You should start the instrumentserver using the above commmand in no GUI mode first (to improve stability). Then, you can use the following detached mode if you wish to use the GUI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver-detached
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following portion assumes the user has:</p>
+<ul class="simple">
+<li><p>instrumentserver installed</p></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="the-listener">
+<h2>The Listener<a class="headerlink" href="#the-listener" title="Link to this heading">#</a></h2>
+<p>To use the dashboard, we will also need to run an instance of the listener on whichever computer you wish to host the dashboard on. (The computer with the listener and the computer with the instrumentserver must be on the same network). The listener can be used for writing data either in a CSV file or the InfluxDB database.</p>
+<section id="id1">
+<h3>Config File<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<p>Below is an example listener configuration file that can be used for the dashboard.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># addresses to listen for broadcasts at</span>
+<span class="nt">addresses</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;tcp://128.174.123.123:6000&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;tcp://128.174.456.456:6000&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;tcp://128.174.789.789:6000&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># list of parameters to listen for, if empty, will listen for all broadcasts</span>
+<span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+
+<span class="c1"># path to write data to for the CSV listener</span>
+<span class="nt">csv_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C:\Users\jmnol\OneDrive\Documents\InstrumentServerData\data.csv</span>
+
+<span class="c1"># type of listener (where the listener writes data to)</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Influx&quot;</span>
+
+<span class="c1"># InfluxDB token for Influx listener</span>
+<span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;token&quot;</span>
+
+<span class="c1"># InfluxDB org for Influx listener</span>
+<span class="nt">org</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pfafflab&quot;</span>
+
+<span class="c1"># InfluxDB buckets for Influx listener, in the same order as addresses</span>
+<span class="nt">bucketDict</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;fridge_nh&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;niflheim&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;fridge_kk&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;kelvin_klein&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;fridge_dt&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;demeter&quot;</span><span class="p p-Indicator">}</span>
+
+<span class="c1"># InfluxDB url for Influx listener</span>
+<span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:8086&quot;</span>
+
+<span class="c1"># measurement Name for Influx listener</span>
+<span class="nt">measurementNameDict</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;fridge_nh&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;niflheim_telemetry&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;fridge_kk&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;kelvin_klein_telemetry&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;fridge_dt&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;demeter_telemetry&quot;</span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+<section id="necessary-parameters-for-using-influxdb">
+<h4>Necessary Parameters for using InfluxDB<a class="headerlink" href="#necessary-parameters-for-using-influxdb" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">addresses</span></code>: List of addresses of where to subscribe to broadcasts from. These are the addresses on the network of the computer running the instrumentserver</p>
+<p><code class="docutils literal notranslate"><span class="pre">params</span></code>: List of all parameters to listen for, if empty, the listener will listen to all broadcasts</p>
+<p><code class="docutils literal notranslate"><span class="pre">type</span></code>: “Influx”</p>
+<p><code class="docutils literal notranslate"><span class="pre">token</span></code>: Token to write to InfluxDB. (Created when setting up Influx)</p>
+<p><code class="docutils literal notranslate"><span class="pre">org</span></code>: Organization to write to InfluxDB. (Created when setting up Influx)</p>
+<p><code class="docutils literal notranslate"><span class="pre">bucketDict</span></code>: Dictionary containing the mapping for each instrument to a bucket in Influx</p>
+<p><code class="docutils literal notranslate"><span class="pre">url</span></code>: URL to where the Influx database is hosted on the computer running the listener</p>
+<p><code class="docutils literal notranslate"><span class="pre">measurementNameDict</span></code>: Name of the measurement (one of the fields for a data point) that will be applied to the data from an instrument</p>
+</section>
+<section id="necessary-parameters-for-using-csv">
+<h4>Necessary Parameters for using CSV<a class="headerlink" href="#necessary-parameters-for-using-csv" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">addresses</span></code>: List of addresses of where to subscribe to broadcasts from. These are the addresses on the network of the computer running the instrumentserver</p>
+<p><code class="docutils literal notranslate"><span class="pre">paramDict</span></code>: Dictionary containing the list of parameters to listen for for each instrument. If the list for an instrument is empty, the listener will listen for all broadcasts from that instrument.</p>
+<p><code class="docutils literal notranslate"><span class="pre">csv_path</span></code>: Path of the csv file to write data to. A CSV file doesn’t need to exist at the path as the listener will create one if one does not exist.</p>
+<p><code class="docutils literal notranslate"><span class="pre">type</span></code>: “CSV”</p>
+</section>
+</section>
+<section id="starting-the-listener">
+<h3>Starting the Listener<a class="headerlink" href="#starting-the-listener" title="Link to this heading">#</a></h3>
+<p>Use the following to start the instrumentserver. Replace listenerConfig.yml with the path to the config file you created above.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>instrumentserver-listener<span class="w"> </span>-c<span class="w"> </span>listenerConfig.yml
+</pre></div>
+</div>
+<p>One may choose to use the following command to not display output and instead have it written to a file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>nohup<span class="w"> </span>instrumentserver-listener<span class="w"> </span>-c<span class="w"> </span>listenerConfig.yml
+</pre></div>
+</div>
+<p>The process can be killed with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>instrumentserver-listener
+</pre></div>
+</div>
+<p>You can then find the ID number of the process and kill it with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">kill</span><span class="w"> </span>-15<span class="w"> </span><span class="o">{</span>INSERT<span class="w"> </span>ID<span class="o">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following portion assumes the user has the Docker Engine installed and basic familiarity with Docker</p>
+</div>
+</section>
+</section>
+<section id="docker">
+<h2>Docker<a class="headerlink" href="#docker" title="Link to this heading">#</a></h2>
+<p>Docker is the service that will be used to host both Influx and Grafana.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">services</span><span class="p">:</span>
+
+<span class="w">  </span><span class="nt">grafana</span><span class="p">:</span>
+
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;1000:1000&#39;</span>
+
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana-storage:/var/lib/grafana</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data:/etc/grafana/data</span>
+
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;export</span><span class="nv"> </span><span class="s">GF_SECURITY_ADMIN_USER=$(cat</span><span class="nv"> </span><span class="s">/run/secrets/.env.grafana-username)</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">/run.sh&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;export</span><span class="nv"> </span><span class="s">GF_SECURITY_ADMIN_PASSWORD=$(cat</span><span class="nv"> </span><span class="s">/run/secrets/.env.grafana-password)</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">/run.sh&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana-username</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana-password</span>
+
+<span class="w">  </span><span class="nt">influxdb2</span><span class="p">:</span>
+
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb:2</span>
+
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080:8080</span>
+
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DOCKER_INFLUXDB_INIT_MODE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setup</span>
+<span class="w">      </span><span class="nt">DOCKER_INFLUXDB_INIT_USERNAME_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/influxdb2-admin-username</span>
+<span class="w">      </span><span class="nt">DOCKER_INFLUXDB_INIT_PASSWORD_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/influxdb2-admin-password</span>
+<span class="w">      </span><span class="nt">DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/influxdb2-admin-token</span>
+<span class="w">      </span><span class="nt">DOCKER_INFLUXDB_INIT_ORG</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">org</span>
+<span class="w">      </span><span class="nt">DOCKER_INFLUXDB_INIT_BUCKET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bucket1</span>
+
+<span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb2-admin-username</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb2-admin-password</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb2-admin-token</span>
+
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">        </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb2-data</span>
+<span class="w">        </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/influxdb2</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">        </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb2-config</span>
+<span class="w">        </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/influxdb2</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grafana-storage</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="nt">influxdb2-data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">influxdb2-config</span><span class="p">:</span>
+
+<span class="nt">secrets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grafana-username</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env.grafana-username</span>
+<span class="w">  </span><span class="nt">grafana-password</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env.grafana-password</span>
+<span class="w">  </span><span class="nt">influxdb2-admin-username</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env.influxdb2-admin-username</span>
+<span class="w">  </span><span class="nt">influxdb2-admin-password</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env.influxdb2-admin-password</span>
+<span class="w">  </span><span class="nt">influxdb2-admin-token</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.env.influxdb2-admin-token</span>
+</pre></div>
+</div>
+<p>Above is a sample Docker Compose file. This is what is used to start the instances of Grafana and InfluxDB. Most of it should not be modified.</p>
+<p>To use the above file, provide 5 files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">grafana</span><span class="o">-</span><span class="n">username</span>
+ <span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">grafana</span><span class="o">-</span><span class="n">password</span>
+ <span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">influxdb2</span><span class="o">-</span><span class="n">admin</span><span class="o">-</span><span class="n">username</span>
+ <span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">influxdb2</span><span class="o">-</span><span class="n">admin</span><span class="o">-</span><span class="n">password</span>
+ <span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">influxdb2</span><span class="o">-</span><span class="n">admin</span><span class="o">-</span><span class="n">token</span>
+</pre></div>
+</div>
+<p>These will be the respective usernames and passwords for each service, and then a token for the database, which is used by the entity writing to the database. These files should be in the same directory as the docker compose file.</p>
+<p>If you wish to add more plugins, modify a few things:</p>
+<ol class="arabic simple">
+<li><p>Modify the Dockerfile. On the line including, “GF_INSTALL_PLUGINS”, include your wanted plugins in a comma-separated list.</p></li>
+<li><p>Run the following command:</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span><span class="o">(</span>insert-image-name<span class="o">)</span><span class="w"> </span>.
+</pre></div>
+</div>
+<p>Replace (insert-image-name) with your desired name and directory location.</p>
+<ol class="arabic simple" start="3">
+<li><p>Modify the docker compose file:
+Under the grafana section, under “image”, replace the default image “grafana” with your newly created image.</p></li>
+</ol>
+<p>Now that your Docker compose is fully set up, you can start both services with the following command (run in the directory of the docker compose file)</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+</pre></div>
+</div>
+<p>You can then close both with the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>down
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Closing will take ~ 10 seconds</p>
+</div>
+</section>
+<section id="influxdb">
+<h2>InfluxDB<a class="headerlink" href="#influxdb" title="Link to this heading">#</a></h2>
+<p>Now that you have the instances of Grafana and Influx working, there is a bit more setup necessary to put it all together.</p>
+<p>First, you must create a bucket where you wish to store your data.</p>
+<p>Now, you should have all of the necessary information to fill out the config file for the listener (section is above). As long as everything is set up correctly, if the listener is running and receiving data, it should be writing the data it receives to Influx.</p>
+</section>
+<section id="grafana">
+<h2>Grafana<a class="headerlink" href="#grafana" title="Link to this heading">#</a></h2>
+<p>Now that you have an Influx database being populated by your data, you are ready to set up a dashboard. To create a dashboard, please follow the documentation for grafana <a class="reference external" href="https://grafana.com/docs/grafana/latest/dashboards/">https://grafana.com/docs/grafana/latest/dashboards/</a>.</p>
+<p>To use the data from Influx, you must add it as a source: <a class="reference external" href="https://grafana.com/docs/grafana/latest/datasources/">https://grafana.com/docs/grafana/latest/datasources/</a></p>
+<p>Then, within each panel of the dashboard, you must write a query to get the correct data from the database.</p>
+<p>Here is an example query that may be helpful (or a good starting point):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">from</span><span class="p">(</span><span class="n">bucket</span><span class="p">:</span> <span class="s2">&quot;bucket1&quot;</span><span class="p">)</span>
+  <span class="o">|&gt;</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">timeRangeStart</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">timeRangeStop</span><span class="p">)</span>
+  <span class="o">|&gt;</span> <span class="nb">filter</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;_measurement&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;measurement1&quot;</span><span class="p">)</span>
+  <span class="o">|&gt;</span> <span class="nb">filter</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;_field&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span>
+  <span class="o">|&gt;</span> <span class="nb">filter</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;bucket1.param1&quot;</span> <span class="ow">or</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;bucket1.param2&quot;</span><span class="p">)</span>
+  <span class="o">|&gt;</span> <span class="n">aggregateWindow</span><span class="p">(</span><span class="n">every</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">windowPeriod</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">mean</span><span class="p">,</span> <span class="n">createEmpty</span><span class="p">:</span> <span class="n">false</span><span class="p">)</span>
+  <span class="o">|&gt;</span> <span class="k">yield</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;mean&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above query will display parameters in bucket1 with fields “measurement” being “measurement1”, “field” being “value”, and name being “param1” or “param2”.</p>
+<p>When creating your panel, select “Time Series” in Grafana.</p>
+<p>More information on creating dashboards can be found on the grafana documentation page: <a class="reference external" href="https://grafana.com/docs/grafana/latest/dashboards/">https://grafana.com/docs/grafana/latest/dashboards/</a>.</p>
+<p>Also, information on setting up Slack alerts can also be found there.</p>
+<section id="notification-templates">
+<h3>Notification Templates<a class="headerlink" href="#notification-templates" title="Link to this heading">#</a></h3>
+<p>Here is a sample notification template:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="p">{{</span><span class="w"> </span><span class="nx">define</span><span class="w"> </span><span class="s">&quot;general.title&quot;</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">gt</span><span class="w"> </span><span class="p">(</span><span class="nx">len</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="w"> </span><span class="p">}}</span>
+<span class="nx">Alert</span><span class="p">:</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="p">.</span><span class="nx">Labels</span><span class="p">.</span><span class="nx">alertname</span><span class="w"> </span><span class="p">}}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="p">.</span><span class="nx">Status</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">title</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">}}</span>
+<span class="nx">No</span><span class="w"> </span><span class="nx">active</span><span class="w"> </span><span class="nx">alerts</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+
+<span class="p">{{</span><span class="w"> </span><span class="nx">define</span><span class="w"> </span><span class="s">&quot;general.message&quot;</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">or</span><span class="w"> </span><span class="p">(</span><span class="nx">gt</span><span class="w"> </span><span class="p">(</span><span class="nx">len</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">.</span><span class="nx">Firing</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">gt</span><span class="w"> </span><span class="p">(</span><span class="nx">len</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">.</span><span class="nx">Resolved</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">gt</span><span class="w"> </span><span class="p">(</span><span class="nx">len</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">.</span><span class="nx">Firing</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">.</span><span class="nx">Firing</span><span class="w"> </span><span class="p">}}</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">Alert</span><span class="w"> </span><span class="nx">Name</span><span class="p">:</span><span class="o">**</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="p">.</span><span class="nx">Labels</span><span class="p">.</span><span class="nx">alertname</span><span class="w"> </span><span class="p">}}</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">Description</span><span class="p">:</span><span class="o">**</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="p">.</span><span class="nx">Annotations</span><span class="p">.</span><span class="nx">summary</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+
+<span class="p">{{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">gt</span><span class="w"> </span><span class="p">(</span><span class="nx">len</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">.</span><span class="nx">Resolved</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">.</span><span class="nx">Alerts</span><span class="p">.</span><span class="nx">Resolved</span><span class="w"> </span><span class="p">}}</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">Alert</span><span class="w"> </span><span class="nx">Name</span><span class="p">:</span><span class="o">**</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="p">.</span><span class="nx">Labels</span><span class="p">.</span><span class="nx">alertname</span><span class="w"> </span><span class="p">}}</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">Description</span><span class="p">:</span><span class="o">**</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="p">.</span><span class="nx">Annotations</span><span class="p">.</span><span class="nx">summary</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">}}</span>
+<span class="nx">No</span><span class="w"> </span><span class="nx">alerts</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">display</span><span class="p">.</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+<span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-alert-conditions-in-grafana">
+<h3>Creating Alert Conditions in Grafana<a class="headerlink" href="#creating-alert-conditions-in-grafana" title="Link to this heading">#</a></h3>
+<p>On the homepage, navigate to Alert Rules</p>
+<p><img alt="alert rules" src="../_images/alert_rules.png" /></p>
+<p>For creating new alerts rules for a dashboard with existing rules, it is easiest to duplicate an existing rule. Navigate under the folder of the instrument you wish to create a new alert for:</p>
+<p><img alt="duplicate" src="../_images/duplicate.png" /></p>
+<p>First, enter the name of the alert you want to add:</p>
+<p><img alt="name" src="../_images/enter_name.png" /></p>
+<p>If you are creating an alert for a parameter that is different from the rule you duplicated, you must change the database query. Replace the highlighted portion with the parameter you want to set up an alert for. (Names of parameters can be seen under the dashboard graphs)</p>
+<p><img alt="changequery" src="../_images/modify_query.png" /></p>
+<p>To change the alert condition, only modify the highlighted portion, select a condition such as “is below”, and then input the wanted value of the condition. For example if we wanted to send an alert when the temperature of a plate goes below 50 mK, you would choose “is below” and “0.050”.</p>
+<p><img alt="changecondition" src="../_images/change_condition.png" /></p>
+<p>Assuming you duplicating an existing alert, the only part left to add is a description like the picture shown below:</p>
+<p><img alt="changemessage" src="../_images/change_message.png" /></p>
+<p>Then, navigate to the top right of the screen and select “Save rule and exit”.</p>
+<p>The new alert rule should now be working.</p>
+<section id="creating-slack-bots">
+<h4>Creating Slack Bots<a class="headerlink" href="#creating-slack-bots" title="Link to this heading">#</a></h4>
+<p>To create a slack bot, head to <a class="reference external" href="https://api.slack.com/apps">https://api.slack.com/apps</a>. Create a new application, and add it to the slack workspace you want to send alert in. Go to your application, and go to “Incoming Webhooks” under Features. Create a new webhook with the channel you want to post alerts in. You will use this in Grafana in order to send messages in slack.</p>
+<p>In this application menu, you can also edit other general features of the bot, such as its status, description, and profile picture.</p>
+</section>
+<section id="creating-alert-conditions-from-scratch">
+<h4>Creating Alert Conditions from Scratch<a class="headerlink" href="#creating-alert-conditions-from-scratch" title="Link to this heading">#</a></h4>
+<p>If there are no existing alert conditions for the dashboard you wish to set up, follow this portion.</p>
+<p>First, navigate to the Contact Points tab. Go to Notification Templates and make sure you have a message and title template. Examples can be found in <a class="reference internal" href="#notification-templates"><span class="std std-ref">notificationtemplates</span></a>.</p>
+<p>Then, go back to the main contact points tab, and check if there is a contact point for the dashboard you are setting up alerts for. If not, select “Create Contact Point”.</p>
+<p><img alt="contactpoint" src="../_images/new_contact_point.png" /></p>
+<p>Choose a name corresponding to the dashboard. Choose your integration type. For this guide we will choose Slack. Then, fill in the Webhook url section with the webhook of the channel you wish to send alerts to. You must have a Slack App set up. Information on how to do this can be found on Slack API website.</p>
+<p>Then, under optional slack settings, use the two created templates to upload to the “title” and “text body” fields.</p>
+<p>Navigate to the Notification Policies tab, under Alerting. Under the default policy, select “new child policy”.</p>
+<p><img alt="childpolicy" src="../_images/child_policy.png" /></p>
+<p>Fill in the label portion with the name of the instrument/dashboard, and have the condition be “= 1”. Add the contact point you just created to the policy. Then, select “Override General timings”, and set the repeat interval to a high number “say 52w”. This will ensure the alert will only fire once, at the moment the threshold is passed.</p>
+<p>Then, navigate to the alert rules tab and select “New alert rule”. Follow <a class="reference internal" href="#creating-alert-conditions-in-grafana"><span class="std std-ref">creatingconditions</span></a> to fill out sections 1 and 2.</p>
+<p>Now you should be on section 3. “Set evaluation behaviour. I would recommend creating a new folder for your instrument/dashboard if one does not exist. Then, create a default evaluation group (can be used for all the elements in the folder). I have found that evaluation every 30 seconds with a 30 second pending period work well. Then, navigate to “Configure no data and error handling”. I have found that using “Keep Last State” for both will result in no false alerts if missing/bad data is encountered.</p>
+<p><img alt="evaluationbehavior" src="../_images/evaluation_behavior.png" /></p>
+<p>Then, under “Configure labels and notifications”, set your label you created on the notification policy to 1, and under “Notifications”, select “Use notification policy”</p>
+<p>You may want to use the preview routing option to make sure everything is set up correctly.</p>
+<p>Then, you should configure the notification message under part 5 with a description for your alert. Then you can select “Save rule and exit” in the top right.</p>
+<p>Your alert condition should now be working correctly and sending slack alerts when the threshold you set it passed.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="configuration.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Configuration Files</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../examples/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Code Examples</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start-guide">Quick Start Guide</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-instrumentserver-setup">Step 1: Instrumentserver setup</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-influxdb-and-grafana">Step 2: InfluxDB and Grafana</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-the-listener">Step 3: The Listener</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-grafana-customization">Step 4: Grafana Customization</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-instrumentserver">The Instrumentserver</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#config-file">Config File</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-instrument-server">Starting the Instrument Server</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-listener">The Listener</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Config File</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#necessary-parameters-for-using-influxdb">Necessary Parameters for using InfluxDB</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#necessary-parameters-for-using-csv">Necessary Parameters for using CSV</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-listener">Starting the Listener</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#docker">Docker</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#influxdb">InfluxDB</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grafana">Grafana</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#notification-templates">Notification Templates</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-alert-conditions-in-grafana">Creating Alert Conditions in Grafana</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-slack-bots">Creating Slack Bots</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-alert-conditions-from-scratch">Creating Alert Conditions from Scratch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/user_guide/instrumentmonitoring.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

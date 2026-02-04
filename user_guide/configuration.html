@@ -1,0 +1,1002 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Configuration Files &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/configuration';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/user_guide/configuration.html" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Instrument Monitoring" href="instrumentmonitoring.html" />
+    <link rel="prev" title="User Guide" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Configuration Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentmonitoring.html">Instrument Monitoring</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Configuration Files</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="configuration-files">
+<h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Link to this heading">#</a></h1>
+<p>This page covers the configuration files used by InstrumentServer: the <strong>server configuration</strong> file and the <strong>listener configuration</strong> file.</p>
+<section id="server-configuration">
+<h2>Server Configuration<a class="headerlink" href="#server-configuration" title="Link to this heading">#</a></h2>
+<p>The server configuration file (typically <code class="docutils literal notranslate"><span class="pre">serverConfig.yml</span></code>) configures instruments, GUI defaults, and networking settings for the InstrumentServer.</p>
+<section id="example-file">
+<h3>Example File<a class="headerlink" href="#example-file" title="Link to this heading">#</a></h3>
+<p>You can view the example file on GitHub: <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/master/docs/user_guide/serverConfig.yml">serverConfig.yml</a></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Server Configuration File</span>
+<span class="c1"># ========================</span>
+<span class="c1">#</span>
+<span class="c1"># This file configures instruments and GUI defaults for the InstrumentServer.</span>
+<span class="c1">#</span>
+<span class="c1"># GLOB PATTERN MATCHING</span>
+<span class="c1"># ---------------------</span>
+<span class="c1"># All hide/star/trash configuration lists support glob pattern matching:</span>
+<span class="c1">#   *           Matches any number of characters</span>
+<span class="c1">#               Example: &quot;power_*&quot; matches &quot;power_level&quot;, &quot;power_offset&quot;, &quot;power_max&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#   ?           Matches exactly one character</span>
+<span class="c1">#               Example: &quot;ch?_gain&quot; matches &quot;ch1_gain&quot;, &quot;ch2_gain&quot;, &quot;chA_gain&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#   [seq]       Matches any character in the sequence</span>
+<span class="c1">#               Example: &quot;trace_[0-3]&quot; matches &quot;trace_0&quot;, &quot;trace_1&quot;, &quot;trace_2&quot;, &quot;trace_3&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#   [!seq]      Matches any character NOT in the sequence</span>
+<span class="c1">#               Example: &quot;param_[!xy]&quot; matches &quot;param_a&quot;, &quot;param_z&quot; but NOT &quot;param_x&quot; or &quot;param_y&quot;</span>
+<span class="c1">#</span>
+<span class="c1"># You can use exact names or glob patterns in any hide/star/trash list.</span>
+<span class="c1">#</span>
+<span class="c1"># From qcodes station config, the first field must be instruments for instruments config</span>
+<span class="nt">instruments</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Name of the instrument</span>
+<span class="w">  </span><span class="nt">rr</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># The class of the instrument</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.testing.dummy_instruments.rf.ResonatorResponse</span>
+<span class="w">    </span><span class="c1"># If initialize is true, the server will create an instance of this instrument at startup</span>
+<span class="w">    </span><span class="nt">initialize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+
+<span class="w">  </span><span class="nt">dummy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule</span>
+<span class="w">    </span><span class="nt">initialize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="c1"># If you want to specify any configuration for the gui, it must be under the gui field.</span>
+<span class="w">    </span><span class="nt">gui</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># Indicates the class of the widget that will be shown when the instrument window is open.</span>
+<span class="w">      </span><span class="c1"># Can be either &#39;generic&#39; or the python class for it</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generic</span>
+<span class="w">      </span><span class="c1"># any item under kwargs will be passed to the constructor of the widget as kwargs.</span>
+<span class="w">      </span><span class="c1"># The following are kwargs specifically for the generic widget</span>
+<span class="w">      </span><span class="nt">kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Instance-specific config: These settings apply ONLY to this &#39;dummy&#39; instance</span>
+<span class="w">        </span><span class="c1"># They will be MERGED with gui_defaults for this class (DummyInstrumentWithSubmodule)</span>
+<span class="w">        </span><span class="c1">#</span>
+<span class="w">        </span><span class="c1"># For this &#39;dummy&#39; instance, the final merged config will include:</span>
+<span class="w">        </span><span class="c1">#   From __default__: [IDN, device_id, timeout] (but IDN is overridden below)</span>
+<span class="w">        </span><span class="c1">#   From DummyInstrumentWithSubmodule class: [param*, A] (param* will match param0, param1, etc.)</span>
+<span class="w">        </span><span class="c1">#   From this instance: [A, B.ch0, IDN] (below)</span>
+<span class="w">        </span><span class="c1"># Final parameters-hide = [device_id, timeout, param*, A, B.ch0, IDN]</span>
+
+<span class="w">        </span><span class="c1"># Any parameters inside parameters-hide will never be loaded or shown.</span>
+<span class="w">        </span><span class="nt">parameters-hide</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A</span><span class="w">              </span><span class="c1"># Instance-specific: hide parameter A</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">B.ch0</span><span class="w">          </span><span class="c1"># Instance-specific: hide submodule parameter</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IDN</span><span class="w">            </span><span class="c1"># Instance-specific: explicitly hide IDN (also in __default__)</span>
+
+<span class="w">        </span><span class="c1"># Any parameters inside parameters-star will start being starred.</span>
+<span class="w">        </span><span class="nt">parameters-star</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">param0</span><span class="w">         </span><span class="c1"># Instance-specific: star param0</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C</span><span class="w">              </span><span class="c1"># Merged with class default which also stars C</span>
+
+<span class="w">        </span><span class="c1"># Any parameters inside parameters-trash will start trashed.</span>
+<span class="w">        </span><span class="nt">parameters-trash</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">param1</span>
+
+<span class="w">        </span><span class="c1"># Any methods inside methods-hide will never be loaded or shown.</span>
+<span class="w">        </span><span class="nt">methods-hide</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C.dummy_function</span>
+
+<span class="w">        </span><span class="c1"># Any methods inside methods-star will start being starred.</span>
+<span class="w">        </span><span class="nt">methods-star</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_func</span>
+
+<span class="w">        </span><span class="c1"># Any methods inside methods-star will start being starred.</span>
+<span class="w">        </span><span class="nt">methods-trash</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">B</span>
+
+<span class="w">  </span><span class="nt">parameter_manager</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.params.ParameterManager</span>
+<span class="w">    </span><span class="nt">initialize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+
+<span class="w">    </span><span class="nt">gui</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># By having the parameter manager GUI as the gui type, we can have it directly in the server instead of on a separate window.</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instrumentserver.gui.instruments.ParameterManagerGui</span>
+
+<span class="c1"># GUI defaults: Class-based configuration that applies to all instances of a given instrument class</span>
+<span class="c1"># These are merged with instance-specific gui.kwargs configs (instance settings take precedence)</span>
+<span class="c1"># Merge order: __default__ → ClassName → instance-specific</span>
+<span class="nt">gui_defaults</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># __default__ applies to ALL instruments (unless overridden)</span>
+<span class="w">  </span><span class="nt">__default__</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Hide common parameters across all instruments</span>
+<span class="w">    </span><span class="nt">parameters-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IDN</span><span class="w">              </span><span class="c1"># Hide identification parameter</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">device_id</span><span class="w">        </span><span class="c1"># Hide device ID</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timeout</span><span class="w">          </span><span class="c1"># Hide timeout setting</span>
+
+<span class="w">    </span><span class="c1"># Hide common methods across all instruments</span>
+<span class="w">    </span><span class="nt">methods-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get_idn</span><span class="w">          </span><span class="c1"># Hide get_idn method</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">snapshot</span><span class="w">         </span><span class="c1"># Hide snapshot method</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">print_readable_snapshot</span>
+
+<span class="w">  </span><span class="c1"># Class-specific defaults - applies to all instances of DummyInstrumentWithSubmodule</span>
+<span class="w">  </span><span class="nt">DummyInstrumentWithSubmodule</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">parameters-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">param*</span><span class="w">           </span><span class="c1"># Wildcard: hide all parameters starting with &#39;param&#39;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A</span><span class="w">                </span><span class="c1"># Hide specific parameter &#39;A&#39;</span>
+
+<span class="w">    </span><span class="nt">methods-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_*</span><span class="w">           </span><span class="c1"># Wildcard: hide all methods starting with &#39;test_&#39;</span>
+
+<span class="w">    </span><span class="c1"># These would be starred by default for all DummyInstrumentWithSubmodule instances</span>
+<span class="w">    </span><span class="nt">parameters-star</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C</span>
+
+<span class="w">    </span><span class="nt">methods-star</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dummy_function</span>
+
+<span class="w">  </span><span class="c1"># Another class example - ResonatorResponse</span>
+<span class="w">  </span><span class="nt">ResonatorResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">parameters-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calibration_*</span><span class="w">    </span><span class="c1"># Hide all calibration parameters</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">raw_data</span><span class="w">         </span><span class="c1"># Hide raw data parameter</span>
+
+<span class="w">    </span><span class="nt">parameters-star</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frequency</span><span class="w">        </span><span class="c1"># Star important parameters by default</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">power</span>
+
+<span class="w">  </span><span class="c1"># Example for a real instrument class</span>
+<span class="w">  </span><span class="nt">Keysight_E5080B</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">parameters-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">power_*</span><span class="w">          </span><span class="c1"># Hide all power-related parameters</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">if_bandwidth_*</span><span class="w">   </span><span class="c1"># Hide IF bandwidth parameters</span>
+
+<span class="w">    </span><span class="nt">methods-hide</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reset</span><span class="w">            </span><span class="c1"># Hide reset method</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clear_status</span>
+
+<span class="w">    </span><span class="nt">parameters-star</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">start_frequency</span><span class="w">  </span><span class="c1"># Star the most important parameters</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stop_frequency</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">center_frequency</span>
+
+<span class="c1"># Field for adding broadcasting and listening addresses to the instrument server</span>
+<span class="nt">networking</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Adds additional address to listen to messages received by the server, Example: &quot;192.168.1.1&quot;</span>
+<span class="w">  </span><span class="nt">listeningAddress</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;192.168.1.1&quot;</span>
+
+<span class="w">  </span><span class="c1"># Adds an address to broadcast parameter changes to, Example: &quot;tcp://192.168.1.1:6000&quot;</span>
+<span class="w">  </span><span class="nt">externalBroadcast</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tcp://192.168.1.1:6000&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="instruments-section">
+<h3>Instruments Section<a class="headerlink" href="#instruments-section" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">instruments</span></code> section defines the instruments that the server will manage. Each instrument is identified by a name (e.g., <code class="docutils literal notranslate"><span class="pre">rr</span></code>, <code class="docutils literal notranslate"><span class="pre">dummy</span></code>) and has the following fields:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p>The fully qualified Python class path for the instrument (QCoDeS driver)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">initialize</span></code></p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">true</span></code>, the server creates an instance of this instrument at startup</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">address</span></code></p></td>
+<td><p>(Optional) The network address of the instrument</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
+<td><p>(Optional) Additional initialization parameters passed to the instrument constructor</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gui</span></code></p></td>
+<td><p>(Optional) GUI-specific configuration for the instrument</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="gui-configuration">
+<h4>GUI Configuration<a class="headerlink" href="#gui-configuration" title="Link to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">gui</span></code> field within an instrument allows customization of how the instrument appears in the GUI:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p>Widget class to use. Can be <code class="docutils literal notranslate"><span class="pre">generic</span></code> or a fully qualified Python class path</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kwargs</span></code></p></td>
+<td><p>Arguments passed to the widget constructor</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Within <code class="docutils literal notranslate"><span class="pre">kwargs</span></code>, you can configure which parameters and methods are hidden, starred, or trashed:</p>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">parameters-hide</span></code></strong>: Parameters that will never be loaded or shown</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">parameters-star</span></code></strong>: Parameters that start as starred (favorites)</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">parameters-trash</span></code></strong>: Parameters that start in the trash</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">methods-hide</span></code></strong>: Methods that will never be loaded or shown</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">methods-star</span></code></strong>: Methods that start as starred</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">methods-trash</span></code></strong>: Methods that start in the trash</p></li>
+</ul>
+</section>
+</section>
+<section id="gui-defaults-section">
+<h3>GUI Defaults Section<a class="headerlink" href="#gui-defaults-section" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">gui_defaults</span></code> section defines class-based defaults that apply to all instances of a given instrument class. This allows you to set common configurations once rather than repeating them for each instrument instance.</p>
+<p><strong>Merge Order</strong>: <code class="docutils literal notranslate"><span class="pre">__default__</span></code> → <code class="docutils literal notranslate"><span class="pre">ClassName</span></code> → <code class="docutils literal notranslate"><span class="pre">instance-specific</span></code></p>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">__default__</span></code></strong>: Settings that apply to ALL instruments unless overridden</p></li>
+<li><p><strong>Class-specific</strong> (e.g., <code class="docutils literal notranslate"><span class="pre">DummyInstrumentWithSubmodule</span></code>): Settings that apply to all instances of that specific class</p></li>
+<li><p><strong>Instance-specific</strong>: Settings defined in the instrument’s <code class="docutils literal notranslate"><span class="pre">gui.kwargs</span></code> section</p></li>
+</ul>
+</section>
+<section id="glob-pattern-matching">
+<h3>Glob Pattern Matching<a class="headerlink" href="#glob-pattern-matching" title="Link to this heading">#</a></h3>
+<p>All hide/star/trash lists support glob pattern matching:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Pattern</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">*</span></code></p></td>
+<td><p>Matches any number of characters</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">power_*</span></code> matches <code class="docutils literal notranslate"><span class="pre">power_level</span></code>, <code class="docutils literal notranslate"><span class="pre">power_offset</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">?</span></code></p></td>
+<td><p>Matches exactly one character</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ch?_gain</span></code> matches <code class="docutils literal notranslate"><span class="pre">ch1_gain</span></code>, <code class="docutils literal notranslate"><span class="pre">ch2_gain</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">[seq]</span></code></p></td>
+<td><p>Matches any character in the sequence</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">trace_[0-3]</span></code> matches <code class="docutils literal notranslate"><span class="pre">trace_0</span></code> through <code class="docutils literal notranslate"><span class="pre">trace_3</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">[!seq]</span></code></p></td>
+<td><p>Matches any character NOT in the sequence</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">param_[!xy]</span></code> matches <code class="docutils literal notranslate"><span class="pre">param_a</span></code> but not <code class="docutils literal notranslate"><span class="pre">param_x</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="networking-section">
+<h3>Networking Section<a class="headerlink" href="#networking-section" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">networking</span></code> section configures network addresses for the server:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">listeningAddress</span></code></p></td>
+<td><p>Additional address to listen for incoming messages</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">externalBroadcast</span></code></p></td>
+<td><p>Address to broadcast parameter changes to (for listeners/dashboards)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="listener-configuration">
+<h2>Listener Configuration<a class="headerlink" href="#listener-configuration" title="Link to this heading">#</a></h2>
+<p>The listener configuration file (typically <code class="docutils literal notranslate"><span class="pre">listenerConfig.yml</span></code>) configures the listener service that subscribes to broadcasts from instrument servers and writes data to storage (InfluxDB or CSV).</p>
+<section id="id1">
+<h3>Example File<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<p>You can view the example file on GitHub: <a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/blob/master/docs/user_guide/listenerConfig.yml">listenerConfig.yml</a></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># addresses to listen for broadcasts at</span>
+<span class="nt">addresses</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;tcp://128.174.164.60:6000&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;tcp://10.192.182.159:6000&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># list of parameters to listen for, if empty, will listen for all broadcasts</span>
+<span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;dummy_instrument_random_number.param0&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;dummy_instrument_random_number.param2&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># path to write data to for the CSV listener</span>
+<span class="nt">csv_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C:\Users\jmnol\OneDrive\Documents\InstrumentServerData\data.csv</span>
+
+<span class="c1"># type of listener (where the listener writes data to)</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Influx&quot;</span>
+
+<span class="c1"># InfluxDB token for Influx listener</span>
+<span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pretty_fridges&quot;</span>
+
+<span class="c1"># InfluxDB org for Influx listener</span>
+<span class="nt">org</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pfafflab&quot;</span>
+
+<span class="c1"># InfluxDB buckets for Influx listener, keyed by instrument name</span>
+<span class="nt">bucketDict</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;fridge_nh&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;niflheim&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;fridge_kk&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;kelvin_klein&quot;</span><span class="p p-Indicator">}</span>
+
+<span class="c1"># InfluxDB url for Influx listener</span>
+<span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:8086&quot;</span>
+
+<span class="c1"># measurement Name for Influx listener, keyed by instrument name</span>
+<span class="nt">measurementNameDict</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;fridge_nh&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;niflheim_telemetry&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;fridge_kk&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;kelvin_klein_telemetry&quot;</span><span class="p p-Indicator">}</span>
+
+<span class="c1"># timezone for Influx listener</span>
+<span class="nt">timezone_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CDT&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="common-fields">
+<h3>Common Fields<a class="headerlink" href="#common-fields" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">addresses</span></code></p></td>
+<td><p>List of addresses to subscribe to broadcasts from (from instrument servers)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">params</span></code></p></td>
+<td><p>List of parameters to listen for. If empty, listens for all broadcasts</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p>Type of listener: <code class="docutils literal notranslate"><span class="pre">&quot;Influx&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;CSV&quot;</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="influxdb-specific-fields">
+<h3>InfluxDB-Specific Fields<a class="headerlink" href="#influxdb-specific-fields" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">token</span></code></p></td>
+<td><p>InfluxDB authentication token</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">org</span></code></p></td>
+<td><p>InfluxDB organization name</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bucketDict</span></code></p></td>
+<td><p>Dictionary mapping instrument names to InfluxDB buckets</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">url</span></code></p></td>
+<td><p>URL where InfluxDB is hosted (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;http://localhost:8086&quot;</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">measurementNameDict</span></code></p></td>
+<td><p>Dictionary mapping instrument names to measurement names</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">timezone_name</span></code></p></td>
+<td><p>Timezone for timestamps (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;CDT&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;UTC&quot;</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="csv-specific-fields">
+<h3>CSV-Specific Fields<a class="headerlink" href="#csv-specific-fields" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">csv_path</span></code></p></td>
+<td><p>Path to the CSV file for data output. File will be created if it doesn’t exist</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="starting-services">
+<h2>Starting Services<a class="headerlink" href="#starting-services" title="Link to this heading">#</a></h2>
+<section id="starting-the-server">
+<h3>Starting the Server<a class="headerlink" href="#starting-the-server" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>instrumentserver<span class="w"> </span>-c<span class="w"> </span>serverConfig.yml
+</pre></div>
+</div>
+<p>To run without the GUI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>instrumentserver<span class="w"> </span>-c<span class="w"> </span>serverConfig.yml<span class="w"> </span>--gui<span class="w"> </span>False
+</pre></div>
+</div>
+</section>
+<section id="starting-the-listener">
+<h3>Starting the Listener<a class="headerlink" href="#starting-the-listener" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>instrumentserver-listener<span class="w"> </span>-c<span class="w"> </span>listenerConfig.yml
+</pre></div>
+</div>
+<p>To run in the background with output redirected:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nohup<span class="w"> </span>instrumentserver-listener<span class="w"> </span>-c<span class="w"> </span>listenerConfig.yml<span class="w"> </span><span class="p">&amp;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">User Guide</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="instrumentmonitoring.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Instrument Monitoring</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#server-configuration">Server Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-file">Example File</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instruments-section">Instruments Section</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gui-configuration">GUI Configuration</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gui-defaults-section">GUI Defaults Section</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#glob-pattern-matching">Glob Pattern Matching</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#networking-section">Networking Section</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#listener-configuration">Listener Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Example File</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#common-fields">Common Fields</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#influxdb-specific-fields">InfluxDB-Specific Fields</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#csv-specific-fields">CSV-Specific Fields</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-services">Starting Services</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-server">Starting the Server</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-listener">Starting the Listener</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/user_guide/configuration.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

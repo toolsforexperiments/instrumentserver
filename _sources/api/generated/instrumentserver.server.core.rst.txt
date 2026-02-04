@@ -1,0 +1,18 @@
+instrumentserver.server.core
+============================
+
+.. automodule:: instrumentserver.server.core
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      startServer
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      StationServer
+   

@@ -1,0 +1,34 @@
+﻿instrumentserver.blueprints
+===========================
+
+.. automodule:: instrumentserver.blueprints
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      bluePrintFromInstrumentModule
+      bluePrintFromMethod
+      bluePrintFromParameter
+      bluePrintToDict
+      deserialize_obj
+      dict_to_serialized_dict
+      iterable_to_serialized_dict
+      to_dict
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CallSpec
+      InstrumentCreationSpec
+      InstrumentModuleBluePrint
+      MethodBluePrint
+      Operation
+      ParameterBluePrint
+      ParameterBroadcastBluePrint
+      ParameterSerializeSpec
+      ServerInstruction
+      ServerResponse
+   

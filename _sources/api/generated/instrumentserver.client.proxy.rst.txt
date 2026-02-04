@@ -1,0 +1,19 @@
+instrumentserver.client.proxy
+=============================
+
+.. automodule:: instrumentserver.client.proxy
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Client
+      ClientStation
+      ProxyInstrument
+      ProxyInstrumentModule
+      ProxyMixin
+      ProxyParameter
+      QtClient
+      SubClient
+   

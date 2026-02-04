@@ -1,0 +1,31 @@
+instrumentserver.server.application
+===================================
+
+.. automodule:: instrumentserver.server.application
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      bluePrintToHtml
+      instrumentToHtml
+      onExceptionDialog
+      parameterToHtml
+      startServerGuiApplication
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CreateInstrumentDialog
+      DetachedServerGui
+      EmbeddedClient
+      InstrumentsCreator
+      PossibleInstrumentDisplayItem
+      PossibleInstrumentsDisplay
+      ServerGui
+      ServerStatus
+      StationList
+      StationObjectInfo
+   

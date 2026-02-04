@@ -1,0 +1,1501 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>instrumentserver.blueprints &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/blueprints';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/_modules/instrumentserver/blueprints.html" />
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.blueprints</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for instrumentserver.blueprints</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Blueprints Module</span>
+<span class="sd">=================</span>
+
+<span class="sd">This module contains all objects that are being sent between client and server. This includes all of the blueprints</span>
+<span class="sd">and other messaging objects (and its parts) like ServerInstruction and ServerResponse.</span>
+
+<span class="sd">This module is responsible for defining them, present tools to create them and serializing them and deserializing them.</span>
+
+<span class="sd">Any object that is ment to be sent, should have the method &quot;toJson&quot; implemented and should return a dictionary object</span>
+<span class="sd">with all of its item json compatible. This however does not apply to any argument or keyword argument inside those</span>
+<span class="sd">objects. These will each be tried to be serialized as best as possible. If an arbitrary class that is sent inside one</span>
+<span class="sd">of the objects present in this module needs to be serialized, this class must have an attribute called &quot;attributes&quot;</span>
+<span class="sd">inside listing all of the arguments that are needed to deserialize the class, these arguments must also be accepted</span>
+<span class="sd">by the constructor of the class.</span>
+
+<span class="sd">After passing the string through the json.loads function, to deserialize the object we call the deserialize_obj. If we</span>
+<span class="sd">pass a dictionary containing the key &#39;_class_type&#39;. the function assumes that that dictionary is representing an object</span>
+<span class="sd">that must be instantiated. If the key is missing, it will try to deserialize any value in the keys and return the</span>
+<span class="sd">dictionary. If a list is passed, the function will go through the items in the list and deserialize them.</span>
+
+<span class="sd">More Specifics for Developers</span>
+<span class="sd">=============================</span>
+
+<span class="sd">The server and client only communicate by sending a class that is in this module. You can split them in to 2</span>
+<span class="sd">different categories: blueprints and instructions/information. The blueprints are used to represent instruments,</span>
+<span class="sd">functions, and parameters for the client to utilize. While instructions/information are classes used to ask for</span>
+<span class="sd">commands or request items and their responses.</span>
+
+<span class="sd">All of the classes in the module contain the toJson method inside of them. For blueprints, their toJson calls the</span>
+<span class="sd">function bluePrintToDict, which returns the blueprint in a dict representation with all the values as strings. The</span>
+<span class="sd">function is smart enough such that if a blueprint has another blueprint inside, the inside blueprint gets properly</span>
+<span class="sd">deserialized. This occurs for all attributes inside the blueprint.</span>
+
+<span class="sd">The rest of the classes each handles its own serialization in their own toJson function. There are occasions when</span>
+<span class="sd">classes like ServerInstruction, contain other classes of this module inside of it. When this happens the toJson function</span>
+<span class="sd">of that class is called.</span>
+
+<span class="sd">Special care is placed in serializing the args and kwargs fields of all of those classes, as they do not have</span>
+<span class="sd">specified types and often require special handling. Because args always comes inside iterables, to serialize those</span>
+<span class="sd">the function iterable_to_serialize_dict is called. The function goes through each item and serializes them one by</span>
+<span class="sd">one. This ensures that any nested classes gets properly serialized. For kwargs, a similar process happens but for a</span>
+<span class="sd">dictionary, the function dict_to_serialized_dict is called instead.</span>
+
+<span class="sd">To deserialize objects the function deserialize_obj is called. If an object is a dictionary or an iterable (except</span>
+<span class="sd">string) the function will go through all of the items inside of it trying to deserialize them as best as it can. A</span>
+<span class="sd">few helper functions are used like _is_numeric and _convert_dict_to_obj. If a string is passed, it will try and pass</span>
+<span class="sd">json.load to the string in case this happens because the first round of deserialization missed some nested object,</span>
+<span class="sd">otherwise, it will keep it as a string.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">is_dataclass</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">get_args</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Station</span><span class="p">,</span> <span class="n">Instrument</span><span class="p">,</span> <span class="n">InstrumentChannel</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterWithSetpoints</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.instrument.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstrumentBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.utils.validators</span><span class="w"> </span><span class="kn">import</span> <span class="n">Validator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">objectClassPath</span><span class="p">,</span> <span class="n">typeClassPath</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">INSTRUMENT_MODULE_BASE_CLASSES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Instrument</span><span class="p">,</span> <span class="n">InstrumentChannel</span><span class="p">,</span> <span class="n">InstrumentBase</span>
+<span class="p">]</span>
+<span class="n">InstrumentModuleType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Instrument</span><span class="p">,</span> <span class="n">InstrumentChannel</span><span class="p">,</span> <span class="n">InstrumentBase</span><span class="p">]</span>
+
+<span class="n">PARAMETER_BASE_CLASSES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterWithSetpoints</span>
+<span class="p">]</span>
+
+<span class="n">ParameterType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterWithSetpoints</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="ParameterBluePrint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBluePrint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParameterBluePrint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec necessary for creating parameter proxies.&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">base_class</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">parameter_class</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gettable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">settable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">docstring</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">setpoints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ParameterBluePrint&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_class</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="ParameterBluePrint.tostr">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBluePrint.tostr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tostr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">indent</span> <span class="o">*</span> <span class="s1">&#39; &#39;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_class</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- unit: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- path: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- base class: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- gettable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gettable</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- settable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settable</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- setpoints: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">setpoints</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="ParameterBluePrint.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBluePrint.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="bluePrintFromParameter">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.bluePrintFromParameter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bluePrintFromParameter</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="n">ParameterType</span><span class="p">)</span> <span class="o">-&gt;</span> \
+        <span class="n">Union</span><span class="p">[</span><span class="n">ParameterBluePrint</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">base_class</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">PARAMETER_BASE_CLASSES</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">bc</span><span class="p">):</span>
+            <span class="n">base_class</span> <span class="o">=</span> <span class="n">bc</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">base_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Blueprints for parameter base type of </span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2"> are &quot;</span>
+                       <span class="sa">f</span><span class="s2">&quot;currently not supported.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">ParameterBluePrint</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+        <span class="n">base_class</span><span class="o">=</span><span class="n">typeClassPath</span><span class="p">(</span><span class="n">base_class</span><span class="p">),</span>
+        <span class="n">parameter_class</span><span class="o">=</span><span class="n">objectClassPath</span><span class="p">(</span><span class="n">param</span><span class="p">),</span>
+        <span class="n">gettable</span><span class="o">=</span><span class="kc">True</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s1">&#39;get&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">settable</span><span class="o">=</span><span class="kc">True</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s1">&#39;set&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">unit</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span>
+        <span class="n">docstring</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s1">&#39;setpoints&#39;</span><span class="p">):</span>
+        <span class="n">bp</span><span class="o">.</span><span class="n">setpoints</span> <span class="o">=</span> <span class="p">[</span><span class="n">setpoint</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">setpoint</span> <span class="ow">in</span> <span class="n">param</span><span class="o">.</span><span class="n">setpoints</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">bp</span></div>
+
+
+
+<div class="viewcode-block" id="MethodBluePrint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.MethodBluePrint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MethodBluePrint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec necessary for creating method proxies&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">call_signature_str</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">signature_parameters</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">docstring</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;MethodBluePrint&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">call_signature_str</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="MethodBluePrint.tostr">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.MethodBluePrint.tostr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tostr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">indent</span> <span class="o">*</span> <span class="s1">&#39; &#39;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">call_signature_str</span><span class="p">)</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- path: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+    <span class="c1"># we might want to be careful to keep them in the correct order</span>
+<div class="viewcode-block" id="MethodBluePrint.signature_str_and_params_from_obj">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.MethodBluePrint.signature_str_and_params_from_obj">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">signature_str_and_params_from_obj</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sig</span><span class="p">:</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Signature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+        <span class="n">call_signature_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
+        <span class="n">param_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">param_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">call_signature_str</span><span class="p">,</span> <span class="n">param_dict</span></div>
+
+
+<div class="viewcode-block" id="MethodBluePrint.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.MethodBluePrint.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="bluePrintFromMethod">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.bluePrintFromMethod">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bluePrintFromMethod</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">MethodBluePrint</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="n">sig_str</span><span class="p">,</span> <span class="n">param_dict</span> <span class="o">=</span> <span class="n">MethodBluePrint</span><span class="o">.</span><span class="n">signature_str_and_params_from_obj</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">MethodBluePrint</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+        <span class="n">call_signature_str</span><span class="o">=</span><span class="n">sig_str</span><span class="p">,</span>
+        <span class="n">signature_parameters</span><span class="o">=</span><span class="n">param_dict</span><span class="p">,</span>
+        <span class="n">docstring</span><span class="o">=</span><span class="n">method</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">bp</span></div>
+
+
+
+<div class="viewcode-block" id="InstrumentModuleBluePrint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InstrumentModuleBluePrint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec necessary for creating instrument proxies.&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">base_class</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">instrument_module_class</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">docstring</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParameterBluePrint</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">methods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MethodBluePrint</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">submodules</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;InstrumentModuleBluePrint&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;InstrumentModuleBluePrint&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">base_class</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">instrument_module_class</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">docstring</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                 <span class="n">parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParameterBluePrint</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MethodBluePrint</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">submodules</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;InstrumentModuleBluePrint&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;InstrumentModuleBluePrint&#39;</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_class</span> <span class="o">=</span> <span class="n">base_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrument_module_class</span> <span class="o">=</span> <span class="n">instrument_module_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">docstring</span> <span class="o">=</span> <span class="n">docstring</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">paramName</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">paramName</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize_obj</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">ParameterBluePrint</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">paramName</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;parameters has invalid type.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">methods</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">methName</span><span class="p">,</span> <span class="n">meth</span> <span class="ow">in</span> <span class="n">methods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">meth</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">methName</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize_obj</span><span class="p">(</span><span class="n">meth</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">meth</span><span class="p">,</span> <span class="n">MethodBluePrint</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">methName</span><span class="p">]</span> <span class="o">=</span> <span class="n">meth</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;methods has invalid type.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">submodules</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">submodName</span><span class="p">,</span> <span class="n">submod</span> <span class="ow">in</span> <span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">submod</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">submodName</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize_obj</span><span class="p">(</span><span class="n">submod</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">submod</span><span class="p">,</span> <span class="n">InstrumentModuleBluePrint</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">submodName</span><span class="p">]</span> <span class="o">=</span> <span class="n">submod</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;parameters has invalid type.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_class_type</span> <span class="o">=</span> <span class="s1">&#39;InstrumentModuleBluePrint&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_module_class</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="InstrumentModuleBluePrint.tostr">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint.tostr">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tostr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">indent</span> <span class="o">*</span> <span class="s1">&#39; &#39;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">instrument_module_class</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- path: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- base class: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_class</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- Parameters:</span><span class="se">\n</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  -----------</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  - &quot;</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">tostr</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- Methods:</span><span class="se">\n</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  --------</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">mn</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  - &quot;</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">tostr</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- Submodules:</span><span class="se">\n</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  -----------</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">sn</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  - &quot;</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">tostr</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="InstrumentModuleBluePrint.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="bluePrintFromInstrumentModule">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.bluePrintFromInstrumentModule">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bluePrintFromInstrumentModule</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ins</span><span class="p">:</span> <span class="n">InstrumentModuleType</span><span class="p">)</span> <span class="o">-&gt;</span> \
+        <span class="n">Union</span><span class="p">[</span><span class="n">InstrumentModuleBluePrint</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">base_class</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">INSTRUMENT_MODULE_BASE_CLASSES</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">bc</span><span class="p">):</span>
+            <span class="n">base_class</span> <span class="o">=</span> <span class="n">bc</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">base_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Blueprints for instrument base type of </span><span class="si">{</span><span class="n">ins</span><span class="si">}</span><span class="s2"> are &quot;</span>
+                       <span class="sa">f</span><span class="s2">&quot;currently not supported.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">InstrumentModuleBluePrint</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">ins</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+        <span class="n">base_class</span><span class="o">=</span><span class="n">typeClassPath</span><span class="p">(</span><span class="n">base_class</span><span class="p">),</span>
+        <span class="n">instrument_module_class</span><span class="o">=</span><span class="n">objectClassPath</span><span class="p">(</span><span class="n">ins</span><span class="p">),</span>
+        <span class="n">docstring</span><span class="o">=</span><span class="n">ins</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">bp</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">bp</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">bp</span><span class="o">.</span><span class="n">submodules</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ins</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">param_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">ParameterType</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">param_bp</span> <span class="o">=</span> <span class="n">bluePrintFromParameter</span><span class="p">(</span><span class="n">param_path</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">param_bp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bp</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="n">param_bp</span>
+
+    <span class="k">for</span> <span class="n">elt</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">ins</span><span class="p">):</span>
+        <span class="c1"># don&#39;t include private methods, or methods that belong to the qcodes</span>
+        <span class="c1"># base classes.</span>
+        <span class="k">if</span> <span class="n">elt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;_&#39;</span> <span class="ow">or</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">base_class</span><span class="p">,</span> <span class="n">elt</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">elt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">PARAMETER_BASE_CLASSES</span><span class="p">)):</span>
+            <span class="n">meth_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">elt</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">meth_bp</span> <span class="o">=</span> <span class="n">bluePrintFromMethod</span><span class="p">(</span><span class="n">meth_path</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">meth_bp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">bp</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">elt</span><span class="p">]</span> <span class="o">=</span> <span class="n">meth_bp</span>
+
+    <span class="k">for</span> <span class="n">sn</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">ins</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">sub_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">sn</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># FIXME: Fix this mypy ignore</span>
+        <span class="n">sub_bp</span> <span class="o">=</span> <span class="n">bluePrintFromInstrumentModule</span><span class="p">(</span><span class="n">sub_path</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>  <span class="c1"># type:ignore[arg-type]</span>
+        <span class="k">if</span> <span class="n">sub_bp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bp</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">sn</span><span class="p">]</span> <span class="o">=</span> <span class="n">sub_bp</span>
+
+    <span class="k">return</span> <span class="n">bp</span></div>
+
+
+
+<div class="viewcode-block" id="ParameterBroadcastBluePrint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParameterBroadcastBluePrint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Blueprint to broadcast parameter changes.&quot;&quot;&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ParameterBroadcastBluePrint&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\&quot;</span><span class="s2">name</span><span class="se">\&quot;</span><span class="s2">:</span><span class="se">\&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">{{</span><span class="s2">    </span>
+<span class="s2">    </span><span class="se">\&quot;</span><span class="s2">action</span><span class="se">\&quot;</span><span class="s2">:</span><span class="se">\&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot; &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">ret</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    </span><span class="se">\&quot;</span><span class="s2">value</span><span class="se">\&quot;</span><span class="s2">:</span><span class="se">\&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">ret</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    </span><span class="se">\&quot;</span><span class="s2">unit</span><span class="se">\&quot;</span><span class="s2">:</span><span class="se">\&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">ret</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\n}}</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ParameterBroadcastBluePrint.pprint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint.pprint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">indent</span> <span class="o">*</span> <span class="s1">&#39; &#39;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;name: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- action: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- value: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- unit: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span>
+<span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">- bp_type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bp_type</span><span class="si">}</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="ParameterBroadcastBluePrint.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="n">BluePrintType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">ParameterBluePrint</span><span class="p">,</span> <span class="n">MethodBluePrint</span><span class="p">,</span> <span class="n">InstrumentModuleBluePrint</span><span class="p">,</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dictToJson</span><span class="p">(</span><span class="n">_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">json_type</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">ret</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dictToJson</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">json_type</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">get_args</span><span class="p">(</span><span class="n">BluePrintType</span><span class="p">)):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">json_type</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">json_type</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">ret</span>
+
+
+<div class="viewcode-block" id="bluePrintToDict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.bluePrintToDict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bluePrintToDict</span><span class="p">(</span><span class="n">bp</span><span class="p">:</span> <span class="n">BluePrintType</span><span class="p">,</span> <span class="n">json_type</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a blueprint into a dictionary.</span>
+
+<span class="sd">    :param bp: The blueprint to convert</span>
+<span class="sd">    :param json_type: If True, the values are str. If False, the values remain the objects that are in the blueprint.</span>
+<span class="sd">        Defaults True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bp_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">my_field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="n">bp</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">get_args</span><span class="p">(</span><span class="n">BluePrintType</span><span class="p">)):</span>
+            <span class="n">bp_dict</span><span class="p">[</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">json_type</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">bp_dict</span><span class="p">[</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dictToJson</span><span class="p">(</span><span class="n">bp</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">json_type</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">json_type</span><span class="p">:</span>
+                <span class="n">bp_dict</span><span class="p">[</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bp</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bp_dict</span><span class="p">[</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">my_field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bp_dict</span></div>
+
+
+
+<div class="viewcode-block" id="Operation">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.Operation">[docs]</a>
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Operation</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Valid operations for the server.&quot;&quot;&quot;</span>
+
+    <span class="c1">#: Get a list of instruments the server has instantiated.</span>
+    <span class="n">get_existing_instruments</span> <span class="o">=</span> <span class="s1">&#39;get_existing_instruments&#39;</span>
+
+    <span class="c1">#: Create a new instrument.</span>
+    <span class="n">create_instrument</span> <span class="o">=</span> <span class="s1">&#39;create_instrument&#39;</span>
+
+    <span class="c1">#: Get the blueprint of an object.</span>
+    <span class="n">get_blueprint</span> <span class="o">=</span> <span class="s1">&#39;get_blueprint&#39;</span>
+
+    <span class="c1">#: Make a call to an object.</span>
+    <span class="n">call</span> <span class="o">=</span> <span class="s1">&#39;call&#39;</span>
+
+    <span class="c1">#: Get the station contents as parameter dict.</span>
+    <span class="n">get_param_dict</span> <span class="o">=</span> <span class="s1">&#39;get_param_dict&#39;</span>
+
+    <span class="c1">#: Set station parameters from a dictionary.</span>
+    <span class="n">set_params</span> <span class="o">=</span> <span class="s1">&#39;set_params&#39;</span>
+
+    <span class="c1">#: Gets the GUI configuration for an instrument.</span>
+    <span class="n">get_gui_config</span> <span class="o">=</span> <span class="s1">&#39;get_gui_config&#39;</span></div>
+
+
+
+<div class="viewcode-block" id="InstrumentCreationSpec">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentCreationSpec">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InstrumentCreationSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec for creating an instrument instance.&quot;&quot;&quot;</span>
+
+    <span class="c1">#: Driver class as string, in the format &quot;global.path.to.module.DriverClass&quot;.</span>
+    <span class="n">instrument_class</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="c1">#: Name of the new instrument, I separate this from args and kwargs to</span>
+    <span class="c1"># make it easier to be found.</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="c1">#: Arguments to pass to the constructor.</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: kw args to pass to the constructor.</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;InstrumentCreationSpec&#39;</span>
+
+<div class="viewcode-block" id="InstrumentCreationSpec.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentCreationSpec.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CallSpec">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.CallSpec">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CallSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec for executing a call on an object in the station.&quot;&quot;&quot;</span>
+
+    <span class="c1">#: Full name of the callable object, as string, relative to the station object.</span>
+    <span class="c1">#: E.g.: &quot;instrument.my_callable&quot; refers to ``station.instrument.my_callable``.</span>
+    <span class="n">target</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="c1">#: Positional arguments to pass.</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: kw args to pass.</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;CallSpec&#39;</span>
+
+<div class="viewcode-block" id="CallSpec.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.CallSpec.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ParameterSerializeSpec">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterSerializeSpec">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParameterSerializeSpec</span><span class="p">:</span>
+    <span class="c1">#: Path of the object to serialize. ``None`` refers to the station as a whole.</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Which attributes to include for each parameter. Default is [&#39;values&#39;].</span>
+    <span class="n">attrs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;values&#39;</span><span class="p">])</span>
+
+    <span class="c1">#: Additional arguments to pass to the serialization function</span>
+    <span class="c1">#: :func:`.serialize.toParamDict`.</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="c1">#: Additional kw arguments to pass to the serialization function</span>
+    <span class="c1">#: :func:`.serialize.toParamDict`.</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ParameterSerializeSpec&#39;</span>
+
+<div class="viewcode-block" id="ParameterSerializeSpec.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterSerializeSpec.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ServerInstruction">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerInstruction">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ServerInstruction</span><span class="p">:</span>
+    <span class="c1"># TODO: Remove set parameter from the code.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Instruction spec for the server.</span>
+
+<span class="sd">    Valid operations:</span>
+
+<span class="sd">    - :attr:`Operation.get_existing_instruments` -- get the instruments currently</span>
+<span class="sd">      instantiated in the station.</span>
+
+<span class="sd">        - **Required options:** -</span>
+<span class="sd">        - **Return message:** dictionary with instrument name and class (as string).</span>
+
+<span class="sd">    - :attr:`Operation.create_instrument` -- create a new instrument in the station.</span>
+
+<span class="sd">        - **Required options:** :attr:`.create_instrument_spec`</span>
+<span class="sd">        - **Return message:** ``None``</span>
+
+<span class="sd">    - :attr:`Operation.call` -- make a call to an object in the station.</span>
+
+<span class="sd">        - **Required options:** :attr:`.call_spec`</span>
+<span class="sd">        - **Return message:** The return value of the call.</span>
+
+<span class="sd">    - :attr:`Operation.get_blueprint` -- request the blueprint of an object</span>
+
+<span class="sd">        - **Required options:** :attr:`.requested_path`</span>
+<span class="sd">        - **Return message:** The blueprint of the object.</span>
+
+<span class="sd">    - :attr:`Operation.get_param_dict` -- request parameters as dictionary</span>
+<span class="sd">      Get the parameters of either the full station or a single object.</span>
+
+<span class="sd">        - **Options:** :attr:`.serialization_opts`</span>
+<span class="sd">        - **Return message:** param dict.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">#: This is the only mandatory item.</span>
+    <span class="c1">#: Which other fields are required depends on the operation.</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="n">Operation</span>
+
+    <span class="c1">#: Specification for creating an instrument.</span>
+    <span class="n">create_instrument_spec</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InstrumentCreationSpec</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Specification for executing a call.</span>
+    <span class="n">call_spec</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CallSpec</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Name of the instrument for which we want the blueprint.</span>
+    <span class="n">requested_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Options for serialization.</span>
+    <span class="n">serialization_opts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ParameterSerializeSpec</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Setting parameters in bulk with a paramDict.</span>
+    <span class="n">set_parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1">#: Generic arguments.</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="c1">#: Generic keyword arguments.</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ServerInstruction&#39;</span>
+
+<div class="viewcode-block" id="ServerInstruction.validate">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerInstruction.validate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="ow">is</span> <span class="n">Operation</span><span class="o">.</span><span class="n">create_instrument</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">create_instrument_spec</span><span class="p">,</span> <span class="n">InstrumentCreationSpec</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid instrument creation spec.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="ow">is</span> <span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">call_spec</span><span class="p">,</span> <span class="n">CallSpec</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid call spec.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="ow">is</span> <span class="n">Operation</span><span class="o">.</span><span class="n">get_gui_config</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">requested_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid requested path.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ServerInstruction.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerInstruction.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operation</span><span class="o">.</span><span class="n">name</span><span class="p">)}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_instrument_spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;create_instrument_spec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;create_instrument_spec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_instrument_spec</span><span class="o">.</span><span class="n">toJson</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;call_spec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;call_spec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_spec</span><span class="o">.</span><span class="n">toJson</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">requested_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;requested_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;requested_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">requested_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialization_opts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;serialization_opts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;serialization_opts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialization_opts</span><span class="o">.</span><span class="n">toJson</span><span class="p">()</span>
+
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;set_parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;_class_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_class_type</span>
+
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ServerResponse">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerResponse">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ServerResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec for what the server can return. If the message is a string, it will assume it is a serialized json object</span>
+<span class="sd">    and will try and deserialize it</span>
+
+<span class="sd">    If the requested operation succeeds, `message` will the return of that operation,</span>
+<span class="sd">    and `error` is None.</span>
+<span class="sd">    See :class:`ServerInstruction` for a documentation of the expected returns.</span>
+<span class="sd">    If an error occurs, `message` is typically ``None``, and `error` contains an</span>
+<span class="sd">    error message or object describing the error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#: The return message.</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Any error message occurred during execution of the instruction.</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="ne">Warning</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: The type of the class, used for deserializing it.</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ServerResponse&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="ne">Warning</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ServerResponse&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Replacing some key characters so that if the serializer missed it,</span>
+                <span class="c1"># they can still be deserialize to objects and not strings.</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">,</span> <span class="s2">&quot;[&quot;</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;F&quot;</span><span class="p">,</span> <span class="s2">&quot;f&quot;</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">)</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">)</span>
+                <span class="n">after_json_loads</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">after_json_loads</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;message could not be decoded by JSON and will be treated as a string: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">error</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_class_type</span> <span class="o">=</span> <span class="s1">&#39;ServerResponse&#39;</span>
+
+<div class="viewcode-block" id="ServerResponse.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerResponse.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">get_args</span><span class="p">(</span><span class="n">BluePrintType</span><span class="p">)):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">toJson</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="s1">&#39;attributes&#39;</span><span class="p">):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_convert_arbitrary_obj_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">message_dict</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_dict</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">message_iterable</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_iterable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">exception_type</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">)),</span> <span class="n">message</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+
+        <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;_class_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_class_type</span>
+
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_convert_arbitrary_obj_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts an arbitrary objects into a dictionary. Assumes that the object contains an attribute called</span>
+<span class="sd">    &#39;attributes&#39; in which it lists all the attributes it needs for the object to be able to be serialized and that</span>
+<span class="sd">    all of those attributes are natively JSON serializable. These should also be accepted as keyword arguments in the</span>
+<span class="sd">    constructor of the object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;attributes&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;Object does not have an attribute called &quot;attributes&quot;&#39;</span><span class="p">)</span>
+
+    <span class="n">obj_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+        <span class="n">obj_dict</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+    <span class="n">obj_dict</span><span class="p">[</span><span class="s1">&#39;_class_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">return</span> <span class="n">obj_dict</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_convert_dict_to_obj</span><span class="p">(</span><span class="n">item_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Instantiates an object from an object dictionary. The reverse of the _convert_obj_to_dict. The constructor of the</span>
+<span class="sd">    object should accept all of the items in the dictionary in the constructor.</span>
+
+<span class="sd">    Assumes that the dictionary has a key &#39;_class_type&#39; indicating what class it should be instantiated from.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">class_type</span> <span class="o">=</span> <span class="n">item_dict</span><span class="p">[</span><span class="s1">&#39;_class_type&#39;</span><span class="p">]</span>
+
+    <span class="c1"># if a dot is present indicates the class is arbitrary and needs to be imported</span>
+    <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">class_type</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">class_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">item_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;_class_type&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">item_dict</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">instantiated_obj</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">class_type</span><span class="si">}</span><span class="s1">(**item_dict)&#39;</span><span class="p">)</span>
+    <span class="c1"># built-ins (like complex) will not want the _class_type argument</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">item_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;_class_type&#39;</span><span class="p">)</span>
+        <span class="n">instantiated_obj</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s1">(**item_dict)&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">instantiated_obj</span>
+
+
+<div class="viewcode-block" id="iterable_to_serialized_dict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.iterable_to_serialized_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">iterable_to_serialized_dict</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Goes through an iterable (lists, tuples, sets) and serialize each object inside of it. If trying to serialize an</span>
+<span class="sd">    arbitrary object, this object must have a class attribute &quot;attributes&quot; for the serialization to happen correctly.</span>
+
+<span class="sd">    returns a list with the args as serialized dictionaries.</span>
+
+<span class="sd">    The current rules:</span>
+<span class="sd">        - Any arbitrary object that is being serialized here must have a class attribute listing all the classes attributes that</span>
+<span class="sd">        the constructor needs to create an identical instance of that class</span>
+<span class="sd">        - The serialized dictionary need to have the field: &#39;_class_type&#39;, to indicate what it is that needs to be</span>
+<span class="sd">        instantiated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">converted_iterable</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">iterable</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">converted_iterable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+            <span class="c1"># Check if the object is iterable since the objects inside the iterable should be serialized too.</span>
+            <span class="c1"># All of the specific iterable objects should go before the generic if to catch them before.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="n">dct</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+                <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">serialized_iterable</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="n">iterable</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+                <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">serialized_iterable</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s1">&#39;attributes&#39;</span><span class="p">):</span>
+                <span class="n">arg_dict</span> <span class="o">=</span> <span class="n">_convert_arbitrary_obj_to_dict</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">complex</span><span class="p">):</span>
+                <span class="n">arg_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">real</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">imag</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">imag</span><span class="p">,</span> <span class="n">_class_type</span><span class="o">=</span><span class="s1">&#39;complex&#39;</span><span class="p">)</span>
+                <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg_dict</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">converted_iterable</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">object</span><span class="o">=</span><span class="n">converted_iterable</span><span class="p">,</span> <span class="n">_class_type</span><span class="o">=</span><span class="s2">&quot;numpy.array&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">converted_iterable</span></div>
+
+
+
+<div class="viewcode-block" id="dict_to_serialized_dict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.dict_to_serialized_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_to_serialized_dict</span><span class="p">(</span><span class="n">dct</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Same idea as iterable_to_serialized_dict but for dictionaries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">converted_dict</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">dct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">converted_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Check if the object is iterable since the objects inside the iterable should be serialized too.</span>
+            <span class="c1"># All of the specific iterable objects should go before the generic if to catch them before.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="n">dct</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialized_iterable</span>
+
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="n">iterable</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialized_iterable</span>
+
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;attributes&#39;</span><span class="p">):</span>
+                <span class="n">kwarg_dict</span> <span class="o">=</span> <span class="n">_convert_arbitrary_obj_to_dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwarg_dict</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">complex</span><span class="p">):</span>
+                <span class="n">kwarg_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">real</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">imag</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">imag</span><span class="p">,</span> <span class="n">_class_type</span><span class="o">=</span><span class="s1">&#39;complex&#39;</span><span class="p">)</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwarg_dict</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">converted_dict</span></div>
+
+
+
+<div class="viewcode-block" id="to_dict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.to_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts object to json serializable. This is done by calling the method toJson of the object being passed.</span>
+<span class="sd">    Strings are returned without any more processing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">toJson</span><span class="p">()</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_numeric</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span>
+            <span class="n">int_conversion</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">int_conversion</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">float_conversion</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">float_conversion</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">complex_conversion</span> <span class="o">=</span> <span class="nb">complex</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">complex_conversion</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="deserialize_obj">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.deserialize_obj">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">deserialize_obj</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tries to deserialize any object. If the object is a dictionary and contains the key &#39;_class_type&#39; it means that</span>
+<span class="sd">    that dictionary represents a serialized object that needs to be instantiated. The function will try and deserailize</span>
+<span class="sd">    any other item in the dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">data</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">deserialized_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">deserialized_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize_obj</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;_class_type&#39;</span> <span class="ow">in</span> <span class="n">deserialized_dict</span><span class="p">:</span>
+            <span class="n">obj_instance</span> <span class="o">=</span> <span class="n">_convert_dict_to_obj</span><span class="p">(</span><span class="n">deserialized_dict</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">obj_instance</span>
+
+        <span class="k">return</span> <span class="n">deserialized_dict</span>
+
+    <span class="n">numeric_form</span> <span class="o">=</span> <span class="n">_is_numeric</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">numeric_form</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">numeric_form</span>
+    <span class="k">elif</span> <span class="n">data</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">elif</span> <span class="n">data</span> <span class="o">==</span> <span class="s1">&#39;False&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">data</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">elif</span> <span class="n">data</span> <span class="o">==</span> <span class="s1">&#39;[]&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Try and load other items in the string it since it might be a nested item</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;}&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;[&#39;</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;]&#39;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">loaded_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="n">deserialize_obj</span><span class="p">(</span><span class="n">loaded_json</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;str could not be decoded, treating it as a str&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+        <span class="n">deserialized_iterable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">deserialized_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deserialize_obj</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="c1"># Returns the same type of iterable</span>
+        <span class="k">return</span> <span class="n">deserialized_iterable</span></div>
+
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

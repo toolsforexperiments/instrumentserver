@@ -1,0 +1,1525 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>instrumentserver.client.proxy &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/client/proxy';</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/_modules/instrumentserver/client/proxy.html" />
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../first_steps/index.html">
+    First Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../examples/index.html">
+    Code Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.client.proxy</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for instrumentserver.client.proxy</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Sat Apr 18 16:13:40 2020</span>
+
+<span class="sd">@author: Chao</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MethodType</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">qc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instrument</span><span class="p">,</span> <span class="n">Parameter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.instrument.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstrumentBase</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">DEFAULT_PORT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">flat_to_nested_dict</span><span class="p">,</span> <span class="n">flatten_dict</span><span class="p">,</span> <span class="n">is_flat_dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.server.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ServerInstruction</span><span class="p">,</span>
+    <span class="n">InstrumentModuleBluePrint</span><span class="p">,</span>
+    <span class="n">ParameterBluePrint</span><span class="p">,</span>
+    <span class="n">MethodBluePrint</span><span class="p">,</span>
+    <span class="n">CallSpec</span><span class="p">,</span>
+    <span class="n">Operation</span><span class="p">,</span>
+    <span class="n">InstrumentCreationSpec</span><span class="p">,</span>
+    <span class="n">ParameterSerializeSpec</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">sendRequest</span><span class="p">,</span> <span class="n">BaseClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">recvMultipart</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterBroadcastBluePrint</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># TODO: enable creation of instruments through yaml files/station configurator.</span>
+<span class="c1"># TODO: support for channel lists</span>
+<span class="c1"># TODO: support for other parameter classes.</span>
+<span class="c1"># FIXME: need to generally find the imports we need for type annotations!</span>
+<span class="c1"># TODO: convenience function to refresh from server.</span>
+
+
+<div class="viewcode-block" id="ProxyMixin">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProxyMixin</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; A simple mixin class for proxy objects.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                 <span class="n">cli</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+                 <span class="n">port</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_PORT</span><span class="p">,</span>
+                 <span class="n">remotePath</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">bluePrint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ParameterBluePrint</span><span class="p">,</span>
+                                           <span class="n">InstrumentModuleBluePrint</span><span class="p">,</span>
+                                           <span class="n">MethodBluePrint</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="o">=</span> <span class="n">cli</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+
+        <span class="k">if</span> <span class="n">remotePath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">bluePrint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span> <span class="o">=</span> <span class="n">remotePath</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getBluePrintFromServer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">bluePrint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="n">bluePrint</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either `remotePath` or `bluePrint` must be &quot;</span>
+                             <span class="s2">&quot;specified.&quot;</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">initKwargsFromBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">docstring</span>
+
+<div class="viewcode-block" id="ProxyMixin.initKwargsFromBluePrint">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyMixin.initKwargsFromBluePrint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initKwargsFromBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bp</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="ProxyMixin.askServer">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyMixin.askServer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">askServer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">ServerInstruction</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sendRequest</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getBluePrintFromServer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">get_blueprint</span><span class="p">,</span>
+            <span class="n">requested_path</span><span class="o">=</span><span class="n">path</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">askServer</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProxyMixin.get_snapshot">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyMixin.get_snapshot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">,</span>
+            <span class="n">call_spec</span><span class="o">=</span><span class="n">CallSpec</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span> <span class="o">+</span> <span class="s1">&#39;.snapshot&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">askServer</span><span class="p">(</span><span class="n">req</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ProxyParameter">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyParameter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProxyParameter</span><span class="p">(</span><span class="n">ProxyMixin</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Proxy for parameters.</span>
+
+<span class="sd">    :param cli: Instance of `Client`.</span>
+<span class="sd">    :param name: The parameter name.</span>
+<span class="sd">    :param host: The name of the host where the server lives.</span>
+<span class="sd">    :param port: The port number of the server.</span>
+<span class="sd">    :param remotePath: Path of the remote object on the server.</span>
+<span class="sd">    :param bluePrint: The blue print to construct the proxy parameter.</span>
+<span class="sd">        If `remotePath` and `bluePrint` are both supplied, the blue print takes</span>
+<span class="sd">        priority.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                 <span class="n">cli</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+                 <span class="n">port</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_PORT</span><span class="p">,</span>
+                 <span class="n">remotePath</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">bluePrint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ParameterBluePrint</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">setpoints_instrument</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Instrument</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="n">cli</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+                         <span class="n">remotePath</span><span class="o">=</span><span class="n">remotePath</span><span class="p">,</span> <span class="n">bluePrint</span><span class="o">=</span><span class="n">bluePrint</span><span class="p">,</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># add setpoints to parameter if we deal with ParameterWithSetpoints</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">setpoints</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">setpoints_instrument</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">setpoints</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">setpoints_instrument</span><span class="p">,</span> <span class="n">setpoint</span><span class="p">)</span> <span class="k">for</span>
+                         <span class="n">setpoint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">setpoints</span><span class="p">]</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;setpoints&#39;</span><span class="p">,</span> <span class="n">setpoints</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProxyParameter.initKwargsFromBluePrint">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyParameter.initKwargsFromBluePrint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initKwargsFromBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bp</span><span class="p">):</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">bp</span><span class="o">.</span><span class="n">settable</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;set_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteSet</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;set_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">bp</span><span class="o">.</span><span class="n">gettable</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;get_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteGet</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;get_cmd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">unit</span>
+        <span class="c1"># FIXME: uncomment after implementing serializable validators</span>
+        <span class="c1"># kwargs[&#39;vals&#39;] = bp.vals</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;docstring&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">docstring</span>
+        <span class="k">return</span> <span class="n">kwargs</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remoteSet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">,</span>
+            <span class="n">call_spec</span><span class="o">=</span><span class="n">CallSpec</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">value</span><span class="p">,)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">askServer</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remoteGet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">,</span>
+            <span class="n">call_spec</span><span class="o">=</span><span class="n">CallSpec</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">askServer</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ProxyInstrumentModule">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProxyInstrumentModule</span><span class="p">(</span><span class="n">ProxyMixin</span><span class="p">,</span> <span class="n">InstrumentBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct a proxy module using the given blueprint. Each proxy</span>
+<span class="sd">    instantiation represents a virtual module (instrument of submodule of</span>
+<span class="sd">    instrument).</span>
+
+<span class="sd">    :param bluePrint: The blueprint that the describes the module.</span>
+<span class="sd">    :param host: The name of the host where the server lives.</span>
+<span class="sd">    :param port: The port number of the server.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                 <span class="n">cli</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+                 <span class="n">port</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_PORT</span><span class="p">,</span>
+                 <span class="n">remotePath</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">bluePrint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InstrumentModuleBluePrint</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="n">cli</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+                         <span class="n">remotePath</span><span class="o">=</span><span class="n">remotePath</span><span class="p">,</span> <span class="n">bluePrint</span><span class="o">=</span><span class="n">bluePrint</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># FIXME: This is not consistent with how mixin handles a `None` client. However, this seems like a more</span>
+        <span class="c1">#  elegant solution than any time we need the client to check to be None, start a new context client instead.</span>
+        <span class="k">if</span> <span class="n">cli</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">mn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">mn</span> <span class="o">==</span> <span class="s1">&#39;remove_parameter&#39;</span><span class="p">:</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">remove_parameter</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">remotePath</span><span class="si">}</span><span class="s1">.remove_parameter&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">remove_parameter</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">remove_parameter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;IDN&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># we will redefine this later</span>
+
+        <span class="c1"># When a new parameter or method is added to client, qcodes checks if that item exists or not. This is done</span>
+        <span class="c1">#  by calling __getattr__ method. The problem is that when that method gets called and cannot find that item it</span>
+        <span class="c1">#  creates it, generating an infinite loop. This flag stops that. It should be set to True before doing any change</span>
+        <span class="c1">#  to the proxy object and set to False after the change is done.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_updating</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updating</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="nd">@contextmanager</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_updating</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_updating</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_updating</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_updating</span> <span class="o">=</span> <span class="n">old</span>
+
+
+<div class="viewcode-block" id="ProxyInstrumentModule.initKwargsFromBluePrint">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.initKwargsFromBluePrint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initKwargsFromBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bp</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="ProxyInstrumentModule.update">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">invalidateBlueprint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_getProxyParameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_getProxyMethods</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_getProxySubmodules</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="ProxyInstrumentModule.set_parameters">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.set_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">param_dict</span><span class="p">:</span><span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set instrument parameters in batch with a dict, keyed by parameter names.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">param_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">instrument_module_class</span><span class="si">}</span><span class="s2"> instrument does not have parameter &#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProxyInstrumentModule.add_parameter">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.add_parameter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a parameter to the proxy instrument.</span>
+
+<span class="sd">        If a parameter of that name already exists in the server-side instrument,</span>
+<span class="sd">        we only add the proxy parameter.</span>
+<span class="sd">        If not, we first add the parameter to the server-side instrument, and</span>
+<span class="sd">        then the proxy here.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Parameter: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> already present in the proxy.&#39;</span><span class="p">)</span>
+
+        <span class="n">bp</span><span class="p">:</span> <span class="n">InstrumentModuleBluePrint</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No client is connected to the proxy instrument.&quot;</span><span class="p">)</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.add_parameter&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ProxyInstrumentModule.remove_parameter">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.remove_parameter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes parameter from the proxy instrument.</span>
+
+<span class="sd">        Checking whether the paremeter exists or not is left to the instrument in the server. This is to avoid having</span>
+<span class="sd">        to check on every submodule for the parameter manager.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bp</span><span class="p">:</span> <span class="n">InstrumentModuleBluePrint</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No client is connected to the proxy instrument.&quot;</span><span class="p">)</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.remove_parameter&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getProxyParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Based on the parameter blueprint replied from server, add the</span>
+<span class="sd">        instrument parameters to the proxy instrument class.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No client is connected to the proxy instrument.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># note: we can always provide setpoints_instruments, because in case</span>
+        <span class="c1"># the parameter doesn&#39;t, `setpoints` will just be `None`.</span>
+        <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">pn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="n">pbp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">getBluePrint</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updating</span><span class="p">():</span>
+                    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="n">pbp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">ProxyParameter</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                                          <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">bluePrint</span><span class="o">=</span><span class="n">pbp</span><span class="p">,</span> <span class="n">setpoints_instrument</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">delKeys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">pn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="n">delKeys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pn</span><span class="p">)</span>
+
+        <span class="c1"># Changing the argument for del self.parameters[pn] to del self.parameters[k]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">delKeys</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getProxyMethods</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Based on the method blue print replied from server, add the</span>
+<span class="sd">        instrument functions to the proxy instrument class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+                <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updating</span><span class="p">():</span>
+                    <span class="n">fun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_makeProxyMethod</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_makeProxyMethod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bp</span><span class="p">:</span> <span class="n">MethodBluePrint</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrap</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">k</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+                <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">,</span>
+                <span class="n">call_spec</span><span class="o">=</span><span class="n">CallSpec</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">bp</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">askServer</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">call_signature_str</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">signature_parameters</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># FIXME: a better solution to this would probably be to convet kind into the enum object. But it seems that the</span>
+        <span class="c1">#  parameter kind enum is private.</span>
+        <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">)]:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">):</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;*</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">):</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># we need to add a `self` argument because we want this to be a bound</span>
+        <span class="c1"># method of the instrument instance.</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">sig</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;self, &#39;</span> <span class="o">+</span> <span class="n">sig</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">new_func_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;from typing import *</span><span class="se">\n</span><span class="s2">def </span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="n">sig</span><span class="si">}</span><span class="s2">:</span>
+<span class="s2">        return wrap(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;&quot;&quot;</span>
+
+        <span class="c1"># make sure the method knows the wrap function.</span>
+        <span class="c1"># TODO: this is not complete!</span>
+        <span class="n">globs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;wrap&#39;</span><span class="p">:</span> <span class="n">wrap</span><span class="p">,</span> <span class="s1">&#39;qcodes&#39;</span><span class="p">:</span> <span class="n">qc</span><span class="p">,</span> <span class="s1">&#39;collections&#39;</span><span class="p">:</span> <span class="n">collections</span><span class="p">}</span>
+        <span class="n">_ret</span> <span class="o">=</span> <span class="n">exec</span><span class="p">(</span><span class="n">new_func_str</span><span class="p">,</span> <span class="n">globs</span><span class="p">)</span>
+        <span class="n">fun</span> <span class="o">=</span> <span class="n">globs</span><span class="p">[</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">fun</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">docstring</span>
+        <span class="k">return</span> <span class="n">globs</span><span class="p">[</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getProxySubmodules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Based on the submodule blue print replied from server, add the proxy</span>
+<span class="sd">        submodules to the proxy module class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sn</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">:</span>
+                <span class="n">submodule</span> <span class="o">=</span> <span class="n">ProxyInstrumentModule</span><span class="p">(</span>
+                    <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">bluePrint</span><span class="o">=</span><span class="n">s</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_submodule</span><span class="p">(</span><span class="n">sn</span><span class="p">,</span> <span class="n">submodule</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">sn</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+        <span class="n">delKeys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sn</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">submodules</span><span class="p">:</span>
+                <span class="n">delKeys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sn</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">delKeys</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_refreshProxySubmodules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">delKeys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sn</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">submodules</span><span class="p">:</span>
+                <span class="n">delKeys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sn</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">delKeys</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">sn</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">sn</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bp</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sn</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">:</span>
+                <span class="n">submodule</span> <span class="o">=</span> <span class="n">ProxyInstrumentModule</span><span class="p">(</span>
+                    <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">bluePrint</span><span class="o">=</span><span class="n">s</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_submodule</span><span class="p">(</span><span class="n">sn</span><span class="p">,</span> <span class="n">submodule</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">[</span><span class="n">sn</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">current_bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">remotePath</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_updating</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">current_bp</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">and</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="n">current_bp</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_getProxyParameters</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">current_bp</span><span class="o">.</span><span class="n">submodules</span> <span class="ow">and</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="n">current_bp</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_getProxySubmodules</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span></div>
+
+
+
+<span class="n">ProxyInstrument</span> <span class="o">=</span> <span class="n">ProxyInstrumentModule</span>
+
+
+<div class="viewcode-block" id="Client">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Client</span><span class="p">(</span><span class="n">BaseClient</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Client with common server requests as convenience functions.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">DEFAULT_PORT</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">raise_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">connect</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">raise_exceptions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Client.list_instruments">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.list_instruments">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_instruments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Get the existing instruments on the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">get_existing_instruments</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to send or receive message to server at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Communication with server failed. See logs for details.&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+
+<div class="viewcode-block" id="Client.find_or_create_instrument">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.find_or_create_instrument">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_or_create_instrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">instrument_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                  <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProxyInstrumentModule</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Looks for an instrument in the server. If it cannot find it, create a new instrument on the server. Returns</span>
+<span class="sd">        a proxy for either the found or the new instrument.</span>
+
+<span class="sd">        :param name: Name of the new instrument.</span>
+<span class="sd">        :param instrument_class: Class of the instrument to create or a string of</span>
+<span class="sd">            of the class.</span>
+<span class="sd">        :param args: Positional arguments for new instrument instantiation.</span>
+<span class="sd">        :param kwargs: Keyword arguments for new instrument instantiation.</span>
+
+<span class="sd">        :returns: A new virtual instrument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_instruments</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">ProxyInstrumentModule</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">remotePath</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">instrument_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need a class to create a new instrument.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">instrument_class</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Class name must be a string with the import path of the class. &#39;</span>
+                             <span class="s1">&#39;If trying to start the parameter manager for example use &quot;instrumentserver.params.ParameterManager&quot; instead of &#39;</span>
+                             <span class="s1">&#39;passing the class itself.&#39;</span><span class="p">)</span>
+
+        <span class="n">req</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">create_instrument</span><span class="p">,</span>
+            <span class="n">create_instrument_spec</span><span class="o">=</span><span class="n">InstrumentCreationSpec</span><span class="p">(</span>
+                <span class="n">instrument_class</span><span class="o">=</span><span class="n">instrument_class</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+                <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ProxyInstrumentModule</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">remotePath</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.close_instrument">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.close_instrument">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_instrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;close_and_remove_instrument&#39;</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.call">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.call">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">,</span>
+            <span class="n">call_spec</span><span class="o">=</span><span class="n">CallSpec</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+                <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.get_instrument">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.get_instrument">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ProxyInstrumentModule</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">cli</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">remotePath</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.getBluePrint">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.getBluePrint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getBluePrint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get blueprint from server</span>
+<span class="sd">        :param path:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache_lock</span><span class="p">:</span>
+            <span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">bp</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">get_blueprint</span><span class="p">,</span>
+            <span class="n">requested_path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache</span><span class="p">[</span><span class="n">path</span><span class="p">]</span> <span class="o">=</span> <span class="n">bp</span>
+        <span class="k">return</span> <span class="n">bp</span></div>
+
+
+<div class="viewcode-block" id="Client.invalidateBlueprint">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.invalidateBlueprint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">invalidateBlueprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        invalidate a parameter in the blueprint cache</span>
+<span class="sd">        :param path:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span><span class="p">):</span>
+                        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bp_cache</span><span class="p">[</span><span class="n">k</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Client.get_snapshot">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.get_snapshot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">call</span><span class="p">,</span>
+            <span class="n">call_spec</span><span class="o">=</span><span class="n">CallSpec</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="s1">&#39;snapshot&#39;</span> <span class="k">if</span> <span class="n">instrument</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">instrument</span><span class="si">}</span><span class="s2">.snapshot&quot;</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+                <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.getParamDict">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.getParamDict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getParamDict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">attrs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">get_param_dict</span><span class="p">,</span>
+            <span class="n">serialization_opts</span><span class="o">=</span><span class="n">ParameterSerializeSpec</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="n">instrument</span><span class="p">,</span>
+                <span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+                <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.paramsToFile">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.paramsToFile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">paramsToFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filePath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">instruments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">filePath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">filePath</span><span class="p">)</span>
+        <span class="n">folder</span><span class="p">,</span> <span class="n">file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filePath</span><span class="p">)</span>
+
+        <span class="c1"># Get parameters for specified instruments or all if not specified</span>
+        <span class="k">if</span> <span class="n">instruments</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getParamDict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">instrument_name</span> <span class="ow">in</span> <span class="n">instruments</span><span class="p">:</span>
+                <span class="n">inst_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getParamDict</span><span class="p">(</span><span class="n">instrument</span><span class="o">=</span><span class="n">instrument_name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">inst_params</span><span class="p">)</span>
+
+        <span class="c1"># Convert to nested format before saving,</span>
+        <span class="k">if</span> <span class="n">is_flat_dict</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">flat_to_nested_dict</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">folder</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filePath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.setParameters">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.setParameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">set_params</span><span class="p">,</span>
+            <span class="n">set_parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Client.paramsFromFile">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.paramsFromFile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">paramsFromFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filePath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">instruments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filePath</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filePath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="c1"># Convert to flat format before sending to server (setParameters expects flat)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_flat_dict</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">flatten_dict</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+            <span class="c1"># Filter to specified instruments if provided</span>
+            <span class="k">if</span> <span class="n">instruments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">filtered_params</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">instrument_name</span> <span class="ow">in</span> <span class="n">instruments</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">instrument_name</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="n">instrument_name</span><span class="p">:</span>
+                            <span class="n">filtered_params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">filtered_params</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">setParameters</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">filePath</span><span class="si">}</span><span class="s2"> does not exist. No params loaded.&quot;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_getGuiConfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrumentName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Gets the GUI config for an instrument from the object. Should only be used in a detached server GUI.&quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">ServerInstruction</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="n">Operation</span><span class="o">.</span><span class="n">get_gui_config</span><span class="p">,</span> <span class="n">requested_path</span><span class="o">=</span><span class="n">instrumentName</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SubClient">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.SubClient">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SubClient</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specific subscription client used for real-time parameter updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#: Signal(ParameterBroadcastBluePrint) --</span>
+    <span class="c1">#: emitted when the server broadcast either a new parameter or an update to an existing one.</span>
+    <span class="n">update</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="n">ParameterBroadcastBluePrint</span><span class="p">)</span>
+
+    <span class="c1">#: Signal emitted when the listener finishes (for proper cleanup)</span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sub_host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">sub_port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_PORT</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new subscription client.</span>
+
+<span class="sd">        :param instruments: List of instruments the subclient will listen for.</span>
+<span class="sd">                            If empty/None it will listen to all broadcasts done by the server.</span>
+<span class="sd">        :param sub_host: The host location of the updates.</span>
+<span class="sd">        :param sub_port: Should not be changed. It always is the server normal port +1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">sub_host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">sub_port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;tcp://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span> <span class="o">=</span> <span class="n">instruments</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SubClient.connect">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.SubClient.connect">[docs]</a>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connects the subscription client with the broadcast</span>
+<span class="sd">        and runs an infinite loop to check for updates.</span>
+
+<span class="sd">        It should always be run on a separate thread or the program will get stuck in the loop.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connecting to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">addr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctx</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">addr</span><span class="p">)</span>
+
+            <span class="c1"># subscribe to the specified instruments</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt_string</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ins</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt_string</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="n">ins</span><span class="p">)</span>
+
+            <span class="c1"># Make recv interruptible so we can stop gracefully</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">RCVTIMEO</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>  <span class="c1"># ms</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="n">recvMultipart</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">except</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Again</span><span class="p">:</span>
+                    <span class="c1"># timeout -&gt; loop to check _stop</span>
+                    <span class="k">continue</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">KeyboardInterrupt</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Program Stopped Manually&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">linger</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="SubClient.stop">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.SubClient.stop">[docs]</a>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stops the listener gracefully.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="SubClient.disconnect">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.SubClient.disconnect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Alias for stop() for backwards compatibility.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+</div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_QtAdapter</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="QtClient">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.QtClient">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QtClient</span><span class="p">(</span><span class="n">_QtAdapter</span><span class="p">,</span> <span class="n">Client</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+                 <span class="n">port</span><span class="o">=</span><span class="n">DEFAULT_PORT</span><span class="p">,</span>
+                 <span class="n">connect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                 <span class="n">raise_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># Calling the parents like this ensures that the arguments arrive to the parents properly.</span>
+        <span class="n">_QtAdapter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">)</span>
+        <span class="n">Client</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">connect</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">raise_exceptions</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ClientStation">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClientStation</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">DEFAULT_PORT</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">raise_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">param_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A lightweight container for managing a collection of proxy instruments on the client side.</span>
+
+<span class="sd">        Conceptually, this acts like a QCoDeS station on the client side, composed of proxy instruments.</span>
+<span class="sd">        It helps isolate a set of instruments that belong to a specific experiment or user, avoiding</span>
+<span class="sd">        accidental interactions with other instruments managed by the shared `Client`, as the `Client`</span>
+<span class="sd">        object has access to all instruments on the server.</span>
+
+<span class="sd">        :param host: The host address of the server, defaults to localhost.</span>
+<span class="sd">        :param port: The port of the server, defaults to the value of DEFAULT_PORT.</span>
+<span class="sd">        :param connect: If true, the server connects as it is being constructed, defaults to True.</span>
+<span class="sd">        :param timeout: Amount of time that the client waits for an answer before declaring timeout in seconds.</span>
+<span class="sd">                        Defaults to 20s.</span>
+<span class="sd">        :param config_path: Path to YAML config file specifying instruments to initialize.</span>
+<span class="sd">                            Uses the same format as the server config file.</span>
+
+<span class="sd">                            **Example config file:**</span>
+<span class="sd">                            ```yaml</span>
+<span class="sd">                            instruments:</span>
+<span class="sd">                              my_vna:</span>
+<span class="sd">                                type: qcodes_drivers.Keysight_E5080B.Keysight_E5080B</span>
+<span class="sd">                                address: &quot;TCPIP0::10.66.86.251::INSTR&quot;</span>
+<span class="sd">                                gui:</span>
+<span class="sd">                                  kwargs:</span>
+<span class="sd">                                    parameters-hide: [param1, param2]</span>
+<span class="sd">                                    methods-hide: [method1]</span>
+
+<span class="sd">                            gui_defaults:</span>
+<span class="sd">                              __default__:</span>
+<span class="sd">                                parameters-hide: [IDN]</span>
+<span class="sd">                              Keysight_E5080B:</span>
+<span class="sd">                                parameters-hide: [power_*]</span>
+<span class="sd">                            ```</span>
+<span class="sd">        :param param_path: Optional default file path to use when saving or loading parameters.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># initialize a client that has access to all the instruments on the server</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_port</span> <span class="o">=</span> <span class="n">port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_exceptions</span> <span class="o">=</span> <span class="n">raise_exceptions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_client</span><span class="p">(</span><span class="n">connect</span><span class="o">=</span><span class="n">connect</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_path</span> <span class="o">=</span> <span class="n">param_path</span>
+
+        <span class="c1"># create proxy instruments based on config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ProxyInstrument</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_config</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Store full config including merged GUI settings</span>
+        <span class="n">instrument_config</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Use config.py to parse server config format</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">loadConfig</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">serverConfig</span><span class="p">,</span> <span class="n">fullConfig</span><span class="p">,</span> <span class="n">tempFile</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">loadConfig</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+            <span class="n">tempFile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># Clean up temp file</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">full_config</span> <span class="o">=</span> <span class="n">fullConfig</span>
+            <span class="n">instrument_config</span> <span class="o">=</span> <span class="n">fullConfig</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_instruments</span><span class="p">(</span><span class="n">instrument_config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_path</span> <span class="o">=</span> <span class="n">config_path</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_port</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="n">connect</span><span class="p">,</span>
+                     <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">,</span> <span class="n">raise_exceptions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_raise_exceptions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cli</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_instruments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create proxy instruments based on the parameters in instrument_dict.</span>
+<span class="sd">        Uses &#39;type&#39; field from server config format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">instrument_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Extract type (None if not present - will just get existing instrument)</span>
+            <span class="n">instrument_class</span> <span class="o">=</span> <span class="n">conf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Pass all other fields as kwargs (except server/GUI-specific fields)</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                     <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;initialize&#39;</span><span class="p">,</span> <span class="s1">&#39;gui&#39;</span><span class="p">]}</span>
+
+            <span class="n">instrument</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">instrument_class</span><span class="o">=</span><span class="n">instrument_class</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">instrument</span>
+
+<div class="viewcode-block" id="ClientStation.close_instrument">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.close_instrument">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_instrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument_name</span><span class="p">:</span><span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">close_instrument</span><span class="p">(</span><span class="n">instrument_name</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remake_client_station_when_fail</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decorator for remaking a client station object when function call fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">retval</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error calling </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Trying to remake instrument client &quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_client</span><span class="p">(</span><span class="n">connect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_create_instruments</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">full_config</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully remade instrument client.&quot;</span><span class="p">)</span>
+                <span class="n">retval</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">retval</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span>
+
+<div class="viewcode-block" id="ClientStation.find_or_create_instrument">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.find_or_create_instrument">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_or_create_instrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">instrument_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                  <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProxyInstrumentModule</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Looks for an instrument in the server. If it cannot find it, create a new instrument on the server. Returns</span>
+<span class="sd">        a proxy for either the found or the new instrument.</span>
+
+<span class="sd">        :param name: Name of the new instrument.</span>
+<span class="sd">        :param instrument_class: Class of the instrument to create or a string of</span>
+<span class="sd">            of the class.</span>
+<span class="sd">        :param args: Positional arguments for new instrument instantiation.</span>
+<span class="sd">        :param kwargs: Keyword arguments for new instrument instantiation.</span>
+
+<span class="sd">        :returns: A new virtual instrument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ins</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">instrument_class</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ins</span>
+        <span class="k">return</span> <span class="n">ins</span></div>
+
+
+<div class="viewcode-block" id="ClientStation.get_instrument">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.get_instrument">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProxyInstrument</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ClientStation.get_parameters">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.get_parameters">[docs]</a>
+    <span class="nd">@_remake_client_station_when_fail</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all instrument parameters as a nested dictionary.</span>
+
+
+<span class="sd">        :param instruments: list of instrument names. If None, all instrument parameters are returned.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inst_params</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">instruments</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">instruments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">instruments</span><span class="p">:</span>
+            <span class="n">ins_paras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">getParamDict</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">get</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">ins_paras</span> <span class="o">=</span> <span class="n">flat_to_nested_dict</span><span class="p">(</span><span class="n">ins_paras</span><span class="p">)</span>
+            <span class="n">inst_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ins_paras</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">inst_params</span></div>
+
+
+<div class="viewcode-block" id="ClientStation.set_parameters">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.set_parameters">[docs]</a>
+    <span class="nd">@_remake_client_station_when_fail</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inst_params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        load instrument parameters from a nested dictionary.</span>
+
+<span class="sd">        :param inst_params: Nested dict of instrument parameters keyed by instrument names.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># make sure we are not setting parameters that doesn&#39;t belong to this station</span>
+        <span class="c1"># even if the might exist on the server</span>
+        <span class="k">if</span> <span class="n">is_flat_dict</span><span class="p">(</span><span class="n">inst_params</span><span class="p">):</span>
+            <span class="n">inst_params</span> <span class="o">=</span> <span class="n">flat_to_nested_dict</span><span class="p">(</span><span class="n">inst_params</span><span class="p">)</span>
+
+        <span class="n">params_set</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">inst_params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">:</span>
+                <span class="n">params_set</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">inst_params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instrument </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> parameter neglected, as it doesn&#39;t belong to this station&quot;</span><span class="p">)</span>
+
+        <span class="c1"># the client `setParameters` function requires a flat param dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">setParameters</span><span class="p">(</span><span class="n">flatten_dict</span><span class="p">(</span><span class="n">params_set</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ClientStation.save_parameters">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.save_parameters">[docs]</a>
+    <span class="nd">@_remake_client_station_when_fail</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">select_instruments</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save instrument parameters to a JSON file in nested format.</span>
+
+<span class="sd">        :param file_path: path to the json file, defaults to self.param_path</span>
+<span class="sd">        :param select_instruments: list of instrument names to save. If None, all instruments in this station are saved.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span> <span class="k">if</span> <span class="n">file_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_path</span>
+        <span class="n">instruments</span> <span class="o">=</span> <span class="n">select_instruments</span> <span class="k">if</span> <span class="n">select_instruments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="c1"># Delegate to client&#39;s paramsToFile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">paramsToFile</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">instruments</span><span class="o">=</span><span class="n">instruments</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ClientStation.load_parameters">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.load_parameters">[docs]</a>
+    <span class="nd">@_remake_client_station_when_fail</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">select_instruments</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load instrument parameters from a JSON file.</span>
+
+<span class="sd">        :param file_path: path to the json file, defaults to self.param_path</span>
+<span class="sd">        :param select_instruments: list of instrument names to load. If None, all instruments in this station are loaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span> <span class="k">if</span> <span class="n">file_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_path</span>
+        <span class="c1"># Delegate to client&#39;s paramsFromFile</span>
+        <span class="n">instruments</span> <span class="o">=</span> <span class="n">select_instruments</span> <span class="k">if</span> <span class="n">select_instruments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">paramsFromFile</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">instruments</span><span class="o">=</span><span class="n">instruments</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">instruments</span><span class="p">[</span><span class="n">item</span><span class="p">]</span></div>
+
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Wolfgang Pfaff.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

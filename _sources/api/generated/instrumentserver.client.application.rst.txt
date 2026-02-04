@@ -1,0 +1,13 @@
+instrumentserver.client.application
+===================================
+
+.. automodule:: instrumentserver.client.application
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ClientStationGui
+      ServerWidget
+   
