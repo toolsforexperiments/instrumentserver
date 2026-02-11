@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "instrumentserver"
+version = "0.0.1"
+description = "Distributed instrument control server and client for QCoDeS."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+authors = [
+    {name = "Wolfgang Pfaff", email = "wolfgangpfff@gmail.com"},
+    {name = "Marcos Frenkel", email = "marcosf2@illinois.edu"}
+]
+dependencies = [
+    "pyqt5",
+    "pyzmq",
+    "qcodes",
+    "qtpy",
+    "scipy"
+]
+
+[project.urls]
+Homepage = "https://github.com/toolsforexperiments/instrumentserver"
+
+[project.scripts]
+instrumentserver = "instrumentserver.apps:serverScript"
+instrumentserver-client-station = "instrumentserver.apps:clientStationScript"
+instrumentserver-detached = "instrumentserver.apps:detachedServerScript"
+instrumentserver-listener = "instrumentserver.monitoring.listener:startListener"
+instrumentserver-param-manager = "instrumentserver.apps:parameterManagerScript"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
