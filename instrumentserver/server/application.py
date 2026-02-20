@@ -767,7 +767,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
 
         self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
-        self.client = Client(host, port, timeout=3000000)
+        self.client = Client(host, port, timeout=20)
         self.subClient = None
 
         self.setWindowTitle('Instrument server detached')
