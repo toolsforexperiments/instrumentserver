@@ -8,8 +8,6 @@ from qcodes import Station, Instrument
 from qcodes.utils import validators
 
 from instrumentserver import QtWidgets
-from instrumentserver.serialize import (
-    saveParamsToFile, loadParamsFromFile, toParamDict, fromParamDict)
 
 from instrumentserver.gui import widgetDialog
 from instrumentserver.params import ParameterManager

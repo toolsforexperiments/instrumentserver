@@ -5,7 +5,6 @@ import os
 
 from qcodes import Instrument
 from instrumentserver.client import Client
-from instrumentserver.serialize import saveParamsToFile
 from instrumentserver.client import ProxyInstrument
 
 
@@ -31,8 +30,10 @@ pm = ins_cli.find_or_create_instrument(
 
 
 #%% save the state
-saveParamsToFile([pm], os.path.abspath('./parameters.json'))
+# Note: This now saves ALL instruments' parameters, not just pm
+ins_cli.paramsToFile(os.path.abspath('./parameters.json'))
 
 
 #%% load pm settings from file
-pm.fromFile(os.path.abspath('./parameters.json'))
+# Note: This now loads ALL instruments' parameters from file
+ins_cli.paramsFromFile(os.path.abspath('./parameters.json'))

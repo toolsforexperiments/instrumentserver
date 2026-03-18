@@ -3,6 +3,7 @@ import importlib
 import logging
 import os
 import time
+import sys
 from typing import Union, Optional, Any, Dict
 
 from instrumentserver.client import QtClient
@@ -13,7 +14,7 @@ from .core import (
     StationServer,
     InstrumentModuleBluePrint, ParameterBluePrint
 )
-from .. import QtCore, QtWidgets, QtGui, Client
+from .. import QtCore, QtWidgets, QtGui, Client, getInstrumentserverPath
 from ..gui.misc import DetachableTabWidget, BaseDialog
 from ..gui.parameters import AnyInputForMethod
 from ..gui.instruments import GenericInstrument
@@ -552,10 +553,15 @@ class ServerGui(QtWidgets.QMainWindow):
         self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
         self.setWindowTitle('Instrument server')
+        # Set unique Windows App ID so that this app can have separate taskbar entry than other Qt apps
+        if sys.platform == "win32":
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("InstrumentServer.Server")
+        self.setWindowIcon(QtGui.QIcon(getInstrumentserverPath("resource", "icons") + "/server_app_icon.svg"))
 
         # A test client, just a simple helper object.
-        self.client = EmbeddedClient(raise_exceptions=False, timeout=5000000)
-        self.client.recv_timeout = 10_000
+        self.client = EmbeddedClient(raise_exceptions=False, timeout=5000)
+        self.client.recv_timeout_ms = 10_000
 
         # Central widget is simply a tab container.
         self.tabs = DetachableTabWidget(self)
@@ -854,7 +860,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
 
         self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
-        self.client = Client(host, port, timeout=3000000)
+        self.client = Client(host, port, timeout=20)
         self.subClient = None
 
         self.setWindowTitle('Instrument server detached')
@@ -1003,7 +1009,7 @@ def parameterToHtml(bp: ParameterBluePrint, headerLevel=None):
     # FIXME: We deleted the validator since there is no real easy way of deserializing them. It would be a good idea to
     #  have them here though
     # <li><b>Validator:</b> {html.escape(str(bp.vals))}</li>
-    var = """<li><b>Doc:</b> {html.escape(str(bp.docstring))}</li>
+    var = f"""<li><b>Doc:</b> {html.escape(str(bp.docstring))}</li>
 </ul>
 </div>
     """

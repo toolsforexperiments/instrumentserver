@@ -5,8 +5,10 @@ instrumentserver.log : Logging tools and defaults for instrumentserver.
 import sys
 import logging
 from enum import Enum, auto, unique
+from html import escape
+import re
 
-from . import QtGui, QtWidgets
+from . import QtGui, QtWidgets, QtCore
 
 
 @unique
@@ -17,7 +19,7 @@ class LogLevels(Enum):
     debug = auto()
 
 
-class QLogHandler(logging.Handler):
+class QLogHandler(QtCore.QObject,logging.Handler):
     """A simple log handler that supports logging in TextEdit"""
 
     COLORS = {
@@ -26,21 +28,71 @@ class QLogHandler(logging.Handler):
         logging.INFO: QtGui.QColor('green'),
         logging.DEBUG: QtGui.QColor('gray'),
     }
+    
+    new_html = QtCore.Signal(str)
 
     def __init__(self, parent):
-        super().__init__()
+        QtCore.QObject.__init__(self, parent)
+        logging.Handler.__init__(self)
+
         self.widget = QtWidgets.QTextEdit(parent)
         self.widget.setReadOnly(True)
+        self._transform = None
 
-    def emit(self, record):
-        msg = self.format(record)
-        clr = self.COLORS.get(record.levelno, QtGui.QColor('black'))
-        self.widget.setTextColor(clr)
-        self.widget.append(msg)
+        # connect signal to slot that actually touches the widget (GUI thread)
+        self.new_html.connect(self._append_html)
+    
+    
+    @QtCore.Slot(str)
+    def _append_html(self, html: str):
+        """Append HTML to the text widget in the GUI thread."""
+        self.widget.append(html)
+        # reset char format so bold/italics don’t bleed into the next line
+        self.widget.setCurrentCharFormat(QtGui.QTextCharFormat())
+        # keep view scrolled to bottom
         self.widget.verticalScrollBar().setValue(
             self.widget.verticalScrollBar().maximum()
         )
 
+    
+    def set_transform(self, fn):
+        """fn(record, msg) -> str | {'html': str} | None"""
+        self._transform = fn
+
+    def emit(self, record):
+        formatted = self.format(record)  # prefix + message
+        raw_msg = record.getMessage()  # message only
+
+        # Color for prefix (log level)
+        clr = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
+
+        if self._transform is not None:
+            html_fragment = self._transform(record, raw_msg)
+            if html_fragment:
+                i = formatted.rfind(raw_msg)
+                if i >= 0:
+                    prefix = formatted[:i]
+                    suffix = formatted[i + len(raw_msg):]
+                else:
+                    prefix, suffix = "", ""
+
+                # Build HTML line
+                html = (
+                    f"<span style='color:{clr}'>{escape(prefix)}</span>"
+                    f"{html_fragment}"
+                    f"{escape(suffix)}"
+                )
+
+                # send to GUI thread
+                self.new_html.emit(html)
+                return
+
+        # fallback: original plain text path
+        msg = formatted
+        clr_q = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
+        html = f"<span style='color:{clr_q}'>{escape(msg)}</span>"
+
+        self.new_html.emit(html)
 
 class LogWidget(QtWidgets.QWidget):
     """
@@ -58,6 +110,7 @@ class LogWidget(QtWidgets.QWidget):
         logTextBox = QLogHandler(self)
         logTextBox.setFormatter(fmt)
         logTextBox.setLevel(level)
+        self.handler = logTextBox
 
         # make the widget
         layout = QtWidgets.QVBoxLayout()
@@ -77,6 +130,27 @@ class LogWidget(QtWidgets.QWidget):
         #         del h
 
         self.logger.addHandler(logTextBox)
+        self.handler.set_transform(_param_update_formatter)
+
+
+def _param_update_formatter(record, raw_msg):
+    """
+    A formater that makes parameter updates more prominent in the gui log window.
+    """
+    # Pattern 1: "parameter-update" from the broadcaster, for client station
+    pattern_update = re.compile(r'parameter-update:\s*([A-Za-z0-9_.]+):\s*(.+)', re.S)
+
+    # Pattern 2: normal log message from the server. i.e. `Parameter {name} set to: {value}`
+    pattern_info = re.compile(r"Parameter\s+'([A-Za-z0-9_.]+)'\s+set\s+to:\s*(.+)", re.S)
+
+    match = pattern_update.search(raw_msg) or pattern_info.search(raw_msg)
+    if not match:
+        return None
+
+    name, value = match.groups()
+
+    # Escape HTML but keep \n literal (QTextEdit.append will render them)
+    return ( f"<b>{escape(name)}</b> set to: " f"<span style='color:#7e5bef; font-weight:bold'>{escape(value)}</span>" )
 
 
 def setupLogging(addStreamHandler=True, logFile=None,

@@ -1,0 +1,21 @@
+name: instrumentserver-docs
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - sphinx>=5.0
+  - sphinx-autobuild>=2021.3.20
+  - pydata-sphinx-theme>=0.13.0
+  - myst-parser>=0.18.0
+  - linkify-it-py
+  - sphinx-autodoc-typehints>=1.19.0
+  - nbsphinx>=0.8.0
+  - nbconvert>=7.0.0
+  - jupyter>=1.0.0
+  - ipython>=7.0.0
+  - scipy>=1.0
+  - pandas>=1.0
+  - xarray>=0.16
+  - packaging>=20.0
+  - pip

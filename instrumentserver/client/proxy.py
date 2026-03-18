@@ -6,10 +6,14 @@ Created on Sat Apr 18 16:13:40 2020
 """
 import inspect
 import json
+import yaml
 import logging
 import os
 from types import MethodType
+import collections
 from typing import Any, Union, Optional, Dict, List
+import threading
+from contextlib import contextmanager
 
 import qcodes as qc
 import zmq
@@ -17,6 +21,7 @@ from qcodes import Instrument, Parameter
 from qcodes.instrument.base import InstrumentBase
 
 from instrumentserver import QtCore, DEFAULT_PORT
+from instrumentserver.helpers import flat_to_nested_dict, flatten_dict, is_flat_dict
 from instrumentserver.server.core import (
     ServerInstruction,
     InstrumentModuleBluePrint,
@@ -60,7 +65,10 @@ class ProxyMixin:
 
         if remotePath is not None and bluePrint is None:
             self.remotePath = remotePath
-            self.bp = self._getBluePrintFromServer(self.remotePath)
+            if self.cli is None:
+                self.bp = self._getBluePrintFromServer(self.remotePath)
+            else:
+                self.bp = self.cli.getBluePrint(self.remotePath)
         elif bluePrint is not None:
             self.bp = bluePrint
             self.remotePath = self.bp.path
@@ -167,11 +175,11 @@ class ProxyParameter(ProxyMixin, Parameter):
 
 
 class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
-    """Construct a proxy module using the given blue print. Each proxy
+    """Construct a proxy module using the given blueprint. Each proxy
     instantiation represents a virtual module (instrument of submodule of
     instrument).
 
-    :param bluePrint: The blue print that the describes the module.
+    :param bluePrint: The blueprint that the describes the module.
     :param host: The name of the host where the server lives.
     :param port: The port number of the server.
     """
@@ -192,24 +200,54 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         if cli is None:
             self.cli = Client(host=host, port=port)
 
+        for mn in self.bp.methods.keys():
+            if mn == 'remove_parameter':
+                def remove_parameter(obj, name: str):
+                    obj.cli.call(f'{obj.remotePath}.remove_parameter', name)
+                    obj.update()
+
+                self.remove_parameter = MethodType(remove_parameter, self)
+
         self.parameters.pop('IDN', None)  # we will redefine this later
 
         # When a new parameter or method is added to client, qcodes checks if that item exists or not. This is done
         #  by calling __getattr__ method. The problem is that when that method gets called and cannot find that item it
         #  creates it, generating an infinite loop. This flag stops that. It should be set to True before doing any change
         #  to the proxy object and set to False after the change is done.
-        self.is_updating = True
-        self.update()
         self.is_updating = False
+        with self._updating():
+            self.update()
+
+    @contextmanager
+    def _updating(self):
+        old = self.is_updating
+        self.is_updating = True
+        try:
+            yield
+        finally:
+            self.is_updating = old
+
 
     def initKwargsFromBluePrint(self, bp):
         return {}
 
     def update(self):
+        self.cli.invalidateBlueprint(self.remotePath)
         self.bp = self.cli.getBluePrint(self.remotePath)
         self._getProxyParameters()
         self._getProxyMethods()
         self._getProxySubmodules()
+    
+    def set_parameters(self, **param_dict:dict):
+        """
+        Set instrument parameters in batch with a dict, keyed by parameter names.
+
+        """
+        for k, v in param_dict.items():
+            try:
+                self.parameters[k](v)
+            except KeyError:
+                raise KeyError(f"{self.bp.instrument_module_class} instrument does not have parameter '{k}'")
 
     def add_parameter(self, name: str, *arg, **kw):
         """Add a parameter to the proxy instrument.
@@ -255,10 +293,9 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         for pn, p in self.bp.parameters.items():
             if pn not in self.parameters:
                 pbp = self.cli.getBluePrint(f"{self.remotePath}.{pn}")
-                self.is_updating = True
-                super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
-                                      port=self.port, bluePrint=pbp, setpoints_instrument=self)
-                self.is_updating = False
+                with self._updating():
+                    super().add_parameter(pbp.name, ProxyParameter, cli=self.cli, host=self.host,
+                                          port=self.port, bluePrint=pbp, setpoints_instrument=self)
 
         delKeys = []
         for pn in self.parameters.keys():
@@ -275,11 +312,10 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         """
         for n, m in self.bp.methods.items():
             if not hasattr(self, n):
-                self.is_updating = True
-                fun = self._makeProxyMethod(m)
-                setattr(self, n, MethodType(fun, self))
-                self.functions[n] = getattr(self, n)
-                self.is_updating = False
+                with self._updating():
+                    fun = self._makeProxyMethod(m)
+                    setattr(self, n, MethodType(fun, self))
+                    self.functions[n] = getattr(self, n)
 
     def _makeProxyMethod(self, bp: MethodBluePrint):
         def wrap(*a, **k):
@@ -312,8 +348,8 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
 
         # make sure the method knows the wrap function.
         # TODO: this is not complete!
-        globs = {'wrap': wrap, 'qcodes': qc}
-        exec(new_func_str, globs)
+        globs = {'wrap': wrap, 'qcodes': qc, 'collections': collections}
+        _ret = exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
         return globs[bp.name]
@@ -378,12 +414,20 @@ ProxyInstrument = ProxyInstrumentModule
 
 class Client(BaseClient):
     """Client with common server requests as convenience functions."""
+    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True):
+        super().__init__(host, port, connect, timeout, raise_exceptions)
+        self._bp_cache = {}
+        self._bp_cache_lock = threading.Lock()
 
     def list_instruments(self) -> Dict[str, str]:
         """ Get the existing instruments on the server.
         """
-        msg = ServerInstruction(operation=Operation.get_existing_instruments)
-        return self.ask(msg)
+        message = ServerInstruction(operation=Operation.get_existing_instruments)
+        try:
+            return self.ask(message)
+        except Exception as e:
+            logger.error(f"Failed to send or receive message to server at {self.host}:{self.port}", exc_info=True)
+            raise RuntimeError("Communication with server failed. See logs for details.") from e
 
     def find_or_create_instrument(self, name: str, instrument_class: Optional[str] = None,
                                   *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
@@ -403,6 +447,11 @@ class Client(BaseClient):
 
         if instrument_class is None:
             raise ValueError('Need a class to create a new instrument.')
+
+        if not isinstance(instrument_class, str):
+            raise TypeError('Class name must be a string with the import path of the class. '
+                             'If trying to start the parameter manager for example use "instrumentserver.params.ParameterManager" instead of '
+                             'passing the class itself.')
 
         req = ServerInstruction(
             operation=Operation.create_instrument,
@@ -434,11 +483,38 @@ class Client(BaseClient):
         return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
 
     def getBluePrint(self, path):
+        """
+        get blueprint from server
+        :param path:
+        :return:
+        """
+        with self._bp_cache_lock:
+            bp = self._bp_cache.get(path)
+        if bp is not None:
+            return bp
+
         msg = ServerInstruction(
             operation=Operation.get_blueprint,
             requested_path=path,
         )
-        return self.ask(msg)
+        bp = self.ask(msg)
+        with self._bp_cache_lock:
+            self._bp_cache[path] = bp
+        return bp
+
+    def invalidateBlueprint(self, path=None):
+        """
+        invalidate a parameter in the blueprint cache
+        :param path:
+        :return:
+        """
+        with self._bp_cache_lock:
+            if path is None:
+                self._bp_cache.clear()
+            else:
+                for k in list(self._bp_cache):
+                    if k == path or k.startswith(path + '.'):
+                        del self._bp_cache[k]
 
     def get_snapshot(self, instrument: str | None = None, *args, **kwargs):
         msg = ServerInstruction(
@@ -464,10 +540,22 @@ class Client(BaseClient):
         )
         return self.ask(msg)
 
-    def paramsToFile(self, filePath: str, *args, **kwargs):
+    def paramsToFile(self, filePath: str, instruments: Optional[List[str]] = None, *args, **kwargs):
         filePath = os.path.abspath(filePath)
         folder, file = os.path.split(filePath)
-        params = self.getParamDict(*args, **kwargs)
+
+        # Get parameters for specified instruments or all if not specified
+        if instruments is None:
+            params = self.getParamDict(*args, **kwargs)
+        else:
+            params = {}
+            for instrument_name in instruments:
+                inst_params = self.getParamDict(instrument=instrument_name, *args, **kwargs)
+                params.update(inst_params)
+
+        # Convert to nested format before saving,
+        if is_flat_dict(params):
+            params = flat_to_nested_dict(params)
         if not os.path.exists(folder):
             os.makedirs(folder)
         with open(filePath, 'w') as f:
@@ -480,11 +568,24 @@ class Client(BaseClient):
         )
         return self.ask(msg)
 
-    def paramsFromFile(self, filePath: str):
+    def paramsFromFile(self, filePath: str, instruments: Optional[List[str]] = None):
         params = None
         if os.path.exists(filePath):
             with open(filePath, 'r') as f:
                 params = json.load(f)
+            # Convert to flat format before sending to server (setParameters expects flat)
+            if not is_flat_dict(params):
+                params = flatten_dict(params)
+
+            # Filter to specified instruments if provided
+            if instruments is not None:
+                filtered_params = {}
+                for instrument_name in instruments:
+                    for key, value in params.items():
+                        if key.startswith(instrument_name + '.') or key == instrument_name:
+                            filtered_params[key] = value
+                params = filtered_params
+
             self.setParameters(params)
         else:
             logger.warning(f"File {filePath} does not exist. No params loaded.")
@@ -502,14 +603,17 @@ class SubClient(QtCore.QObject):
     #: emitted when the server broadcast either a new parameter or an update to an existing one.
     update = QtCore.Signal(ParameterBroadcastBluePrint)
 
+    #: Signal emitted when the listener finishes (for proper cleanup)
+    finished = QtCore.Signal()
+
     def __init__(self, instruments: Optional[List[str]] = None, sub_host: str = 'localhost', sub_port: int = DEFAULT_PORT + 1):
         """
         Creates a new subscription client.
 
         :param instruments: List of instruments the subclient will listen for.
-                            If empty it will listen to all broadcasts done by the server.
-        :param host: The host location of the updates.
-        :param port: Should not be changed. It always is the server normal port +1.
+                            If empty/None it will listen to all broadcasts done by the server.
+        :param sub_host: The host location of the updates.
+        :param sub_port: Should not be changed. It always is the server normal port +1.
         """
         super().__init__()
         self.host = sub_host
@@ -518,7 +622,11 @@ class SubClient(QtCore.QObject):
         self.instruments = instruments
 
         self.connected = False
+        self._stop = False
+        self._ctx = None
+        self._sock = None
 
+    @QtCore.Slot()
     def connect(self):
         """
         Connects the subscription client with the broadcast
@@ -527,26 +635,57 @@ class SubClient(QtCore.QObject):
         It should always be run on a separate thread or the program will get stuck in the loop.
         """
         logger.info(f"Connecting to {self.addr}")
-        context = zmq.Context()
-        socket = context.socket(zmq.SUB)
-        socket.connect(self.addr)
+        self._ctx = zmq.Context.instance()
+        self._sock = self._ctx.socket(zmq.SUB)
 
-        # subscribe to the specified instruments
-        if self.instruments is None:
-            socket.setsockopt_string(zmq.SUBSCRIBE, '')
-        else:
-            for ins in self.instruments:
-                socket.setsockopt_string(zmq.SUBSCRIBE, ins)
+        try:
+            self._sock.connect(self.addr)
 
-        self.connected = True
+            # subscribe to the specified instruments
+            if self.instruments is None:
+                self._sock.setsockopt_string(zmq.SUBSCRIBE, '')
+            else:
+                for ins in self.instruments:
+                    self._sock.setsockopt_string(zmq.SUBSCRIBE, ins)
 
-        while self.connected:
-            message = recvMultipart(socket)
-            self.update.emit(message[1])
+            # Make recv interruptible so we can stop gracefully
+            self._sock.setsockopt(zmq.RCVTIMEO, 200)  # ms
 
-        self.disconnect()
+            self.connected = True
+
+            while self.connected and not self._stop:
+                try:
+                    message = recvMultipart(self._sock)
+                    self.update.emit(message[1])
+                except zmq.Again:
+                    # timeout -> loop to check _stop
+                    continue
+                except (KeyboardInterrupt, SystemExit):
+                    logger.info("Program Stopped Manually")
+                    break
+        finally:
+            try:
+                if self._sock is not None:
+                    self._sock.close(linger=0)
+            finally:
+                self._sock = None
+            self.finished.emit()
 
         return True
+
+    @QtCore.Slot()
+    def stop(self):
+        """
+        Stops the listener gracefully.
+        """
+        self._stop = True
+        self.connected = False
+
+    def disconnect(self):
+        """
+        Alias for stop() for backwards compatibility.
+        """
+        self.stop()
 
 
 class _QtAdapter(QtCore.QObject):
@@ -559,8 +698,215 @@ class QtClient(_QtAdapter, Client):
                  host='localhost',
                  port=DEFAULT_PORT,
                  connect=True,
-                 timeout=5000,
+                 timeout=5,
                  raise_exceptions=True):
         # Calling the parents like this ensures that the arguments arrive to the parents properly.
         _QtAdapter.__init__(self, parent=parent)
         Client.__init__(self, host, port, connect, timeout, raise_exceptions)
+
+
+class ClientStation:
+    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True,
+                 config_path: str = None,
+                 param_path: str = None):
+        """
+        A lightweight container for managing a collection of proxy instruments on the client side.
+
+        Conceptually, this acts like a QCoDeS station on the client side, composed of proxy instruments.
+        It helps isolate a set of instruments that belong to a specific experiment or user, avoiding
+        accidental interactions with other instruments managed by the shared `Client`, as the `Client`
+        object has access to all instruments on the server.
+
+        :param host: The host address of the server, defaults to localhost.
+        :param port: The port of the server, defaults to the value of DEFAULT_PORT.
+        :param connect: If true, the server connects as it is being constructed, defaults to True.
+        :param timeout: Amount of time that the client waits for an answer before declaring timeout in seconds.
+                        Defaults to 20s.
+        :param config_path: Path to YAML config file specifying instruments to initialize.
+                            Uses the same format as the server config file.
+
+                            **Example config file:**
+                            ```yaml
+                            instruments:
+                              my_vna:
+                                type: qcodes_drivers.Keysight_E5080B.Keysight_E5080B
+                                address: "TCPIP0::10.66.86.251::INSTR"
+                                gui:
+                                  kwargs:
+                                    parameters-hide: [param1, param2]
+                                    methods-hide: [method1]
+
+                            gui_defaults:
+                              __default__:
+                                parameters-hide: [IDN]
+                              Keysight_E5080B:
+                                parameters-hide: [power_*]
+                            ```
+        :param param_path: Optional default file path to use when saving or loading parameters.
+
+        """
+
+        # initialize a client that has access to all the instruments on the server
+        self._host = host
+        self._port = port
+        self._timeout = timeout
+        self._raise_exceptions = raise_exceptions
+        self.client = self._make_client(connect=connect)
+        self.param_path = param_path
+
+        # create proxy instruments based on config
+        self.instruments: Dict[str, ProxyInstrument] = {}
+        self.full_config = {}  # Store full config including merged GUI settings
+        instrument_config = {}
+
+        if config_path is not None:
+            # Use config.py to parse server config format
+            from instrumentserver.config import loadConfig
+            _, serverConfig, fullConfig, tempFile, _, _ = loadConfig(config_path)
+            tempFile.close()  # Clean up temp file
+
+            self.full_config = fullConfig
+            instrument_config = fullConfig
+
+        self._create_instruments(instrument_config)
+        self._config_path = config_path
+
+    def _make_client(self, connect=True):
+        cli = Client(host=self._host, port=self._port, connect=connect,
+                     timeout=self._timeout, raise_exceptions=self._raise_exceptions)
+        return cli
+
+    def _create_instruments(self, instrument_dict: dict):
+        """
+        Create proxy instruments based on the parameters in instrument_dict.
+        Uses 'type' field from server config format.
+        """
+        for name, conf in instrument_dict.items():
+            # Extract type (None if not present - will just get existing instrument)
+            instrument_class = conf.get('type')
+
+            # Pass all other fields as kwargs (except server/GUI-specific fields)
+            kwargs = {k: v for k, v in conf.items()
+                     if k not in ['type', 'initialize', 'gui']}
+
+            instrument = self.client.find_or_create_instrument(
+                name=name,
+                instrument_class=instrument_class,
+                **kwargs
+            )
+            self.instruments[name] = instrument
+
+    def close_instrument(self, instrument_name:str):
+        self.client.close_instrument(instrument_name)
+
+    @staticmethod
+    def _remake_client_station_when_fail(func):
+        """
+        Decorator for remaking a client station object when function call fails
+        """
+
+        def wrapper(self, *args, **kwargs):
+            try:
+                retval = func(self, *args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error calling {func}: {e}. Trying to remake instrument client ", exc_info=True)
+                self.client = self._make_client(connect=True)
+                self._create_instruments(self.full_config)
+                logger.info(f"Successfully remade instrument client.")
+                retval = func(self, *args, **kwargs)
+            return retval
+
+        return wrapper
+
+    def find_or_create_instrument(self, name: str, instrument_class: Optional[str] = None,
+                                  *args: Any, **kwargs: Any) -> ProxyInstrumentModule:
+        """ Looks for an instrument in the server. If it cannot find it, create a new instrument on the server. Returns
+        a proxy for either the found or the new instrument.
+
+        :param name: Name of the new instrument.
+        :param instrument_class: Class of the instrument to create or a string of
+            of the class.
+        :param args: Positional arguments for new instrument instantiation.
+        :param kwargs: Keyword arguments for new instrument instantiation.
+
+        :returns: A new virtual instrument.
+        """
+        ins = self.client.find_or_create_instrument(name, instrument_class, *args, **kwargs)
+        self.instruments[name] = ins
+        return ins
+
+    def get_instrument(self, name: str) -> ProxyInstrument:
+        return self.instruments[name]
+
+    @_remake_client_station_when_fail
+    def get_parameters(self, instruments: List[str] = None) -> Dict:
+        """
+        Get all instrument parameters as a nested dictionary.
+
+
+        :param instruments: list of instrument names. If None, all instrument parameters are returned.
+        :return:
+        """
+        inst_params = {}
+        if instruments is None:
+            instruments = self.instruments.keys()
+        for name in instruments:
+            ins_paras = self.client.getParamDict(name, get=True)
+            ins_paras = flat_to_nested_dict(ins_paras)
+            inst_params.update(ins_paras)
+
+        return inst_params
+
+    @_remake_client_station_when_fail
+    def set_parameters(self, inst_params: Dict):
+        """
+        load instrument parameters from a nested dictionary.
+
+        :param inst_params: Nested dict of instrument parameters keyed by instrument names.
+        :return:
+        """
+
+        # make sure we are not setting parameters that doesn't belong to this station
+        # even if the might exist on the server
+        if is_flat_dict(inst_params):
+            inst_params = flat_to_nested_dict(inst_params)
+
+        params_set = {}
+        for k in inst_params:
+            if k in self.instruments:
+                params_set[k] = inst_params[k]
+            else:
+                logger.warning(f"Instrument {k} parameter neglected, as it doesn't belong to this station")
+
+        # the client `setParameters` function requires a flat param dict
+        self.client.setParameters(flatten_dict(params_set))
+
+    @_remake_client_station_when_fail
+    def save_parameters(self, file_path: str = None, select_instruments:List[str] = None):
+        """
+        Save instrument parameters to a JSON file in nested format.
+
+        :param file_path: path to the json file, defaults to self.param_path
+        :param select_instruments: list of instrument names to save. If None, all instruments in this station are saved.
+        """
+        file_path = file_path if file_path is not None else self.param_path
+        instruments = select_instruments if select_instruments is not None else list(self.instruments.keys())
+        # Delegate to client's paramsToFile
+        self.client.paramsToFile(file_path, instruments=instruments)
+
+    @_remake_client_station_when_fail
+    def load_parameters(self, file_path: str, select_instruments:List[str] = None):
+        """
+        Load instrument parameters from a JSON file.
+
+        :param file_path: path to the json file, defaults to self.param_path
+        :param select_instruments: list of instrument names to load. If None, all instruments in this station are loaded.
+        """
+        file_path = file_path if file_path is not None else self.param_path
+        # Delegate to client's paramsFromFile
+        instruments = select_instruments if select_instruments is not None else list(self.instruments.keys())
+        self.client.paramsFromFile(file_path, instruments=instruments)
+
+    def __getitem__(self, item):
+        return self.instruments[item]
+

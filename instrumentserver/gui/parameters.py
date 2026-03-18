@@ -1,7 +1,8 @@
 import logging
 import math
 import numbers
-from typing import Any, Optional, List, Callable
+from typing import Any, Optional, List
+import re
 
 from qcodes import Parameter
 
@@ -14,6 +15,20 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: do all styling with a global style sheet
+
+FLOAT_PRECISION = 10 # The maximum number of significant digits for float numbers
+
+def float_formater(val):
+    """
+    For displaying float numbers with scientific notation.
+    """
+    if isinstance(val, float):
+        if abs(val) > 1e5 or (0 < abs(val) < 1e-4):
+            formatted = f"{val:.{FLOAT_PRECISION - 1}g}"
+            # remove leading 0 in exponent
+            formatted = re.sub(r"e([+-])0(\d+)", r"e\1\2", formatted)
+            return formatted
+    return str(val)
 
 
 class ParameterWidget(QtWidgets.QWidget):
@@ -35,7 +50,7 @@ class ParameterWidget(QtWidgets.QWidget):
     _valueFromWidget = QtCore.Signal(object)
 
     def __init__(self, parameter: Parameter, parent=None,
-                 additionalWidgets: Optional[List[QtWidgets.QWidget]] = []):
+                 additionalWidgets: Optional[List[QtWidgets.QWidget]] = None):
 
         super().__init__(parent)
 
@@ -128,6 +143,10 @@ class ParameterWidget(QtWidgets.QWidget):
             self.paramWidget = QtWidgets.QLabel(self)
             self._setMethod = lambda x: self.paramWidget.setText(str(x)) \
                 if isinstance(self.paramWidget, QtWidgets.QLabel) else None
+            try: # also do immediate update for read-only params, as what we do for the editable parameters above.
+                self._setMethod(parameter())
+            except Exception as e:
+                logger.warning(f"Error when setting parameter {parameter}: {e}", exc_info=True)
 
         layout.addWidget(self.paramWidget, 0, 0)
         additionalWidgets = additionalWidgets or []
@@ -217,7 +236,7 @@ QPushButton:checked { background-color: palegreen }
 
     def setValue(self, val: Any):
         try:
-            self.input.setText(str(val))
+            self.input.setText(float_formater(val))
         except RuntimeError as e:
             logger.debug(f"Could not set value {val} in AnyInput element does not exists, raised {type(e)}: {e.args}")
 
@@ -260,7 +279,7 @@ class NumberInput(QtWidgets.QLineEdit):
 
     def setValue(self, value: numbers.Number):
         try:
-            self.setText(str(value))
+            self.setText(float_formater(value))
         except RuntimeError as e:
             logger.debug(f"Could not set value {value} in NumberInput, raised {type(e)}: {e.args}")
 

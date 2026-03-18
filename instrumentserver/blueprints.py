@@ -59,9 +59,8 @@ from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
 from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args, cast
 
 import numpy as np
-import qcodes as qc
 from qcodes import (
-    Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints, ChannelTuple)
+    Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
 from qcodes.instrument.base import InstrumentBase
 from qcodes.utils.validators import Validator
 

@@ -13,7 +13,16 @@ setup(name='instrumentserver',
             "console_scripts": [
                   "instrumentserver = instrumentserver.apps:serverScript",
                   "instrumentserver-detached = instrumentserver.apps:detachedServerScript",
+                  "instrumentserver-client-station = instrumentserver.apps:clientStationScript",
                   "instrumentserver-param-manager = instrumentserver.apps:parameterManagerScript",
                   "instrumentserver-listener = instrumentserver.monitoring.listener:startListener",
-                  ]}
+                  ]},
+      install_requires = [
+            'pyzmq',
+            'qcodes',
+            'qtpy',
+            'pyqt5',
+            'bokeh',
+            'scipy'
+      ]
       )

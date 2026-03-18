@@ -10,7 +10,8 @@ from .config import loadConfig
 from .server.application import startServerGuiApplication
 from .server.core import startServer
 
-from .client import Client
+from .client import Client, ClientStation
+from .client.application import ClientStationGui
 from .gui import widgetMainWindow
 from .gui.instruments import ParameterManagerGui
 from .server.pollingWorker import PollingWorker
@@ -126,6 +127,22 @@ def detachedServerScript() -> None:
 
     app = QtWidgets.QApplication([])
     window = DetachedServerGui(host=args.host, port=args.port)
+    window.show()
+    app.exec_()
+
+
+def clientStationScript() -> None:
+    parser = argparse.ArgumentParser(description='Starting a client station GUI')
+    parser.add_argument("--host", default="localhost", help="Server host address")
+    parser.add_argument("--port", default=5555, type=int, help="Server port")
+    parser.add_argument("-c", "--config", type=str, default='', help="Path to client station config file (YAML)")
+    args = parser.parse_args()
+
+    app = QtWidgets.QApplication([])
+
+    config_path = args.config if args.config else None
+    station = ClientStation(host=args.host, port=args.port, config_path=config_path)
+    window = ClientStationGui(station)
     window.show()
     app.exec_()
 

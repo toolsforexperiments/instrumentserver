@@ -1,0 +1,12 @@
+{
+  "test1": {
+    "random_int": 1507,
+    "param1": 1.0,
+    "param2": 44.0
+  },
+  "test2": {
+    "random_int": 954,
+    "param1": 1.0,
+    "param2": 2.0
+  }
+}
