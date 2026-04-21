@@ -771,7 +771,7 @@ def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
                 converted_iterable.append(arg_dict)
 
             elif isinstance(item, complex):
-                arg_dict = dict(real=item.real, imag=item.imag, _class_type='complex')
+                arg_dict = dict(real=float(item.real), imag=float(item.imag), _class_type='complex')
                 converted_iterable.append(arg_dict)
 
             else:
@@ -806,7 +806,7 @@ def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
                 kwarg_dict = _convert_arbitrary_obj_to_dict(value)
                 converted_dict[name] = kwarg_dict
             elif isinstance(value, complex):
-                kwarg_dict = dict(real=value.real, imag=value.imag, _class_type='complex')
+                kwarg_dict = dict(real=float(value.real), imag=float(value.imag), _class_type='complex')
                 converted_dict[name] = kwarg_dict
             else:
                 converted_dict[name] = str(value)

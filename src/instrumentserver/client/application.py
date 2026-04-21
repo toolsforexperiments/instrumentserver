@@ -345,6 +345,13 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Cleanup listener thread before closing the window."""
+        for name, widget in list(self.instrumentTabsOpen.items()):
+            try:
+                widget.close()
+            except Exception:
+                pass
+        self.instrumentTabsOpen.clear()
+
         self.listener.stop()
         self.listenerThread.quit()
         self.listenerThread.wait(3000)  # Wait up to 3 seconds for thread to finish

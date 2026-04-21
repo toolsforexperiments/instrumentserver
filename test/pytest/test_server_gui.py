@@ -3,7 +3,23 @@ from pathlib import Path
 
 from instrumentserver import QtCore
 from instrumentserver.gui.instruments import GenericInstrument
+from instrumentserver.helpers import flatten_dict
 from instrumentserver.server.application import startServerGuiApplication
+
+
+def _shutdown_server_window(window):
+    """Trigger closeEvent and wait for the server thread to exit so the next
+    test can bind the same port again."""
+    try:
+        window.close()
+    except Exception:
+        pass
+    thread = getattr(window, 'stationServerThread', None)
+    if thread is not None:
+        try:
+            thread.wait(5000)
+        except Exception:
+            pass
 
 
 def test_saving_button(qtbot):
@@ -35,10 +51,11 @@ def test_saving_button(qtbot):
         assert file_path.is_file()
         with open(str(file_path), 'r') as f:
             loaded_file = json.load(f)
-        assert correct_file_dict == loaded_file
+        assert correct_file_dict == flatten_dict(loaded_file)
 
     finally:
         file_path.unlink(missing_ok=True)
+        _shutdown_server_window(window)
 
 
 def test_loading_button(qtbot):
@@ -72,21 +89,24 @@ def test_loading_button(qtbot):
 
     finally:
         file_path.unlink(missing_ok=True)
+        _shutdown_server_window(window)
 
 
 def test_refresh_button(qtbot):
     window = startServerGuiApplication()
     qtbot.addWidget(window)
+    try:
+        assert window.stationList.topLevelItemCount() == 0
 
-    assert window.stationList.topLevelItemCount() == 0
+        dummy = window.client.find_or_create_instrument('dummy',
+                                                        'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
 
-    dummy = window.client.find_or_create_instrument('dummy',
-                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
+        refresh_widget = window.toolBar.widgetForAction(window.refreshStationAction)
+        qtbot.mouseClick(refresh_widget, QtCore.Qt.LeftButton)
 
-    refresh_widget = window.toolBar.widgetForAction(window.refreshStationAction)
-    qtbot.mouseClick(refresh_widget, QtCore.Qt.LeftButton)
-
-    assert window.stationList.topLevelItemCount() == 1
+        assert window.stationList.topLevelItemCount() == 1
+    finally:
+        _shutdown_server_window(window)
 
 
 def test_clicking_an_item(qtbot):
@@ -94,36 +114,37 @@ def test_clicking_an_item(qtbot):
 
     window = startServerGuiApplication()
     qtbot.addWidget(window)
+    try:
+        assert window.stationList.topLevelItemCount() == 0
 
-    assert window.stationList.topLevelItemCount() == 0
+        dummy = window.client.find_or_create_instrument('dummy',
+                                                        'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
 
-    dummy = window.client.find_or_create_instrument('dummy',
-                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
+        window.refreshStationAction.trigger()
+        item = window.stationList.findItems('dummy', QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+        widget = item[0].treeWidget()
+        qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
 
-    window.refreshStationAction.trigger()
-    item = window.stationList.findItems('dummy', QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
-    widget = item[0].treeWidget()
-    qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
-
-    assert True
+        assert True
+    finally:
+        _shutdown_server_window(window)
 
 
 def test_opening_new_tab_generic_object(qtbot):
     window = startServerGuiApplication()
     qtbot.addWidget(window)
+    try:
+        dummy = window.client.find_or_create_instrument('dummy',
+                                                        'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
 
-    dummy = window.client.find_or_create_instrument('dummy',
-                                                    'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
+        window.refreshStationAction.trigger()
+        item = window.stationList.findItems('dummy', QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
 
-    window.refreshStationAction.trigger()
-    item = window.stationList.findItems('dummy', QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+        # Manually triggering the tab opening since qtbot refuses to double-click an item
+        window.addInstrumentTab(item[0], 0)
 
-    # Manually triggering the tab opening since qtbot refuses to double-click an item
-    window.addInstrumentTab(item[0], 0)
+        assert 'dummy' in window.instrumentTabsOpen
 
-    assert 'dummy' in window.instrumentTabsOpen
-
-    assert isinstance(window.instrumentTabsOpen['dummy'], GenericInstrument)
-
-
-
+        assert isinstance(window.instrumentTabsOpen['dummy'], GenericInstrument)
+    finally:
+        _shutdown_server_window(window)

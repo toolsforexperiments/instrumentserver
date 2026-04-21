@@ -284,8 +284,17 @@ class ModelParameters(InstrumentModelBase):
 
         self.cliThread.started.connect(self.subClient.connect)
         self.subClient.update.connect(self.updateParameter)
+        self.subClient.finished.connect(self.cliThread.quit)
 
         self.cliThread.start()
+
+    def stopListener(self):
+        """Stop the background listener thread and wait for it to exit."""
+        if self.subClient is not None:
+            self.subClient.stop()
+        if self.cliThread is not None:
+            self.cliThread.quit()
+            self.cliThread.wait(3000)
 
     @QtCore.Slot(ParameterBroadcastBluePrint)
     def updateParameter(self, bp: ParameterBroadcastBluePrint):
@@ -694,3 +703,10 @@ class GenericInstrument(QtWidgets.QWidget):
         self.parametersList.view.resizeColumnToContents(0)
         self.parametersList.view.resizeColumnToContents(1)
         self.methodsList.view.resizeColumnToContents(0)
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        """Stop the parameter subscriber thread before destruction."""
+        model = getattr(self.parametersList, 'model', None)
+        if model is not None and hasattr(model, 'stopListener'):
+            model.stopListener()
+        super().closeEvent(event)

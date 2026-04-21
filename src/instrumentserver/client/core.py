@@ -113,6 +113,12 @@ class BaseClient:
             except Exception:
                 pass
             self.socket = None
+        if self.context is not None:
+            try:
+                self.context.term()
+            except Exception:
+                pass
+            self.context = None
         self.connected = False
 
 

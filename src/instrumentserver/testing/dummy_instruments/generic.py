@@ -23,8 +23,6 @@ class DummyChannel(Instrument):
                            vals=validators.Numbers(-1, 1),
                            initial_value=1)
 
-        self.functions['dummy_function'] = self.dummy_function
-
     def dummy_function(self, *args, **kwargs):
         """Dummy function for specific channels used for testing"""
         print(f'the dummy chanel: {self.name} has been activated with:')
@@ -59,11 +57,14 @@ class DummyInstrumentWithSubmodule(Instrument):
                            initial_value=1)
 
         for chan_name in ('A', 'B', 'C'):
-            channel = DummyChannel('Chan{}'.format(chan_name))
+            channel = DummyChannel(f'{name}_Chan{chan_name}')
             self.add_submodule(chan_name, channel)
 
-        self.functions['test_func'] = self.test_func
-        self.functions['dummy_function'] = self.dummy_function
+    def ask_raw(self, cmd):
+        """Dummy ask_raw so *IDN? and similar SCPI queries don't explode the GUI."""
+        if cmd.strip().upper().startswith('*IDN'):
+            return f'dummy,{self.name},0,0'
+        return ''
 
     def test_func(self, a, b, *args, c: List[int] = [10, 11], **kwargs):
         """

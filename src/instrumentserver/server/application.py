@@ -590,9 +590,19 @@ class ServerGui(QtWidgets.QMainWindow):
         log(logger, message, level)
 
     def closeEvent(self, event):
-        if hasattr(self, 'stationServerThread'):
+        for name, widget in list(self.instrumentTabsOpen.items()):
+            try:
+                widget.close()
+            except Exception:
+                pass
+        self.instrumentTabsOpen.clear()
+
+        if hasattr(self, 'stationServerThread') and self.stationServerThread is not None:
             if self.stationServerThread.isRunning():
-                self.client.ask(self.stationServer.SAFEWORD)
+                try:
+                    self.client.ask(self.stationServer.SAFEWORD)
+                except Exception:
+                    pass
         event.accept()
 
     def startServer(self):
@@ -673,7 +683,10 @@ class ServerGui(QtWidgets.QMainWindow):
         """Clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         self.stationList.clear()
-        for ins in self.client.list_instruments():
+        instruments = self.client.list_instruments()
+        if not instruments:
+            return
+        for ins in instruments:
             bp = self.client.getBluePrint(ins)
             self.stationList.addInstrument(bp)
             self._bluePrints[ins] = bp

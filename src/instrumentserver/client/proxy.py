@@ -799,6 +799,15 @@ class ClientStation:
     def close_instrument(self, instrument_name:str):
         self.client.close_instrument(instrument_name)
 
+    def disconnect(self):
+        """Tear down the underlying client and release its zmq resources."""
+        if self.client is not None:
+            try:
+                self.client.disconnect()
+            except Exception:
+                pass
+            self.client = None
+
     @staticmethod
     def _remake_client_station_when_fail(func):
         """

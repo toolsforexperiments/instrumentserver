@@ -60,39 +60,46 @@ class QLogHandler(QtCore.QObject,logging.Handler):
         self._transform = fn
 
     def emit(self, record):
-        formatted = self.format(record)  # prefix + message
-        raw_msg = record.getMessage()  # message only
+        try:
+            formatted = self.format(record)  # prefix + message
+            raw_msg = record.getMessage()  # message only
 
-        # Color for prefix (log level)
-        clr = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
+            # Color for prefix (log level)
+            clr = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
 
-        if self._transform is not None:
-            html_fragment = self._transform(record, raw_msg)
-            if html_fragment:
-                i = formatted.rfind(raw_msg)
-                if i >= 0:
-                    prefix = formatted[:i]
-                    suffix = formatted[i + len(raw_msg):]
-                else:
-                    prefix, suffix = "", ""
+            if self._transform is not None:
+                html_fragment = self._transform(record, raw_msg)
+                if html_fragment:
+                    i = formatted.rfind(raw_msg)
+                    if i >= 0:
+                        prefix = formatted[:i]
+                        suffix = formatted[i + len(raw_msg):]
+                    else:
+                        prefix, suffix = "", ""
 
-                # Build HTML line
-                html = (
-                    f"<span style='color:{clr}'>{escape(prefix)}</span>"
-                    f"{html_fragment}"
-                    f"{escape(suffix)}"
-                )
+                    # Build HTML line
+                    html = (
+                        f"<span style='color:{clr}'>{escape(prefix)}</span>"
+                        f"{html_fragment}"
+                        f"{escape(suffix)}"
+                    )
 
-                # send to GUI thread
-                self.new_html.emit(html)
-                return
+                    # send to GUI thread
+                    self.new_html.emit(html)
+                    return
 
-        # fallback: original plain text path
-        msg = formatted
-        clr_q = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
-        html = f"<span style='color:{clr_q}'>{escape(msg)}</span>"
+            # fallback: original plain text path
+            msg = formatted
+            clr_q = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
+            html = f"<span style='color:{clr_q}'>{escape(msg)}</span>"
 
-        self.new_html.emit(html)
+            self.new_html.emit(html)
+        except RuntimeError:
+            # Widget has been destroyed; detach self from the logger so we
+            # stop receiving further records and Python can collect us.
+            for lg in list(logging.Logger.manager.loggerDict.values()) + [logging.getLogger()]:
+                if isinstance(lg, logging.Logger) and self in lg.handlers:
+                    lg.removeHandler(self)
 
 class LogWidget(QtWidgets.QWidget):
     """
