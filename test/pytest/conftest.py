@@ -1,9 +1,24 @@
 import instrumentserver.testing.dummy_instruments.generic
 import pytest  # type: ignore[import-not-found]
+import qcodes as qc
 
 from instrumentserver.server.core import startServer
 from instrumentserver.client.core import BaseClient
 from instrumentserver.client.proxy import Client
+
+
+@pytest.fixture(autouse=True, scope='module')
+def _close_instruments_between_modules():
+    """Ensure every test module starts with a clean qcodes instrument registry.
+
+    qcodes.Instrument._all_instruments is a class-level weakref dict that
+    persists for the entire pytest session. Instruments left behind by one
+    module (e.g. channel submodules, which qcodes.Instrument.close() does not
+    cascade-close in this qcodes version) cause KeyError collisions when the
+    next module tries to create an instrument with the same name.
+    """
+    yield
+    qc.Instrument.close_all()
 
 
 @pytest.fixture(scope='session')
@@ -54,6 +69,3 @@ def dummy_instrument(cli):
 def param_manager(cli):
     params = cli.find_or_create_instrument('parameter_manager', 'instrumentserver.params.ParameterManager')
     return cli, params
-
-
-

@@ -603,6 +603,11 @@ class ServerGui(QtWidgets.QMainWindow):
                     self.client.ask(self.stationServer.SAFEWORD)
                 except Exception:
                     pass
+
+        try:
+            self.client.disconnect()
+        except Exception:
+            pass
         event.accept()
 
     def startServer(self):
@@ -682,8 +687,13 @@ class ServerGui(QtWidgets.QMainWindow):
     def refreshStationComponents(self):
         """Clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
+        if getattr(self.client, '_closed', False) or not self.client.connected:
+            return
         self.stationList.clear()
-        instruments = self.client.list_instruments()
+        try:
+            instruments = self.client.list_instruments()
+        except RuntimeError:
+            return
         if not instruments:
             return
         for ins in instruments:
@@ -879,6 +889,8 @@ class EmbeddedClient(QtClient):
 
     @QtCore.Slot(str)
     def start(self, addr: str):
+        if self._closed:
+            return
         self.addr = "tcp://localhost:" + addr.split(':')[-1]
         self.connect()
 

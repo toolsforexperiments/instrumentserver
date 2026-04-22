@@ -27,6 +27,7 @@ class BaseClient:
 
     def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True):
         self.connected = False
+        self._closed = False
         self.context = None
         self.socket = None
         self.host = host
@@ -47,6 +48,22 @@ class BaseClient:
         self.disconnect()
 
     def connect(self):
+        if self._closed:
+            raise RuntimeError("Client has been permanently disconnected.")
+        # Clean up any existing context/socket so we don't leak them when
+        # connect() is called more than once (e.g. EmbeddedClient.start()).
+        if self.socket is not None:
+            try:
+                self.socket.close(linger=0)
+            except Exception:
+                pass
+            self.socket = None
+        if self.context is not None:
+            try:
+                self.context.destroy(linger=0)
+            except Exception:
+                pass
+            self.context = None
         logger.info(f"Connecting to {self.addr}")
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.DEALER)
@@ -56,7 +73,7 @@ class BaseClient:
         self.connected = True
 
     def ask(self, message):
-        if not self.connected:
+        if self._closed or not self.connected:
             raise RuntimeError("No connection yet.")
 
         # try so that if timeout happens, the client remains usable
@@ -87,7 +104,8 @@ class BaseClient:
                 self.socket.close(linger=0)
         finally:
             self.connected = False
-            self.connect()
+            if not self._closed:
+                self.connect()
             
     def _handle_server_error(self, err):
         if isinstance(err, str):
@@ -107,6 +125,7 @@ class BaseClient:
             logger.error(msg)
     
     def disconnect(self):
+        self._closed = True
         if self.socket is not None:
             try:
                 self.socket.close(linger=0)
@@ -115,7 +134,7 @@ class BaseClient:
             self.socket = None
         if self.context is not None:
             try:
-                self.context.term()
+                self.context.destroy(linger=0)
             except Exception:
                 pass
             self.context = None

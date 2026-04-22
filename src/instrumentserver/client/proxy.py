@@ -704,6 +704,15 @@ class QtClient(_QtAdapter, Client):
         _QtAdapter.__init__(self, parent=parent)
         Client.__init__(self, host, port, connect, timeout, raise_exceptions)
 
+    def disconnect(self, *args, **kwargs):
+        # QObject.disconnect() shadows BaseClient.disconnect() via MRO, so
+        # explicitly dispatch to BaseClient.disconnect() when called without
+        # Qt signal arguments. Preserve Qt's signal-disconnect semantics when
+        # invoked with signal arguments (e.g. disconnect(signal, slot)).
+        if not args and not kwargs:
+            return Client.disconnect(self)
+        return _QtAdapter.disconnect(self, *args, **kwargs)
+
 
 class ClientStation:
     def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True,

@@ -264,10 +264,19 @@ class StationServer(QtCore.QObject):
                     logger.exception(f"Unexpected error in server loop: {e}")
                     break
         
-        socket.close()
+        socket.close(linger=0)
         self._wakeup_r.close()
         self._wakeup_w.close()
-        self.broadcastSocket.close()
+        self.broadcastSocket.close(linger=0)
+        if self.externalBroadcastSocket is not None:
+            try:
+                self.externalBroadcastSocket.close(linger=0)
+            except Exception:
+                pass
+        try:
+            context.destroy(linger=0)
+        except Exception:
+            pass
         self.finished.emit()
         logger.info("StationServer shut down cleanly.")
         return True
