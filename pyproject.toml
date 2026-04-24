@@ -18,8 +18,16 @@ dependencies = [
     "pyzmq",
     "qcodes",
     "qtpy",
-    "scipy"
+    "scipy",
+    "numpy",
+    "pandas",
+    "jsonschema",
+    "ruamel.yaml",
+    "PyYAML",
 ]
+
+[project.optional-dependencies]
+monitoring = ["influxdb-client"]
 
 [project.urls]
 Homepage = "https://github.com/toolsforexperiments/instrumentserver"
@@ -37,12 +45,68 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.ruff]
+exclude = ["docs"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.mypy]
+files = ["src"]
+strict_optional = true
+show_column_numbers = true
+warn_unused_ignores = true
+warn_unused_configs = true
+warn_redundant_casts = true
+no_implicit_optional = true
+disallow_untyped_defs = true
+show_error_codes = true
+enable_error_code = "ignore-without-code"
+
+[[tool.mypy.overrides]]
+module = [
+    "PyQt5",
+    "PyQt5.*",
+    "qcodes",
+    "qcodes.*",
+    "qtpy",
+    "qtpy.*",
+    "pyqtgraph",
+    "pyqtgraph.*",
+    "scipy",
+    "scipy.*",
+    "zmq",
+    "zmq.*",
+    "ruamel",
+    "ruamel.*",
+    "jsonschema",
+    "jsonschema.*",
+    "yaml",
+    "pandas",
+    "pandas.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["test/pytest"]
 qt_api = "pyqt5"
+log_cli = true
+
+[tool.coverage.run]
+branch = true
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
     "pytest-qt>=4.5.0",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+docs = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "nbsphinx",
+    "linkify-it-py",
 ]

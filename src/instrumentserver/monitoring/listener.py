@@ -4,11 +4,11 @@ import os.path
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pathlib import Path
 from typing import Any, Dict
 
 import pandas as pd
-import pytz
 import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
 import zmq
 try:
@@ -187,9 +187,8 @@ def checkCSVConfig(configInput: Dict[str, Any]):
 
 def get_timezone_info(timezone_name):
     try:
-        tz = pytz.timezone(timezone_name)
-        return tz
-    except pytz.UnknownTimeZoneError:
+        return ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
         print(f"Unknown timezone: {timezone_name}")
         return None
     
