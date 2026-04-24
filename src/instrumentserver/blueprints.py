@@ -100,7 +100,7 @@ class ParameterBluePrint:
     def __str__(self) -> str:
         return f"{self.name}: {self.parameter_class}"
 
-    def tostr(self, indent=0):
+    def tostr(self, indent: int = 0) -> str:
         i = indent * " "
         ret = f"""{self.name}: {self.parameter_class}
 {i}- unit: {self.unit}
@@ -112,7 +112,7 @@ class ParameterBluePrint:
 """
         return ret
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         return bluePrintToDict(self)
 
 
@@ -158,13 +158,13 @@ class MethodBluePrint:
     docstring: str = ""
     _class_type: str = "MethodBluePrint"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}{str(self.call_signature_str)}"
 
-    def tostr(self, indent=0):
+    def tostr(self, indent: int = 0) -> str:
         i = indent * " "
         ret = f"""{self.name}{str(self.call_signature_str)}
 {i}- path: {self.path}
@@ -182,7 +182,7 @@ class MethodBluePrint:
             param_dict[name] = str(param.kind)
         return call_signature_str, param_dict
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         return bluePrintToDict(self)
 
 
@@ -275,27 +275,27 @@ class InstrumentModuleBluePrint:
     def __str__(self) -> str:
         return f"{self.name}: {self.instrument_module_class}"
 
-    def tostr(self, indent=0):
+    def tostr(self, indent: int = 0) -> str:
         i = indent * " "
         ret = f"""{i}{self.name}: {self.instrument_module_class}
 {i}- path: {self.path}
 {i}- base class: {self.base_class}
 """
         ret += f"{i}- Parameters:\n{i}  -----------\n"
-        for pn, p in self.parameters.items():
+        for pn, p in self.parameters.items():  # type: ignore[union-attr]
             ret += f"{i}  - " + p.tostr(indent + 4)
 
         ret += f"{i}- Methods:\n{i}  --------\n"
-        for mn, m in self.methods.items():
+        for mn, m in self.methods.items():  # type: ignore[union-attr]
             ret += f"{i}  - " + m.tostr(indent + 4)
 
         ret += f"{i}- Submodules:\n{i}  -----------\n"
-        for sn, s in self.submodules.items():
+        for sn, s in self.submodules.items():  # type: ignore[union-attr]
             ret += f"{i}  - " + s.tostr(indent + 4)
 
         return ret
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         return bluePrintToDict(self)
 
 
@@ -373,21 +373,22 @@ class ParameterBroadcastBluePrint:
         ret = ret + """\n}"""
         return ret
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def pprint(self, indent=0):
+    def pprint(self, indent: int = 0) -> str:
 
         i = indent * " "
+        bp_type = self.bp_type  # type: ignore[attr-defined]
         ret = f"""name: {self.name}
 {i}- action: {self.action}
 {i}- value: {self.value}
 {i}- unit: {self.unit}
-{i}- bp_type: {self.bp_type}
+{i}- bp_type: {bp_type}
     """
         return ret
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         return bluePrintToDict(self)
 
 
@@ -414,7 +415,7 @@ def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
     return ret
 
 
-def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
+def bluePrintToDict(bp: BluePrintType, json_type: bool = True) -> dict:
     """
     Converts a blueprint into a dictionary.
 
@@ -484,7 +485,7 @@ class InstrumentCreationSpec:
 
     _class_type: str = "InstrumentCreationSpec"
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         ret = asdict(self)
         ret["args"] = iterable_to_serialized_dict(self.args)
         ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
@@ -507,7 +508,7 @@ class CallSpec:
 
     _class_type: str = "CallSpec"
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         ret = asdict(self)
         ret["args"] = iterable_to_serialized_dict(self.args)
         ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
@@ -532,7 +533,7 @@ class ParameterSerializeSpec:
 
     _class_type: str = "ParameterSerializeSpec"
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         ret = asdict(self)
         ret["args"] = iterable_to_serialized_dict(self.args)
         ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
@@ -602,7 +603,7 @@ class ServerInstruction:
 
     _class_type: str = "ServerInstruction"
 
-    def validate(self):
+    def validate(self) -> None:
         if self.operation is Operation.create_instrument:
             if not isinstance(self.create_instrument_spec, InstrumentCreationSpec):
                 raise ValueError("Invalid instrument creation spec.")
@@ -615,8 +616,8 @@ class ServerInstruction:
             if not isinstance(self.requested_path, str):
                 raise ValueError("Invalid requested path.")
 
-    def toJson(self):
-        ret = {"operation": str(self.operation.name)}
+    def toJson(self) -> Dict[str, Any]:
+        ret: Dict[str, Any] = {"operation": str(self.operation.name)}
 
         if self.create_instrument_spec is None:
             ret["create_instrument_spec"] = None
@@ -698,8 +699,8 @@ class ServerResponse:
 
         self._class_type = "ServerResponse"
 
-    def toJson(self):
-        ret = {}
+    def toJson(self) -> Dict[str, Any]:
+        ret: Dict[str, Any] = {}
         if isinstance(self.message, get_args(BluePrintType)):
             ret["message"] = self.message.toJson()
         elif hasattr(self.message, "attributes"):
@@ -769,7 +770,9 @@ def _convert_dict_to_obj(item_dict: dict) -> Any:
     return instantiated_obj
 
 
-def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
+def iterable_to_serialized_dict(
+    iterable: Optional[Iterable[Any]] = None,
+) -> Any:
     """
     Goes through an iterable (lists, tuples, sets) and serialize each object inside of it. If trying to serialize an
     arbitrary object, this object must have a class attribute "attributes" for the serialization to happen correctly.
@@ -817,7 +820,9 @@ def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
     return converted_iterable
 
 
-def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
+def dict_to_serialized_dict(
+    dct: Optional[Dict[str, Any]] = None,
+) -> Any:
     """
     Same idea as iterable_to_serialized_dict but for dictionaries.
     """
@@ -852,7 +857,7 @@ def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
     return converted_dict
 
 
-def to_dict(data) -> Union[Dict[str, str], str]:
+def to_dict(data: Any) -> Union[Dict[str, str], str]:
     """
     Converts object to json serializable. This is done by calling the method toJson of the object being passed.
     Strings are returned without any more processing.
@@ -863,7 +868,7 @@ def to_dict(data) -> Union[Dict[str, str], str]:
     return data.toJson()
 
 
-def _is_numeric(val) -> Optional[Union[float, complex]]:
+def _is_numeric(val: Any) -> Optional[Union[float, complex]]:
     """
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
@@ -889,7 +894,7 @@ def _is_numeric(val) -> Optional[Union[float, complex]]:
     return None
 
 
-def deserialize_obj(data: Any):
+def deserialize_obj(data: Any) -> Any:
     """
     Tries to deserialize any object. If the object is a dictionary and contains the key '_class_type' it means that
     that dictionary represents a serialized object that needs to be instantiated. The function will try and deserailize

@@ -1,6 +1,8 @@
 import logging
 import uuid
 import warnings
+from types import TracebackType
+from typing import Any, Optional, Type
 
 import zmq
 
@@ -26,16 +28,16 @@ class BaseClient:
 
     def __init__(
         self,
-        host="localhost",
-        port=DEFAULT_PORT,
-        connect=True,
-        timeout=20,
-        raise_exceptions=True,
-    ):
+        host: str = "localhost",
+        port: int = DEFAULT_PORT,
+        connect: bool = True,
+        timeout: float = 20,
+        raise_exceptions: bool = True,
+    ) -> None:
         self.connected = False
         self._closed = False
-        self.context = None
-        self.socket = None
+        self.context: Optional[zmq.Context] = None
+        self.socket: Optional[zmq.Socket] = None
         self.host = host
         self.port = port
         self.addr = f"tcp://{host}:{port}"
@@ -45,15 +47,20 @@ class BaseClient:
         if connect:
             self.connect()
 
-    def __enter__(self):
+    def __enter__(self) -> "BaseClient":
         if not self.connected:
             self.connect()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.disconnect()
 
-    def connect(self):
+    def connect(self) -> None:
         if self._closed:
             raise RuntimeError("Client has been permanently disconnected.")
         # Clean up any existing context/socket so we don't leak them when
@@ -80,14 +87,14 @@ class BaseClient:
         self.socket.connect(self.addr)
         self.connected = True
 
-    def ask(self, message):
+    def ask(self, message: Any) -> Any:
         if self._closed or not self.connected:
             raise RuntimeError("No connection yet.")
 
         # try so that if timeout happens, the client remains usable
         try:
-            send(self.socket, message)
-            ret = recv(self.socket)
+            send(self.socket, message)  # type: ignore[arg-type]
+            ret = recv(self.socket)  # type: ignore[arg-type]
             logger.debug("Response received.")
             logger.debug(f"Response: {str(ret)}")
         except zmq.error.Again:
@@ -106,7 +113,7 @@ class BaseClient:
 
         return ret
 
-    def _reset_connection(self):
+    def _reset_connection(self) -> None:
         try:
             if self.socket is not None:
                 self.socket.close(linger=0)
@@ -115,7 +122,7 @@ class BaseClient:
             if not self._closed:
                 self.connect()
 
-    def _handle_server_error(self, err):
+    def _handle_server_error(self, err: Any) -> None:
         if isinstance(err, str):
             logger.error(err)
             if self.raise_exceptions:
@@ -132,7 +139,7 @@ class BaseClient:
                 raise TypeError(msg)
             logger.error(msg)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self._closed = True
         if self.socket is not None:
             try:
@@ -149,7 +156,9 @@ class BaseClient:
         self.connected = False
 
 
-def sendRequest(message, host="localhost", port=DEFAULT_PORT):
+def sendRequest(
+    message: Any, host: str = "localhost", port: int = DEFAULT_PORT
+) -> Any:
     with BaseClient(host, port) as cli:
         ret = cli.ask(message)
     return ret

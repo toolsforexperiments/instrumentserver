@@ -104,7 +104,7 @@ To add more items to the toolbar for any extra functionality, you can do so by o
 
 import fnmatch
 from pprint import pprint
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 
@@ -123,12 +123,12 @@ class ItemBase(QtGui.QStandardItem):
 
     def __init__(
         self,
-        name,
-        star=False,
-        trash=False,
-        showDelegate=True,
-        element=None,
-    ):
+        name: str,
+        star: bool = False,
+        trash: bool = False,
+        showDelegate: bool = True,
+        element: Any = None,
+    ) -> None:
         super().__init__()
 
         self.name = name
@@ -146,11 +146,11 @@ class DelegateBase(QtWidgets.QStyledItemDelegate):
     """
 
     @classmethod
-    def getItem(cls, QModelIndex):
+    def getItem(cls, QModelIndex: QtCore.QModelIndex) -> QtGui.QStandardItem:
 
         proxyModel = QModelIndex.model()
-        model = proxyModel.sourceModel()
-        item = model.itemFromIndex(proxyModel.mapToSource(QModelIndex))
+        model = proxyModel.sourceModel()  # type: ignore[union-attr]
+        item = model.itemFromIndex(proxyModel.mapToSource(QModelIndex))  # type: ignore[union-attr]
         if item.column != 0:
             parent = item.parent()
             row = item.row()
@@ -194,14 +194,14 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
     def __init__(
         self,
-        instrument,
+        instrument: Any,
         attr: str,
         itemClass: type[ItemBase] = ItemBase,
         itemsStar: Optional[List[str]] = [],
         itemsTrash: Optional[List[str]] = [],
         itemsHide: Optional[List[str]] = [],
         parent: Optional[QtCore.QObject] = None,
-    ):
+    ) -> None:
 
         super().__init__(parent=parent)
 
@@ -242,7 +242,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 return True
         return False
 
-    def loadItems(self, module=None, prefix=None):
+    def loadItems(self, module: Any = None, prefix: Optional[str] = None) -> None:
         """
         The argument for either submodules or the instrument itself.
 
@@ -258,13 +258,13 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
             # constructor
             if prefix is not None:
                 objectName = ".".join([prefix, objectName])
-            if not self._matches_any_pattern(objectName, self.itemsHide):
+            if not self._matches_any_pattern(objectName, self.itemsHide):  # type: ignore[arg-type]
                 item = self.addItem(
                     fullName=objectName, star=False, trash=False, element=obj
                 )
-                if self._matches_any_pattern(objectName, self.itemsTrash):
+                if self._matches_any_pattern(objectName, self.itemsTrash):  # type: ignore[arg-type]
                     self.onItemTrashToggle(item)
-                if self._matches_any_pattern(objectName, self.itemsStar):
+                if self._matches_any_pattern(objectName, self.itemsStar):  # type: ignore[arg-type]
                     self.onItemStarToggle(item)
 
         for submodName, submod in module.submodules.items():
@@ -272,7 +272,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 submodName = ".".join([prefix, submodName])
             self.loadItems(submod, submodName)
 
-    def refreshAll(self):
+    def refreshAll(self) -> None:
         """
         Removes all the rows from the model, updates the instrument and loads the model again.
         """
@@ -281,7 +281,9 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         self.loadItems()
         self.modelRefreshed.emit()
 
-    def insertItemTo(self, parent, item):
+    def insertItemTo(
+        self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
+    ) -> None:
         """
         This is the only function that actually inserts items into the model.
         Overload for models that utilize more columns. **Don't call directly**
@@ -293,7 +295,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         else:
             parent.appendRow(item)
 
-    def addItem(self, fullName, **kwargs):
+    def addItem(self, fullName: str, **kwargs: Any) -> "ItemBase":
         """
         Adds an item to the model. The *args and **kwargs are whatever the specific item needs for a new item.
 
@@ -310,7 +312,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 smName = smName + f".{sm}"
 
             items = self.findItems(
-                smName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0
+                smName, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
             )
 
             if len(items) == 0:
@@ -323,26 +325,26 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 )
                 # submodules get directly added here and not in the load function, so need to have it here too.
                 if self.loadingItems:
-                    if not self._matches_any_pattern(smName, self.itemsHide):
-                        self.insertItemTo(parent, subModItem)
-                        if self._matches_any_pattern(smName, self.itemsTrash):
+                    if not self._matches_any_pattern(smName, self.itemsHide):  # type: ignore[arg-type]
+                        self.insertItemTo(parent, subModItem)  # type: ignore[arg-type]
+                        if self._matches_any_pattern(smName, self.itemsTrash):  # type: ignore[arg-type]
                             self.onItemTrashToggle(subModItem)
-                        if self._matches_any_pattern(smName, self.itemsStar):
+                        if self._matches_any_pattern(smName, self.itemsStar):  # type: ignore[arg-type]
                             self.onItemStarToggle(subModItem)
                 else:
-                    self.insertItemTo(parent, subModItem)
-                parent = subModItem
+                    self.insertItemTo(parent, subModItem)  # type: ignore[arg-type]
+                parent = subModItem  # type: ignore[assignment]
             else:
-                parent = items[0]
+                parent = items[0]  # type: ignore[assignment]
 
         newItem = self.itemClass(name=fullName, **kwargs)
-        self.insertItemTo(parent, newItem)
+        self.insertItemTo(parent, newItem)  # type: ignore[arg-type]
 
         return newItem
 
-    def removeItem(self, fullName):
+    def removeItem(self, fullName: str) -> None:
         items = self.findItems(
-            fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0
+            fullName, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
         )
 
         if len(items) > 0:
@@ -356,7 +358,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 self.removeRow(item.row())
 
     @QtCore.Slot(ItemBase)
-    def onItemStarToggle(self, item):
+    def onItemStarToggle(self, item: "ItemBase") -> None:
         assert isinstance(item, ItemBase)
         if item.star:
             item.star = False
@@ -367,7 +369,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
             item.setIcon(QtGui.QIcon(":/icons/star.svg"))
 
     @QtCore.Slot(ItemBase)
-    def onItemTrashToggle(self, item):
+    def onItemTrashToggle(self, item: "ItemBase") -> None:
         assert isinstance(item, ItemBase)
         if item.trash:
             item.trash = False
@@ -399,29 +401,31 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         self.star = False
         self.trash = False
 
-        self.sort(0, QtCore.Qt.DescendingOrder)
+        self.sort(0, QtCore.Qt.SortOrder.DescendingOrder)
 
     @QtCore.Slot(int, QtCore.Qt.SortOrder)
-    def onSortingIndicatorChanged(self, index, sortingOrder):
+    def onSortingIndicatorChanged(
+        self, index: int, sortingOrder: QtCore.Qt.SortOrder
+    ) -> None:
         self.sort(index, sortingOrder)
 
     @QtCore.Slot()
-    def onToggleStar(self):
+    def onToggleStar(self) -> None:
         if self.star:
             self.star = False
         else:
             self.star = True
 
         # When the start status changes, trigger a sorting so that the star items move.
-        if self.sortOrder() == QtCore.Qt.DescendingOrder:
-            self.sort(0, QtCore.Qt.AscendingOrder)
-            self.sort(0, QtCore.Qt.DescendingOrder)
-        elif self.sortOrder() == QtCore.Qt.AscendingOrder:
-            self.sort(0, QtCore.Qt.DescendingOrder)
-            self.sort(0, QtCore.Qt.AscendingOrder)
+        if self.sortOrder() == QtCore.Qt.SortOrder.DescendingOrder:
+            self.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
+            self.sort(0, QtCore.Qt.SortOrder.DescendingOrder)
+        elif self.sortOrder() == QtCore.Qt.SortOrder.AscendingOrder:
+            self.sort(0, QtCore.Qt.SortOrder.DescendingOrder)
+            self.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
 
     @QtCore.Slot()
-    def onToggleTrash(self):
+    def onToggleTrash(self) -> None:
         if self.trash:
             self.trash = False
         else:
@@ -429,17 +433,17 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         self.triggerFiltering()
 
     @QtCore.Slot(str)
-    def onTextFilterChange(self, filter: str):
+    def onTextFilterChange(self, filter: str) -> None:
         self.filterIncoming.emit()
         self.setFilterRegExp(filter)
         self.filterFinished.emit()
 
-    def triggerFiltering(self):
+    def triggerFiltering(self) -> None:
         self.filterIncoming.emit()
         self.invalidateFilter()
         self.filterFinished.emit()
 
-    def _isParentTrash(self, parent):
+    def _isParentTrash(self, parent: Optional["ItemBase"]) -> bool:
         """
         Recursive function to see if any parent of an item is trash.
         """
@@ -449,7 +453,7 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         if parent.trash:
             return True
 
-        return self._isParentTrash(parent.parent())
+        return self._isParentTrash(parent.parent())  # type: ignore[arg-type]
 
     def filterAcceptsRow(
         self, source_row: int, source_parent: QtCore.QModelIndex
@@ -472,7 +476,7 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
                 # Assertion is there to satisfy mypy. item can be None, that is why we check before making the assertion
                 if item is not None:
                     assert isinstance(item, ItemBase)
-                if self._isParentTrash(parent) or getattr(
+                if self._isParentTrash(parent) or getattr(  # type: ignore[arg-type]
                     item, "trash", False
                 ):  # item could be None when it's trashed and hidden
                     return False
@@ -485,7 +489,7 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
         """
 
         # The order in which things get constructed seems to impact this.
-        # When the application is first starting, the  proxy model does not have the star attribute.
+        # When the application is first starting, the proxy model does not have the star attribute.
         if hasattr(self, "star"):
             if self.star:
                 model = self.sourceModel()
@@ -493,16 +497,16 @@ class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
                 leftItem = model.itemFromIndex(left)
                 rightItem = model.itemFromIndex(right)
                 if hasattr(leftItem, "star") and hasattr(rightItem, "star"):
-                    if self.sortOrder() == QtCore.Qt.DescendingOrder:
-                        if rightItem.star and not leftItem.star:
+                    if self.sortOrder() == QtCore.Qt.SortOrder.DescendingOrder:
+                        if rightItem.star and not leftItem.star:  # type: ignore[union-attr]
                             return True
-                        elif not rightItem.star and leftItem.star:
+                        elif not rightItem.star and leftItem.star:  # type: ignore[union-attr]
                             return False
 
-                    elif self.sortOrder() == QtCore.Qt.AscendingOrder:
-                        if rightItem.star and not leftItem.star:
+                    elif self.sortOrder() == QtCore.Qt.SortOrder.AscendingOrder:
+                        if rightItem.star and not leftItem.star:  # type: ignore[union-attr]
                             return False
-                        elif not rightItem.star and leftItem.star:
+                        elif not rightItem.star and leftItem.star:  # type: ignore[union-attr]
                             return True
 
         return super().lessThan(left, right)
@@ -519,10 +523,10 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
 
     def __init__(
         self,
-        model,
+        model: QtCore.QAbstractItemModel,
         delegateColumns: Optional[List[int]] = None,
         parent: Optional[QtWidgets.QWidget] = None,
-    ):
+    ) -> None:
         super().__init__(parent=parent)
 
         # Indicates if a column is using delegates.
@@ -547,8 +551,8 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         self.setSortingEnabled(False)
 
         # The tree should not have anything to do with filtering itself since that is left for the proxy model.
-        self.header().setSortIndicatorShown(True)
-        self.header().setSectionsClickable(True)
+        self.header().setSortIndicatorShown(True)  # type: ignore[union-attr]
+        self.header().setSectionsClickable(True)  # type: ignore[union-attr]
 
         self.setAlternatingRowColors(True)
 
@@ -566,11 +570,11 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         self.contextMenu.addAction(self.starItemAction)
         self.contextMenu.addAction(self.trashItemAction)
 
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenuRequested)
 
     @QtCore.Slot()
-    def fillCollapsedDict(self, parentItem: Optional[ItemBase] = None):
+    def fillCollapsedDict(self, parentItem: Optional[ItemBase] = None) -> None:
         """
         Fills the collapsed state dictionary to be recovered after a filter event occured.
         """
@@ -585,8 +589,8 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                 proxyIndex = m.mapFromSource(index)
                 if proxyIndex.isValid():
                     self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
-                    if item.hasChildren():
-                        self.fillCollapsedDict(item)
+                    if item.hasChildren():  # type: ignore[union-attr]
+                        self.fillCollapsedDict(item)  # type: ignore[arg-type]
         else:
             for i in range(parentItem.rowCount()):
                 child = parentItem.child(i, 0)
@@ -597,53 +601,55 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                 proxyIndex = m.mapFromSource(childIndex)
                 if proxyIndex.isValid():
                     self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
-                    if child.hasChildren():
-                        self.fillCollapsedDict(child)
+                    if child.hasChildren():  # type: ignore[union-attr]
+                        self.fillCollapsedDict(child)  # type: ignore[arg-type]
 
     @QtCore.Slot()
-    def restoreCollapsedDict(self):
+    def restoreCollapsedDict(self) -> None:
         """
         Goes through the collapsed state dictionary, and expands any item that should be expanded. It also resets
         the persistent editors and triggers a resizing of delegates.
         """
         for persistentIndex, state in self.collapsedState.items():
-            modelIndex = self.modelActual.index(
+            modelIndex = self.modelActual.index(  # type: ignore[union-attr]
                 persistentIndex.row(),
                 persistentIndex.column(),
                 persistentIndex.parent(),
             )
-            item = self.modelActual.itemFromIndex(modelIndex)
-            proxyIndex = self.model().mapFromSource(modelIndex)
+            item = self.modelActual.itemFromIndex(modelIndex)  # type: ignore[union-attr]
+            proxyIndex = self.model().mapFromSource(modelIndex)  # type: ignore[union-attr]
             self.setExpanded(proxyIndex, state)
             if item.showDelegate:
                 delegateIndexes = [
-                    self.modelActual.index(
+                    self.modelActual.index(  # type: ignore[union-attr]
                         persistentIndex.row(), x, persistentIndex.parent()
                     )
-                    for x in self.delegateColumns
+                    for x in self.delegateColumns  # type: ignore[union-attr]
                 ]
                 proxyDelegateIndexes = [
-                    self.model().mapFromSource(index) for index in delegateIndexes
+                    self.model().mapFromSource(index) for index in delegateIndexes  # type: ignore[union-attr]
                 ]
                 for delegateIndex in proxyDelegateIndexes:
                     self.openPersistentEditor(delegateIndex)
         self.scheduleDelayedItemsLayout()
 
-    def setAllDelegatesPersistent(self, parentIndex=None):
+    def setAllDelegatesPersistent(
+        self, parentIndex: Optional[QtCore.QModelIndex] = None
+    ) -> None:
         """
         Recursive function that goes through the entire model and sets all delegates to be persistent editors
 
         :param parentIndex: If None, start the process. if it's an item, it will go through the children
         """
         if parentIndex is None:
-            for i in range(self.model().rowCount()):
-                for column in self.delegateColumns:
-                    index = self.model().index(i, column)
-                    index0 = self.model().index(
+            for i in range(self.model().rowCount()):  # type: ignore[union-attr]
+                for column in self.delegateColumns:  # type: ignore[union-attr]
+                    index = self.model().index(i, column)  # type: ignore[union-attr]
+                    index0 = self.model().index(  # type: ignore[union-attr]
                         i, 0
                     )  # Only items at column 0 hold children and model info
-                    item0 = self.modelActual.itemFromIndex(
-                        self.model().mapToSource(index0)
+                    item0 = self.modelActual.itemFromIndex(  # type: ignore[union-attr]
+                        self.model().mapToSource(index0)  # type: ignore[union-attr]
                     )
                     if item0.showDelegate:
                         self.openPersistentEditor(index)
@@ -651,18 +657,18 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                         self.setAllDelegatesPersistent(index0)
 
         else:
-            parentItem = self.modelActual.itemFromIndex(
-                self.model().mapToSource(parentIndex)
+            parentItem = self.modelActual.itemFromIndex(  # type: ignore[union-attr]
+                self.model().mapToSource(parentIndex)  # type: ignore[union-attr]
             )
             for i in range(parentItem.rowCount()):
-                for column in self.delegateColumns:
+                for column in self.delegateColumns:  # type: ignore[union-attr]
                     item = parentItem.child(i, column)
                     item0 = parentItem.child(i, 0)
-                    index = self.model().mapFromSource(
-                        self.modelActual.indexFromItem(item)
+                    index = self.model().mapFromSource(  # type: ignore[union-attr]
+                        self.modelActual.indexFromItem(item)  # type: ignore[union-attr]
                     )
-                    index0 = self.model().mapFromSource(
-                        self.modelActual.indexFromItem(item0)
+                    index0 = self.model().mapFromSource(  # type: ignore[union-attr]
+                        self.modelActual.indexFromItem(item0)  # type: ignore[union-attr]
                     )
                     if item0.showDelegate:
                         self.openPersistentEditor(index)
@@ -670,7 +676,7 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                         self.setAllDelegatesPersistent(index0)
 
     @QtCore.Slot(object)
-    def onCheckDelegate(self, item):
+    def onCheckDelegate(self, item: Optional["ItemBase"]) -> None:
         """
         Makes sure that the delegates are shown if needed.
 
@@ -680,24 +686,24 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
             if item.showDelegate:
                 row = item.row()
                 parent = item.parent()
-                for column in self.delegateColumns:
+                for column in self.delegateColumns:  # type: ignore[union-attr]
                     if parent is None:
-                        sibling = self.modelActual.item(row, column)
+                        sibling = self.modelActual.item(row, column)  # type: ignore[union-attr]
                     else:
                         sibling = parent.child(row, column)
-                    index = self.model().mapFromSource(
-                        self.modelActual.indexFromItem(sibling)
+                    index = self.model().mapFromSource(  # type: ignore[union-attr]
+                        self.modelActual.indexFromItem(sibling)  # type: ignore[union-attr]
                     )
                     self.openPersistentEditor(index)
             self.scheduleDelayedItemsLayout()
 
     @QtCore.Slot(QtCore.QPoint)
-    def onContextMenuRequested(self, pos):
+    def onContextMenuRequested(self, pos: QtCore.QPoint) -> None:
 
         # We get the item from the real model, not the proxy model
-        originalModel = self.model().sourceModel()
+        originalModel = self.model().sourceModel()  # type: ignore[union-attr]
         proxyIndex = self.indexAt(pos)
-        index = self.model().mapToSource(proxyIndex)
+        index = self.model().mapToSource(proxyIndex)  # type: ignore[union-attr]
 
         # catch the case if the user rightcliks on any other column
         if index.column() != 0:
@@ -730,11 +736,11 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
             self.contextMenu.exec_(self.mapToGlobal(pos))
 
     @QtCore.Slot()
-    def onStarActionTrigger(self):
+    def onStarActionTrigger(self) -> None:
         self.itemStarToggle.emit(self.lastSelectedItem)
 
     @QtCore.Slot()
-    def onTrashActionTrigger(self):
+    def onTrashActionTrigger(self) -> None:
         self.itemTrashToggle.emit(self.lastSelectedItem)
 
 
@@ -755,16 +761,16 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
 
     def __init__(
         self,
-        instrument,
+        instrument: Any,
         attr: str,
-        itemType=ItemBase,
-        modelType=InstrumentModelBase,
-        proxyModelType=InstrumentSortFilterProxyModel,
-        viewType=InstrumentTreeViewBase,
+        itemType: type = ItemBase,
+        modelType: type = InstrumentModelBase,
+        proxyModelType: type = InstrumentSortFilterProxyModel,
+        viewType: type = InstrumentTreeViewBase,
         callSignals: bool = True,
         parent: Optional[QtWidgets.QWidget] = None,
-        **modelKwargs,
-    ):
+        **modelKwargs: Any,
+    ) -> None:
         super().__init__(parent=parent)
 
         # initializing variables
@@ -793,7 +799,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         if callSignals:
             self.connectSignals()
 
-    def connectSignals(self):
+    def connectSignals(self) -> None:
         """
         Connects all the signals to slots of different classes. Override to add more signals
         """
@@ -812,7 +818,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             self.proxyModel.onSortingIndicatorChanged
         )
 
-    def makeToolbar(self):
+    def makeToolbar(self) -> QtWidgets.QToolBar:
         """
         Creates the toolbar, override to add more buttons to the toolbar.
         """
@@ -823,7 +829,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             QtGui.QIcon(":/icons/refresh.svg"),
             "refresh all items from the instrument",
         )
-        refreshAction.triggered.connect(lambda x: self.refreshAll())
+        refreshAction.triggered.connect(lambda x: self.refreshAll())  # type: ignore[union-attr]
 
         toolbar.addSeparator()
 
@@ -831,27 +837,27 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             QtGui.QIcon(":/icons/expand.svg"),
             "expand tree",
         )
-        expandAction.triggered.connect(lambda x: self.view.expandAll())
+        expandAction.triggered.connect(lambda x: self.view.expandAll())  # type: ignore[union-attr]
 
         collapseAction = toolbar.addAction(
             QtGui.QIcon(":/icons/collapse.svg"),
             "collapse tree",
         )
-        collapseAction.triggered.connect(lambda x: self.view.collapseAll())
+        collapseAction.triggered.connect(lambda x: self.view.collapseAll())  # type: ignore[union-attr]
 
         toolbar.addSeparator()
 
         starAction = toolbar.addAction(
             QtGui.QIcon(":/icons/star.svg"), "Move Starred items to the top"
         )
-        starAction.setCheckable(True)
-        starAction.triggered.connect(lambda x: self.promoteStar())
+        starAction.setCheckable(True)  # type: ignore[union-attr]
+        starAction.triggered.connect(lambda x: self.promoteStar())  # type: ignore[union-attr]
 
         trashAction = toolbar.addAction(
             QtGui.QIcon(":/icons/trash-crossed.svg"), "Hide trashed items"
         )
-        trashAction.setCheckable(True)
-        trashAction.triggered.connect(lambda x: self.hideTrash())
+        trashAction.setCheckable(True)  # type: ignore[union-attr]
+        trashAction.triggered.connect(lambda x: self.hideTrash())  # type: ignore[union-attr]
 
         # Debugging tools keep commented for commits.
         # printAction = toolbar.addAction(
@@ -865,33 +871,33 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         return toolbar
 
     @QtCore.Slot()
-    def hideTrash(self):
+    def hideTrash(self) -> None:
         self.proxyModel.onToggleTrash()
 
     @QtCore.Slot()
-    def promoteStar(self):
+    def promoteStar(self) -> None:
         self.proxyModel.onToggleStar()
 
     @QtCore.Slot()
-    def refreshAll(self):
+    def refreshAll(self) -> None:
         self.model.refreshAll()
 
-    def debuggingMethod(self):
+    def debuggingMethod(self) -> None:
         """
         This is just a debugging method.
         """
-        items = {}
+        items: Dict[str, Any] = {}
 
-        def fillChildren(parent):
+        def fillChildren(parent: QtGui.QStandardItem) -> None:
             for i in range(parent.rowCount()):
                 item = parent.child(i, 0)
-                items[item.name] = {
+                items[item.name] = {  # type: ignore[union-attr]
                     "item": item,
-                    "star": item.star,
-                    "trash": item.trash,
+                    "star": item.star,  # type: ignore[union-attr]
+                    "trash": item.trash,  # type: ignore[union-attr]
                 }
-                if item.hasChildren():
-                    fillChildren(item)
+                if item.hasChildren():  # type: ignore[union-attr]
+                    fillChildren(item)  # type: ignore[arg-type]
 
         for i in range(self.model.rowCount()):
             item = self.model.item(i, 0)

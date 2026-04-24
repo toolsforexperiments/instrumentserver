@@ -3,6 +3,7 @@ import logging
 import os
 import signal
 from pathlib import Path
+from typing import Any, Optional
 
 from instrumentserver.server.application import DetachedServerGui
 
@@ -22,7 +23,7 @@ logger = logging.getLogger("instrumentserver")
 logger.setLevel(logging.INFO)
 
 
-def server(**kwargs):
+def server(**kwargs: Any) -> int:
     app = QtCore.QCoreApplication([])
 
     # this allows us to kill the server by KeyboardInterrupt
@@ -33,7 +34,7 @@ def server(**kwargs):
     return app.exec_()
 
 
-def serverWithGui(**kwargs):
+def serverWithGui(**kwargs: Any) -> int:
     app = QtWidgets.QApplication([])
     startServerGuiApplication(**kwargs)
     return app.exec_()
@@ -166,7 +167,7 @@ def clientStationScript() -> None:
 
     app = QtWidgets.QApplication([])
 
-    config_path = args.config if args.config else None
+    config_path: Optional[str] = args.config if args.config else None
     station = ClientStation(host=args.host, port=args.port, config_path=config_path)
     window = ClientStationGui(station)
     window.show()

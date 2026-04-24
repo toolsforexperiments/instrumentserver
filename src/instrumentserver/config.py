@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import IO
 
-import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
+import ruamel.yaml
 
 # Centralised point of extra fields for the server with its default as value
 SERVERFIELDS = {"initialize": True}

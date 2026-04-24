@@ -178,7 +178,7 @@ class StationServer(QtCore.QObject):
         )
 
         # a queue for responses that are ready to be sent to client
-        self._response_queue = queue.Queue()
+        self._response_queue: queue.Queue = queue.Queue()
         # a socket pair for immediate wakeup of the main thread that sends response to client
         self._wakeup_r, self._wakeup_w = socket.socketpair()
         self._wakeup_r.setblocking(False)
@@ -188,7 +188,7 @@ class StationServer(QtCore.QObject):
         self._instrument_locks: dict[str, threading.RLock] = {}
         self._instrument_locks_lock = threading.Lock()
 
-    def _runInitScript(self):
+    def _runInitScript(self) -> None:
         if os.path.exists(self.initScript):
             path = os.path.abspath(self.initScript)
             env = dict(station=self.station)
@@ -303,7 +303,7 @@ class StationServer(QtCore.QObject):
         logger.info("StationServer shut down cleanly.")
         return True
 
-    def _handleRouterMessage(self, identity, message):
+    def _handleRouterMessage(self, identity: bytes, message: Any) -> None:
         """
         Handle a router message and put the response message in the response queue.
 
@@ -376,7 +376,7 @@ class StationServer(QtCore.QObject):
 
     def executeServerInstruction(
         self, instruction: ServerInstruction
-    ) -> Tuple[ServerResponse, str]:
+    ) -> ServerResponse:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
@@ -449,10 +449,10 @@ class StationServer(QtCore.QObject):
         if lock is None:
             # in case name isn't in station yet, just guard creation with the dict lock
             lock = (
-                self._instrument_locks_lock
+                self._instrument_locks_lock  # type: ignore[assignment]
             )  # coarse but fine for this rare operation
 
-        with lock:
+        with lock:  # type: ignore[union-attr]
             new_instrument = qc.find_or_create_instrument(
                 cls, spec.name, *args, **kwargs
             )
@@ -472,7 +472,7 @@ class StationServer(QtCore.QObject):
         args = spec.args if spec.args is not None else []
         kwargs = spec.kwargs if spec.kwargs is not None else {}
 
-        def _invoke():
+        def _invoke() -> Any:
             ret = obj(*args, **kwargs)
 
             # Check if a new parameter is being created.
@@ -516,14 +516,14 @@ class StationServer(QtCore.QObject):
         logger.debug(f"Fetching blueprint for: {path}")
         obj = nestedAttributeFromString(self.station, path)
         if isinstance(obj, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
-            instrument_blueprint = bluePrintFromInstrumentModule(path, obj)
+            instrument_blueprint = bluePrintFromInstrumentModule(path, obj)  # type: ignore[arg-type]
             if instrument_blueprint is None:
                 raise ValueError(
                     f"Failed to create blueprint for instrument module {path}"
                 )
             return instrument_blueprint
         elif isinstance(obj, tuple(PARAMETER_BASE_CLASSES)):
-            parameter_blueprint = bluePrintFromParameter(path, obj)
+            parameter_blueprint = bluePrintFromParameter(path, obj)  # type: ignore[arg-type]
             if parameter_blueprint is None:
                 raise ValueError(f"Failed to create blueprint for parameter {path}")
             return parameter_blueprint
@@ -548,7 +548,7 @@ class StationServer(QtCore.QObject):
         kwargs.update(includeMeta=includeMeta)
         return serialize.toParamDict(obj, *args, **kwargs)
 
-    def _fromParamDict(self, params: Dict[str, Any]):
+    def _fromParamDict(self, params: Dict[str, Any]) -> None:
         return serialize.fromParamDict(params, self.station)
 
     def _getGuiConfig(self, instrumentName: str) -> str:
@@ -567,7 +567,7 @@ class StationServer(QtCore.QObject):
 
         return json.dumps(self.guiConfig[instrumentName])
 
-    def _broadcastParameterChange(self, blueprint: ParameterBroadcastBluePrint):
+    def _broadcastParameterChange(self, blueprint: ParameterBroadcastBluePrint) -> None:
         """
         Broadcast any changes to parameters in the server.
         The message is composed of a 2 part array. The first item is the name of the instrument the parameter is from,
@@ -576,17 +576,19 @@ class StationServer(QtCore.QObject):
 
         :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
-        sendBroadcast(self.broadcastSocket, blueprint.name.split(".")[0], blueprint)
+        sendBroadcast(self.broadcastSocket, blueprint.name.split(".")[0], blueprint)  # type: ignore[arg-type]
         if self.externalBroadcastAddr is not None:
             sendBroadcast(
-                self.externalBroadcastSocket, blueprint.name.split(".")[0], blueprint
+                self.externalBroadcastSocket, blueprint.name.split(".")[0], blueprint  # type: ignore[arg-type]
             )
         logger.info(
             f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
             f" with a value: {blueprint.value}."
         )
 
-    def _newOrDeleteParameterDetection(self, spec, args, kwargs):
+    def _newOrDeleteParameterDetection(
+        self, spec: CallSpec, args: List[Any], kwargs: Dict[str, Any]
+    ) -> None:
         """
         Detects if the call action is being used to create a new parameter or deletes an existing parameter.
         If so, it creates the parameter broadcast blueprint and broadcast it.
@@ -597,13 +599,13 @@ class StationServer(QtCore.QObject):
         """
 
         if spec.target.split(".")[-1] == "add_parameter":
-            name = spec.target.split(".")[0] + "." + ".".join(spec.args)
+            name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
             pb = ParameterBroadcastBluePrint(
                 name, "parameter-creation", kwargs["initial_value"], kwargs["unit"]
             )
             self._broadcastParameterChange(pb)
         elif spec.target.split(".")[-1] == "remove_parameter":
-            name = spec.target.split(".")[0] + "." + ".".join(spec.args)
+            name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
             pb = ParameterBroadcastBluePrint(name, "parameter-deletion")
             self._broadcastParameterChange(pb)
 
@@ -663,6 +665,6 @@ def startServer(
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
-    thread.started.connect(server.startServer)
+    thread.started.connect(server.startServer)  # type: ignore[arg-type]
     thread.start()
     return server, thread

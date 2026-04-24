@@ -1,19 +1,23 @@
 import argparse
 import logging
 import os.path
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
-import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
+import ruamel.yaml
 import zmq
 
 try:
-    from influxdb_client import InfluxDBClient, Point, WriteOptions
+    from influxdb_client import (  # type: ignore[import-not-found]
+        InfluxDBClient,
+        Point,
+        WriteOptions,
+    )
 except ImportError:
     pass
 
@@ -25,10 +29,13 @@ logger = logging.getLogger(__name__)
 
 
 class Listener(ABC):
-    def __init__(self, addresses: list):
+    def __init__(self, addresses: list) -> None:
         self.addresses = addresses
 
-    def run(self):
+    @abstractmethod
+    def listenerEvent(self, *args: Any, **kwargs: Any) -> None: ...
+
+    def run(self) -> None:
 
         # creates zmq subscriber at specified address
         logger.info(f"Connecting to {self.addresses}")
@@ -67,7 +74,7 @@ class CSVConfig:
     csv_path: str
 
     @classmethod
-    def from_dict(cls, config_dict):
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "CSVConfig":
         return cls(
             addresses=config_dict["addresses"],
             params=config_dict["params"],
@@ -87,7 +94,7 @@ class InfluxConfig:
     timezone_name: str = "CDT"
 
     @classmethod
-    def from_dict(cls, config_dict):
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "InfluxConfig":
         return cls(
             addresses=config_dict["addresses"],
             params=config_dict["params"],
@@ -100,7 +107,7 @@ class InfluxConfig:
 
 
 class DFListener(Listener):
-    def __init__(self, csvConfig: CSVConfig):
+    def __init__(self, csvConfig: CSVConfig) -> None:
         super().__init__(csvConfig.addresses)
         self.addresses = csvConfig.addresses
         self.path = csvConfig.csv_path
@@ -115,10 +122,10 @@ class DFListener(Listener):
 
         self.paramList = list(csvConfig.params)
 
-    def run(self):
+    def run(self) -> None:
         super().run()
 
-    def listenerEvent(self, message: ParameterBroadcastBluePrint):
+    def listenerEvent(self, message: ParameterBroadcastBluePrint) -> None:
 
         # listens only for parameters in the list, if it is empty, it listens to everything
         if not self.paramList:
@@ -142,7 +149,7 @@ class DFListener(Listener):
 
 
 class InfluxListener(Listener):
-    def __init__(self, influxConfig: InfluxConfig):
+    def __init__(self, influxConfig: InfluxConfig) -> None:
         super().__init__(influxConfig.addresses)
 
         self.addresses = influxConfig.addresses
@@ -158,10 +165,12 @@ class InfluxListener(Listener):
 
         self.timezone_info = get_timezone_info(influxConfig.timezone_name)
 
-    def run(self):
+    def run(self) -> None:
         super().run()
 
-    def listenerEvent(self, instrument, message: ParameterBroadcastBluePrint):
+    def listenerEvent(
+        self, instrument: str, message: ParameterBroadcastBluePrint
+    ) -> None:
         bucket = self.bucketDict[instrument]
         measurementName = self.measurementNameDict[instrument]
         # listens only for parameters in the list, if it is empty, it listens to everything
@@ -176,7 +185,7 @@ class InfluxListener(Listener):
             self.write_api.write(bucket=bucket, org=self.org, record=point)
 
 
-def checkInfluxConfig(configInput: Dict[str, Any]):
+def checkInfluxConfig(configInput: Dict[str, Any]) -> bool:
 
     # check if all fields are present in the config file
     influxFields = [
@@ -197,7 +206,7 @@ def checkInfluxConfig(configInput: Dict[str, Any]):
     return True
 
 
-def checkCSVConfig(configInput: Dict[str, Any]):
+def checkCSVConfig(configInput: Dict[str, Any]) -> bool:
 
     # check if all fields are present in the config file
     csvField = ["addresses", "params", "csv_path"]
@@ -208,7 +217,7 @@ def checkCSVConfig(configInput: Dict[str, Any]):
     return True
 
 
-def get_timezone_info(timezone_name):
+def get_timezone_info(timezone_name: str) -> Optional[ZoneInfo]:
     try:
         return ZoneInfo(timezone_name)
     except ZoneInfoNotFoundError:
@@ -216,7 +225,7 @@ def get_timezone_info(timezone_name):
         return None
 
 
-def startListener():
+def startListener() -> None:
 
     parser = argparse.ArgumentParser(description="Starting the listener")
     parser.add_argument("-c", "--config")
@@ -230,7 +239,7 @@ def startListener():
         configInput = yaml.load(configPath)
     else:
         logger.warning("Please enter a valid path for the config file")
-        return 0
+        return
 
     # start listener that writes to CSV or Influx Database
     if "type" in configInput:

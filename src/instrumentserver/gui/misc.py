@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from .. import QtCore, QtGui, QtWidgets
 
@@ -11,20 +11,20 @@ class AlertLabel(QtWidgets.QLabel):
     ):
         super().__init__(parent)
 
-        self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignHCenter)  # type: ignore[arg-type]
         self._pixmapSize = pixmapSize
         pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(*pixmapSize)
         self.setPixmap(pix)
         self.setToolTip("no alerts")
 
     @QtCore.Slot(str)
-    def setAlert(self, message: str):
+    def setAlert(self, message: str) -> None:
         pix = QtGui.QIcon(":/icons/red-alert.svg").pixmap(*self._pixmapSize)
         self.setPixmap(pix)
         self.setToolTip(message)
 
     @QtCore.Slot()
-    def clearAlert(self):
+    def clearAlert(self) -> None:
         pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(*self._pixmapSize)
         self.setPixmap(pix)
         self.setToolTip("no alerts")
@@ -35,17 +35,17 @@ class AlertLabelGreen(AlertLabel):
     Expanding the functionality of the AlertLabel to add green alerts to indicate successful things
     """
 
-    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:  # type: ignore[override]
         self.clearAlert()
         super().mouseDoubleClickEvent(a0)
 
-    def mousePressEvent(self, ev: QtGui.QMouseEvent) -> None:
-        if ev.buttons() == QtCore.Qt.MidButton:
+    def mousePressEvent(self, ev: QtGui.QMouseEvent) -> None:  # type: ignore[override]
+        if ev.buttons() == QtCore.Qt.MouseButton.MidButton:
             self.clearAlert()
         super().mousePressEvent(ev)
 
     @QtCore.Slot(str)
-    def setSuccssefulAlert(self, message: str):
+    def setSuccssefulAlert(self, message: str) -> None:
         pix = QtGui.QIcon(":/icons/green-alert.svg").pixmap(*self._pixmapSize)
         self.setPixmap(pix)
         self.setToolTip(message)
@@ -56,7 +56,13 @@ class DetachedTab(QtWidgets.QMainWindow):
     #: emitted when a tab for the instrument is closed
     onCloseSignal = QtCore.Signal(object, str)
 
-    def __init__(self, contentWidget: QtWidgets.QWidget, name: str, *args, **kwargs):
+    def __init__(
+        self,
+        contentWidget: QtWidgets.QWidget,
+        name: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
 
         self.name = name
@@ -68,7 +74,7 @@ class DetachedTab(QtWidgets.QMainWindow):
 
         self.widget.show()
 
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:  # type: ignore[override]
         self.onCloseSignal.emit(self.widget, self.name)
 
 
@@ -81,16 +87,16 @@ class SeparableTabBar(QtWidgets.QTabBar):
     #: Emitted when the user is moving the tabs.
     onMoveTab = QtCore.Signal(int, int)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.selectedIndex = 0
         self.dragStartPos = QtCore.QPoint()
         self.dragDroppedPos = QtCore.QPoint()
-        self.setElideMode(QtCore.Qt.ElideRight)
+        self.setElideMode(QtCore.Qt.TextElideMode.ElideRight)
         self.setAcceptDrops(True)
 
-    def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
-        if a0.button() == QtCore.Qt.LeftButton:
+    def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:  # type: ignore[override]
+        if a0.button() == QtCore.Qt.MouseButton.LeftButton:
             self.dragStartPos = a0.pos()
 
         self.dragDroppedPos.setX(0)
@@ -99,11 +105,11 @@ class SeparableTabBar(QtWidgets.QTabBar):
         self.selectedIndex = self.tabAt(self.dragStartPos)
         super().mousePressEvent(a0)
 
-    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:  # type: ignore[override]
         self.onDetachTab.emit(self.tabAt(a0.pos()), a0.globalPos())
         a0.accept()
 
-    def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
+    def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:  # type: ignore[override]
         """
         Detects if the user is dragging a tab and starts the drag object.
         """
@@ -118,49 +124,49 @@ class SeparableTabBar(QtWidgets.QTabBar):
             mimeData.setData("action", b"application/tab-detach")
             drag.setMimeData(mimeData)
 
-            pixmap = self.parentWidget().currentWidget().grab()  # type: ignore[attr-defined] # I am pretty sure the stubs are wrong for this one, running through the debugger all the methods exists.
+            pixmap = self.parentWidget().currentWidget().grab()  # type: ignore[union-attr]
             targetPixmap = QtGui.QPixmap(pixmap.size())
-            targetPixmap.fill(QtCore.Qt.transparent)
+            targetPixmap.fill(QtCore.Qt.GlobalColor.transparent)
             painter = QtGui.QPainter(targetPixmap)
             painter.drawPixmap(0, 0, pixmap)
             painter.end()
             drag.setPixmap(targetPixmap)
 
-            dropAction = drag.exec_(QtCore.Qt.MoveAction | QtCore.Qt.CopyAction)
+            dropAction = drag.exec_(QtCore.Qt.DropAction.MoveAction | QtCore.Qt.DropAction.CopyAction)  # type: ignore[call-overload]
 
             # In linux the drag.exec_ does not return MoveAction, so it must be set manually.
             if self.dragDroppedPos.x() != 0 and self.dragDroppedPos.y() != 0:
-                dropAction = QtCore.Qt.MoveAction
+                dropAction = QtCore.Qt.DropAction.MoveAction
 
             # A move action indicates that the user is trying to move the tabs around
-            if dropAction == QtCore.Qt.MoveAction:
+            if dropAction == QtCore.Qt.DropAction.MoveAction:
                 a0.accept()
                 self.onMoveTab.emit(
                     self.tabAt(self.dragStartPos), self.tabAt(self.dragDroppedPos)
                 )
 
             # An ignore action means that the user dropped the tab outside of the window and should be detached.
-            elif dropAction == QtCore.Qt.IgnoreAction:
+            elif dropAction == QtCore.Qt.DropAction.IgnoreAction:
                 a0.accept()
                 self.onDetachTab.emit(self.selectedIndex, self.cursor().pos())
 
         else:
             super().mouseMoveEvent(a0)
 
-    def dragEnterEvent(self, a0: QtGui.QDragEnterEvent) -> None:
+    def dragEnterEvent(self, a0: QtGui.QDragEnterEvent) -> None:  # type: ignore[override]
         mimeData = a0.mimeData()
-        formats = mimeData.formats()
+        formats = mimeData.formats()  # type: ignore[union-attr]
 
-        if "action" in formats and mimeData.data("action") == "application/tab-detach":
+        if "action" in formats and mimeData.data("action") == "application/tab-detach":  # type: ignore[union-attr]
             a0.acceptProposedAction()
 
         super().dragMoveEvent(a0)
 
-    def dropEvent(self, a0: QtGui.QDropEvent) -> None:
+    def dropEvent(self, a0: QtGui.QDropEvent) -> None:  # type: ignore[override]
         self.dragDroppedPos = a0.pos()
         super().dropEvent(a0)
 
-    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
+    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:  # type: ignore[override]
         a0.accept()
         super().mouseReleaseEvent(a0)
 
@@ -176,7 +182,7 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
     #: Emitted when a tab got closed.
     onTabClosed = QtCore.Signal(str)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._tabBar = SeparableTabBar(self)
         self._tabBar.setTabsClosable(True)
@@ -185,9 +191,9 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
         self._tabBar.onDetachTab.connect(self.onDetachTab)
         self._tabBar.onMoveTab.connect(self.onMoveTab)
 
-        self.unclosableTabs = {}
+        self.unclosableTabs: dict[str, QtWidgets.QWidget] = {}
 
-    def addUnclosableTab(self, widget, name):
+    def addUnclosableTab(self, widget: QtWidgets.QWidget, name: str) -> None:
         index = self.addTab(widget, name)
         closeButton = self._tabBar.tabButton(
             index, QtWidgets.QTabBar.ButtonPosition.RightSide
@@ -197,25 +203,25 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
             closeButton = self._tabBar.tabButton(
                 index, QtWidgets.QTabBar.ButtonPosition.LeftSide
             )
-        closeButton.resize(0, 0)
+        closeButton.resize(0, 0)  # type: ignore[union-attr]
         self.unclosableTabs[name] = widget
 
     @QtCore.Slot(object, object)
-    def onDetachTab(self, tab, point: QtCore.QPoint):
+    def onDetachTab(self, tab: int, point: QtCore.QPoint) -> None:
         """
         Gets triggered when the user drags out a tab. Opens a QMainWindow with the widget in the dragged tab.
         """
         widget = self.widget(tab)
         name = self.tabText(tab)
         self.removeTab(self.indexOf(widget))
-        detachedTab = DetachedTab(widget, name, parent=self)
+        detachedTab = DetachedTab(widget, name, parent=self)  # type: ignore[arg-type]
         movedPoint = QtCore.QPoint(point.x(), point.y())
         detachedTab.move(movedPoint)
         detachedTab.onCloseSignal.connect(self.onAttatchTab)
         detachedTab.show()
 
     @QtCore.Slot(object, str)
-    def onAttatchTab(self, widget, name):
+    def onAttatchTab(self, widget: QtWidgets.QWidget, name: str) -> None:
         """
         Gets called when the user closes one of the detachable windows and properly attaches the tab back.
         """
@@ -225,7 +231,7 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
             self.addTab(widget, name)
 
     @QtCore.Slot(int, int)
-    def onMoveTab(self, fromIndex, toIndex):
+    def onMoveTab(self, fromIndex: int, toIndex: int) -> None:
         widget = self.widget(fromIndex)
         icon = self.tabIcon(fromIndex)
         text = self.tabText(fromIndex)
@@ -235,11 +241,11 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
         if text in self.unclosableTabs:
             self._tabBar.tabButton(
                 toIndex, QtWidgets.QTabBar.ButtonPosition.RightSide
-            ).resize(0, 0)
+            ).resize(0, 0)  # type: ignore[union-attr]
         self.setCurrentWidget(widget)
 
     @QtCore.Slot(int)
-    def onCloseTab(self, index, moving=False):
+    def onCloseTab(self, index: int, moving: bool = False) -> None:
         """
         Closes the tab at index.
 
@@ -248,7 +254,7 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
         """
         name = self.tabText(index)
         widget = self.widget(index)
-        widget.close()
+        widget.close()  # type: ignore[union-attr]
         widget = None
         self.removeTab(index)
 
@@ -268,14 +274,14 @@ class BaseDialog(QtWidgets.QDialog):
 
     def __init__(
         self,
-        parent=None,
-        flags=(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowCloseButtonHint),
-        tittleBarButtonsWidth=108,
-    ):
+        parent: Optional[QtWidgets.QWidget] = None,
+        flags: Any = (QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.WindowCloseButtonHint),
+        tittleBarButtonsWidth: int = 108,
+    ) -> None:
         super().__init__(parent, flags=flags)
         self.tittleBarButtonsWidth = tittleBarButtonsWidth
 
-    def setWindowTitle(self, p_str):
+    def setWindowTitle(self, p_str: Optional[str]) -> None:
         super().setWindowTitle(p_str)
         tittleWidth = self.fontMetrics().boundingRect(p_str).size().width()
         minWidth = self.tittleBarButtonsWidth + tittleWidth + 15

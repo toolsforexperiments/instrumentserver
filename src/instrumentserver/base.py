@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any, Tuple, Union
 
 import zmq
 
@@ -8,15 +9,15 @@ from .blueprints import deserialize_obj, to_dict
 logger = logging.getLogger(__name__)
 
 
-def encode(data):
+def encode(data: Any) -> str:
     return json.dumps(to_dict(data))
 
 
-def decode(data):
+def decode(data: Union[str, bytes]) -> Any:
     return deserialize_obj(json.loads(data))
 
 
-def send(socket, data, use_string=True):
+def send(socket: "zmq.Socket", data: Any, use_string: bool = True) -> Any:
     payload = encode(data)
     if use_string:
         return socket.send_string(payload)
@@ -24,12 +25,12 @@ def send(socket, data, use_string=True):
         return socket.send(payload.encode("utf-8"))
 
 
-def recv(socket):
+def recv(socket: "zmq.Socket") -> Any:
     # Try multipart receive first (ROUTER replies)
     parts = socket.recv_multipart()
     while socket.getsockopt(zmq.RCVMORE):
         leftover = socket.recv()
-        logger.warning(f"Additional part found in recv: {leftover}")
+        logger.warning(f"Additional part found in recv: {leftover!r}")
     if len(parts) == 1:
         data = parts[0]
     elif len(parts) == 2 and parts[0] == b"":  # optional empty delimiter
@@ -39,14 +40,14 @@ def recv(socket):
     return decode(data)
 
 
-def send_router(socket, identity, message):
+def send_router(socket: "zmq.Socket", identity: bytes, message: Any) -> None:
     socket.setsockopt(zmq.SNDTIMEO, 5000)
     socket.setsockopt(zmq.LINGER, 0)
     payload = encode(message).encode("utf-8")
     socket.send_multipart([identity, b"", payload])
 
 
-def recv_router(socket):
+def recv_router(socket: "zmq.Socket") -> Tuple[bytes, Any]:
     parts = socket.recv_multipart()
     if len(parts) == 2:
         identity, payload = parts
@@ -57,7 +58,7 @@ def recv_router(socket):
     return identity, decode(payload)
 
 
-def sendBroadcast(socket, name, message):
+def sendBroadcast(socket: "zmq.Socket", name: str, message: Any) -> None:
     """
     broadcasts the message. It will send 2 messages: First the name with the send more flag,
         followed by the message.
@@ -70,7 +71,7 @@ def sendBroadcast(socket, name, message):
     socket.send(encode(message).encode("utf-8"))
 
 
-def recvMultipart(socket):
+def recvMultipart(socket: "zmq.Socket") -> Tuple[str, Any]:
     """
     Recieves the broadcast from a broadcast message. It should consist of 2 parts:
      The first item is the name of the object sending it. Second part the message

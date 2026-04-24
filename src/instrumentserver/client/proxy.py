@@ -13,7 +13,7 @@ import os
 import threading
 from contextlib import contextmanager
 from types import MethodType
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import qcodes as qc
 import zmq
@@ -52,7 +52,7 @@ class ProxyMixin:
 
     def __init__(
         self,
-        *args,
+        *args: Any,
         cli: Optional["Client"] = None,
         host: Optional[str] = "localhost",
         port: Optional[int] = DEFAULT_PORT,
@@ -60,8 +60,8 @@ class ProxyMixin:
         bluePrint: Optional[
             Union[ParameterBluePrint, InstrumentModuleBluePrint, MethodBluePrint]
         ] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
 
         self.cli = cli
         self.host = host
@@ -83,20 +83,20 @@ class ProxyMixin:
         super().__init__(*args, **kwargs)
         self.__doc__ = self.bp.docstring
 
-    def initKwargsFromBluePrint(self, bp):
+    def initKwargsFromBluePrint(self, bp: Any) -> Dict[str, Any]:
         raise NotImplementedError
 
-    def askServer(self, message: ServerInstruction):
+    def askServer(self, message: ServerInstruction) -> Any:
         if self.cli is not None:
             return self.cli.ask(message)
         elif self.host is not None and self.port is not None:
             return sendRequest(message, self.host, self.port)
 
-    def _getBluePrintFromServer(self, path):
+    def _getBluePrintFromServer(self, path: str) -> Any:
         req = ServerInstruction(operation=Operation.get_blueprint, requested_path=path)
         return self.askServer(req)
 
-    def get_snapshot(self, *args, **kwargs):
+    def get_snapshot(self, *args: Any, **kwargs: Any) -> Any:
         req = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(
@@ -122,15 +122,15 @@ class ProxyParameter(ProxyMixin, Parameter):
     def __init__(
         self,
         name: str,
-        *args,
+        *args: Any,
         cli: Optional["Client"] = None,
         host: Optional[str] = "localhost",
         port: Optional[int] = DEFAULT_PORT,
         remotePath: Optional[str] = None,
         bluePrint: Optional[ParameterBluePrint] = None,
         setpoints_instrument: Optional[Instrument] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
 
         super().__init__(
             name,
@@ -151,8 +151,8 @@ class ProxyParameter(ProxyMixin, Parameter):
             ]
             setattr(self, "setpoints", setpoints)
 
-    def initKwargsFromBluePrint(self, bp):
-        kwargs = {}
+    def initKwargsFromBluePrint(self, bp: Any) -> Dict[str, Any]:
+        kwargs: Dict[str, Any] = {}
         if bp.settable:
             kwargs["set_cmd"] = self._remoteSet
         else:
@@ -167,14 +167,14 @@ class ProxyParameter(ProxyMixin, Parameter):
         kwargs["docstring"] = bp.docstring
         return kwargs
 
-    def _remoteSet(self, value: Any):
+    def _remoteSet(self, value: Any) -> Any:
         msg = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(target=self.remotePath, args=(value,)),
         )
         return self.askServer(msg)
 
-    def _remoteGet(self):
+    def _remoteGet(self) -> Any:
         msg = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(
@@ -197,14 +197,14 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
     def __init__(
         self,
         name: str,
-        *args,
+        *args: Any,
         cli: Optional["Client"] = None,
         host: Optional[str] = "localhost",
         port: Optional[int] = DEFAULT_PORT,
         remotePath: Optional[str] = None,
         bluePrint: Optional[InstrumentModuleBluePrint] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
 
         super().__init__(
             name,
@@ -220,16 +220,16 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # FIXME: This is not consistent with how mixin handles a `None` client. However, this seems like a more
         #  elegant solution than any time we need the client to check to be None, start a new context client instead.
         if cli is None:
-            self.cli = Client(host=host, port=port)
+            self.cli = Client(host=host, port=port)  # type: ignore[arg-type]
 
         for mn in self.bp.methods.keys():
             if mn == "remove_parameter":
 
-                def remove_parameter(obj, name: str):
+                def remove_parameter(obj: Any, name: str) -> None:
                     obj.cli.call(f"{obj.remotePath}.remove_parameter", name)
                     obj.update()
 
-                self.remove_parameter = MethodType(remove_parameter, self)
+                self.remove_parameter = MethodType(remove_parameter, self)  # type: ignore[method-assign]
 
         self.parameters.pop("IDN", None)  # we will redefine this later
 
@@ -242,7 +242,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             self.update()
 
     @contextmanager
-    def _updating(self):
+    def _updating(self) -> Any:
         old = self.is_updating
         self.is_updating = True
         try:
@@ -250,17 +250,17 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         finally:
             self.is_updating = old
 
-    def initKwargsFromBluePrint(self, bp):
+    def initKwargsFromBluePrint(self, bp: Any) -> Dict[str, Any]:
         return {}
 
-    def update(self):
-        self.cli.invalidateBlueprint(self.remotePath)
-        self.bp = self.cli.getBluePrint(self.remotePath)
+    def update(self) -> None:
+        self.cli.invalidateBlueprint(self.remotePath)  # type: ignore[union-attr]
+        self.bp = self.cli.getBluePrint(self.remotePath)  # type: ignore[union-attr]
         self._getProxyParameters()
         self._getProxyMethods()
         self._getProxySubmodules()
 
-    def set_parameters(self, **param_dict: dict):
+    def set_parameters(self, **param_dict: Any) -> None:
         """
         Set instrument parameters in batch with a dict, keyed by parameter names.
 
@@ -273,7 +273,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
                     f"{self.bp.instrument_module_class} instrument does not have parameter '{k}'"
                 )
 
-    def add_parameter(self, name: str, *arg, **kw):
+    def add_parameter(self, name: str, *arg: Any, **kw: Any) -> None:  # type: ignore[override]
         """Add a parameter to the proxy instrument.
 
         If a parameter of that name already exists in the server-side instrument,
@@ -290,7 +290,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         self.cli.call(self.name + ".add_parameter", name, *arg, **kw)
         self.update()
 
-    def remove_parameter(self, name: str, *arg, **kw):
+    def remove_parameter(self, name: str, *arg: Any, **kw: Any) -> None:
         """Removes parameter from the proxy instrument.
 
         Checking whether the paremeter exists or not is left to the instrument in the server. This is to avoid having
@@ -333,7 +333,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         for k in delKeys:
             del self.parameters[k]
 
-    def _getProxyMethods(self):
+    def _getProxyMethods(self) -> None:
         """Based on the method blue print replied from server, add the
         instrument functions to the proxy instrument class.
         """
@@ -344,8 +344,8 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
                     setattr(self, n, MethodType(fun, self))
                     self.functions[n] = getattr(self, n)
 
-    def _makeProxyMethod(self, bp: MethodBluePrint):
-        def wrap(*a, **k):
+    def _makeProxyMethod(self, bp: MethodBluePrint) -> Callable:
+        def wrap(*a: Any, **k: Any) -> Any:
             msg = ServerInstruction(
                 operation=Operation.call,
                 call_spec=CallSpec(target=bp.path, args=a, kwargs=k),
@@ -379,12 +379,12 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # make sure the method knows the wrap function.
         # TODO: this is not complete!
         globs = {"wrap": wrap, "qcodes": qc, "collections": collections}
-        _ret = exec(new_func_str, globs)
+        exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__doc__ = bp.docstring
-        return globs[bp.name]
+        return globs[bp.name]  # type: ignore[return-value]
 
-    def _getProxySubmodules(self):
+    def _getProxySubmodules(self) -> None:
         """Based on the submodule blue print replied from server, add the proxy
         submodules to the proxy module class.
         """
@@ -393,7 +393,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
                 submodule = ProxyInstrumentModule(
                     s.name, cli=self.cli, host=self.host, port=self.port, bluePrint=s
                 )
-                self.add_submodule(sn, submodule)
+                self.add_submodule(sn, submodule)  # type: ignore[type-var]
             else:
                 self.submodules[sn].update()
 
@@ -404,7 +404,7 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         for k in delKeys:
             del self.submodules[k]
 
-    def _refreshProxySubmodules(self):
+    def _refreshProxySubmodules(self) -> None:
         delKeys = []
         for sn, s in self.submodules.items():
             if sn in self.bp.submodules:
@@ -417,15 +417,15 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
                 submodule = ProxyInstrumentModule(
                     s.name, cli=self.cli, host=self.host, port=self.port, bluePrint=s
                 )
-                self.add_submodule(sn, submodule)
+                self.add_submodule(sn, submodule)  # type: ignore[type-var]
             else:
                 self.submodules[sn].update()
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         try:
             return super().__getattr__(item)
         except Exception as e:
-            current_bp = self.cli.getBluePrint(self.remotePath)
+            current_bp = self.cli.getBluePrint(self.remotePath)  # type: ignore[union-attr]
             if not self.is_updating:
                 if item in current_bp.parameters and item not in self.parameters:
                     self.bp = current_bp
@@ -449,14 +449,14 @@ class Client(BaseClient):
 
     def __init__(
         self,
-        host="localhost",
-        port=DEFAULT_PORT,
-        connect=True,
-        timeout=20,
-        raise_exceptions=True,
-    ):
+        host: str = "localhost",
+        port: int = DEFAULT_PORT,
+        connect: bool = True,
+        timeout: float = 20,
+        raise_exceptions: bool = True,
+    ) -> None:
         super().__init__(host, port, connect, timeout, raise_exceptions)
-        self._bp_cache = {}
+        self._bp_cache: Dict[str, Any] = {}
         self._bp_cache_lock = threading.Lock()
 
     def list_instruments(self) -> Dict[str, str]:
@@ -513,10 +513,10 @@ class Client(BaseClient):
         _ = self.ask(req)
         return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
 
-    def close_instrument(self, instrument_name: str):
+    def close_instrument(self, instrument_name: str) -> Any:
         self.call("close_and_remove_instrument", instrument_name)
 
-    def call(self, target, *args, **kwargs):
+    def call(self, target: str, *args: Any, **kwargs: Any) -> Any:
         msg = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(
@@ -527,10 +527,10 @@ class Client(BaseClient):
         )
         return self.ask(msg)
 
-    def get_instrument(self, name):
+    def get_instrument(self, name: str) -> ProxyInstrumentModule:
         return ProxyInstrumentModule(name=name, cli=self, remotePath=name)
 
-    def getBluePrint(self, path):
+    def getBluePrint(self, path: str) -> Any:
         """
         get blueprint from server
         :param path:
@@ -550,7 +550,7 @@ class Client(BaseClient):
             self._bp_cache[path] = bp
         return bp
 
-    def invalidateBlueprint(self, path=None):
+    def invalidateBlueprint(self, path: Optional[str] = None) -> None:
         """
         invalidate a parameter in the blueprint cache
         :param path:
@@ -564,7 +564,9 @@ class Client(BaseClient):
                     if k == path or k.startswith(path + "."):
                         del self._bp_cache[k]
 
-    def get_snapshot(self, instrument: str | None = None, *args, **kwargs):
+    def get_snapshot(
+        self, instrument: str | None = None, *args: Any, **kwargs: Any
+    ) -> Any:
         msg = ServerInstruction(
             operation=Operation.call,
             call_spec=CallSpec(
@@ -579,9 +581,9 @@ class Client(BaseClient):
         self,
         instrument: str | None = None,
         attrs: List[str] = ["value"],
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         msg = ServerInstruction(
             operation=Operation.get_param_dict,
             serialization_opts=ParameterSerializeSpec(
@@ -594,8 +596,12 @@ class Client(BaseClient):
         return self.ask(msg)
 
     def paramsToFile(
-        self, filePath: str, instruments: Optional[List[str]] = None, *args, **kwargs
-    ):
+        self,
+        filePath: str,
+        instruments: Optional[List[str]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         filePath = os.path.abspath(filePath)
         folder, file = os.path.split(filePath)
 
@@ -605,7 +611,7 @@ class Client(BaseClient):
         else:
             params = {}
             for instrument_name in instruments:
-                inst_params = self.getParamDict(
+                inst_params = self.getParamDict(  # type: ignore[misc]
                     instrument=instrument_name, *args, **kwargs
                 )
                 params.update(inst_params)
@@ -618,14 +624,16 @@ class Client(BaseClient):
         with open(filePath, "w") as f:
             json.dump(params, f, indent=2, sort_keys=True)
 
-    def setParameters(self, parameters: Dict[str, Any]):
+    def setParameters(self, parameters: Dict[str, Any]) -> Any:
         msg = ServerInstruction(
             operation=Operation.set_params,
             set_parameters=parameters,
         )
         return self.ask(msg)
 
-    def paramsFromFile(self, filePath: str, instruments: Optional[List[str]] = None):
+    def paramsFromFile(
+        self, filePath: str, instruments: Optional[List[str]] = None
+    ) -> None:
         params = None
         if os.path.exists(filePath):
             with open(filePath, "r") as f:
@@ -692,11 +700,11 @@ class SubClient(QtCore.QObject):
 
         self.connected = False
         self._stop = False
-        self._ctx = None
-        self._sock = None
+        self._ctx: Optional[zmq.Context] = None
+        self._sock: Optional[zmq.Socket] = None
 
     @QtCore.Slot()
-    def connect(self):
+    def connect(self) -> bool:
         """
         Connects the subscription client with the broadcast
         and runs an infinite loop to check for updates.
@@ -743,14 +751,14 @@ class SubClient(QtCore.QObject):
         return True
 
     @QtCore.Slot()
-    def stop(self):
+    def stop(self) -> None:
         """
         Stops the listener gracefully.
         """
         self._stop = True
         self.connected = False
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """
         Alias for stop() for backwards compatibility.
         """
@@ -758,25 +766,27 @@ class SubClient(QtCore.QObject):
 
 
 class _QtAdapter(QtCore.QObject):
-    def __init__(self, parent, *arg, **kw):
+    def __init__(
+        self, parent: Optional[QtCore.QObject], *arg: Any, **kw: Any
+    ) -> None:
         super().__init__(parent)
 
 
 class QtClient(_QtAdapter, Client):
     def __init__(
         self,
-        parent=None,
-        host="localhost",
-        port=DEFAULT_PORT,
-        connect=True,
-        timeout=5,
-        raise_exceptions=True,
-    ):
+        parent: Optional[QtCore.QObject] = None,
+        host: str = "localhost",
+        port: int = DEFAULT_PORT,
+        connect: bool = True,
+        timeout: float = 5,
+        raise_exceptions: bool = True,
+    ) -> None:
         # Calling the parents like this ensures that the arguments arrive to the parents properly.
         _QtAdapter.__init__(self, parent=parent)
         Client.__init__(self, host, port, connect, timeout, raise_exceptions)
 
-    def disconnect(self, *args, **kwargs):
+    def disconnect(self, *args: Any, **kwargs: Any) -> Any:
         # QObject.disconnect() shadows BaseClient.disconnect() via MRO, so
         # explicitly dispatch to BaseClient.disconnect() when called without
         # Qt signal arguments. Preserve Qt's signal-disconnect semantics when
@@ -789,14 +799,14 @@ class QtClient(_QtAdapter, Client):
 class ClientStation:
     def __init__(
         self,
-        host="localhost",
-        port=DEFAULT_PORT,
-        connect=True,
-        timeout=20,
-        raise_exceptions=True,
-        config_path: str = None,
-        param_path: str = None,
-    ):
+        host: str = "localhost",
+        port: int = DEFAULT_PORT,
+        connect: bool = True,
+        timeout: float = 20,
+        raise_exceptions: bool = True,
+        config_path: Optional[str] = None,
+        param_path: Optional[str] = None,
+    ) -> None:
         """
         A lightweight container for managing a collection of proxy instruments on the client side.
 
@@ -860,7 +870,7 @@ class ClientStation:
         self._create_instruments(instrument_config)
         self._config_path = config_path
 
-    def _make_client(self, connect=True):
+    def _make_client(self, connect: bool = True) -> Client:
         cli = Client(
             host=self._host,
             port=self._port,
@@ -870,7 +880,7 @@ class ClientStation:
         )
         return cli
 
-    def _create_instruments(self, instrument_dict: dict):
+    def _create_instruments(self, instrument_dict: dict) -> None:
         """
         Create proxy instruments based on the parameters in instrument_dict.
         Uses 'type' field from server config format.
@@ -889,25 +899,25 @@ class ClientStation:
             )
             self.instruments[name] = instrument
 
-    def close_instrument(self, instrument_name: str):
+    def close_instrument(self, instrument_name: str) -> Any:
         self.client.close_instrument(instrument_name)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Tear down the underlying client and release its zmq resources."""
         if self.client is not None:
             try:
                 self.client.disconnect()
             except Exception:
                 pass
-            self.client = None
+            self.client = None  # type: ignore[assignment]
 
     @staticmethod
-    def _remake_client_station_when_fail(func):
+    def _remake_client_station_when_fail(func: Callable) -> Callable:
         """
         Decorator for remaking a client station object when function call fails
         """
 
-        def wrapper(self, *args, **kwargs):
+        def wrapper(self: "ClientStation", *args: Any, **kwargs: Any) -> Any:
             try:
                 retval = func(self, *args, **kwargs)
             except Exception as e:
@@ -951,7 +961,7 @@ class ClientStation:
         return self.instruments[name]
 
     @_remake_client_station_when_fail
-    def get_parameters(self, instruments: List[str] = None) -> Dict:
+    def get_parameters(self, instruments: Optional[List[str]] = None) -> Dict:
         """
         Get all instrument parameters as a nested dictionary.
 
@@ -959,9 +969,9 @@ class ClientStation:
         :param instruments: list of instrument names. If None, all instrument parameters are returned.
         :return:
         """
-        inst_params = {}
+        inst_params: Dict[str, Any] = {}
         if instruments is None:
-            instruments = self.instruments.keys()
+            instruments = list(self.instruments.keys())
         for name in instruments:
             ins_paras = self.client.getParamDict(name, get=True)
             ins_paras = flat_to_nested_dict(ins_paras)
@@ -970,7 +980,7 @@ class ClientStation:
         return inst_params
 
     @_remake_client_station_when_fail
-    def set_parameters(self, inst_params: Dict):
+    def set_parameters(self, inst_params: Dict) -> None:
         """
         load instrument parameters from a nested dictionary.
 
@@ -997,8 +1007,10 @@ class ClientStation:
 
     @_remake_client_station_when_fail
     def save_parameters(
-        self, file_path: str = None, select_instruments: List[str] = None
-    ):
+        self,
+        file_path: Optional[str] = None,
+        select_instruments: Optional[List[str]] = None,
+    ) -> None:
         """
         Save instrument parameters to a JSON file in nested format.
 
@@ -1012,10 +1024,12 @@ class ClientStation:
             else list(self.instruments.keys())
         )
         # Delegate to client's paramsToFile
-        self.client.paramsToFile(file_path, instruments=instruments)
+        self.client.paramsToFile(file_path, instruments=instruments)  # type: ignore[arg-type]
 
     @_remake_client_station_when_fail
-    def load_parameters(self, file_path: str, select_instruments: List[str] = None):
+    def load_parameters(
+        self, file_path: str, select_instruments: Optional[List[str]] = None
+    ) -> None:
         """
         Load instrument parameters from a JSON file.
 
@@ -1031,5 +1045,5 @@ class ClientStation:
         )
         self.client.paramsFromFile(file_path, instruments=instruments)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> ProxyInstrument:
         return self.instruments[item]

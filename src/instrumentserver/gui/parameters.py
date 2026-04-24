@@ -1,7 +1,7 @@
 import logging
 import numbers
 import re
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, Tuple
 
 from qcodes import Parameter
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 FLOAT_PRECISION = 10  # The maximum number of significant digits for float numbers
 
 
-def float_formater(val):
+def float_formater(val: Any) -> str:
     """
     For displaying float numbers with scientific notation.
     """
@@ -52,9 +52,9 @@ class ParameterWidget(QtWidgets.QWidget):
     def __init__(
         self,
         parameter: Parameter,
-        parent=None,
+        parent: Optional[QtWidgets.QWidget] = None,
         additionalWidgets: Optional[List[QtWidgets.QWidget]] = None,
-    ):
+    ) -> None:
 
         super().__init__(parent)
 
@@ -177,13 +177,13 @@ class ParameterWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
     @QtCore.Slot()
-    def onReturnPressed(self):
+    def onReturnPressed(self) -> None:
         """Activates the setButton when the input is selected and enter is pressed."""
         self.setButton.click()
         self.paramWidget.input.deselect()
         self.setButton.setFocus()
 
-    def setParameter(self, value: Any):
+    def setParameter(self, value: Any) -> None:
         try:
             self._parameter.set(value)
         except Exception as e:
@@ -194,15 +194,15 @@ class ParameterWidget(QtWidgets.QWidget):
 
         self.parameterSet.emit(value)
 
-    def setPending(self, value: Any):
+    def setPending(self, value: Any) -> None:
         self.parameterPending.emit(value)
 
     @QtCore.Slot()
-    def getAndEmitValueFromWidget(self):
+    def getAndEmitValueFromWidget(self) -> None:
         self._valueFromWidget.emit(self._getMethod())
 
     @QtCore.Slot()
-    def setWidgetFromParameter(self):
+    def setWidgetFromParameter(self) -> None:
         val = self._parameter.get()
         self._setMethod(val)
         self.parameterSet.emit(val)
@@ -213,7 +213,7 @@ class AnyInput(QtWidgets.QWidget):
     #: emitted when the input field is changed, argument is the new value.
     inputChanged = QtCore.Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
         self.input = QtWidgets.QLineEdit()
@@ -242,7 +242,7 @@ class AnyInput(QtWidgets.QWidget):
 QPushButton:checked { background-color: palegreen }
 """)
 
-    def value(self):
+    def value(self) -> Any:
         if self.doEval.isChecked():
             try:
                 ret = eval(self.input.text())
@@ -252,7 +252,7 @@ QPushButton:checked { background-color: palegreen }
         else:
             return self.input.text()
 
-    def setValue(self, val: Any):
+    def setValue(self, val: Any) -> None:
         try:
             self.input.setText(float_formater(val))
         except RuntimeError as e:
@@ -261,18 +261,18 @@ QPushButton:checked { background-color: palegreen }
             )
 
     @QtCore.Slot(str)
-    def _processTextEdited(self, val: str):
+    def _processTextEdited(self, val: str) -> None:
         self.inputChanged.emit(val)
 
 
 class NumberInput(QtWidgets.QLineEdit):
     """A text edit widget that checks whether its input can be read as a number."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
         self.textChanged.connect(self.checkIfNumber)
 
-    def checkIfNumber(self, value: str):
+    def checkIfNumber(self, value: str) -> None:
         try:
             val = eval(value)
         except Exception:
@@ -287,7 +287,7 @@ class NumberInput(QtWidgets.QLineEdit):
             NumberInput { }
             """)
 
-    def value(self):
+    def value(self) -> Optional[numbers.Number]:
         try:
             value = eval(self.text())
         except Exception:
@@ -297,7 +297,7 @@ class NumberInput(QtWidgets.QLineEdit):
         else:
             return None
 
-    def setValue(self, value: numbers.Number):
+    def setValue(self, value: numbers.Number) -> None:
         try:
             self.setText(float_formater(value))
         except RuntimeError as e:
@@ -316,7 +316,7 @@ class AnyInputForMethod(AnyInput):
     a long string.
     """
 
-    def value(self):
+    def value(self) -> Tuple[Any, Any]:
         if self.doEval.isChecked():
             # If '=' is present we need to separate the keyword from the value
             # If ',' is present we have more than one argument.
@@ -340,7 +340,7 @@ class AnyInputForMethod(AnyInput):
 
 class SetButton(QtWidgets.QPushButton):
     @QtCore.Slot(bool)
-    def setPending(self, isPending: bool):
+    def setPending(self, isPending: bool) -> None:
         if isPending:
             self.setStyleSheet("SetButton { background-color: orange }")
         else:

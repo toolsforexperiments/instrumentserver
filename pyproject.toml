@@ -56,6 +56,7 @@ extend-select = ["I"]
 
 [tool.mypy]
 files = ["src"]
+exclude = ["src/instrumentserver/resource\\.py$"]
 strict_optional = true
 show_column_numbers = true
 warn_unused_ignores = true
@@ -74,8 +75,6 @@ module = [
     "qcodes.*",
     "qtpy",
     "qtpy.*",
-    "pyqtgraph",
-    "pyqtgraph.*",
     "scipy",
     "scipy.*",
     "zmq",

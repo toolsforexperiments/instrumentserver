@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from instrumentserver.client import QtClient
 from instrumentserver.log import LogLevels, LogWidget, log
@@ -42,7 +42,7 @@ class StationList(QtWidgets.QTreeWidget):
     #: Argument is the name of the instrument that should be closed
     closeRequested = QtCore.Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setColumnCount(len(self.cols))
@@ -57,22 +57,22 @@ class StationList(QtWidgets.QTreeWidget):
 
         self.contextMenu = QtWidgets.QMenu(self)
         self.contextMenu.addAction(self.deleteAction)
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
 
         self.customContextMenuRequested.connect(
-            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))
+            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))  # type: ignore[arg-type]
         )
         self.deleteAction.triggered.connect(self.onDeleteAction)
         self.itemSelectionChanged.connect(self._processSelection)
 
-    def addInstrument(self, bp: InstrumentModuleBluePrint):
+    def addInstrument(self, bp: InstrumentModuleBluePrint) -> None:
         lst = [bp.name, f"{bp.instrument_module_class.split('.')[-1]}"]
         self.addTopLevelItem(QtWidgets.QTreeWidgetItem(lst))
         self.resizeColumnToContents(0)
 
-    def removeObject(self, name: str):
+    def removeObject(self, name: str) -> None:
         items = self.findItems(
-            name, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0
+            name, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
         )
         if len(items) > 0:
             item = items[0]
@@ -80,7 +80,7 @@ class StationList(QtWidgets.QTreeWidget):
             self.takeTopLevelItem(idx)
             del item
 
-    def _processSelection(self):
+    def _processSelection(self) -> None:
         items = self.selectedItems()
         if len(items) == 0:
             return
@@ -88,7 +88,7 @@ class StationList(QtWidgets.QTreeWidget):
         self.componentSelected.emit(item.text(0))
 
     @QtCore.Slot()
-    def onDeleteAction(self):
+    def onDeleteAction(self) -> None:
         # need to check if widget has focus because of the keyboard shortcuts
         if self.hasFocus():
             items = self.selectedItems()
@@ -108,23 +108,23 @@ class StationList(QtWidgets.QTreeWidget):
 
 
 class StationObjectInfo(QtWidgets.QTextEdit):
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setReadOnly(True)
 
     @QtCore.Slot(object)
-    def setObject(self, bp: InstrumentModuleBluePrint):
+    def setObject(self, bp: InstrumentModuleBluePrint) -> None:
         self.setHtml(bluePrintToHtml(bp))
 
 
 class ServerStatus(QtWidgets.QWidget):
     """A widget that shows the status of the instrument server."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout = QtWidgets.QVBoxLayout(self)  # type: ignore[assignment,method-assign]
 
         # At the top: a status label, and a button for emitting a test message
         self.addressLabel = QtWidgets.QLabel()
@@ -138,20 +138,20 @@ class ServerStatus(QtWidgets.QWidget):
             )
         )
 
-        self.layout.addLayout(self.statusLayout)
+        self.layout.addLayout(self.statusLayout)  # type: ignore[attr-defined]
 
         # next row: a window for displaying the incoming messages.
-        self.layout.addWidget(QtWidgets.QLabel("Messages:"))
+        self.layout.addWidget(QtWidgets.QLabel("Messages:"))  # type: ignore[attr-defined]
         self.messages = QtWidgets.QTextEdit()
         self.messages.setReadOnly(True)
-        self.layout.addWidget(self.messages)
+        self.layout.addWidget(self.messages)  # type: ignore[attr-defined]
 
     @QtCore.Slot(str)
-    def setListeningAddress(self, addr: str):
+    def setListeningAddress(self, addr: str) -> None:
         self.addressLabel.setText(f"Listening on: {addr}")
 
     @QtCore.Slot(str, str)
-    def addMessageAndReply(self, message: str, reply: str):
+    def addMessageAndReply(self, message: str, reply: str) -> None:
         tstr = time.strftime("%Y-%m-%d %H:%M:%S")
         self.messages.setTextColor(QtGui.QColor("black"))
         self.messages.append(f"[{tstr}]")
@@ -178,9 +178,9 @@ class CreateInstrumentDialog(BaseDialog):
         insType: Optional[str] = None,
         insName: Optional[str] = None,
         kwargsStr: Optional[str] = None,
-        parent=None,
-        flags=(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowCloseButtonHint),
-    ):
+        parent: Optional[QtWidgets.QWidget] = None,
+        flags: Any = (QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.WindowCloseButtonHint),
+    ) -> None:
         super().__init__(parent, flags)
 
         tittleText = "Create New Instrument"
@@ -212,12 +212,12 @@ class CreateInstrumentDialog(BaseDialog):
         )
         self.acceptButton.setSizePolicy(buttonSizePolicy)
         layout.addWidget(self.acceptButton)
-        layout.setAlignment(self.acceptButton, QtCore.Qt.AlignCenter)
+        layout.setAlignment(self.acceptButton, QtCore.Qt.AlignmentFlag.AlignCenter)
 
         self.acceptButton.clicked.connect(self.onAcceptButton)
 
     @QtCore.Slot()
-    def onAcceptButton(self):
+    def onAcceptButton(self) -> None:
         insType = self.typeEdit.text()
         insName = self.nameEdit.text()
         # Args is not a normal line edit, value evaluates the args and kwargs already
@@ -226,7 +226,7 @@ class CreateInstrumentDialog(BaseDialog):
 
 
 @QtCore.Slot(str)
-def onExceptionDialog(exception: str):
+def onExceptionDialog(exception: str) -> None:
     """
     Opens a dialog displaying an exception.
 
@@ -242,11 +242,11 @@ def onExceptionDialog(exception: str):
     accept = QtWidgets.QPushButton("Accept")
 
     layout.addWidget(exceptionRaisedLabel)
-    layout.setAlignment(exceptionRaisedLabel, QtCore.Qt.AlignCenter)
+    layout.setAlignment(exceptionRaisedLabel, QtCore.Qt.AlignmentFlag.AlignCenter)
     layout.addWidget(exceptionLabel)
-    layout.setAlignment(exceptionLabel, QtCore.Qt.AlignCenter)
+    layout.setAlignment(exceptionLabel, QtCore.Qt.AlignmentFlag.AlignCenter)
     layout.addWidget(accept)
-    layout.setAlignment(accept, QtCore.Qt.AlignCenter)
+    layout.setAlignment(accept, QtCore.Qt.AlignmentFlag.AlignCenter)
 
     accept.clicked.connect(dialog.accept)
     dialog.exec_()
@@ -258,8 +258,14 @@ class PossibleInstrumentDisplayItem(QtWidgets.QTreeWidgetItem):
     """
 
     def __init__(
-        self, text, fullInsType, configName=None, lineEdit=None, *args, **kwargs
-    ):
+        self,
+        text: List[str],
+        fullInsType: str,
+        configName: Optional[str] = None,
+        lineEdit: Optional[QtWidgets.QLineEdit] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(text, *args, **kwargs)
         self.configName = configName
         self.lineEdit = lineEdit
@@ -291,7 +297,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
 
     cols = ["Instrument Type & Preset", "Instrument Name", "Create Instrument"]
 
-    def __init__(self, guiConfig: Optional[dict] = None, *args):
+    def __init__(self, guiConfig: Optional[dict] = None, *args: Any) -> None:
         super().__init__(*args)
 
         self.setColumnCount(len(self.cols))
@@ -308,12 +314,12 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         self.deletePossibleInstrumentAction = QtWidgets.QAction("Delete")
 
         self.contextMenu = QtWidgets.QMenu(self)
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.contextMenu.addAction(self.basedInstrumentAction)
         self.contextMenu.addSeparator()
         self.contextMenu.addAction(self.deletePossibleInstrumentAction)
         self.customContextMenuRequested.connect(
-            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))
+            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))  # type: ignore[arg-type]
         )
 
         self.basedInstrumentAction.triggered.connect(self.onBasedInstrumentAction)
@@ -328,7 +334,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
 
         self.expandAll()
 
-    def loadConfig(self, config: dict):
+    def loadConfig(self, config: dict) -> None:
         for key, value in config.items():
             # In the config, the name of the instrument and the config name are the same.
             self.addInstrumentToTree(value["type"], key, key)
@@ -341,14 +347,14 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         fullInsType: str = "InstrumentType",
         insName: str = "MyInstrument",
         configName: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Each type is grouped together under a parent item of that type. If that parent item does not exist yet it
         creates it
         """
         insType = fullInsType.split(".")[-1]
         items = self.findItems(
-            insType, QtCore.Qt.MatchExactly | QtCore.Qt.MatchExactly, 0
+            insType, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchExactly, 0  # type: ignore[arg-type]
         )
 
         # Only add the instrument to the tree if there are no other instruments of the same type already
@@ -374,7 +380,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         lineEdit.returnPressed.connect(lambda: createButton.clicked.emit())
         lineEdit.setText(insName)
         item = PossibleInstrumentDisplayItem(
-            lst, fullInsType=fullInsType, configName=configName, lineEdit=lineEdit
+            lst, fullInsType=fullInsType, configName=configName, lineEdit=lineEdit  # type: ignore[arg-type]
         )
         parent.addChild(item)
 
@@ -387,18 +393,18 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
             )
         )
 
-    def onBasedInstrumentAction(self):
+    def onBasedInstrumentAction(self) -> None:
         items = self.selectedItems()
         for item in items:
             insName = None
-            if item.lineEdit is not None:
-                insName = item.lineEdit.text()
+            if item.lineEdit is not None:  # type: ignore[attr-defined]
+                insName = item.lineEdit.text()  # type: ignore[attr-defined]
             self.basedInstrumentRequested.emit(
-                item.configName, item.fullInsType, insName
+                item.configName, item.fullInsType, insName  # type: ignore[attr-defined]
             )
 
     @QtCore.Slot()
-    def onRemoveInstrumentFromTree(self):
+    def onRemoveInstrumentFromTree(self) -> None:
         """
         Removes both the potential instrument from the widget and the presets from the config dictionary.
         """
@@ -406,16 +412,16 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         for item in items:
             if item.childCount() == 0:
                 parent = item.parent()
-                if item.configName is not None and item.configName in self.config:
-                    del self.config[item.configName]
-                parent.removeChild(item)
-                if parent.childCount() == 0:
+                if item.configName is not None and item.configName in self.config:  # type: ignore[attr-defined]
+                    del self.config[item.configName]  # type: ignore[attr-defined]
+                parent.removeChild(item)  # type: ignore[union-attr]
+                if parent.childCount() == 0:  # type: ignore[union-attr]
                     self.takeTopLevelItem((self.indexOfTopLevelItem(parent)))
             else:
                 for i in range(item.childCount()):
                     child = item.child(i)
-                    if child.configName in self.config:
-                        del self.config[child.configName]
+                    if child.configName in self.config:  # type: ignore[union-attr]
+                        del self.config[child.configName]  # type: ignore[union-attr]
                 self.takeTopLevelItem(self.indexOfTopLevelItem(item))
 
 
@@ -439,7 +445,9 @@ class InstrumentsCreator(QtWidgets.QWidget):
     #: Arguments -- The str message of the error/reason as to why it could not create the instrument
     newInstrumentFailed = QtCore.Signal(object)
 
-    def __init__(self, cli: Client, guiConfig: dict, *args, **kwargs):
+    def __init__(
+        self, cli: Client, guiConfig: dict, *args: Any, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
 
         self.guiConfig = guiConfig
@@ -476,7 +484,7 @@ class InstrumentsCreator(QtWidgets.QWidget):
         configName: Optional[str] = None,
         insType: Optional[str] = None,
         insName: Optional[str] = None,
-    ):
+    ) -> None:
         # go through all the possible arguments in the config and write them in kwarg form
         kwargsStr = None
         if configName is not None and configName in self.guiConfig:
@@ -499,7 +507,9 @@ class InstrumentsCreator(QtWidgets.QWidget):
         dialog.exec_()
 
     @QtCore.Slot(str, str, tuple)
-    def onDialogNewInstrument(self, insType, insName, argsKwargs):
+    def onDialogNewInstrument(
+        self, insType: str, insName: str, argsKwargs: Tuple[Any, Any]
+    ) -> None:
         args, kwargs = argsKwargs
 
         if args is None:
@@ -509,7 +519,9 @@ class InstrumentsCreator(QtWidgets.QWidget):
         self.createNewInstrument(insType, insName, *args, **kwargs)
 
     @QtCore.Slot(str, str, str)
-    def onPossibleInstrumentDisplayClicked(self, configName, insType, insName):
+    def onPossibleInstrumentDisplayClicked(
+        self, configName: str, insType: str, insName: str
+    ) -> None:
         """
         Creates new instrument based on a possible instrument. Only creates it if it can find the configName in the
         config.
@@ -543,12 +555,14 @@ class InstrumentsCreator(QtWidgets.QWidget):
                 "you cannot create instruments that are not in the config from here yet"
             )
 
-    def createNewInstrument(self, insType, insName, *args, **kwargs):
+    def createNewInstrument(
+        self, insType: str, insName: str, *args: Any, **kwargs: Any
+    ) -> None:
         if insName in self.cli.list_instruments():
             self.newInstrumentFailed.emit(f'Instrument "{insName}" already exists.')
             return
         try:
-            self.cli.find_or_create_instrument(
+            self.cli.find_or_create_instrument(  # type: ignore[misc]
                 name=insName, instrument_class=insType, *args, **kwargs
             )
             self.newInstrumentCreated.emit()
@@ -566,7 +580,7 @@ class ServerGui(QtWidgets.QMainWindow):
         startServer: Optional[bool] = True,
         guiConfig: Optional[dict] = None,
         **serverKwargs: Any,
-    ):
+    ) -> None:
         super().__init__()
 
         self._paramValuesFile = os.path.abspath(os.path.join(".", "parameters.json"))
@@ -613,12 +627,12 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationList.itemDoubleClicked.connect(self.addInstrumentTab)
         self.stationList.closeRequested.connect(self.closeInstrument)
 
-        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         stationWidgets.addWidget(self.stationList)
         stationWidgets.addWidget(self.stationObjInfo)
         stationWidgets.setSizes([300, 500])
 
-        instrumentsWidgets = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        instrumentsWidgets = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         instrumentsWidgets.addWidget(stationWidgets)
         instrumentsWidgets.addWidget(self.instrumentCreator)
 
@@ -630,31 +644,31 @@ class ServerGui(QtWidgets.QMainWindow):
 
         # Toolbar.
         self.toolBar = self.addToolBar("Tools")
-        self.toolBar.setIconSize(QtCore.QSize(16, 16))
+        self.toolBar.setIconSize(QtCore.QSize(16, 16))  # type: ignore[union-attr]
 
         # Station tools.
-        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))
+        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))  # type: ignore[union-attr]
         self.refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), "Refresh", self
         )
         self.refreshStationAction.triggered.connect(self.refreshStationComponents)
-        self.toolBar.addAction(self.refreshStationAction)
+        self.toolBar.addAction(self.refreshStationAction)  # type: ignore[union-attr]
 
         # Parameter tools.
-        self.toolBar.addSeparator()
-        self.toolBar.addWidget(QtWidgets.QLabel("Params:"))
+        self.toolBar.addSeparator()  # type: ignore[union-attr]
+        self.toolBar.addWidget(QtWidgets.QLabel("Params:"))  # type: ignore[union-attr]
 
         self.loadParamsAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/load.svg"), "Load from file", self
         )
         self.loadParamsAction.triggered.connect(self.loadParamsFromFile)
-        self.toolBar.addAction(self.loadParamsAction)
+        self.toolBar.addAction(self.loadParamsAction)  # type: ignore[union-attr]
 
         self.saveParamsAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/save.svg"), "Save to file", self
         )
         self.saveParamsAction.triggered.connect(self.saveParamsToFile)
-        self.toolBar.addAction(self.saveParamsAction)
+        self.toolBar.addAction(self.saveParamsAction)  # type: ignore[union-attr]
 
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")
@@ -670,10 +684,10 @@ class ServerGui(QtWidgets.QMainWindow):
         # printSpaceAction.triggered.connect(lambda x: print("\n \n \n \n"))
         # self.toolBar.addAction(printSpaceAction)
 
-    def log(self, message, level=LogLevels.info):
+    def log(self, message: str, level: LogLevels = LogLevels.info) -> None:
         log(logger, message, level)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: Optional[QtGui.QCloseEvent]) -> None:
         for name, widget in list(self.instrumentTabsOpen.items()):
             try:
                 widget.close()
@@ -695,39 +709,39 @@ class ServerGui(QtWidgets.QMainWindow):
             self.client.disconnect()
         except Exception:
             pass
-        event.accept()
+        event.accept()  # type: ignore[union-attr]
 
-    def startServer(self):
+    def startServer(self) -> None:
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(**self._serverKwargs)
-        self.stationServerThread = QtCore.QThread()
-        self.stationServer.moveToThread(self.stationServerThread)
-        self.stationServerThread.started.connect(self.stationServer.startServer)
-        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))
-        self.stationServer.finished.connect(self.stationServerThread.quit)
-        self.stationServer.finished.connect(self.stationServer.deleteLater)
+        self.stationServer = StationServer(**self._serverKwargs)  # type: ignore[assignment]
+        self.stationServerThread = QtCore.QThread()  # type: ignore[assignment]
+        self.stationServer.moveToThread(self.stationServerThread)  # type: ignore[attr-defined]
+        self.stationServerThread.started.connect(self.stationServer.startServer)  # type: ignore[arg-type,attr-defined]
+        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))  # type: ignore[attr-defined]
+        self.stationServer.finished.connect(self.stationServerThread.quit)  # type: ignore[attr-defined]
+        self.stationServer.finished.connect(self.stationServer.deleteLater)  # type: ignore[attr-defined]
 
         # Connecting some additional things for messages.
-        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
-        self.stationServer.serverStarted.connect(self.client.start)
-        self.stationServer.serverStarted.connect(self.refreshStationComponents)
-        self.stationServer.finished.connect(
+        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)  # type: ignore[attr-defined]
+        self.stationServer.serverStarted.connect(self.client.start)  # type: ignore[attr-defined]
+        self.stationServer.serverStarted.connect(self.refreshStationComponents)  # type: ignore[attr-defined]
+        self.stationServer.finished.connect(  # type: ignore[attr-defined]
             lambda: self.log("Server thread finished.", LogLevels.info)
         )
-        self.stationServer.messageReceived.connect(self._messageReceived)
-        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)
-        self.stationServer.funcCalled.connect(self.onFuncCalled)
+        self.stationServer.messageReceived.connect(self._messageReceived)  # type: ignore[attr-defined]
+        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)  # type: ignore[attr-defined]
+        self.stationServer.funcCalled.connect(self.onFuncCalled)  # type: ignore[attr-defined]
 
-        self.stationServerThread.start()
+        self.stationServerThread.start()  # type: ignore[attr-defined]
 
-    def getServerIfRunning(self):
-        if self.stationServer is not None and self.stationServerThread.isRunning():
+    def getServerIfRunning(self) -> Optional["StationServer"]:
+        if self.stationServer is not None and self.stationServerThread.isRunning():  # type: ignore[union-attr]
             return self.stationServer
         else:
             return None
 
     @QtCore.Slot(str, str)
-    def _messageReceived(self, message: str, reply: str):
+    def _messageReceived(self, message: str, reply: str) -> None:
         maxLen = 80
         messageSummary = message[:maxLen]
         if len(message) > maxLen:
@@ -740,8 +754,11 @@ class ServerGui(QtWidgets.QMainWindow):
         self.serverStatus.addMessageAndReply(messageSummary, replySummary)
 
     def addInstrumentToGui(
-        self, instrumentBluePrint: InstrumentModuleBluePrint, insArgs, insKwargs
-    ):
+        self,
+        instrumentBluePrint: InstrumentModuleBluePrint,
+        insArgs: Any,
+        insKwargs: Any,
+    ) -> None:
         """
         Add an instrument to the station list.
 
@@ -770,7 +787,7 @@ class ServerGui(QtWidgets.QMainWindow):
                 instrumentBluePrint.instrument_module_class, instrumentBluePrint.name
             )
 
-    def removeInstrumentFromGui(self, name: str):
+    def removeInstrumentFromGui(self, name: str) -> None:
         """Remove an instrument from the station list."""
         self.stationList.removeObject(name)
         del self._bluePrints[name]
@@ -778,7 +795,7 @@ class ServerGui(QtWidgets.QMainWindow):
             self.tabs.removeTab(self.tabs.indexOf(self.instrumentTabsOpen[name]))
             del self.instrumentTabsOpen[name]
 
-    def refreshStationComponents(self):
+    def refreshStationComponents(self) -> None:
         """Clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         if getattr(self.client, "_closed", False) or not self.client.connected:
@@ -796,7 +813,7 @@ class ServerGui(QtWidgets.QMainWindow):
             self._bluePrints[ins] = bp
         self.stationList.resizeColumnToContents(0)
 
-    def loadParamsFromFile(self):
+    def loadParamsFromFile(self) -> None:
         """Load the values of all parameters present in the server's params json file
         to parameters registered in the station (incl those in instruments)."""
 
@@ -808,7 +825,7 @@ class ServerGui(QtWidgets.QMainWindow):
         except Exception as e:
             logger.error(f"Loading failed. {type(e)}: {e.args}")
 
-    def saveParamsToFile(self):
+    def saveParamsToFile(self) -> None:
         """Save the values of all parameters registered in the station (incl
         those in instruments) to the server's param json file."""
 
@@ -821,15 +838,17 @@ class ServerGui(QtWidgets.QMainWindow):
             logger.error(f"Saving failed. {type(e)}: {e.args}")
 
     @QtCore.Slot(str)
-    def displayComponentInfo(self, name: Union[str, None]):
+    def displayComponentInfo(self, name: Union[str, None]) -> None:
         if name is not None and name in self._bluePrints:
             bp = self._bluePrints[name]
         else:
             bp = None
-        self.stationObjInfo.setObject(bp)
+        self.stationObjInfo.setObject(bp)  # type: ignore[arg-type]
 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
-    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int):
+    def addInstrumentTab(
+        self, item: QtWidgets.QTreeWidgetItem, index: int
+    ) -> None:
         """
         Gets called when the user double clicks and item of the instrument list.
          Adds a new generic instrument GUI window to the tab bar.
@@ -854,7 +873,7 @@ class ServerGui(QtWidgets.QMainWindow):
                 if "kwargs" in self._guiConfig[name]["gui"]:
                     kwargs = self._guiConfig[name]["gui"]["kwargs"]
 
-            kwargs["sub_port"] = kwargs.get("sub_port", self.stationServer.port + 1)
+            kwargs["sub_port"] = kwargs.get("sub_port", self.stationServer.port + 1)  # type: ignore[union-attr]
             insWidget = widgetClass(ins, parent=self, **kwargs)
             index = self.tabs.addTab(insWidget, ins.name)
             self.instrumentTabsOpen[ins.name] = insWidget
@@ -869,13 +888,15 @@ class ServerGui(QtWidgets.QMainWindow):
             del self.instrumentTabsOpen[name]
 
     @QtCore.Slot(str, object, object, object)
-    def onFuncCalled(self, n, args, kw, ret):
+    def onFuncCalled(
+        self, n: str, args: Any, kw: Any, ret: Any
+    ) -> None:
         if n == "close_and_remove_instrument":
             for ins in args:
                 self.removeInstrumentFromGui(ins)
 
     @QtCore.Slot(str)
-    def closeInstrument(self, ins):
+    def closeInstrument(self, ins: str) -> None:
         if ins in self.client.list_instruments():
             self.client.close_instrument(ins)
 
@@ -883,7 +904,7 @@ class ServerGui(QtWidgets.QMainWindow):
 class DetachedServerGui(QtWidgets.QMainWindow):
     """A detached version of the server gui."""
 
-    def __init__(self, host: str = "localhost", port: int = 5555):
+    def __init__(self, host: str = "localhost", port: int = 5555) -> None:
         super().__init__()
 
         self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
@@ -903,7 +924,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
         self.stationList.componentSelected.connect(self.displayComponentInfo)
         self.stationList.itemDoubleClicked.connect(self.addInstrumentTab)
 
-        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         stationWidgets.addWidget(self.stationList)
         stationWidgets.addWidget(self.stationObjInfo)
         stationWidgets.setSizes([300, 500])
@@ -912,19 +933,19 @@ class DetachedServerGui(QtWidgets.QMainWindow):
 
         # Toolbar.
         self.toolBar = self.addToolBar("Tools")
-        self.toolBar.setIconSize(QtCore.QSize(16, 16))
+        self.toolBar.setIconSize(QtCore.QSize(16, 16))  # type: ignore[union-attr]
 
         # Station tools.
-        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))
+        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))  # type: ignore[union-attr]
         self.refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), "Refresh", self
         )
         self.refreshStationAction.triggered.connect(self.refreshStationComponents)
-        self.toolBar.addAction(self.refreshStationAction)
+        self.toolBar.addAction(self.refreshStationAction)  # type: ignore[union-attr]
 
         self.refreshStationComponents()
 
-    def refreshStationComponents(self):
+    def refreshStationComponents(self) -> None:
         """Clear and re-populate the widget holding the station components, using
         the objects that are currently registered in the station."""
         self.stationList.clear()
@@ -934,12 +955,14 @@ class DetachedServerGui(QtWidgets.QMainWindow):
         self.stationList.resizeColumnToContents(0)
 
     @QtCore.Slot(str)
-    def displayComponentInfo(self, name: Union[str, None]):
+    def displayComponentInfo(self, name: Union[str, None]) -> None:
         if name is not None and name in self.client.list_instruments():
             self.stationObjInfo.setObject(self.client.getBluePrint(name))
 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
-    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int):
+    def addInstrumentTab(
+        self, item: QtWidgets.QTreeWidgetItem, index: int
+    ) -> None:
         name = item.text(0)
         if name not in self.instrumentTabsOpen:
             ins = self.client.find_or_create_instrument(name)
@@ -987,21 +1010,21 @@ class EmbeddedClient(QtClient):
     inside the server application."""
 
     @QtCore.Slot(str)
-    def start(self, addr: str):
+    def start(self, addr: str) -> None:
         if self._closed:
             return
         self.addr = "tcp://localhost:" + addr.split(":")[-1]
         self.connect()
 
     @QtCore.Slot(str)
-    def ask(self, msg: str):
+    def ask(self, msg: str) -> Any:
         logger.debug(f"Test client sending request: {msg}")
         reply = super().ask(msg)
         logger.debug(f"Test client received reply: {reply}")
         return reply
 
 
-def bluePrintToHtml(bp: Union[ParameterBluePrint, InstrumentModuleBluePrint]):
+def bluePrintToHtml(bp: Union[ParameterBluePrint, InstrumentModuleBluePrint]) -> str:
     header = f"""<html>
 <head>
 <style type="text/css">{bpHtmlStyle}</style>
@@ -1019,7 +1042,7 @@ def bluePrintToHtml(bp: Union[ParameterBluePrint, InstrumentModuleBluePrint]):
         return header + instrumentToHtml(bp) + footer
 
 
-def parameterToHtml(bp: ParameterBluePrint, headerLevel=None):
+def parameterToHtml(bp: ParameterBluePrint, headerLevel: Optional[int] = None) -> str:
     setget = []
     setgetstr = ""
     if bp.gettable:
@@ -1048,7 +1071,7 @@ def parameterToHtml(bp: ParameterBluePrint, headerLevel=None):
     return ret + var
 
 
-def instrumentToHtml(bp: InstrumentModuleBluePrint):
+def instrumentToHtml(bp: InstrumentModuleBluePrint) -> str:
     ret = f"""<div class="instrument_container">
 <div class='instrument_name'>{bp.name}</div>
 <ul>

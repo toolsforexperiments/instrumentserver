@@ -1,20 +1,24 @@
+from typing import Optional
+
 from .. import QtCore, QtWidgets
+from .. import resource  # noqa: F401
 
 
-def getStyleSheet():
+def getStyleSheet() -> Optional[str]:
     f = QtCore.QFile(":/style.css")
-    if f.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
+    if f.open(QtCore.QIODevice.OpenModeFlag.ReadOnly | QtCore.QIODevice.OpenModeFlag.Text):  # type: ignore[call-overload]
         style = f.readAll()
         f.close()
         return str(style, "utf-8")
+    return None
 
 
-def widgetDialog(w: QtWidgets.QWidget):
+def widgetDialog(w: QtWidgets.QWidget) -> QtWidgets.QDialog:
     dg = QtWidgets.QDialog()
     dg.setWindowTitle("instrumentserver")
-    dg.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint)
-    dg.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint)
-    dg.widget = w  # type: ignore[attr-defined] # I am pretty sure the stubs are wrong for this one.
+    dg.setWindowFlag(QtCore.Qt.WindowType.WindowMinimizeButtonHint)
+    dg.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint)
+    dg.widget = w
 
     css = getStyleSheet()
     w.setStyleSheet(css)
@@ -28,7 +32,9 @@ def widgetDialog(w: QtWidgets.QWidget):
     return dg
 
 
-def widgetMainWindow(w: QtWidgets.QWidget, name: str = "instrumentserver"):
+def widgetMainWindow(
+    w: QtWidgets.QWidget, name: str = "instrumentserver"
+) -> QtWidgets.QMainWindow:
     mw = QtWidgets.QMainWindow()
     mw.setWindowTitle(name)
     mw.setCentralWidget(w)
@@ -40,7 +46,7 @@ def widgetMainWindow(w: QtWidgets.QWidget, name: str = "instrumentserver"):
     return mw
 
 
-def keepSmallHorizontally(w: QtWidgets.QWidget):
+def keepSmallHorizontally(w: QtWidgets.QWidget) -> None:
     w.setSizePolicy(
         QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum

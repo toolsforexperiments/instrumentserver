@@ -191,7 +191,7 @@ def fromParamDict(paramDict: Dict[str, Any], target: SerializableType) -> None:
 # Tools
 
 
-def isSimpleFormat(paramDict: Dict[str, Any]):
+def isSimpleFormat(paramDict: Dict[str, Any]) -> bool:
     """Checks if the supplied paramDict is in the simplified format.
 
     We identify the simple format by the fact that otherwise **all** item values
@@ -204,7 +204,7 @@ def isSimpleFormat(paramDict: Dict[str, Any]):
     return False
 
 
-def validateParamDict(params: Dict[str, Any]):
+def validateParamDict(params: Dict[str, Any]) -> None:
     if isSimpleFormat(params):
         return
 
@@ -216,7 +216,7 @@ def validateParamDict(params: Dict[str, Any]):
         raise
 
 
-def toDataFrame(input: SerializableType):
+def toDataFrame(input: SerializableType) -> "pd.DataFrame":
     """Make a pandas data frame from the parameters. Mainly useful for
     printing overviews in notebooks."""
     params = toParamDict(input, includeMeta=["unit", "vals"])
@@ -282,10 +282,9 @@ def _singleInstrumentParametersToJson(
     for name, submod in instrument.submodules.items():
         ret.update(
             _singleInstrumentParametersToJson(
-                # FIXME: Fix this mypy ignore
-                submod,
+                submod,  # type: ignore[arg-type]
                 get=get,
-                addPrefix=f"{addPrefix + name}.",  # type: ignore[arg-type]
+                addPrefix=f"{addPrefix + name}.",
                 simpleFormat=simpleFormat,
                 includeMeta=includeMeta,
             )
@@ -311,7 +310,7 @@ def _getParamFromList(parent: Any, childrenList: List[str]) -> Parameter:
         return _getParamFromList(nextObj, childrenList[1:])
 
 
-def _getObjectByName(name: str, src: SerializableType):
+def _getObjectByName(name: str, src: SerializableType) -> Any:
     """Get an object from a container by specifying its name."""
 
     if isinstance(src, Station):

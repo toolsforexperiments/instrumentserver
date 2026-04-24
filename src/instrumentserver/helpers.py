@@ -46,11 +46,11 @@ def stringToArgsAndKwargs(value: str) -> Tuple[List[Any], Dict[str, Any]]:
     return args, kwargs
 
 
-def typeClassPath(t) -> str:
+def typeClassPath(t: type) -> str:
     return f"{t.__module__}.{t.__qualname__}"
 
 
-def objectClassPath(o) -> str:
+def objectClassPath(o: Any) -> str:
     return f"{o.__class__.__module__}.{o.__class__.__qualname__}"
 
 
@@ -134,7 +134,7 @@ def flat_to_nested_dict(flat_dict: Dict) -> Dict:
         # result:
         {"a": {"b": {"c": 1,"d": 2}},"x": 3}
     """
-    nested = {}
+    nested: Dict[str, Any] = {}
     for key, value in flat_dict.items():
         parts = key.split(".")
         d = nested
@@ -151,7 +151,7 @@ def is_flat_dict(d: dict) -> bool:
     return all(not isinstance(v, dict) for v in d.values())
 
 
-def flatten_dict(d, sep="."):
+def flatten_dict(d: Dict[str, Any], sep: str = ".") -> Dict[str, Any]:
     """
     Detects if a dictionary is flat (i.e. all values are non-dicts).
     If it is not flat, recursively flattens it using dot-separated keys.
@@ -174,8 +174,8 @@ def flatten_dict(d, sep="."):
     if is_flat_dict(d):
         return d
 
-    def flatten(nested, parent_key=""):
-        items = {}
+    def flatten(nested: Dict[str, Any], parent_key: str = "") -> Dict[str, Any]:
+        items: Dict[str, Any] = {}
         for k, v in nested.items():
             new_key = f"{parent_key}{sep}{k}" if parent_key else k
             if isinstance(v, dict):

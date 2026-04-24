@@ -2,7 +2,7 @@ import importlib
 import logging
 import sys
 from pathlib import Path
-from typing import Union
+from typing import Dict, Optional, Union
 
 from qtpy.QtGui import QGuiApplication
 from qtpy.QtWidgets import QFileDialog, QWidget
@@ -25,7 +25,11 @@ logger.setLevel(logging.INFO)
 
 
 class ServerWidget(QtWidgets.QWidget):
-    def __init__(self, client_station: ClientStation, parent=None):
+    def __init__(
+        self,
+        client_station: ClientStation,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
         super().__init__(parent)
         self.client_station = client_station
 
@@ -34,8 +38,8 @@ class ServerWidget(QtWidgets.QWidget):
         form_layout = QtWidgets.QFormLayout(form)
         form_layout.setContentsMargins(0, 0, 0, 0)
         form_layout.setSpacing(8)
-        form_layout.setLabelAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        form_layout.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
+        form_layout.setLabelAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
+        form_layout.setFieldGrowthPolicy(QtWidgets.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
 
         # Non-editable
         self.host = QtWidgets.QLineEdit(self.client_station._host)
@@ -80,7 +84,7 @@ class ServerWidget(QtWidgets.QWidget):
         # main.addLayout(btns)
         main.addStretch(1)
 
-    def _tint_readonly(self, le, bg="#f3f6fa"):
+    def _tint_readonly(self, le: QtWidgets.QLineEdit, bg: str = "#f3f6fa") -> None:
         pal = le.palette()
         pal.setColor(QtGui.QPalette.Base, QtGui.QColor(bg))
         le.setPalette(pal)
@@ -122,14 +126,14 @@ class ClientStationGui(QtWidgets.QMainWindow):
             instruments=None, sub_host=self.cli.host, sub_port=self.cli.port + 1
         )
         self.listener.moveToThread(self.listenerThread)
-        self.listenerThread.started.connect(self.listener.connect)
+        self.listenerThread.started.connect(self.listener.connect)  # type: ignore[arg-type]
         self.listener.finished.connect(self.listenerThread.quit)
         self.listener.finished.connect(self.listener.deleteLater)
         self.listener.finished.connect(self.listenerThread.deleteLater)
         self.listener.update.connect(self.listenerEvent)
         self.listenerThread.start()
 
-        self.instrumentTabsOpen = {}
+        self.instrumentTabsOpen: Dict[str, QtWidgets.QWidget] = {}
 
         # --- main tabs
         self.tabs = DetachableTabWidget()
@@ -147,7 +151,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
         self.stationList.itemDoubleClicked.connect(self.openInstrumentTab)
         self.stationList.closeRequested.connect(self.closeInstrument)
 
-        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        stationWidgets = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         stationWidgets.addWidget(self.stationList)
         stationWidgets.addWidget(self.stationObjInfo)
         stationWidgets.setSizes([200, 500])
@@ -165,17 +169,19 @@ class ClientStationGui(QtWidgets.QMainWindow):
         self.tabs.addUnclosableTab(self.server_widget, "Server")
 
         # adjust window size
-        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()  # type: ignore[union-attr]
         width = int(screen_geometry.width() * 0.3)  # 30% of screen width
         height = int(screen_geometry.height() * 0.7)  # 70% of screen height
         self.resize(width, height)
 
     @QtCore.Slot(ParameterBroadcastBluePrint)
-    def listenerEvent(self, message: ParameterBroadcastBluePrint):
+    def listenerEvent(self, message: ParameterBroadcastBluePrint) -> None:
         if message.action == "parameter-update":
             logger.info(f"{message.action}: {message.name}: {message.value}")
 
-    def openInstrumentTab(self, item: QtWidgets.QListWidgetItem, index: int):
+    def openInstrumentTab(
+        self, item: QtWidgets.QTreeWidgetItem, index: int
+    ) -> None:
         """
         Gets called when the user double clicks and item of the instrument list.
          Adds a new generic instrument GUI window to the tab bar.
@@ -224,7 +230,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
             self.tabs.setCurrentWidget(self.instrumentTabsOpen[name])
 
     @QtCore.Slot(str)
-    def _displayComponentInfo(self, name: Union[str, None]):
+    def _displayComponentInfo(self, name: Union[str, None]) -> None:
         if name is not None:
             bp = self.station[name].bp
         else:
@@ -232,25 +238,25 @@ class ClientStationGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(bp)
 
     @QtCore.Slot(int)
-    def onTabChanged(self, index):
+    def onTabChanged(self, index: int) -> None:
         widget = self.tabs.widget(index)
         # if instrument tab is not in 'instrumentTabsOpen' yet, tab must be just open, in this case the constructor
         # of the parameter widget should have already called refresh, so we don't have to do that again.
         if hasattr(widget, "parametersList") and (
-            widget.objectName() in self.instrumentTabsOpen
+            widget.objectName() in self.instrumentTabsOpen  # type: ignore[union-attr]
         ):
-            widget.parametersList.model.refreshAll()
+            widget.parametersList.model.refreshAll()  # type: ignore[union-attr]
 
     @QtCore.Slot(str)
     def onTabDeleted(self, name: str) -> None:
         if name in self.instrumentTabsOpen:
             del self.instrumentTabsOpen[name]
 
-    def addParameterLoadSaveToolbar(self):
+    def addParameterLoadSaveToolbar(self) -> None:
         # --- toolbar basics ---
         self.toolBar = QtWidgets.QToolBar("Params", self)
         self.toolBar.setIconSize(QtCore.QSize(22, 22))
-        self.toolBar.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.toolBar.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.addToolBar(self.toolBar)
 
         # --- composite path widget
@@ -296,7 +302,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
         self.paramPathEdit.returnPressed.connect(self.loadParams)
 
     @QtCore.Slot()
-    def browseParamPath(self):
+    def browseParamPath(self) -> None:
         filePath, _ = QFileDialog.getOpenFileName(
             self, "Select Parameter File", ".", "JSON Files (*.json);;All Files (*)"
         )
@@ -304,7 +310,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
             self.paramPathEdit.setText(filePath)
 
     @QtCore.Slot()
-    def saveParams(self):
+    def saveParams(self) -> None:
         file_path = self.paramPathEdit.text()
         if not file_path:
             QtWidgets.QMessageBox.warning(
@@ -318,7 +324,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, "Save Error", str(e))
 
     @QtCore.Slot()
-    def loadParams(self):
+    def loadParams(self) -> None:
         file_path = self.paramPathEdit.text()
         if not file_path:
             QtWidgets.QMessageBox.warning(
@@ -333,15 +339,15 @@ class ClientStationGui(QtWidgets.QMainWindow):
             for i in range(self.tabs.count()):
                 widget = self.tabs.widget(i)
                 if hasattr(widget, "parametersList") and hasattr(
-                    widget.parametersList, "model"
+                    widget.parametersList, "model"  # type: ignore[union-attr]
                 ):
-                    widget.parametersList.model.refreshAll()
+                    widget.parametersList.model.refreshAll()  # type: ignore[union-attr]
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Load Error", str(e))
 
     @QtCore.Slot(str)
-    def closeInstrument(self, name: str):  # , item: QtWidgets.QListWidgetItem):
+    def closeInstrument(self, name: str) -> None:  # , item: QtWidgets.QListWidgetItem):
         try:
             # close instrument on server
             self.station.close_instrument(name)
@@ -356,7 +362,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
         logger.info(f"Closed instrument '{name}'")
 
-    def removeInstrumentFromGui(self, name: str):
+    def removeInstrumentFromGui(self, name: str) -> None:
         """Remove an instrument from the station list."""
         self.stationList.removeObject(name)
         self.stationObjInfo.clear()
@@ -364,7 +370,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
             self.tabs.removeTab(self.tabs.indexOf(self.instrumentTabsOpen[name]))
             del self.instrumentTabsOpen[name]
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # type: ignore[override]
         """Cleanup listener thread before closing the window."""
         for name, widget in list(self.instrumentTabsOpen.items()):
             try:

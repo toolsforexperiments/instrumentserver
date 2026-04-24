@@ -72,28 +72,28 @@ class ParameterManager(InstrumentBase):
 
     # TODO: method to instantiate entirely from paramDict
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         super().__init__(name)
 
         self._workingDirectory = Path(os.getcwd())
 
         #: default location and name of the parameters save file.
         self.selectedProfile = self.fullProfileName(self.name)
-        self.profiles = []
+        self.profiles: List[str] = []
         self.refresh_profiles()
 
         self.fromFile()
 
     @property
-    def workingDirectory(self):
+    def workingDirectory(self) -> Path:
         return self._workingDirectory
 
     @workingDirectory.setter
-    def workingDirectory(self, path: Union[str, Path]):
+    def workingDirectory(self, path: Union[str, Path]) -> None:
         self._workingDirectory = Path(path)
         self.refresh_profiles()
 
-    def getWorkingDirectory(self):
+    def getWorkingDirectory(self):  # type: ignore[no-untyped-def]
         return self.workingDirectory
 
     @staticmethod
@@ -138,7 +138,7 @@ class ParameterManager(InstrumentBase):
         return ret
 
     @classmethod
-    def does_profile_exist(cls, profiles, target):
+    def does_profile_exist(cls, profiles: List[str], target: str) -> bool:
         found = False
         for profile in profiles:
             if target in profile:
@@ -160,7 +160,7 @@ class ParameterManager(InstrumentBase):
         self.profiles = profiles
         return profiles
 
-    def to_tree(self):
+    def to_tree(self) -> Dict:
         return ParameterManager._to_tree(self)
 
     def _get_param(self, param_name: str) -> ParameterBase:
@@ -187,20 +187,20 @@ class ParameterManager(InstrumentBase):
                 )
             if n not in parent.submodules:
                 if create_parent:
-                    parent.add_submodule(n, ParameterManager(n))  # type: ignore # This one is technically breaking the type hints from qcodes itself, but it seems to work fine.
+                    parent.add_submodule(n, ParameterManager(n))  # type: ignore[type-var]
                 else:
                     raise ValueError(f"{n} does not exist.")
-            parent = parent.submodules[n]  # type: ignore # This one is technically breaking the type hints from qcodes itself, but it seems to work fine.
+            parent = parent.submodules[n]  # type: ignore[assignment]
         return parent
 
-    def has_param(self, param_name: str):
+    def has_param(self, param_name: str) -> bool:
         try:
             self._get_param(param_name)
             return True
         except ValueError:
             return False
 
-    def add_parameter(self, name: str, **kw: Any) -> None:  # type: ignore # Breaks LSP principle, code works, don't want to change it.
+    def add_parameter(self, name: str, **kw: Any) -> None:  # type: ignore[override]
         """Add a parameter.
 
         :param name: Name of the parameter.
@@ -227,7 +227,7 @@ class ParameterManager(InstrumentBase):
         else:
             parent.add_parameter(name.split(".")[-1], **kw)
 
-    def remove_parameter(self, param_name: str, cleanup: bool = True):
+    def remove_parameter(self, param_name: str, cleanup: bool = True) -> None:
         parent = self._get_parent(param_name)
         pname = param_name.split(".")[-1]
         del parent.parameters[pname]
@@ -242,27 +242,27 @@ class ParameterManager(InstrumentBase):
         param = self._get_param(param_name)
         param.set(value)
 
-    def remove_empty_submodules(self):
+    def remove_empty_submodules(self) -> None:
         """Delete all empty submodules in the instrument."""
 
-        def is_empty(parent):
+        def is_empty(parent: InstrumentBase) -> bool:
             if len(parent.submodules) == 0 and len(parent.parameters) == 0:
                 return True
             else:
                 return False
 
-        def purge(parent):
+        def purge(parent: InstrumentBase) -> None:
             mark_for_deletion = []
             for n, s in parent.submodules.items():
-                purge(s)
-                if is_empty(s):
+                purge(s)  # type: ignore[arg-type]
+                if is_empty(s):  # type: ignore[arg-type]
                     mark_for_deletion.append(n)
             for n in mark_for_deletion:
                 del parent.submodules[n]
 
         purge(self)
 
-    def remove_all_parameters(self):
+    def remove_all_parameters(self) -> None:
         """Remove all parameters from the instrument."""
         for param in self.list():
             self.remove_parameter(param, cleanup=False)
@@ -280,7 +280,7 @@ class ParameterManager(InstrumentBase):
         """Return a list of all parameters."""
         tree = self.to_tree()
 
-        def tolist(x):
+        def tolist(x: Dict[str, Any]) -> List[str]:
             ret_ = []
             for k, v in x.items():
                 if isinstance(v, Parameter):
@@ -291,7 +291,11 @@ class ParameterManager(InstrumentBase):
 
         return tolist(tree)
 
-    def fromFile(self, filePath: str | None = None, deleteMissing: bool = True):
+    def fromFile(
+        self,
+        filePath: str | None = None,
+        deleteMissing: bool = True,
+    ) -> None:
         """Load parameters from a parameter json file
         (see :mod:`.serialize`).
 
@@ -304,8 +308,10 @@ class ParameterManager(InstrumentBase):
             ParameterManager that are not listed in the file.
         """
         if filePath is None:
-            filePath = self.workingDirectory.joinpath(
-                self.fullProfileName(self.selectedProfile)
+            filePath = str(
+                self.workingDirectory.joinpath(
+                    self.fullProfileName(self.selectedProfile)
+                )
             )
 
         if os.path.exists(filePath):
@@ -326,7 +332,9 @@ class ParameterManager(InstrumentBase):
         else:
             logger.warning("parameter file not found, cannot load.")
 
-    def fromParamDict(self, paramDict: Dict[str, Any], deleteMissing: bool = True):
+    def fromParamDict(
+        self, paramDict: Dict[str, Any], deleteMissing: bool = True
+    ) -> None:
         """Load parameters from a parameter dictionary (see :mod:`.serialize`).
 
         :param paramDict: Parameter dictionary.
@@ -370,13 +378,17 @@ class ParameterManager(InstrumentBase):
 
     def toParamDict(
         self, simpleFormat: bool = False, includeMeta: List[str] = ["unit"]
-    ):
+    ) -> Dict[str, Any]:
         params = serialize.toParamDict(
             [self], simpleFormat=simpleFormat, includeMeta=includeMeta
         )
         return params
 
-    def toFile(self, filePath: str | None = None, name: str | None = None):
+    def toFile(
+        self,
+        filePath: str | None = None,
+        name: str | None = None,
+    ) -> None:
         """Save parameters from the instrument into a json file.
         If the file being saved is a profile file (starts with 'parameter_manager-' and ends with '.json'),
         the selectedProfile is changed to the filename.
@@ -391,7 +403,7 @@ class ParameterManager(InstrumentBase):
         """
 
         if filePath is None:
-            filePath = self.workingDirectory
+            filePath = str(self.workingDirectory)
 
         if os.path.isdir(filePath):
             if name is None:
@@ -415,7 +427,7 @@ class ParameterManager(InstrumentBase):
         """
         return self.profiles
 
-    def switch_to_profile(self, profile: str):
+    def switch_to_profile(self, profile: str) -> None:
         """
         Switches the server to the passed profile.
         """

@@ -18,7 +18,7 @@ class PollingWorker(QtCore.QThread):
         self.pollingRates = pollingRates
 
     # Used by the qtimers, get value of the param
-    def getParamValue(self, paramName):
+    def getParamValue(self, paramName: str) -> None:
         try:
             parts = paramName.split(".")
             instr = self.cli.find_or_create_instrument(parts[0])
@@ -32,28 +32,28 @@ class PollingWorker(QtCore.QThread):
             # Don't re-raise the exception, just log it and continue
 
     # Creates a qtimer for each param in the dict with the interval specified
-    def run(self):
+    def run(self) -> None:
         timers = []
 
         # Deletes param from dict if it does not exist
         delList = []
-        for param in self.pollingRates:
+        for param in self.pollingRates:  # type: ignore[union-attr]
             if param not in self.cli.getParamDict(param.split(".")[0]):
                 logger.warning(f"Parameter {param} does not exist")
                 delList.append(param)
         for item in delList:
-            del self.pollingRates[item]
+            del self.pollingRates[item]  # type: ignore[union-attr]
 
         # Prints which parameters are being polled
         logger.info(
-            f"Broadcasting the following parameters: {list(self.pollingRates.keys())}"
+            f"Broadcasting the following parameters: {list(self.pollingRates.keys())}"  # type: ignore[union-attr]
         )
 
         # Creates timers for each param in the dict
-        for param in self.pollingRates:
+        for param in self.pollingRates:  # type: ignore[union-attr]
             timer = QtCore.QTimer()
             timer.timeout.connect(lambda name=param: self.getParamValue(name))
-            timer.start(int(self.pollingRates.get(param) * 1000))
+            timer.start(int(self.pollingRates.get(param) * 1000))  # type: ignore[union-attr,operator]
             timers.append(timer)
 
         self.exec_()

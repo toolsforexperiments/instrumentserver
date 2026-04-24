@@ -7,6 +7,7 @@ import re
 import sys
 from enum import Enum, auto, unique
 from html import escape
+from typing import Callable, Optional
 
 from . import QtCore, QtGui, QtWidgets
 
@@ -31,33 +32,35 @@ class QLogHandler(QtCore.QObject, logging.Handler):
 
     new_html = QtCore.Signal(str)
 
-    def __init__(self, parent):
+    def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:
         QtCore.QObject.__init__(self, parent)
         logging.Handler.__init__(self)
 
         self.widget = QtWidgets.QTextEdit(parent)
         self.widget.setReadOnly(True)
-        self._transform = None
+        self._transform: Optional[Callable[[logging.LogRecord, str], Optional[str]]] = None
 
         # connect signal to slot that actually touches the widget (GUI thread)
         self.new_html.connect(self._append_html)
 
     @QtCore.Slot(str)
-    def _append_html(self, html: str):
+    def _append_html(self, html: str) -> None:
         """Append HTML to the text widget in the GUI thread."""
         self.widget.append(html)
         # reset char format so bold/italics don’t bleed into the next line
         self.widget.setCurrentCharFormat(QtGui.QTextCharFormat())
         # keep view scrolled to bottom
-        self.widget.verticalScrollBar().setValue(
-            self.widget.verticalScrollBar().maximum()
+        self.widget.verticalScrollBar().setValue(  # type: ignore[union-attr]
+            self.widget.verticalScrollBar().maximum()  # type: ignore[union-attr]
         )
 
-    def set_transform(self, fn):
+    def set_transform(
+        self, fn: Callable[[logging.LogRecord, str], Optional[str]]
+    ) -> None:
         """fn(record, msg) -> str | {'html': str} | None"""
         self._transform = fn
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         try:
             formatted = self.format(record)  # prefix + message
             raw_msg = record.getMessage()  # message only
@@ -108,7 +111,9 @@ class LogWidget(QtWidgets.QWidget):
     The handler has the actual widget that is used to display the logs.
     """
 
-    def __init__(self, parent=None, level=logging.INFO):
+    def __init__(
+        self, parent: Optional[QtWidgets.QWidget] = None, level: int = logging.INFO
+    ) -> None:
         super().__init__(parent)
 
         # set up the graphical handler
@@ -142,7 +147,9 @@ class LogWidget(QtWidgets.QWidget):
         self.handler.set_transform(_param_update_formatter)
 
 
-def _param_update_formatter(record, raw_msg):
+def _param_update_formatter(
+    record: logging.LogRecord, raw_msg: str
+) -> Optional[str]:
     """
     A formater that makes parameter updates more prominent in the gui log window.
     """
@@ -168,11 +175,11 @@ def _param_update_formatter(record, raw_msg):
 
 
 def setupLogging(
-    addStreamHandler=True,
-    logFile=None,
-    name="instrumentserver",
-    streamHandlerLevel=logging.INFO,
-):
+    addStreamHandler: bool = True,
+    logFile: Optional[str] = None,
+    name: str = "instrumentserver",
+    streamHandlerLevel: int = logging.INFO,
+) -> None:
     """Setting up logging, including adding a custom handler."""
 
     logger = logging.getLogger(name)
@@ -204,12 +211,12 @@ def setupLogging(
     logger.info(f"Logging set up for {name}.")
 
 
-def logger(name="instrumentserver"):
+def logger(name: str = "instrumentserver") -> logging.Logger:
     """Get the (root) logger for the package."""
     return logging.getLogger(name)
 
 
-def log(logger, message, level):
+def log(logger: logging.Logger, message: str, level: LogLevels) -> None:
     """Simple wrapper to log messages.
 
     Useful when the log level is a variable.

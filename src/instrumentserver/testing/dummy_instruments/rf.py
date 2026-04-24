@@ -1,9 +1,10 @@
+from typing import Any
+
 import numpy as np
+from numpy.typing import NDArray
 from qcodes import Instrument, ParameterWithSetpoints, find_or_create_instrument
 from qcodes.utils import validators
-from scipy import (
-    constants,  # type: ignore[import-untyped] # We don't need mypy checks for this dependency that is only used here.
-)
+from scipy import constants
 
 
 class ResonatorResponse(Instrument):
@@ -14,7 +15,7 @@ class ResonatorResponse(Instrument):
     properties added as parameters.
     """
 
-    def __init__(self, name, f0=5e9, df=1e6, **kw):
+    def __init__(self, name: str, f0: float = 5e9, df: float = 1e6, **kw: Any) -> None:
         super().__init__(name, **kw)
 
         self._frq_mod = 0.0
@@ -104,7 +105,7 @@ class ResonatorResponse(Instrument):
             get_cmd=self._get_data,
         )
 
-    def modulate_frequency(self, delta: float = 0, multiply=False) -> None:
+    def modulate_frequency(self, delta: float = 0, multiply: bool = False) -> None:
         """Add an offset to the resonance frequency.
 
         If `multiply` is ``True``, the change in frequency is the product of `delta`
@@ -114,12 +115,12 @@ class ResonatorResponse(Instrument):
         self._frq_mod_multiply = multiply
 
     # private utility methods
-    def _frequency_vals(self):
+    def _frequency_vals(self) -> "NDArray[np.floating]":
         return np.linspace(
             self.start_frequency(), self.stop_frequency(), self.npoints()
         )
 
-    def _get_data(self):
+    def _get_data(self) -> "NDArray[np.complexfloating]":
         f0 = self.resonator_frequency()
         if self._frq_mod_multiply:
             f0 *= self._frq_mod
@@ -138,7 +139,15 @@ class ResonatorResponse(Instrument):
 
         return data
 
-    def _resonator_reflection_signal(self, fvals, f0, df, P_in, BW, T_N):
+    def _resonator_reflection_signal(
+        self,
+        fvals: "NDArray[np.floating]",
+        f0: float,
+        df: float,
+        P_in: float,
+        BW: float,
+        T_N: float,
+    ) -> "NDArray[np.complexfloating]":
         """Compute a realistic resonator reflection signal of a one-port
         resonator, including random noise.
 
@@ -163,7 +172,7 @@ class ResonatorResponse(Instrument):
 class Generator(Instrument):
     """A simple dummy that mocks an RF generator."""
 
-    def __init__(self, name, *arg, **kw):
+    def __init__(self, name: str, *arg: Any, **kw: Any) -> None:
         super().__init__(name, *arg, **kw)
 
         self.add_parameter(
@@ -191,7 +200,9 @@ class FluxControl(Instrument):
     """A dummy that hooks to :class:`.ResonatorResponse` and modifies its
     resonance frequency as if the resonator were a squid."""
 
-    def __init__(self, name: str, resonator_instrument: str, *args, **kwargs):
+    def __init__(
+        self, name: str, resonator_instrument: str, *args: Any, **kwargs: Any
+    ) -> None:
         super().__init__(name, *args, **kwargs)
 
         self._resonator = find_or_create_instrument(
@@ -213,7 +224,7 @@ class FluxControl(Instrument):
             initial_value=0,
         )
 
-    def _set_flux(self, flux):
+    def _set_flux(self, flux: float) -> None:
         mod = 1.0 / (
             1.0 + self.inductive_participation_ratio() / np.abs(np.cos(np.pi * flux))
         )
