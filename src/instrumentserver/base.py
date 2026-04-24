@@ -6,6 +6,7 @@ from .blueprints import to_dict, deserialize_obj
 
 logger = logging.getLogger(__name__)
 
+
 def encode(data):
     return json.dumps(to_dict(data))
 
@@ -19,7 +20,7 @@ def send(socket, data, use_string=True):
     if use_string:
         return socket.send_string(payload)
     else:
-        return socket.send(payload.encode('utf-8'))
+        return socket.send(payload.encode("utf-8"))
 
 
 def recv(socket):
@@ -30,7 +31,7 @@ def recv(socket):
         logger.warning(f"Additional part found in recv: {leftover}")
     if len(parts) == 1:
         data = parts[0]
-    elif len(parts) == 2 and parts[0] == b'':  # optional empty delimiter
+    elif len(parts) == 2 and parts[0] == b"":  # optional empty delimiter
         data = parts[1]
     else:
         data = parts[-1]  # assume last part is the actual message
@@ -40,15 +41,15 @@ def recv(socket):
 def send_router(socket, identity, message):
     socket.setsockopt(zmq.SNDTIMEO, 5000)
     socket.setsockopt(zmq.LINGER, 0)
-    payload = encode(message).encode('utf-8')
-    socket.send_multipart([identity, b'', payload])
+    payload = encode(message).encode("utf-8")
+    socket.send_multipart([identity, b"", payload])
 
 
 def recv_router(socket):
     parts = socket.recv_multipart()
     if len(parts) == 2:
         identity, payload = parts
-    elif len(parts) == 3 and parts[1] == b'':
+    elif len(parts) == 3 and parts[1] == b"":
         identity, payload = parts[0], parts[2]
     else:
         raise ValueError(f"Malformed ROUTER message: {parts}")
@@ -65,7 +66,7 @@ def sendBroadcast(socket, name, message):
     :param messages: The data to send.
     """
     socket.send_string(name, flags=zmq.SNDMORE)
-    socket.send(encode(message).encode('utf-8'))
+    socket.send(encode(message).encode("utf-8"))
 
 
 def recvMultipart(socket):

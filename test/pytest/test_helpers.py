@@ -15,6 +15,7 @@ from instrumentserver.helpers import (
 # stringToArgsAndKwargs
 # ---------------------------------------------------------------------------
 
+
 def test_stringToArgsAndKwargs_empty_string():
     args, kwargs = stringToArgsAndKwargs("")
     assert args == []
@@ -27,13 +28,16 @@ def test_stringToArgsAndKwargs_whitespace_only():
     assert kwargs == {}
 
 
-@pytest.mark.parametrize("value, expected_args, expected_kwargs", [
-    ("1, True", [1, True], {}),
-    ("'hello'", ['hello'], {}),
-    ("1, 2, 3", [1, 2, 3], {}),
-    ("x=1, y=2", [], {'x': 1, 'y': 2}),
-    ("1, abc=12.3", [1], {'abc': 12.3}),
-])
+@pytest.mark.parametrize(
+    "value, expected_args, expected_kwargs",
+    [
+        ("1, True", [1, True], {}),
+        ("'hello'", ["hello"], {}),
+        ("1, 2, 3", [1, 2, 3], {}),
+        ("x=1, y=2", [], {"x": 1, "y": 2}),
+        ("1, abc=12.3", [1], {"abc": 12.3}),
+    ],
+)
 def test_stringToArgsAndKwargs_valid(value, expected_args, expected_kwargs):
     args, kwargs = stringToArgsAndKwargs(value)
     assert args == expected_args
@@ -58,6 +62,7 @@ def test_stringToArgsAndKwargs_unevaluable_kwarg_value():
 # ---------------------------------------------------------------------------
 # flat_to_nested_dict
 # ---------------------------------------------------------------------------
+
 
 def test_flat_to_nested_dict_already_flat():
     flat = {"a": 1, "b": 2}
@@ -85,6 +90,7 @@ def test_flat_to_nested_dict_empty():
 # flatten_dict
 # ---------------------------------------------------------------------------
 
+
 def test_flatten_dict_already_flat():
     d = {"a": 1, "b": 2}
     result = flatten_dict(d)
@@ -99,7 +105,7 @@ def test_flatten_dict_nested():
 
 def test_flatten_dict_custom_sep():
     nested = {"a": {"b": 1}}
-    result = flatten_dict(nested, sep='/')
+    result = flatten_dict(nested, sep="/")
     assert result == {"a/b": 1}
 
 
@@ -113,6 +119,7 @@ def test_flatten_dict_round_trip():
 # ---------------------------------------------------------------------------
 # is_flat_dict
 # ---------------------------------------------------------------------------
+
 
 def test_is_flat_dict_flat():
     assert is_flat_dict({"a": 1, "b": "hello"}) is True
@@ -134,6 +141,7 @@ def test_is_flat_dict_empty():
 # nestedAttributeFromString
 # ---------------------------------------------------------------------------
 
+
 class _Root:
     class _Child:
         value = 42
@@ -143,29 +151,30 @@ class _Root:
 
 def test_nestedAttributeFromString_single_level():
     root = _Root()
-    assert nestedAttributeFromString(root, 'scalar') == 99
+    assert nestedAttributeFromString(root, "scalar") == 99
 
 
 def test_nestedAttributeFromString_two_levels():
     root = _Root()
-    assert nestedAttributeFromString(root, '_Child.value') == 42
+    assert nestedAttributeFromString(root, "_Child.value") == 42
 
 
 def test_nestedAttributeFromString_missing_raises():
     root = _Root()
     with pytest.raises(AttributeError):
-        nestedAttributeFromString(root, 'nonexistent_attr')
+        nestedAttributeFromString(root, "nonexistent_attr")
 
 
 def test_nestedAttributeFromString_nested_missing_raises():
     root = _Root()
     with pytest.raises(AttributeError):
-        nestedAttributeFromString(root, '_Child.nonexistent')
+        nestedAttributeFromString(root, "_Child.nonexistent")
 
 
 # ---------------------------------------------------------------------------
 # typeClassPath / objectClassPath
 # ---------------------------------------------------------------------------
+
 
 class _MyClass:
     pass
@@ -173,25 +182,25 @@ class _MyClass:
 
 def test_typeClassPath_contains_class_name():
     path = typeClassPath(_MyClass)
-    assert '_MyClass' in path
-    assert '.' in path
+    assert "_MyClass" in path
+    assert "." in path
 
 
 def test_objectClassPath_contains_class_name():
     obj = _MyClass()
     path = objectClassPath(obj)
-    assert '_MyClass' in path
-    assert '.' in path
+    assert "_MyClass" in path
+    assert "." in path
 
 
 def test_typeClassPath_builtin():
     path = typeClassPath(int)
-    assert 'int' in path
+    assert "int" in path
 
 
 def test_objectClassPath_builtin_instance():
     path = objectClassPath(42)
-    assert 'int' in path
+    assert "int" in path
 
 
 def test_typeClassPath_and_objectClassPath_agree():

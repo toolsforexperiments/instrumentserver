@@ -10,10 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 class PollingWorker(QtCore.QThread):
-    def __init__(self, pollingRates: Optional[Dict[str, int]]=None):
+    def __init__(self, pollingRates: Optional[Dict[str, int]] = None):
         super().__init__(None)
         # This worker is supposed to only run through the server itself so there is no need to change the defaults of the client.
-        self.cli = Client(raise_exceptions=False,timeout=60000)  # Don't raise exceptions on timeouts
+        self.cli = Client(
+            raise_exceptions=False, timeout=60000
+        )  # Don't raise exceptions on timeouts
         self.pollingRates = pollingRates
 
     # Used by the qtimers, get value of the param
@@ -42,9 +44,11 @@ class PollingWorker(QtCore.QThread):
                 delList.append(param)
         for item in delList:
             del self.pollingRates[item]
-        
+
         # Prints which parameters are being polled
-        logger.info(f"Broadcasting the following parameters: {list(self.pollingRates.keys())}")
+        logger.info(
+            f"Broadcasting the following parameters: {list(self.pollingRates.keys())}"
+        )
 
         # Creates timers for each param in the dict
         for param in self.pollingRates:

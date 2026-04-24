@@ -23,15 +23,15 @@ def stringToArgsAndKwargs(value: str) -> Tuple[List[Any], Dict[str, Any]]:
         - args or kwarg values cannot be evaluated with ``eval``.
     """
     value = value.strip()
-    if value == '':
+    if value == "":
         return [], {}
 
     args = []
     kwargs = {}
-    elts = [v.strip() for v in value.split(',')]
+    elts = [v.strip() for v in value.split(",")]
     for elt in elts:
-        if '=' in elt:
-            keyandval = elt.split('=')
+        if "=" in elt:
+            keyandval = elt.split("=")
             if len(keyandval) != 2:
                 raise ValueError(f"{elt} cannot be interpreted as kwarg")
             try:
@@ -62,7 +62,7 @@ def nestedAttributeFromString(root: Any, loc: str) -> Any:
 
     returns the object that can be found at parent_object.foo.bar.spam.bacon.
     """
-    mods = loc.split('.')
+    mods = loc.split(".")
     obj = root
     for m in mods:
         obj = getattr(obj, m)
@@ -76,13 +76,15 @@ def getInstrumentParameters(ins: Instrument) -> Dict[str, Dict[str, str]]:
     :returns: a param dict with entries `unit`, `vals`, for each
         instrument parameter.
     """
-    paramDict = toParamDict([ins], includeMeta=['unit', 'vals'])
+    paramDict = toParamDict([ins], includeMeta=["unit", "vals"])
     for k, v in paramDict.items():
-        paramDict[k].pop('value', None)
+        paramDict[k].pop("value", None)
     return paramDict
 
 
-def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List[str]]]]:
+def getInstrumentMethods(
+    ins: Instrument,
+) -> Dict[str, Dict[str, Union[str, List[str]]]]:
     """Return the methods of an instrument.
 
     :param ins: instrument instance
@@ -94,7 +96,7 @@ def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List
     """
     funcs: dict = {}
     for attr_name in dir(ins):
-        if attr_name[0] != '_' and attr_name not in dir(Instrument):
+        if attr_name[0] != "_" and attr_name not in dir(Instrument):
             obj = getattr(ins, attr_name)
             if callable(obj) and not isinstance(obj, Parameter):
                 funcs[attr_name] = dict()
@@ -102,10 +104,11 @@ def getInstrumentMethods(ins: Instrument) -> Dict[str, Dict[str, Union[str, List
     for fname in funcs.keys():
         fun = getattr(ins, fname)
         signature = inspect.signature(fun)
-        funcs[fname]['parameters'] = [str(signature.parameters[a]) for a in
-                                      signature.parameters]
-        funcs[fname]['doc'] = str(fun.__doc__)
-        funcs[fname]['return'] = str(signature.return_annotation)
+        funcs[fname]["parameters"] = [
+            str(signature.parameters[a]) for a in signature.parameters
+        ]
+        funcs[fname]["doc"] = str(fun.__doc__)
+        funcs[fname]["return"] = str(signature.return_annotation)
 
     return funcs
 
@@ -134,7 +137,7 @@ def flat_to_nested_dict(flat_dict: Dict) -> Dict:
     """
     nested = {}
     for key, value in flat_dict.items():
-        parts = key.split('.')
+        parts = key.split(".")
         d = nested
         for part in parts[:-1]:
             d = d.setdefault(part, {})
@@ -142,13 +145,14 @@ def flat_to_nested_dict(flat_dict: Dict) -> Dict:
     return nested
 
 
-def is_flat_dict(d:dict) -> bool:
+def is_flat_dict(d: dict) -> bool:
     """
     Detects if a dictionary is flat (i.e. all values are non-dicts).
     """
     return all(not isinstance(v, dict) for v in d.values())
 
-def flatten_dict(d, sep='.'):
+
+def flatten_dict(d, sep="."):
     """
     Detects if a dictionary is flat (i.e. all values are non-dicts).
     If it is not flat, recursively flattens it using dot-separated keys.
@@ -171,7 +175,7 @@ def flatten_dict(d, sep='.'):
     if is_flat_dict(d):
         return d
 
-    def flatten(nested, parent_key=''):
+    def flatten(nested, parent_key=""):
         items = {}
         for k, v in nested.items():
             new_key = f"{parent_key}{sep}{k}" if parent_key else k

@@ -60,7 +60,12 @@ from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args, 
 
 import numpy as np
 from qcodes import (
-    Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
+    Station,
+    Instrument,
+    InstrumentChannel,
+    Parameter,
+    ParameterWithSetpoints,
+)
 from qcodes.instrument.base import InstrumentBase
 from qcodes.utils.validators import Validator
 
@@ -68,14 +73,10 @@ from .helpers import objectClassPath, typeClassPath
 
 logger = logging.getLogger(__name__)
 
-INSTRUMENT_MODULE_BASE_CLASSES = [
-    Instrument, InstrumentChannel, InstrumentBase
-]
+INSTRUMENT_MODULE_BASE_CLASSES = [Instrument, InstrumentChannel, InstrumentBase]
 InstrumentModuleType = Union[Instrument, InstrumentChannel, InstrumentBase]
 
-PARAMETER_BASE_CLASSES = [
-    Parameter, ParameterWithSetpoints
-]
+PARAMETER_BASE_CLASSES = [Parameter, ParameterWithSetpoints]
 
 ParameterType = Union[Parameter, ParameterWithSetpoints]
 
@@ -83,16 +84,17 @@ ParameterType = Union[Parameter, ParameterWithSetpoints]
 @dataclass
 class ParameterBluePrint:
     """Spec necessary for creating parameter proxies."""
+
     name: str
     path: str
     base_class: str
     parameter_class: str
     gettable: bool = True
     settable: bool = True
-    unit: str = ''
-    docstring: str = ''
+    unit: str = ""
+    docstring: str = ""
     setpoints: Optional[List[str]] = None
-    _class_type: str = 'ParameterBluePrint'
+    _class_type: str = "ParameterBluePrint"
 
     def __repr__(self) -> str:
         return str(self)
@@ -101,7 +103,7 @@ class ParameterBluePrint:
         return f"{self.name}: {self.parameter_class}"
 
     def tostr(self, indent=0):
-        i = indent * ' '
+        i = indent * " "
         ret = f"""{self.name}: {self.parameter_class}
 {i}- unit: {self.unit}
 {i}- path: {self.path}
@@ -116,16 +118,19 @@ class ParameterBluePrint:
         return bluePrintToDict(self)
 
 
-def bluePrintFromParameter(path: str, param: ParameterType) -> \
-        Union[ParameterBluePrint, None]:
+def bluePrintFromParameter(
+    path: str, param: ParameterType
+) -> Union[ParameterBluePrint, None]:
     base_class = None
     for bc in PARAMETER_BASE_CLASSES:
         if isinstance(param, bc):
             base_class = bc
             break
     if base_class is None:
-        logger.warning(f"Blueprints for parameter base type of {param} are "
-                       f"currently not supported.")
+        logger.warning(
+            f"Blueprints for parameter base type of {param} are "
+            f"currently not supported."
+        )
         return None
 
     bp = ParameterBluePrint(
@@ -133,12 +138,12 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
         path=path,
         base_class=typeClassPath(base_class),
         parameter_class=objectClassPath(param),
-        gettable=True if hasattr(param, 'get') else False,
-        settable=True if hasattr(param, 'set') else False,
+        gettable=True if hasattr(param, "get") else False,
+        settable=True if hasattr(param, "set") else False,
         unit=param.unit,
         docstring=param.__doc__ or "",
     )
-    if hasattr(param, 'setpoints'):
+    if hasattr(param, "setpoints"):
         bp.setpoints = [setpoint.name for setpoint in param.setpoints]
 
     return bp
@@ -147,12 +152,13 @@ def bluePrintFromParameter(path: str, param: ParameterType) -> \
 @dataclass
 class MethodBluePrint:
     """Spec necessary for creating method proxies"""
+
     name: str
     path: str
     call_signature_str: str
     signature_parameters: dict
     docstring: str = ""
-    _class_type: str = 'MethodBluePrint'
+    _class_type: str = "MethodBluePrint"
 
     def __repr__(self):
         return str(self)
@@ -161,7 +167,7 @@ class MethodBluePrint:
         return f"{self.name}{str(self.call_signature_str)}"
 
     def tostr(self, indent=0):
-        i = indent * ' '
+        i = indent * " "
         ret = f"""{self.name}{str(self.call_signature_str)}
 {i}- path: {self.path}
 """
@@ -169,7 +175,9 @@ class MethodBluePrint:
 
     # we might want to be careful to keep them in the correct order
     @classmethod
-    def signature_str_and_params_from_obj(cls, sig: inspect.Signature) -> Tuple[str, dict]:
+    def signature_str_and_params_from_obj(
+        cls, sig: inspect.Signature
+    ) -> Tuple[str, dict]:
         call_signature_str = str(sig)
         param_dict = {}
         for name, param in sig.parameters.items():
@@ -184,7 +192,7 @@ def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, N
     sig = inspect.signature(method)
     sig_str, param_dict = MethodBluePrint.signature_str_and_params_from_obj(sig)
     bp = MethodBluePrint(
-        name=path.split('.')[-1],
+        name=path.split(".")[-1],
         path=path,
         call_signature_str=sig_str,
         signature_parameters=param_dict,
@@ -196,25 +204,31 @@ def bluePrintFromMethod(path: str, method: Callable) -> Union[MethodBluePrint, N
 @dataclass
 class InstrumentModuleBluePrint:
     """Spec necessary for creating instrument proxies."""
+
     name: str
     path: str
     base_class: str
     instrument_module_class: str
-    docstring: str = ''
+    docstring: str = ""
     parameters: Optional[Dict[str, ParameterBluePrint]] = field(default_factory=dict)
     methods: Optional[Dict[str, MethodBluePrint]] = field(default_factory=dict)
-    submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = field(default_factory=dict)
-    _class_type: str = 'InstrumentModuleBluePrint'
+    submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = field(
+        default_factory=dict
+    )
+    _class_type: str = "InstrumentModuleBluePrint"
 
-    def __init__(self, name: str,
-                 path: str,
-                 base_class: str,
-                 instrument_module_class: str,
-                 docstring: str = '',
-                 parameters: Optional[Dict[str, ParameterBluePrint]] = None,
-                 methods: Optional[Dict[str, MethodBluePrint]] = None,
-                 submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None,
-                 _class_type: str = 'InstrumentModuleBluePrint'):
+    def __init__(
+        self,
+        name: str,
+        path: str,
+        base_class: str,
+        instrument_module_class: str,
+        docstring: str = "",
+        parameters: Optional[Dict[str, ParameterBluePrint]] = None,
+        methods: Optional[Dict[str, MethodBluePrint]] = None,
+        submodules: Optional[Dict[str, "InstrumentModuleBluePrint"]] = None,
+        _class_type: str = "InstrumentModuleBluePrint",
+    ):
 
         self.name = name
         self.path = path
@@ -255,7 +269,7 @@ class InstrumentModuleBluePrint:
                 else:
                     raise AttributeError("parameters has invalid type.")
 
-        self._class_type = 'InstrumentModuleBluePrint'
+        self._class_type = "InstrumentModuleBluePrint"
 
     def __repr__(self) -> str:
         return str(self)
@@ -264,7 +278,7 @@ class InstrumentModuleBluePrint:
         return f"{self.name}: {self.instrument_module_class}"
 
     def tostr(self, indent=0):
-        i = indent * ' '
+        i = indent * " "
         ret = f"""{i}{self.name}: {self.instrument_module_class}
 {i}- path: {self.path}
 {i}- base class: {self.base_class}
@@ -287,16 +301,18 @@ class InstrumentModuleBluePrint:
         return bluePrintToDict(self)
 
 
-def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
-        Union[InstrumentModuleBluePrint, None]:
+def bluePrintFromInstrumentModule(
+    path: str, ins: InstrumentModuleType
+) -> Union[InstrumentModuleBluePrint, None]:
     base_class = None
     for bc in INSTRUMENT_MODULE_BASE_CLASSES:
         if isinstance(ins, bc):
             base_class = bc
             break
     if base_class is None:
-        logger.warning(f"Blueprints for instrument base type of {ins} are "
-                       f"currently not supported.")
+        logger.warning(
+            f"Blueprints for instrument base type of {ins} are currently not supported."
+        )
         return None
 
     bp = InstrumentModuleBluePrint(
@@ -320,7 +336,7 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
     for elt in dir(ins):
         # don't include private methods, or methods that belong to the qcodes
         # base classes.
-        if elt[0] == '_' or hasattr(base_class, elt):
+        if elt[0] == "_" or hasattr(base_class, elt):
             continue
         o = getattr(ins, elt)
         if callable(o) and not isinstance(o, tuple(PARAMETER_BASE_CLASSES)):
@@ -342,19 +358,20 @@ def bluePrintFromInstrumentModule(path: str, ins: InstrumentModuleType) -> \
 @dataclass
 class ParameterBroadcastBluePrint:
     """Blueprint to broadcast parameter changes."""
+
     name: str
     action: str
     value: int | None = None
     unit: str = ""
-    _class_type: str = 'ParameterBroadcastBluePrint'
+    _class_type: str = "ParameterBroadcastBluePrint"
 
     def __str__(self) -> str:
         ret = f"""\"name\":\"{self.name}\": {{    
     \"action\":\"{self.action}" """
         if self.value is not None:
-            ret = ret + f"\n    \"value\":\"{self.value}\""
+            ret = ret + f'\n    "value":"{self.value}"'
         if self.unit is not None:
-            ret = ret + f"\n    \"unit\":\"{self.unit}\""
+            ret = ret + f'\n    "unit":"{self.unit}"'
         ret = ret + f"""\n}}"""
         return ret
 
@@ -363,7 +380,7 @@ class ParameterBroadcastBluePrint:
 
     def pprint(self, indent=0):
 
-        i = indent * ' '
+        i = indent * " "
         ret = f"""name: {self.name}
 {i}- action: {self.action}
 {i}- value: {self.value}
@@ -376,7 +393,12 @@ class ParameterBroadcastBluePrint:
         return bluePrintToDict(self)
 
 
-BluePrintType = Union[ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint]
+BluePrintType = Union[
+    ParameterBluePrint,
+    MethodBluePrint,
+    InstrumentModuleBluePrint,
+    ParameterBroadcastBluePrint,
+]
 
 
 def _dictToJson(_dict: dict, json_type: bool = True) -> dict:
@@ -408,7 +430,9 @@ def bluePrintToDict(bp: BluePrintType, json_type=True) -> dict:
         if isinstance(value, get_args(BluePrintType)):
             bp_dict[my_field.name] = bluePrintToDict(value, json_type)
         elif isinstance(value, dict):
-            bp_dict[my_field.name] = _dictToJson(bp.__getattribute__(my_field.name), json_type)
+            bp_dict[my_field.name] = _dictToJson(
+                bp.__getattribute__(my_field.name), json_type
+            )
         else:
             if json_type:
                 bp_dict[my_field.name] = str(bp.__getattribute__(my_field.name))
@@ -422,25 +446,25 @@ class Operation(Enum):
     """Valid operations for the server."""
 
     #: Get a list of instruments the server has instantiated.
-    get_existing_instruments = 'get_existing_instruments'
+    get_existing_instruments = "get_existing_instruments"
 
     #: Create a new instrument.
-    create_instrument = 'create_instrument'
+    create_instrument = "create_instrument"
 
     #: Get the blueprint of an object.
-    get_blueprint = 'get_blueprint'
+    get_blueprint = "get_blueprint"
 
     #: Make a call to an object.
-    call = 'call'
+    call = "call"
 
     #: Get the station contents as parameter dict.
-    get_param_dict = 'get_param_dict'
+    get_param_dict = "get_param_dict"
 
     #: Set station parameters from a dictionary.
-    set_params = 'set_params'
+    set_params = "set_params"
 
     #: Gets the GUI configuration for an instrument.
-    get_gui_config = 'get_gui_config'
+    get_gui_config = "get_gui_config"
 
 
 @dataclass
@@ -452,7 +476,7 @@ class InstrumentCreationSpec:
 
     #: Name of the new instrument, I separate this from args and kwargs to
     # make it easier to be found.
-    name: str = ''
+    name: str = ""
 
     #: Arguments to pass to the constructor.
     args: Optional[Tuple] = None
@@ -460,12 +484,12 @@ class InstrumentCreationSpec:
     #: kw args to pass to the constructor.
     kwargs: Optional[Dict[str, Any]] = None
 
-    _class_type: str = 'InstrumentCreationSpec'
+    _class_type: str = "InstrumentCreationSpec"
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'] = iterable_to_serialized_dict(self.args)
-        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
+        ret["args"] = iterable_to_serialized_dict(self.args)
+        ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -483,12 +507,12 @@ class CallSpec:
     #: kw args to pass.
     kwargs: Optional[Dict[str, Any]] = None
 
-    _class_type: str = 'CallSpec'
+    _class_type: str = "CallSpec"
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'] = iterable_to_serialized_dict(self.args)
-        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
+        ret["args"] = iterable_to_serialized_dict(self.args)
+        ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -498,7 +522,7 @@ class ParameterSerializeSpec:
     path: Optional[str] = None
 
     #: Which attributes to include for each parameter. Default is ['values'].
-    attrs: List[str] = field(default_factory=lambda: ['values'])
+    attrs: List[str] = field(default_factory=lambda: ["values"])
 
     #: Additional arguments to pass to the serialization function
     #: :func:`.serialize.toParamDict`.
@@ -508,12 +532,12 @@ class ParameterSerializeSpec:
     #: :func:`.serialize.toParamDict`.
     kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
 
-    _class_type: str = 'ParameterSerializeSpec'
+    _class_type: str = "ParameterSerializeSpec"
 
     def toJson(self):
         ret = asdict(self)
-        ret['args'] = iterable_to_serialized_dict(self.args)
-        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
+        ret["args"] = iterable_to_serialized_dict(self.args)
+        ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
         return ret
 
 
@@ -578,48 +602,48 @@ class ServerInstruction:
     #: Generic keyword arguments.
     kwargs: Optional[Dict[str, Any]] = field(default_factory=dict)
 
-    _class_type: str = 'ServerInstruction'
+    _class_type: str = "ServerInstruction"
 
     def validate(self):
         if self.operation is Operation.create_instrument:
             if not isinstance(self.create_instrument_spec, InstrumentCreationSpec):
-                raise ValueError('Invalid instrument creation spec.')
+                raise ValueError("Invalid instrument creation spec.")
 
         if self.operation is Operation.call:
             if not isinstance(self.call_spec, CallSpec):
-                raise ValueError('Invalid call spec.')
+                raise ValueError("Invalid call spec.")
 
         if self.operation is Operation.get_gui_config:
             if not isinstance(self.requested_path, str):
-                raise ValueError('Invalid requested path.')
+                raise ValueError("Invalid requested path.")
 
     def toJson(self):
-        ret = {'operation': str(self.operation.name)}
+        ret = {"operation": str(self.operation.name)}
 
         if self.create_instrument_spec is None:
-            ret['create_instrument_spec'] = None
+            ret["create_instrument_spec"] = None
         else:
-            ret['create_instrument_spec'] = self.create_instrument_spec.toJson()
+            ret["create_instrument_spec"] = self.create_instrument_spec.toJson()
 
         if self.call_spec is None:
-            ret['call_spec'] = None
+            ret["call_spec"] = None
         else:
-            ret['call_spec'] = self.call_spec.toJson()
+            ret["call_spec"] = self.call_spec.toJson()
 
         if self.requested_path is None:
-            ret['requested_path'] = None
+            ret["requested_path"] = None
         else:
-            ret['requested_path'] = str(self.requested_path)
+            ret["requested_path"] = str(self.requested_path)
 
         if self.serialization_opts is None:
-            ret['serialization_opts'] = None
+            ret["serialization_opts"] = None
         else:
-            ret['serialization_opts'] = self.serialization_opts.toJson()
+            ret["serialization_opts"] = self.serialization_opts.toJson()
 
-        ret['set_parameters'] = self.set_parameters
-        ret['args'] = iterable_to_serialized_dict(self.args)
-        ret['kwargs'] = dict_to_serialized_dict(self.kwargs)
-        ret['_class_type'] = self._class_type
+        ret["set_parameters"] = self.set_parameters
+        ret["args"] = iterable_to_serialized_dict(self.args)
+        ret["kwargs"] = dict_to_serialized_dict(self.kwargs)
+        ret["_class_type"] = self._class_type
 
         return ret
 
@@ -635,6 +659,7 @@ class ServerResponse:
     If an error occurs, `message` is typically ``None``, and `error` contains an
     error message or object describing the error.
     """
+
     #: The return message.
     message: Optional[Any] = None
 
@@ -642,11 +667,14 @@ class ServerResponse:
     error: Optional[Union[None, str, Warning, Exception]] = None
 
     #: The type of the class, used for deserializing it.
-    _class_type: str = 'ServerResponse'
+    _class_type: str = "ServerResponse"
 
-    def __init__(self, message: Optional[Any] = None,
-                 error: Optional[Union[None, str, Warning, Exception, dict]] = None,
-                 _class_type: str = 'ServerResponse'):
+    def __init__(
+        self,
+        message: Optional[Any] = None,
+        error: Optional[Union[None, str, Warning, Exception, dict]] = None,
+        _class_type: str = "ServerResponse",
+    ):
         self.message = message
         if isinstance(message, str):
             try:
@@ -662,35 +690,39 @@ class ServerResponse:
                 after_json_loads = json.loads(message)
                 self.message = after_json_loads
             except json.JSONDecodeError as e:
-                logger.debug(f'message could not be decoded by JSON and will be treated as a string: {message}')
+                logger.debug(
+                    f"message could not be decoded by JSON and will be treated as a string: {message}"
+                )
         if isinstance(error, dict):
-            self.error = Exception(error['message'])
+            self.error = Exception(error["message"])
         else:
             self.error = error
 
-        self._class_type = 'ServerResponse'
+        self._class_type = "ServerResponse"
 
     def toJson(self):
         ret = {}
         if isinstance(self.message, get_args(BluePrintType)):
-            ret['message'] = self.message.toJson()
-        elif hasattr(self.message, 'attributes'):
-            ret['message'] = _convert_arbitrary_obj_to_dict(self.message)
+            ret["message"] = self.message.toJson()
+        elif hasattr(self.message, "attributes"):
+            ret["message"] = _convert_arbitrary_obj_to_dict(self.message)
         elif not isinstance(self.message, str) and isinstance(self.message, Iterable):
             if isinstance(self.message, dict):
                 message_dict = dict_to_serialized_dict(self.message)
-                ret['message'] = str(message_dict)
+                ret["message"] = str(message_dict)
             else:
                 message_iterable = iterable_to_serialized_dict(self.message)
-                ret['message'] = str(message_iterable)
+                ret["message"] = str(message_iterable)
         else:
-            ret['message'] = str(self.message)
+            ret["message"] = str(self.message)
         if isinstance(self.error, Exception):
-            ret['error'] = dict(exception_type=str(type(self.error)), message=str(self.error))
+            ret["error"] = dict(
+                exception_type=str(type(self.error)), message=str(self.error)
+            )
         else:
-            ret['error'] = str(self.error)
+            ret["error"] = str(self.error)
 
-        ret['_class_type'] = self._class_type
+        ret["_class_type"] = self._class_type
 
         return ret
 
@@ -702,13 +734,13 @@ def _convert_arbitrary_obj_to_dict(obj: object) -> Dict[str, Any]:
     all of those attributes are natively JSON serializable. These should also be accepted as keyword arguments in the
     constructor of the object.
     """
-    if not hasattr(obj, 'attributes'):
+    if not hasattr(obj, "attributes"):
         raise AttributeError('Object does not have an attribute called "attributes"')
 
     obj_dict = {}
     for attr in obj.attributes:
         obj_dict[attr] = getattr(obj, attr)
-    obj_dict['_class_type'] = f'{obj.__module__}.{obj.__class__.__name__}'
+    obj_dict["_class_type"] = f"{obj.__module__}.{obj.__class__.__name__}"
     return obj_dict
 
 
@@ -719,22 +751,22 @@ def _convert_dict_to_obj(item_dict: dict) -> Any:
 
     Assumes that the dictionary has a key '_class_type' indicating what class it should be instantiated from.
     """
-    class_type = item_dict['_class_type']
+    class_type = item_dict["_class_type"]
 
     # if a dot is present indicates the class is arbitrary and needs to be imported
-    if '.' in class_type:
-        parts = class_type.split('.')
-        mod = importlib.import_module('.'.join(parts[:-1]))
+    if "." in class_type:
+        parts = class_type.split(".")
+        mod = importlib.import_module(".".join(parts[:-1]))
         cls = getattr(mod, parts[-1])
-        item_dict.pop('_class_type')
+        item_dict.pop("_class_type")
         return cls(**item_dict)
 
     try:
-        instantiated_obj = eval(f'{class_type}(**item_dict)')
+        instantiated_obj = eval(f"{class_type}(**item_dict)")
     # built-ins (like complex) will not want the _class_type argument
     except TypeError:
-        cls = item_dict.pop('_class_type')
-        instantiated_obj = eval(f'{cls}(**item_dict)')
+        cls = item_dict.pop("_class_type")
+        instantiated_obj = eval(f"{cls}(**item_dict)")
 
     return instantiated_obj
 
@@ -766,19 +798,23 @@ def iterable_to_serialized_dict(iterable: Optional[Iterable[Any]] = None):
                 serialized_iterable = iterable_to_serialized_dict(iterable=item)
                 converted_iterable.append(serialized_iterable)
 
-            elif hasattr(item, 'attributes'):
+            elif hasattr(item, "attributes"):
                 arg_dict = _convert_arbitrary_obj_to_dict(item)
                 converted_iterable.append(arg_dict)
 
             elif isinstance(item, complex):
-                arg_dict = dict(real=float(item.real), imag=float(item.imag), _class_type='complex')
+                arg_dict = dict(
+                    real=float(item.real), imag=float(item.imag), _class_type="complex"
+                )
                 converted_iterable.append(arg_dict)
 
             else:
                 converted_iterable.append(str(item))
 
         if isinstance(iterable, np.ndarray):
-            converted_iterable = dict(object=converted_iterable, _class_type="numpy.array")
+            converted_iterable = dict(
+                object=converted_iterable, _class_type="numpy.array"
+            )
 
     return converted_iterable
 
@@ -802,11 +838,15 @@ def dict_to_serialized_dict(dct: Optional[Dict[str, Any]] = None):
                 serialized_iterable = iterable_to_serialized_dict(iterable=value)
                 converted_dict[name] = serialized_iterable
 
-            elif hasattr(value, 'attributes'):
+            elif hasattr(value, "attributes"):
                 kwarg_dict = _convert_arbitrary_obj_to_dict(value)
                 converted_dict[name] = kwarg_dict
             elif isinstance(value, complex):
-                kwarg_dict = dict(real=float(value.real), imag=float(value.imag), _class_type='complex')
+                kwarg_dict = dict(
+                    real=float(value.real),
+                    imag=float(value.imag),
+                    _class_type="complex",
+                )
                 converted_dict[name] = kwarg_dict
             else:
                 converted_dict[name] = str(value)
@@ -830,7 +870,7 @@ def _is_numeric(val) -> Optional[Union[float, complex]]:
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
     try:
-        if val is not None and not '.' in val:
+        if val is not None and not "." in val:
             int_conversion = int(val)
             return int_conversion
     except Exception:
@@ -857,14 +897,14 @@ def deserialize_obj(data: Any):
     that dictionary represents a serialized object that needs to be instantiated. The function will try and deserailize
     any other item in the dictionary.
     """
-    if data is None or data == 'None':
+    if data is None or data == "None":
         return None
 
     elif isinstance(data, dict):
         deserialized_dict = {}
         for key, value in data.items():
             deserialized_dict[key] = deserialize_obj(value)
-        if '_class_type' in deserialized_dict:
+        if "_class_type" in deserialized_dict:
             obj_instance = _convert_dict_to_obj(deserialized_dict)
             return obj_instance
 
@@ -873,24 +913,26 @@ def deserialize_obj(data: Any):
     numeric_form = _is_numeric(data)
     if numeric_form is not None:
         return numeric_form
-    elif data == 'True':
+    elif data == "True":
         return True
-    elif data == 'False':
+    elif data == "False":
         return False
-    elif data == '{}':
+    elif data == "{}":
         return {}
-    elif data == '[]':
+    elif data == "[]":
         return []
 
     elif isinstance(data, str):
         if len(data) > 0:
             # Try and load other items in the string it since it might be a nested item
-            if (data[0] == '{' and data[-1] == '}') or (data[0] == '[' and data[-1] == ']'):
+            if (data[0] == "{" and data[-1] == "}") or (
+                data[0] == "[" and data[-1] == "]"
+            ):
                 try:
                     loaded_json = json.loads(data.replace("'", '"'))
                     return deserialize_obj(loaded_json)
                 except json.JSONDecodeError as e:
-                    logger.debug('str could not be decoded, treating it as a str')
+                    logger.debug("str could not be decoded, treating it as a str")
 
         return data
 
@@ -900,4 +942,3 @@ def deserialize_obj(data: Any):
             deserialized_iterable.append(deserialize_obj(item))
         # Returns the same type of iterable
         return deserialized_iterable
-

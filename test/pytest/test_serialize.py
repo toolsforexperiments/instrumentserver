@@ -6,7 +6,7 @@ def test_toParamDict_paramsBasic():
     """Test serializing a few parameters added to a station"""
 
     paramNames = [f"parameter_{i}" for i in range(4)]
-    paramValues = [123, None, True, 'abcdef']
+    paramValues = [123, None, True, "abcdef"]
     params = []
 
     for n, v in zip(paramNames, paramValues):
@@ -21,4 +21,3 @@ def test_toParamDict_paramsBasic():
         paramDict_expt[n] = v
 
     assert paramDict_test == paramDict_expt
-

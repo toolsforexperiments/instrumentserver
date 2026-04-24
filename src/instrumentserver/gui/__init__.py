@@ -6,12 +6,12 @@ def getStyleSheet():
     if f.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
         style = f.readAll()
         f.close()
-        return str(style, 'utf-8')
+        return str(style, "utf-8")
 
 
 def widgetDialog(w: QtWidgets.QWidget):
     dg = QtWidgets.QDialog()
-    dg.setWindowTitle('instrumentserver')
+    dg.setWindowTitle("instrumentserver")
     dg.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint)
     dg.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint)
     dg.widget = w  # type: ignore[attr-defined] # I am pretty sure the stubs are wrong for this one.
@@ -28,7 +28,7 @@ def widgetDialog(w: QtWidgets.QWidget):
     return dg
 
 
-def widgetMainWindow(w: QtWidgets.QWidget, name: str = 'instrumentserver'):
+def widgetMainWindow(w: QtWidgets.QWidget, name: str = "instrumentserver"):
     mw = QtWidgets.QMainWindow()
     mw.setWindowTitle(name)
     mw.setCentralWidget(w)
@@ -42,7 +42,7 @@ def widgetMainWindow(w: QtWidgets.QWidget, name: str = 'instrumentserver'):
 
 def keepSmallHorizontally(w: QtWidgets.QWidget):
     w.setSizePolicy(
-        QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                              QtWidgets.QSizePolicy.Minimum)
+        QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum
+        )
     )
-

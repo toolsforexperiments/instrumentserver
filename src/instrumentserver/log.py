@@ -19,16 +19,16 @@ class LogLevels(Enum):
     debug = auto()
 
 
-class QLogHandler(QtCore.QObject,logging.Handler):
+class QLogHandler(QtCore.QObject, logging.Handler):
     """A simple log handler that supports logging in TextEdit"""
 
     COLORS = {
-        logging.ERROR: QtGui.QColor('red'),
-        logging.WARNING: QtGui.QColor('orange'),
-        logging.INFO: QtGui.QColor('green'),
-        logging.DEBUG: QtGui.QColor('gray'),
+        logging.ERROR: QtGui.QColor("red"),
+        logging.WARNING: QtGui.QColor("orange"),
+        logging.INFO: QtGui.QColor("green"),
+        logging.DEBUG: QtGui.QColor("gray"),
     }
-    
+
     new_html = QtCore.Signal(str)
 
     def __init__(self, parent):
@@ -41,8 +41,7 @@ class QLogHandler(QtCore.QObject,logging.Handler):
 
         # connect signal to slot that actually touches the widget (GUI thread)
         self.new_html.connect(self._append_html)
-    
-    
+
     @QtCore.Slot(str)
     def _append_html(self, html: str):
         """Append HTML to the text widget in the GUI thread."""
@@ -54,7 +53,6 @@ class QLogHandler(QtCore.QObject,logging.Handler):
             self.widget.verticalScrollBar().maximum()
         )
 
-    
     def set_transform(self, fn):
         """fn(record, msg) -> str | {'html': str} | None"""
         self._transform = fn
@@ -65,7 +63,7 @@ class QLogHandler(QtCore.QObject,logging.Handler):
             raw_msg = record.getMessage()  # message only
 
             # Color for prefix (log level)
-            clr = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
+            clr = self.COLORS.get(record.levelno, QtGui.QColor("black")).name()
 
             if self._transform is not None:
                 html_fragment = self._transform(record, raw_msg)
@@ -73,7 +71,7 @@ class QLogHandler(QtCore.QObject,logging.Handler):
                     i = formatted.rfind(raw_msg)
                     if i >= 0:
                         prefix = formatted[:i]
-                        suffix = formatted[i + len(raw_msg):]
+                        suffix = formatted[i + len(raw_msg) :]
                     else:
                         prefix, suffix = "", ""
 
@@ -90,29 +88,33 @@ class QLogHandler(QtCore.QObject,logging.Handler):
 
             # fallback: original plain text path
             msg = formatted
-            clr_q = self.COLORS.get(record.levelno, QtGui.QColor('black')).name()
+            clr_q = self.COLORS.get(record.levelno, QtGui.QColor("black")).name()
             html = f"<span style='color:{clr_q}'>{escape(msg)}</span>"
 
             self.new_html.emit(html)
         except RuntimeError:
             # Widget has been destroyed; detach self from the logger so we
             # stop receiving further records and Python can collect us.
-            for lg in list(logging.Logger.manager.loggerDict.values()) + [logging.getLogger()]:
+            for lg in list(logging.Logger.manager.loggerDict.values()) + [
+                logging.getLogger()
+            ]:
                 if isinstance(lg, logging.Logger) and self in lg.handlers:
                     lg.removeHandler(self)
+
 
 class LogWidget(QtWidgets.QWidget):
     """
     A simple logger widget. Uses QLogHandler as handler.
     The handler has the actual widget that is used to display the logs.
     """
+
     def __init__(self, parent=None, level=logging.INFO):
         super().__init__(parent)
 
         # set up the graphical handler
         fmt = logging.Formatter(
             "[%(asctime)s] [%(name)s: %(levelname)s] %(message)s",
-            datefmt='%m-%d %H:%M:%S',
+            datefmt="%m-%d %H:%M:%S",
         )
         logTextBox = QLogHandler(self)
         logTextBox.setFormatter(fmt)
@@ -126,7 +128,7 @@ class LogWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
         # configure the logger
-        self.logger = logging.getLogger('instrumentserver')
+        self.logger = logging.getLogger("instrumentserver")
 
         # delete old graphical handler. however, that would allow only one
         # graphical handler per kernel. not sure i want that...?
@@ -145,10 +147,12 @@ def _param_update_formatter(record, raw_msg):
     A formater that makes parameter updates more prominent in the gui log window.
     """
     # Pattern 1: "parameter-update" from the broadcaster, for client station
-    pattern_update = re.compile(r'parameter-update:\s*([A-Za-z0-9_.]+):\s*(.+)', re.S)
+    pattern_update = re.compile(r"parameter-update:\s*([A-Za-z0-9_.]+):\s*(.+)", re.S)
 
     # Pattern 2: normal log message from the server. i.e. `Parameter {name} set to: {value}`
-    pattern_info = re.compile(r"Parameter\s+'([A-Za-z0-9_.]+)'\s+set\s+to:\s*(.+)", re.S)
+    pattern_info = re.compile(
+        r"Parameter\s+'([A-Za-z0-9_.]+)'\s+set\s+to:\s*(.+)", re.S
+    )
 
     match = pattern_update.search(raw_msg) or pattern_info.search(raw_msg)
     if not match:
@@ -157,12 +161,18 @@ def _param_update_formatter(record, raw_msg):
     name, value = match.groups()
 
     # Escape HTML but keep \n literal (QTextEdit.append will render them)
-    return ( f"<b>{escape(name)}</b> set to: " f"<span style='color:#7e5bef; font-weight:bold'>{escape(value)}</span>" )
+    return (
+        f"<b>{escape(name)}</b> set to: "
+        f"<span style='color:#7e5bef; font-weight:bold'>{escape(value)}</span>"
+    )
 
 
-def setupLogging(addStreamHandler=True, logFile=None,
-                 name='instrumentserver',
-                 streamHandlerLevel=logging.INFO):
+def setupLogging(
+    addStreamHandler=True,
+    logFile=None,
+    name="instrumentserver",
+    streamHandlerLevel=logging.INFO,
+):
     """Setting up logging, including adding a custom handler."""
 
     logger = logging.getLogger(name)
@@ -174,7 +184,7 @@ def setupLogging(addStreamHandler=True, logFile=None,
     if logFile is not None:
         fmt = logging.Formatter(
             "%(asctime)s\t: %(name)s\t: %(levelname)s\t: %(message)s",
-            datefmt='%Y-%m-%d %H:%M:%S',
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         fh = logging.FileHandler(logFile)
         fh.setFormatter(fmt)
@@ -184,7 +194,7 @@ def setupLogging(addStreamHandler=True, logFile=None,
     if addStreamHandler:
         fmt = logging.Formatter(
             "[%(asctime)s] [%(name)s: %(levelname)s] %(message)s",
-            datefmt='%m/%d %H:%M',
+            datefmt="%m/%d %H:%M",
         )
         streamHandler = logging.StreamHandler(sys.stderr)
         streamHandler.setFormatter(fmt)
@@ -194,7 +204,7 @@ def setupLogging(addStreamHandler=True, logFile=None,
     logger.info(f"Logging set up for {name}.")
 
 
-def logger(name='instrumentserver'):
+def logger(name="instrumentserver"):
     """Get the (root) logger for the package."""
     return logging.getLogger(name)
 

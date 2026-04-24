@@ -13,55 +13,64 @@ import time
 class DummyChannel(Instrument):
     def __init__(self, name: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
-        self.add_parameter('ch0',
-                           set_cmd=None,
-                           vals=validators.Numbers(0, 1),
-                           initial_value=0)
+        self.add_parameter(
+            "ch0", set_cmd=None, vals=validators.Numbers(0, 1), initial_value=0
+        )
 
-        self.add_parameter('ch1', unit='v',
-                           set_cmd=None,
-                           vals=validators.Numbers(-1, 1),
-                           initial_value=1)
+        self.add_parameter(
+            "ch1",
+            unit="v",
+            set_cmd=None,
+            vals=validators.Numbers(-1, 1),
+            initial_value=1,
+        )
 
     def dummy_function(self, *args, **kwargs):
         """Dummy function for specific channels used for testing"""
-        print(f'the dummy chanel: {self.name} has been activated with:')
-        print(f'args: {args}')
-        print(f'kwargs: {kwargs}')
+        print(f"the dummy chanel: {self.name} has been activated with:")
+        print(f"args: {args}")
+        print(f"kwargs: {kwargs}")
         return True
 
 
 class DummyInstrumentWithSubmodule(Instrument):
     """A dummy instrument with submodules."""
 
-    def __init__(self, name: str, address=None, first_arg=None, second_arg=None, *args, **kwargs):
+    def __init__(
+        self, name: str, address=None, first_arg=None, second_arg=None, *args, **kwargs
+    ):
         super().__init__(name, *args, **kwargs)
         self.address = address
 
         self.first_arg = first_arg
         self.second_arg = second_arg
 
-        self.add_parameter('param0',
-                           set_cmd=None,
-                           vals=validators.Numbers(0, 1),
-                           initial_value=0)
+        self.add_parameter(
+            "param0", set_cmd=None, vals=validators.Numbers(0, 1), initial_value=0
+        )
 
-        self.add_parameter('param1', unit='v',
-                           set_cmd=None,
-                           vals=validators.Numbers(-1, 1),
-                           initial_value=1)
+        self.add_parameter(
+            "param1",
+            unit="v",
+            set_cmd=None,
+            vals=validators.Numbers(-1, 1),
+            initial_value=1,
+        )
 
-        self.add_parameter('int_param1', unit='v',
-                           set_cmd=None,
-                           vals=validators.Ints(-200, 200),
-                           initial_value=1)
+        self.add_parameter(
+            "int_param1",
+            unit="v",
+            set_cmd=None,
+            vals=validators.Ints(-200, 200),
+            initial_value=1,
+        )
 
-        for chan_name in ('A', 'B', 'C'):
-            channel = DummyChannel(f'{name}_Chan{chan_name}')
+        for chan_name in ("A", "B", "C"):
+            channel = DummyChannel(f"{name}_Chan{chan_name}")
             self.add_submodule(chan_name, channel)
 
     def close(self) -> None:
-        for submodule in list(getattr(self, 'submodules', {}).values()):
+        for submodule in list(getattr(self, "submodules", {}).values()):
             try:
                 submodule.close()
             except Exception:
@@ -70,9 +79,9 @@ class DummyInstrumentWithSubmodule(Instrument):
 
     def ask_raw(self, cmd):
         """Dummy ask_raw so *IDN? and similar SCPI queries don't explode the GUI."""
-        if cmd.strip().upper().startswith('*IDN'):
-            return f'dummy,{self.name},0,0'
-        return ''
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
 
     def test_func(self, a, b, *args, c: List[int] = [10, 11], **kwargs):
         """
@@ -82,22 +91,23 @@ class DummyInstrumentWithSubmodule(Instrument):
         :param b: Even nicer parameter
         :param c: This one sucks though.
         """
-        return a, b, args[0], c, kwargs['d'], self.param0()
+        return a, b, args[0], c, kwargs["d"], self.param0()
 
     def dummy_function(self, *args, **kwargs):
         """
         Such a dumb dummy function here doing nothing other than printing and occupying your precious, precious terminal
         space.
         """
-        print(f'the dummy chanel: {self.name} has been activated with:')
-        print(f'args: {args}')
-        print(f'kwargs: {kwargs}')
+        print(f"the dummy chanel: {self.name} has been activated with:")
+        print(f"args: {args}")
+        print(f"kwargs: {kwargs}")
         return self.address, self.first_arg, self.second_arg
 
 
 class DummyInstrumentTimeout(Instrument):
     """A dummy instrument to test timeout situations."""
-    def __init__(self, name: str, *args,  **kwargs):
+
+    def __init__(self, name: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
         self.random = np.random.randint(10000)
@@ -105,16 +115,26 @@ class DummyInstrumentTimeout(Instrument):
         self._param2 = 2
         self._p1_get_counter = 0
 
-        self.add_parameter('random_int', get_cmd=self.get_random)
-        self.add_parameter('param1', get_cmd= self._get_param1, set_cmd=lambda p: setattr(self, '_param1', p))
-        self.add_parameter('param2', get_cmd=lambda : self._param2, set_cmd=lambda p: setattr(self, '_param2', p))
+        self.add_parameter("random_int", get_cmd=self.get_random)
+        self.add_parameter(
+            "param1",
+            get_cmd=self._get_param1,
+            set_cmd=lambda p: setattr(self, "_param1", p),
+        )
+        self.add_parameter(
+            "param2",
+            get_cmd=lambda: self._param2,
+            set_cmd=lambda p: setattr(self, "_param2", p),
+        )
 
     def _get_param1(self):
         # for testing potentially redundant/duplicate get calls
-        print(f"-------------- getting {self.name}.param1, count {self._p1_get_counter}----------------")
+        print(
+            f"-------------- getting {self.name}.param1, count {self._p1_get_counter}----------------"
+        )
         self._p1_get_counter += 1
         return self._param1
-    
+
     def get_random(self):
         return self.random
 
@@ -123,49 +143,43 @@ class DummyInstrumentTimeout(Instrument):
         return self.get_random()
 
 
-
 class DummyInstrumentRandomNumber(Instrument):
     """A dummy instrument with a few parameters that have random numbers generated on demand"""
 
     def __init__(self, name: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
-        self.add_parameter('param0',
-                           set_cmd=None,
-                           vals=validators.Numbers(1, 10),
-                           initial_value=1)
+        self.add_parameter(
+            "param0", set_cmd=None, vals=validators.Numbers(1, 10), initial_value=1
+        )
 
-        self.add_parameter('param1',
-                           set_cmd=None,
-                           vals=validators.Numbers(10, 20),
-                           initial_value=10)
+        self.add_parameter(
+            "param1", set_cmd=None, vals=validators.Numbers(10, 20), initial_value=10
+        )
 
-        self.add_parameter('param2',
-                           set_cmd=None,
-                           vals=validators.Numbers(20, 30),
-                           initial_value=20)
+        self.add_parameter(
+            "param2", set_cmd=None, vals=validators.Numbers(20, 30), initial_value=20
+        )
 
-        self.add_parameter('param3',
-                           set_cmd=None,
-                           vals=validators.Numbers(30, 40),
-                           initial_value=30)
+        self.add_parameter(
+            "param3", set_cmd=None, vals=validators.Numbers(30, 40), initial_value=30
+        )
 
-        self.add_parameter('param4',
-                           set_cmd=None,
-                           vals=validators.Numbers(40, 50),
-                           initial_value=40)
+        self.add_parameter(
+            "param4", set_cmd=None, vals=validators.Numbers(40, 50), initial_value=40
+        )
 
     def generate_data(self, name: str):
 
-        if name == 'param0':
+        if name == "param0":
             self.parameters[name].set(np.random.randint(1, 10))
-        if name == 'param1':
+        if name == "param1":
             self.parameters[name].set(np.random.randint(10, 20))
-        if name == 'param2':
+        if name == "param2":
             self.parameters[name].set(np.random.randint(20, 30))
-        if name == 'param3':
+        if name == "param3":
             self.parameters[name].set(np.random.randint(30, 40))
-        if name == 'param4':
+        if name == "param4":
             self.parameters[name].set(np.random.randint(40, 50))
 
     def get(self, param_name):
@@ -177,6 +191,7 @@ class FieldVectorIns(Instrument):
     """
     class used to develop json serialization and guis
     """
+
     def __init__(self, name, starting_parameter=22, *args, **kwargs):
         super().__init__(name=name, *args, **kwargs)
 
@@ -185,26 +200,29 @@ class FieldVectorIns(Instrument):
         self.complex_lst = [1 + 1j, -2 - 2j]
         self.starting_parameter = starting_parameter
 
-        self.add_parameter(name="field",
-                           label='target field',
-                           unit='T',
-                           get_cmd=self.get_field,
-                           set_cmd=self.set_field,
-                           )
+        self.add_parameter(
+            name="field",
+            label="target field",
+            unit="T",
+            get_cmd=self.get_field,
+            set_cmd=self.set_field,
+        )
 
-        self.add_parameter(name='complex',
-                           label='complex value',
-                           unit='',
-                           get_cmd=self.get_complex,
-                           set_cmd=self.set_complex,
-                           )
+        self.add_parameter(
+            name="complex",
+            label="complex value",
+            unit="",
+            get_cmd=self.get_complex,
+            set_cmd=self.set_complex,
+        )
 
-        self.add_parameter(name='complex_list',
-                           label='complex list',
-                           unit='',
-                           get_cmd=self.get_complex_list,
-                           set_cmd=self.set_complex_list,
-                           )
+        self.add_parameter(
+            name="complex_list",
+            label="complex list",
+            unit="",
+            get_cmd=self.get_complex_list,
+            set_cmd=self.set_complex_list,
+        )
 
     def get_starting_parameter(self):
         return self.starting_parameter
@@ -231,5 +249,5 @@ class FieldVectorIns(Instrument):
         self.complex_lst = value
 
     def generic_function(self):
-        print(f'this generic function has been called')
+        print(f"this generic function has been called")
         return 3

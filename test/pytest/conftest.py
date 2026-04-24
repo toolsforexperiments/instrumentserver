@@ -7,7 +7,7 @@ from instrumentserver.client.core import BaseClient
 from instrumentserver.client.proxy import Client
 
 
-@pytest.fixture(autouse=True, scope='module')
+@pytest.fixture(autouse=True, scope="module")
 def _close_instruments_between_modules():
     """Ensure every test module starts with a clean qcodes instrument registry.
 
@@ -21,7 +21,7 @@ def _close_instruments_between_modules():
     qc.Instrument.close_all()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def qapp_session():
     """Ensure a QApplication exists for the entire test session.
 
@@ -30,13 +30,14 @@ def qapp_session():
     This fixture guarantees the app exists even for non-GUI tests.
     """
     from instrumentserver import QtWidgets
+
     app = QtWidgets.QApplication.instance()
     if app is None:
         app = QtWidgets.QApplication([])
     return app
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def start_server(qapp_session):
     server, thread = startServer()
     yield server
@@ -61,11 +62,16 @@ def cli(start_server):
 
 @pytest.fixture()
 def dummy_instrument(cli):
-    dummy = cli.find_or_create_instrument('dummy', 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule')
+    dummy = cli.find_or_create_instrument(
+        "dummy",
+        "instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule",
+    )
     return cli, dummy
 
 
 @pytest.fixture()
 def param_manager(cli):
-    params = cli.find_or_create_instrument('parameter_manager', 'instrumentserver.params.ParameterManager')
+    params = cli.find_or_create_instrument(
+        "parameter_manager", "instrumentserver.params.ParameterManager"
+    )
     return cli, params

@@ -11,7 +11,6 @@ from instrumentserver.server.core import ServerResponse
 logger = logging.getLogger(__name__)
 
 
-
 class BaseClient:
     """Simple client for the StationServer.
     When a timeout happens, a RunTimeError is being raised. This error is there just to warn the user that a timeout
@@ -25,7 +24,14 @@ class BaseClient:
     :param raise_exceptions: If true the client will raise an exception when the server sends one to it, defaults to True.
     """
 
-    def __init__(self, host='localhost', port=DEFAULT_PORT, connect=True, timeout=20, raise_exceptions=True):
+    def __init__(
+        self,
+        host="localhost",
+        port=DEFAULT_PORT,
+        connect=True,
+        timeout=20,
+        raise_exceptions=True,
+    ):
         self.connected = False
         self._closed = False
         self.context = None
@@ -68,7 +74,9 @@ class BaseClient:
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.DEALER)
         self.socket.setsockopt(zmq.RCVTIMEO, self.recv_timeout_ms)
-        self.socket.setsockopt(zmq.IDENTITY, uuid.uuid4().hex.encode()) #todo: more meaningful id?
+        self.socket.setsockopt(
+            zmq.IDENTITY, uuid.uuid4().hex.encode()
+        )  # todo: more meaningful id?
         self.socket.connect(self.addr)
         self.connected = True
 
@@ -89,7 +97,7 @@ class BaseClient:
             else:
                 logger.error("Server did not reply before timeout.")
                 return None
-            
+
         if isinstance(ret, ServerResponse):
             err = ret.error
             if err is not None:
@@ -97,7 +105,7 @@ class BaseClient:
             return ret.message
 
         return ret
-    
+
     def _reset_connection(self):
         try:
             if self.socket is not None:
@@ -106,7 +114,7 @@ class BaseClient:
             self.connected = False
             if not self._closed:
                 self.connect()
-            
+
     def _handle_server_error(self, err):
         if isinstance(err, str):
             logger.error(err)
@@ -123,7 +131,7 @@ class BaseClient:
             if self.raise_exceptions:
                 raise TypeError(msg)
             logger.error(msg)
-    
+
     def disconnect(self):
         self._closed = True
         if self.socket is not None:
@@ -141,8 +149,7 @@ class BaseClient:
         self.connected = False
 
 
-def sendRequest(message, host='localhost', port=DEFAULT_PORT):
+def sendRequest(message, host="localhost", port=DEFAULT_PORT):
     with BaseClient(host, port) as cli:
         ret = cli.ask(message)
     return ret
-

@@ -27,24 +27,15 @@ class ParameterTypes(Enum):
 
 
 parameterTypes = {
-    ParameterTypes.any:
-        {'name': 'Any',
-         'validatorType': validators.Anything},
-    ParameterTypes.numeric:
-        {'name': 'Numeric',
-         'validatorType': validators.Numbers},
-    ParameterTypes.integer:
-        {'name': 'Integer',
-         'validatorType': validators.Ints},
-    ParameterTypes.string:
-        {'name': 'String',
-         'validatorType': validators.Strings},
-    ParameterTypes.bool:
-        {'name': 'Boolean',
-         'validatorType': validators.Bool},
-    ParameterTypes.complex:
-        {'name': 'Complex',
-         'validatorType': validators.ComplexNumbers},
+    ParameterTypes.any: {"name": "Any", "validatorType": validators.Anything},
+    ParameterTypes.numeric: {"name": "Numeric", "validatorType": validators.Numbers},
+    ParameterTypes.integer: {"name": "Integer", "validatorType": validators.Ints},
+    ParameterTypes.string: {"name": "String", "validatorType": validators.Strings},
+    ParameterTypes.bool: {"name": "Boolean", "validatorType": validators.Bool},
+    ParameterTypes.complex: {
+        "name": "Complex",
+        "validatorType": validators.ComplexNumbers,
+    },
 }
 
 
@@ -53,7 +44,7 @@ def paramTypeFromVals(vals: validators.Validator | None) -> Union[ParameterTypes
         vals = validators.Anything()
 
     for k, v in parameterTypes.items():
-        validator_type = v['validatorType']
+        validator_type = v["validatorType"]
         if isinstance(validator_type, type) and isinstance(vals, validator_type):
             return k
 
@@ -62,7 +53,7 @@ def paramTypeFromVals(vals: validators.Validator | None) -> Union[ParameterTypes
 
 def paramTypeFromName(name: str) -> Union[ParameterTypes, None]:
     for k, v in parameterTypes.items():
-        if name == v['name']:
+        if name == v["name"]:
             return k
     return None
 
@@ -123,7 +114,7 @@ class ParameterManager(InstrumentBase):
         When passed the full file name of a parameter_manager profile, return only the middle
         string representing the profile's name.
         """
-        return name.replace('parameter_manager-', '').replace('.json', '')
+        return name.replace("parameter_manager-", "").replace(".json", "")
 
     @staticmethod
     def fullProfileName(name: str) -> str:
@@ -131,14 +122,14 @@ class ParameterManager(InstrumentBase):
         Adds 'parameter_manager-' to the beginning of `name` and adds '.json' at the end.
         """
 
-        if not name.startswith('parameter_manager-'):
-            name = 'parameter_manager-' + name
-        if not name.endswith('.json'):
-            name += '.json'
+        if not name.startswith("parameter_manager-"):
+            name = "parameter_manager-" + name
+        if not name.endswith(".json"):
+            name += ".json"
         return name
 
     @classmethod
-    def _to_tree(cls, pm: 'ParameterManager') -> Dict:
+    def _to_tree(cls, pm: "ParameterManager") -> Dict:
         ret: dict[str, Any] = {}
         for smn, sm in pm.submodules.items():
             assert isinstance(sm, ParameterManager)
@@ -176,27 +167,30 @@ class ParameterManager(InstrumentBase):
     def _get_param(self, param_name: str) -> ParameterBase:
         parent = self._get_parent(param_name)
         try:
-            param = parent.parameters[param_name.split('.')[-1]]
+            param = parent.parameters[param_name.split(".")[-1]]
             return param
         except KeyError:
             raise ValueError(f"Parameter '{param_name}' does not exist")
 
-    def _get_parent(self, param_name: str, create_parent: bool = False) \
-            -> 'ParameterManager':
+    def _get_parent(
+        self, param_name: str, create_parent: bool = False
+    ) -> "ParameterManager":
 
-        split_names = param_name.split('.')
+        split_names = param_name.split(".")
         parent = self
         full_name = self.name
 
         for i, n in enumerate(split_names[:-1]):
-            full_name += f'.{n}'
+            full_name += f".{n}"
             if n in parent.parameters:
-                raise ValueError(f"{n} is a parameter, and cannot have child parameters.")
+                raise ValueError(
+                    f"{n} is a parameter, and cannot have child parameters."
+                )
             if n not in parent.submodules:
                 if create_parent:
                     parent.add_submodule(n, ParameterManager(n))  # type: ignore # This one is technically breaking the type hints from qcodes itself, but it seems to work fine.
                 else:
-                    raise ValueError(f'{n} does not exist.')
+                    raise ValueError(f"{n} does not exist.")
             parent = parent.submodules[n]  # type: ignore # This one is technically breaking the type hints from qcodes itself, but it seems to work fine.
         return parent
 
@@ -223,20 +217,20 @@ class ParameterManager(InstrumentBase):
             - ``vals`` defaults to ``qcodes.utils.validators.Anything()``.
         :return: None.
         """
-        kw['parameter_class'] = Parameter
-        if 'vals' not in kw:
-            kw['vals'] = validators.Anything()
-        kw['set_cmd'] = None
+        kw["parameter_class"] = Parameter
+        if "vals" not in kw:
+            kw["vals"] = validators.Anything()
+        kw["set_cmd"] = None
 
         parent = self._get_parent(name, create_parent=True)
         if parent is self:
-            super().add_parameter(name.split('.')[-1], **kw)
+            super().add_parameter(name.split(".")[-1], **kw)
         else:
-            parent.add_parameter(name.split('.')[-1], **kw)
+            parent.add_parameter(name.split(".")[-1], **kw)
 
     def remove_parameter(self, param_name: str, cleanup: bool = True):
         parent = self._get_parent(param_name)
-        pname = param_name.split('.')[-1]
+        pname = param_name.split(".")[-1]
         del parent.parameters[pname]
         if cleanup:
             self.remove_empty_submodules()
@@ -311,16 +305,20 @@ class ParameterManager(InstrumentBase):
             ParameterManager that are not listed in the file.
         """
         if filePath is None:
-            filePath = self.workingDirectory.joinpath(self.fullProfileName(self.selectedProfile))
+            filePath = self.workingDirectory.joinpath(
+                self.fullProfileName(self.selectedProfile)
+            )
 
         if os.path.exists(filePath):
-            with open(filePath, 'r') as f:
+            with open(filePath, "r") as f:
                 pd = json.load(f)
             self.fromParamDict(pd)
 
             path = Path(filePath)
 
-            if path.name.startswith("parameter_manager-") and path.name.endswith(".json"):
+            if path.name.startswith("parameter_manager-") and path.name.endswith(
+                ".json"
+            ):
                 profileName = path.name
                 self.selectedProfile = profileName
                 if path.name not in self.profiles:
@@ -329,8 +327,7 @@ class ParameterManager(InstrumentBase):
         else:
             logger.warning("parameter file not found, cannot load.")
 
-    def fromParamDict(self, paramDict: Dict[str, Any],
-                      deleteMissing: bool = True):
+    def fromParamDict(self, paramDict: Dict[str, Any], deleteMissing: bool = True):
         """Load parameters from a parameter dictionary (see :mod:`.serialize`).
 
         :param paramDict: Parameter dictionary.
@@ -344,16 +341,19 @@ class ParameterManager(InstrumentBase):
             simple = False
 
         currentParams = self.list()
-        fileParams = ['.'.join(k.split('.')[1:]) for k in paramDict.keys()
-                      if k.split('.')[0] == self.name]
+        fileParams = [
+            ".".join(k.split(".")[1:])
+            for k in paramDict.keys()
+            if k.split(".")[0] == self.name
+        ]
 
         for pn in fileParams:
             if simple:
                 val = paramDict[f"{self.name}.{pn}"]
-                unit = ''
+                unit = ""
             else:
-                val = paramDict[f"{self.name}.{pn}"]['value']
-                unit = paramDict[f"{self.name}.{pn}"].get('unit', '')
+                val = paramDict[f"{self.name}.{pn}"]["value"]
+                unit = paramDict[f"{self.name}.{pn}"].get("unit", "")
 
             if self.has_param(pn):
                 self.parameter(pn)(val)
@@ -369,13 +369,15 @@ class ParameterManager(InstrumentBase):
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
 
-    def toParamDict(self, simpleFormat: bool = False, includeMeta: List[str] = ['unit']):
-        params = serialize.toParamDict([self], simpleFormat=simpleFormat,
-                                       includeMeta=includeMeta)
+    def toParamDict(
+        self, simpleFormat: bool = False, includeMeta: List[str] = ["unit"]
+    ):
+        params = serialize.toParamDict(
+            [self], simpleFormat=simpleFormat, includeMeta=includeMeta
+        )
         return params
 
     def toFile(self, filePath: str | None = None, name: str | None = None):
-
         """Save parameters from the instrument into a json file.
         If the file being saved is a profile file (starts with 'parameter_manager-' and ends with '.json'),
         the selectedProfile is changed to the filename.
@@ -395,13 +397,13 @@ class ParameterManager(InstrumentBase):
         if os.path.isdir(filePath):
             if name is None:
                 name = self.selectedProfile
-            filePath = os.path.join(filePath,  self.fullProfileName(name))
+            filePath = os.path.join(filePath, self.fullProfileName(name))
 
         folder, file = os.path.split(filePath)
         params = self.toParamDict()
         if not os.path.exists(folder):
             os.makedirs(folder)
-        with open(filePath, 'w') as f:
+        with open(filePath, "w") as f:
             json.dump(params, f, indent=2, sort_keys=True)
 
         file = str(file)
@@ -423,5 +425,7 @@ class ParameterManager(InstrumentBase):
 
         self.toFile(str(self.workingDirectory), self.selectedProfile)
         self.remove_all_parameters()
-        self.fromFile(str(self.workingDirectory.joinpath(self.fullProfileName(profile))))
+        self.fromFile(
+            str(self.workingDirectory.joinpath(self.fullProfileName(profile)))
+        )
         self.selectedProfile = self.fullProfileName(profile)

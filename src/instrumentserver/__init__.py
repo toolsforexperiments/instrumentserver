@@ -20,8 +20,7 @@ def getInstrumentserverPath(*subfolder: str) -> str:
     return os.path.join(path, *subfolder)
 
 
-PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath('schemas'),
-                                  'parameters.json')
+PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath("schemas"), "parameters.json")
 
 DEFAULT_PORT = 5555
 
@@ -31,4 +30,5 @@ with open(PARAMS_SCHEMA_PATH) as f:
 from .log import setupLogging, logger
 
 from .client import Client
+
 InstrumentClient = Client

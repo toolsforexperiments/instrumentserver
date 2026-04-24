@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
 
 
 class ServerWidget(QtWidgets.QWidget):
-    def __init__(self, client_station:ClientStation, parent=None):
+    def __init__(self, client_station: ClientStation, parent=None):
         super().__init__(parent)
         self.client_station = client_station
 
@@ -58,7 +58,9 @@ class ServerWidget(QtWidgets.QWidget):
         lh = self.cmd.fontMetrics().lineSpacing()
         self.cmd.setFixedHeight(lh * rows + 2 * self.cmd.frameWidth() + 8)
         # Let it grow horizontally
-        self.cmd.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.cmd.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+        )
 
         form_layout.addRow("Host:", self.host)
         form_layout.addRow("Port:", self.port)
@@ -87,10 +89,9 @@ class ServerWidget(QtWidgets.QWidget):
         le.setPalette(pal)
 
     # def restart_server(self):
-        # todo: to be implemented, ssh to server pc and start the server there.
-        #   need to close the port if occupied.
-        # print(self.cmd.toPlainText())
-
+    # todo: to be implemented, ssh to server pc and start the server there.
+    #   need to close the port if occupied.
+    # print(self.cmd.toPlainText())
 
 
 class ClientStationGui(QtWidgets.QMainWindow):
@@ -106,14 +107,23 @@ class ClientStationGui(QtWidgets.QMainWindow):
         # Set unique Windows App ID so that this app can have separate taskbar entry than other Qt apps
         if sys.platform == "win32":
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("InstrumentServer.ClientStation")
-        self.setWindowIcon(QtGui.QIcon(getInstrumentserverPath("resource","icons")+"/client_app_icon.svg"))
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "InstrumentServer.ClientStation"
+            )
+        self.setWindowIcon(
+            QtGui.QIcon(
+                getInstrumentserverPath("resource", "icons") + "/client_app_icon.svg"
+            )
+        )
         self.station = station
         self.cli = station.client
 
         # set up the listener thread and worker that listens to update messages emitted by the server (from all clients)
         self.listenerThread = QtCore.QThread()
-        self.listener = SubClient(instruments=None, sub_host=self.cli.host, sub_port=self.cli.port+1)
+        self.listener = SubClient(
+            instruments=None, sub_host=self.cli.host, sub_port=self.cli.port + 1
+        )
         self.listener.moveToThread(self.listenerThread)
         self.listenerThread.started.connect(self.listener.connect)
         self.listener.finished.connect(self.listenerThread.quit)
@@ -131,8 +141,8 @@ class ClientStationGui(QtWidgets.QMainWindow):
         self.tabs.currentChanged.connect(self.onTabChanged)
 
         # --- client station
-        self.stationList = StationList() # instrument list
-        self.stationObjInfo = StationObjectInfo() # instrument docs
+        self.stationList = StationList()  # instrument list
+        self.stationObjInfo = StationObjectInfo()  # instrument docs
 
         for inst in self.station.instruments.values():
             self.stationList.addInstrument(inst.bp)
@@ -145,18 +155,17 @@ class ClientStationGui(QtWidgets.QMainWindow):
         stationWidgets.addWidget(self.stationObjInfo)
         stationWidgets.setSizes([200, 500])
 
-        self.tabs.addUnclosableTab(stationWidgets, 'Station')
+        self.tabs.addUnclosableTab(stationWidgets, "Station")
 
         self.addParameterLoadSaveToolbar()
 
         # --- log widget
         self.log_widget = LogWidget(level=logging.INFO)
-        self.tabs.addUnclosableTab(self.log_widget, 'Log')
+        self.tabs.addUnclosableTab(self.log_widget, "Log")
 
         # --- server widget
         self.server_widget = ServerWidget(self.station)
-        self.tabs.addUnclosableTab(self.server_widget, 'Server')
-
+        self.tabs.addUnclosableTab(self.server_widget, "Server")
 
         # adjust window size
         screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
@@ -166,7 +175,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
     @QtCore.Slot(ParameterBroadcastBluePrint)
     def listenerEvent(self, message: ParameterBroadcastBluePrint):
-        if message.action == 'parameter-update':
+        if message.action == "parameter-update":
             logger.info(f"{message.action}: {message.name}: {message.value}")
 
     def openInstrumentTab(self, item: QtWidgets.QListWidgetItem, index: int):
@@ -181,25 +190,32 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
             # Get GUI config from station config (patterns already merged by config.py)
             instrument_config = self.station.full_config.get(name, {})
-            gui_config = instrument_config.get('gui', {})
-            gui_kwargs = gui_config.get('kwargs', {})
+            gui_config = instrument_config.get("gui", {})
+            gui_kwargs = gui_config.get("kwargs", {})
 
             widgetClass = GenericInstrument
 
             # Check if a custom GUI type is specified
-            if 'type' in gui_config:
+            if "type" in gui_config:
                 try:
                     # import the widget
-                    moduleName = '.'.join(gui_config['type'].split('.')[:-1])
-                    widgetClassName = gui_config['type'].split('.')[-1]
+                    moduleName = ".".join(gui_config["type"].split(".")[:-1])
+                    widgetClassName = gui_config["type"].split(".")[-1]
                     module = importlib.import_module(moduleName)
                     widgetClass = getattr(module, widgetClassName)
                 except (ImportError, AttributeError) as e:
-                    logger.warning(f"Failed to load custom GUI '{gui_config['type']}' for '{name}': {e}. Using default GenericInstrument.")
+                    logger.warning(
+                        f"Failed to load custom GUI '{gui_config['type']}' for '{name}': {e}. Using default GenericInstrument."
+                    )
                     widgetClass = GenericInstrument
 
-            ins_widget = widgetClass(instrument, parent=self, sub_host=self.cli.host, sub_port=self.cli.port+1,
-                                     **gui_kwargs)
+            ins_widget = widgetClass(
+                instrument,
+                parent=self,
+                sub_host=self.cli.host,
+                sub_port=self.cli.port + 1,
+                **gui_kwargs,
+            )
 
             # add tab
             ins_widget.setObjectName(name)
@@ -223,7 +239,9 @@ class ClientStationGui(QtWidgets.QMainWindow):
         widget = self.tabs.widget(index)
         # if instrument tab is not in 'instrumentTabsOpen' yet, tab must be just open, in this case the constructor
         # of the parameter widget should have already called refresh, so we don't have to do that again.
-        if hasattr(widget, "parametersList") and (widget.objectName() in self.instrumentTabsOpen):
+        if hasattr(widget, "parametersList") and (
+            widget.objectName() in self.instrumentTabsOpen
+        ):
             widget.parametersList.model.refreshAll()
 
     @QtCore.Slot(str)
@@ -248,7 +266,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
         self.paramPathEdit = QtWidgets.QLineEdit(pathWidget)
         self.paramPathEdit.setPlaceholderText("Parameter file path")
-        self.paramPathEdit.setText(str(Path.cwd()/"client_params.json"))
+        self.paramPathEdit.setText(str(Path.cwd() / "client_params.json"))
         self.paramPathEdit.setClearButtonEnabled(True)
         self.paramPathEdit.setMinimumWidth(280)
         h = self.paramPathEdit.fontMetrics().height() + 10
@@ -260,7 +278,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
         pathLayout.addWidget(lbl)
         pathLayout.addWidget(self.paramPathEdit, 1)  # stretch
-        
+
         pathAction = QtWidgets.QWidgetAction(self.toolBar)
         pathAction.setDefaultWidget(pathWidget)
         self.toolBar.addAction(pathAction)
@@ -272,7 +290,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
         saveAct = QtWidgets.QAction(QtGui.QIcon(":/icons/save.svg"), "Save", self)
         loadAct.triggered.connect(self.loadParams)
         saveAct.triggered.connect(self.saveParams)
-        
+
         self.toolBar.addAction(browseBtn)
         self.toolBar.addAction(loadAct)
         self.toolBar.addAction(saveAct)
@@ -292,7 +310,9 @@ class ClientStationGui(QtWidgets.QMainWindow):
     def saveParams(self):
         file_path = self.paramPathEdit.text()
         if not file_path:
-            QtWidgets.QMessageBox.warning(self, "No file path", "Please specify a path to save parameters.")
+            QtWidgets.QMessageBox.warning(
+                self, "No file path", "Please specify a path to save parameters."
+            )
             return
         try:
             self.station.save_parameters(file_path)
@@ -304,7 +324,9 @@ class ClientStationGui(QtWidgets.QMainWindow):
     def loadParams(self):
         file_path = self.paramPathEdit.text()
         if not file_path:
-            QtWidgets.QMessageBox.warning(self, "No file path", "Please specify a path to load parameters.")
+            QtWidgets.QMessageBox.warning(
+                self, "No file path", "Please specify a path to load parameters."
+            )
             return
         try:
             self.station.load_parameters(file_path)
@@ -313,27 +335,29 @@ class ClientStationGui(QtWidgets.QMainWindow):
             # Refresh all tabs
             for i in range(self.tabs.count()):
                 widget = self.tabs.widget(i)
-                if hasattr(widget, 'parametersList') and hasattr(widget.parametersList, 'model'):
+                if hasattr(widget, "parametersList") and hasattr(
+                    widget.parametersList, "model"
+                ):
                     widget.parametersList.model.refreshAll()
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Load Error", str(e))
 
-
     @QtCore.Slot(str)
-    def closeInstrument(self, name: str):#, item: QtWidgets.QListWidgetItem):
+    def closeInstrument(self, name: str):  # , item: QtWidgets.QListWidgetItem):
         try:
             # close instrument on server
             self.station.close_instrument(name)
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Close Error", f"Failed to close '{name}':\n{e}")
+            QtWidgets.QMessageBox.critical(
+                self, "Close Error", f"Failed to close '{name}':\n{e}"
+            )
             return
 
         # remove from gui
         self.removeInstrumentFromGui(name)
 
         logger.info(f"Closed instrument '{name}'")
-
 
     def removeInstrumentFromGui(self, name: str):
         """Remove an instrument from the station list."""

@@ -4,15 +4,18 @@ from .. import QtWidgets, QtGui, QtCore
 
 
 class AlertLabel(QtWidgets.QLabel):
-
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None, pixmapSize: Tuple[int, int] = (20, 20)):
+    def __init__(
+        self,
+        parent: Optional[QtWidgets.QWidget] = None,
+        pixmapSize: Tuple[int, int] = (20, 20),
+    ):
         super().__init__(parent)
 
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
         self._pixmapSize = pixmapSize
         pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(*pixmapSize)
         self.setPixmap(pix)
-        self.setToolTip('no alerts')
+        self.setToolTip("no alerts")
 
     @QtCore.Slot(str)
     def setAlert(self, message: str):
@@ -24,13 +27,14 @@ class AlertLabel(QtWidgets.QLabel):
     def clearAlert(self):
         pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(*self._pixmapSize)
         self.setPixmap(pix)
-        self.setToolTip('no alerts')
+        self.setToolTip("no alerts")
 
 
 class AlertLabelGreen(AlertLabel):
     """
     Expanding the functionality of the AlertLabel to add green alerts to indicate successful things
     """
+
     def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.clearAlert()
         super().mouseDoubleClickEvent(a0)
@@ -48,7 +52,6 @@ class AlertLabelGreen(AlertLabel):
 
 
 class DetachedTab(QtWidgets.QMainWindow):
-
     #: Signal(QtWidgets.QWidget)
     #: emitted when a tab for the instrument is closed
     onCloseSignal = QtCore.Signal(object, str)
@@ -70,7 +73,6 @@ class DetachedTab(QtWidgets.QMainWindow):
 
 
 class SeparableTabBar(QtWidgets.QTabBar):
-
     #: Signal(tabIndex, newPosition)
     #: Emitted when the user is dragging a tab out ofd the tab bar and should be detached.
     onDetachTab = QtCore.Signal(object, object)
@@ -106,12 +108,14 @@ class SeparableTabBar(QtWidgets.QTabBar):
         Detects if the user is dragging a tab and starts the drag object.
         """
 
-        if (a0.pos() - self.dragStartPos).manhattanLength() > QtWidgets.QApplication.startDragDistance() \
-                and self.selectedIndex != -1:
-
+        if (
+            (a0.pos() - self.dragStartPos).manhattanLength()
+            > QtWidgets.QApplication.startDragDistance()
+            and self.selectedIndex != -1
+        ):
             drag = QtGui.QDrag(self)
             mimeData = QtCore.QMimeData()
-            mimeData.setData('action', b'application/tab-detach')
+            mimeData.setData("action", b"application/tab-detach")
             drag.setMimeData(mimeData)
 
             pixmap = self.parentWidget().currentWidget().grab()  # type: ignore[attr-defined] # I am pretty sure the stubs are wrong for this one, running through the debugger all the methods exists.
@@ -131,7 +135,9 @@ class SeparableTabBar(QtWidgets.QTabBar):
             # A move action indicates that the user is trying to move the tabs around
             if dropAction == QtCore.Qt.MoveAction:
                 a0.accept()
-                self.onMoveTab.emit(self.tabAt(self.dragStartPos), self.tabAt(self.dragDroppedPos))
+                self.onMoveTab.emit(
+                    self.tabAt(self.dragStartPos), self.tabAt(self.dragDroppedPos)
+                )
 
             # An ignore action means that the user dropped the tab outside of the window and should be detached.
             elif dropAction == QtCore.Qt.IgnoreAction:
@@ -145,7 +151,7 @@ class SeparableTabBar(QtWidgets.QTabBar):
         mimeData = a0.mimeData()
         formats = mimeData.formats()
 
-        if 'action' in formats and mimeData.data('action') == 'application/tab-detach':
+        if "action" in formats and mimeData.data("action") == "application/tab-detach":
             a0.acceptProposedAction()
 
         super().dragMoveEvent(a0)
@@ -183,10 +189,14 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
 
     def addUnclosableTab(self, widget, name):
         index = self.addTab(widget, name)
-        closeButton = self._tabBar.tabButton(index, QtWidgets.QTabBar.ButtonPosition.RightSide)
+        closeButton = self._tabBar.tabButton(
+            index, QtWidgets.QTabBar.ButtonPosition.RightSide
+        )
         # on Mac the button is on the left side
         if closeButton is None:
-            closeButton = self._tabBar.tabButton(index, QtWidgets.QTabBar.ButtonPosition.LeftSide)
+            closeButton = self._tabBar.tabButton(
+                index, QtWidgets.QTabBar.ButtonPosition.LeftSide
+            )
         closeButton.resize(0, 0)
         self.unclosableTabs[name] = widget
 
@@ -223,7 +233,9 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
         self.onCloseTab(fromIndex, True)
         self.insertTab(toIndex, widget, icon, text)
         if text in self.unclosableTabs:
-            self._tabBar.tabButton(toIndex, QtWidgets.QTabBar.ButtonPosition.RightSide).resize(0, 0)
+            self._tabBar.tabButton(
+                toIndex, QtWidgets.QTabBar.ButtonPosition.RightSide
+            ).resize(0, 0)
         self.setCurrentWidget(widget)
 
     @QtCore.Slot(int)
@@ -253,7 +265,13 @@ class BaseDialog(QtWidgets.QDialog):
     :param tittleBarButtonsWidth: The width of pixels that the icon, the width will be set such that it is this number
         plus whatever the tittle is plus 15 extra pixels of margin.
     """
-    def __init__(self, parent=None, flags=(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowCloseButtonHint), tittleBarButtonsWidth=108):
+
+    def __init__(
+        self,
+        parent=None,
+        flags=(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowCloseButtonHint),
+        tittleBarButtonsWidth=108,
+    ):
         super().__init__(parent, flags=flags)
         self.tittleBarButtonsWidth = tittleBarButtonsWidth
 

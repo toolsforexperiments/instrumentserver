@@ -85,11 +85,13 @@ logger = logging.getLogger(__name__)
 SerializableType = Union[Station, List[Union[InstrumentBase, Parameter]]]
 
 
-def toParamDict(input: SerializableType,
-                get: bool = False,
-                includeMeta: List[str] = [],
-                excludeParameters: List[str] = [],
-                simpleFormat: bool = True) -> Dict:
+def toParamDict(
+    input: SerializableType,
+    get: bool = False,
+    includeMeta: List[str] = [],
+    excludeParameters: List[str] = [],
+    simpleFormat: bool = True,
+) -> Dict:
     """Create a dictionary that holds parameter values, and optionally additional
     information about them.
 
@@ -113,33 +115,43 @@ def toParamDict(input: SerializableType,
             snap = input.get_snapshot()
         else:
             snap = input.snapshot()
-        input = [getattr(input, k) for k in snap['instruments'].keys()] \
-            + [getattr(input, k) for k in snap['parameters'].keys()] \
-            + [getattr(input, k) for k in snap['components'].keys()]
+        input = (
+            [getattr(input, k) for k in snap["instruments"].keys()]
+            + [getattr(input, k) for k in snap["parameters"].keys()]
+            + [getattr(input, k) for k in snap["components"].keys()]
+        )
 
     ret = {}
     for obj in input:
         if isinstance(obj, InstrumentBase):
-            ret.update(_singleInstrumentParametersToJson(
-                obj, get=get, addPrefix=f"{obj.name}.",
-                includeMeta=includeMeta,
-                simpleFormat=simpleFormat,
-                excludeParameters=excludeParameters))
+            ret.update(
+                _singleInstrumentParametersToJson(
+                    obj,
+                    get=get,
+                    addPrefix=f"{obj.name}.",
+                    includeMeta=includeMeta,
+                    simpleFormat=simpleFormat,
+                    excludeParameters=excludeParameters,
+                )
+            )
 
         elif isinstance(obj, Parameter):
-            ret.update(_singleParameterToJson(
-                obj, get=get, simpleFormat=simpleFormat,
-                includeMeta=includeMeta))
+            ret.update(
+                _singleParameterToJson(
+                    obj, get=get, simpleFormat=simpleFormat, includeMeta=includeMeta
+                )
+            )
 
         else:
-            raise ValueError(f"Invalid object: {obj}. Can only process "
-                             f"Station, Instrument, and Parameter.")
+            raise ValueError(
+                f"Invalid object: {obj}. Can only process "
+                f"Station, Instrument, and Parameter."
+            )
 
     return ret
 
 
-def fromParamDict(paramDict: Dict[str, Any],
-                  target: SerializableType) -> None:
+def fromParamDict(paramDict: Dict[str, Any], target: SerializableType) -> None:
     """Load parameter values from JSON.
 
     :param paramDict: The parameter dictionary in a valid JSON format (may be
@@ -151,7 +163,7 @@ def fromParamDict(paramDict: Dict[str, Any],
     simple = isSimpleFormat(paramDict)
 
     for k in sorted(paramDict.keys()):
-        paramAsList = k.split('.')
+        paramAsList = k.split(".")
         parent = _getObjectByName(paramAsList[0], src=target)
 
         if parent is None:
@@ -167,9 +179,9 @@ def fromParamDict(paramDict: Dict[str, Any],
         if simple:
             value = paramDict[k]
         else:
-            value = paramDict[k]['value']
+            value = paramDict[k]["value"]
 
-        if hasattr(param, 'set'):
+        if hasattr(param, "set"):
             logger.info(f"[{k}] set to: {value}")
             try:
                 param.set(value)
@@ -178,7 +190,9 @@ def fromParamDict(paramDict: Dict[str, Any],
         else:
             logger.info(f"[{k}] does not support setting, ignore.")
 
+
 # Tools
+
 
 def isSimpleFormat(paramDict: Dict[str, Any]):
     """Checks if the supplied paramDict is in the simplified format.
@@ -208,16 +222,19 @@ def validateParamDict(params: Dict[str, Any]):
 def toDataFrame(input: SerializableType):
     """Make a pandas data frame from the parameters. Mainly useful for
     printing overviews in notebooks."""
-    params = toParamDict(input, includeMeta=['unit', 'vals'])
+    params = toParamDict(input, includeMeta=["unit", "vals"])
     return pd.DataFrame(params).T.sort_index()
 
 
 # private tool functions
 
-def _singleParameterToJson(parameter: Parameter,
-                           get: bool = False,
-                           includeMeta: List[str] = [],
-                           simpleFormat: bool = True) -> Dict:
+
+def _singleParameterToJson(
+    parameter: Parameter,
+    get: bool = False,
+    includeMeta: List[str] = [],
+    simpleFormat: bool = True,
+) -> Dict:
     """Create a JSON representation of a parameter."""
 
     ret: dict[str, Any] = {parameter.name: None}
@@ -226,21 +243,23 @@ def _singleParameterToJson(parameter: Parameter,
     else:
         snap = parameter.snapshot(update=get)
     if len(includeMeta) == 0 and simpleFormat:
-        ret[parameter.name] = snap.get('value', None)
+        ret[parameter.name] = snap.get("value", None)
     else:
         ret[parameter.name] = dict()
-        for k in ['value'] + includeMeta:
+        for k in ["value"] + includeMeta:
             ret[parameter.name][k] = snap.get(k, None)
 
     return ret
 
 
-def _singleInstrumentParametersToJson(instrument: InstrumentBase,
-                                      get: bool = False,
-                                      addPrefix: str = '',
-                                      includeMeta: List[str] = [],
-                                      excludeParameters: List[str] = [],
-                                      simpleFormat: bool = True) -> Dict:
+def _singleInstrumentParametersToJson(
+    instrument: InstrumentBase,
+    get: bool = False,
+    addPrefix: str = "",
+    includeMeta: List[str] = [],
+    excludeParameters: List[str] = [],
+    simpleFormat: bool = True,
+) -> Dict:
     """Create a dictionary that holds the parameters of an instrument."""
 
     if "IDN" not in excludeParameters:
@@ -254,20 +273,26 @@ def _singleInstrumentParametersToJson(instrument: InstrumentBase,
     for name, param in instrument.parameters.items():
         if (name not in excludeParameters) and (not param.snapshot_exclude):
             if len(includeMeta) == 0 and simpleFormat:
-                ret[addPrefix + name] = snap['parameters'][name].get('value', None)
+                ret[addPrefix + name] = snap["parameters"][name].get("value", None)
             else:
                 ret[addPrefix + name] = dict()
-                for k, v in snap['parameters'][name].items():
-                    if k in (['value'] + includeMeta):
+                for k, v in snap["parameters"][name].items():
+                    if k in (["value"] + includeMeta):
                         ret[addPrefix + name][k] = v
         else:
             logger.debug(f"excluded: {addPrefix + name}")
 
     for name, submod in instrument.submodules.items():
-        ret.update(_singleInstrumentParametersToJson(
-            # FIXME: Fix this mypy ignore
-            submod, get=get, addPrefix=f"{addPrefix + name}.",  # type: ignore[arg-type]
-            simpleFormat=simpleFormat, includeMeta=includeMeta))
+        ret.update(
+            _singleInstrumentParametersToJson(
+                # FIXME: Fix this mypy ignore
+                submod,
+                get=get,
+                addPrefix=f"{addPrefix + name}.",  # type: ignore[arg-type]
+                simpleFormat=simpleFormat,
+                includeMeta=includeMeta,
+            )
+        )
     return ret
 
 
@@ -289,8 +314,7 @@ def _getParamFromList(parent: Any, childrenList: List[str]) -> Parameter:
         return _getParamFromList(nextObj, childrenList[1:])
 
 
-def _getObjectByName(name: str,
-                     src: SerializableType):
+def _getObjectByName(name: str, src: SerializableType):
     """Get an object from a container by specifying its name."""
 
     if isinstance(src, Station):
@@ -304,4 +328,3 @@ def _getObjectByName(name: str,
             if elt.name == name:
                 return elt
     return None
-

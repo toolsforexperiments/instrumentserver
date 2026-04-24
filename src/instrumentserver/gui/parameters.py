@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 # TODO: do all styling with a global style sheet
 
-FLOAT_PRECISION = 10 # The maximum number of significant digits for float numbers
+FLOAT_PRECISION = 10  # The maximum number of significant digits for float numbers
+
 
 def float_formater(val):
     """
@@ -49,8 +50,12 @@ class ParameterWidget(QtWidgets.QWidget):
     #: Signal(Any) --
     _valueFromWidget = QtCore.Signal(object)
 
-    def __init__(self, parameter: Parameter, parent=None,
-                 additionalWidgets: Optional[List[QtWidgets.QWidget]] = None):
+    def __init__(
+        self,
+        parameter: Parameter,
+        parent=None,
+        additionalWidgets: Optional[List[QtWidgets.QWidget]] = None,
+    ):
 
         super().__init__(parent)
 
@@ -61,8 +66,9 @@ class ParameterWidget(QtWidgets.QWidget):
         self._setMethod = lambda x: None
 
         layout = QtWidgets.QGridLayout(self)
-        self.getButton = QtWidgets.QPushButton(QtGui.QIcon(":/icons/refresh.svg"),
-                                               "", parent=self)
+        self.getButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/refresh.svg"), "", parent=self
+        )
         self.getButton.pressed.connect(self.setWidgetFromParameter)
         keepSmallHorizontally(self.getButton)
         layout.addWidget(self.getButton, 0, 1)
@@ -75,8 +81,7 @@ class ParameterWidget(QtWidgets.QWidget):
         layout.addWidget(self.alertWidget, 0, 3)
 
         # an input field will only be created if we have a set method.
-        if hasattr(parameter, 'set'):
-
+        if hasattr(parameter, "set"):
             self.parameterSet.connect(lambda x: self.setButton.setPending(False))
             self.parameterSet.connect(lambda x: self.alertWidget.clearAlert())
             self.parameterPending.connect(lambda x: self.setButton.setPending(True))
@@ -87,7 +92,13 @@ class ParameterWidget(QtWidgets.QWidget):
             # input widget
             ptype = paramTypeFromVals(parameter.vals)
             vals = parameter.vals
-            self.paramWidget: NumberInput | AnyInput | QtWidgets.QLineEdit | QtWidgets.QCheckBox | QtWidgets.QLabel
+            self.paramWidget: (
+                NumberInput
+                | AnyInput
+                | QtWidgets.QLineEdit
+                | QtWidgets.QCheckBox
+                | QtWidgets.QLabel
+            )
 
             # FIXME: Currently blueprints don't pass validators meaning that we will never reach any of these if statements.
             #  This should get uncommented when the blueprints are fixed.
@@ -141,12 +152,17 @@ class ParameterWidget(QtWidgets.QWidget):
         else:
             self.setButton.setDisabled(True)
             self.paramWidget = QtWidgets.QLabel(self)
-            self._setMethod = lambda x: self.paramWidget.setText(str(x)) \
-                if isinstance(self.paramWidget, QtWidgets.QLabel) else None
-            try: # also do immediate update for read-only params, as what we do for the editable parameters above.
+            self._setMethod = lambda x: (
+                self.paramWidget.setText(str(x))
+                if isinstance(self.paramWidget, QtWidgets.QLabel)
+                else None
+            )
+            try:  # also do immediate update for read-only params, as what we do for the editable parameters above.
                 self._setMethod(parameter())
             except Exception as e:
-                logger.warning(f"Error when setting parameter {parameter}: {e}", exc_info=True)
+                logger.warning(
+                    f"Error when setting parameter {parameter}: {e}", exc_info=True
+                )
 
         layout.addWidget(self.paramWidget, 0, 0)
         additionalWidgets = additionalWidgets or []
@@ -169,13 +185,13 @@ class ParameterWidget(QtWidgets.QWidget):
         self.paramWidget.input.deselect()
         self.setButton.setFocus()
 
-
     def setParameter(self, value: Any):
         try:
             self._parameter.set(value)
         except Exception as e:
-            self.parameterSetError.emit(f"Could not set parameter, raised {type(e)}:"
-                                        f" {e.args}")
+            self.parameterSetError.emit(
+                f"Could not set parameter, raised {type(e)}: {e.args}"
+            )
             return
 
         self.parameterSet.emit(value)
@@ -206,12 +222,16 @@ class AnyInput(QtWidgets.QWidget):
         self.input.textEdited.connect(self._processTextEdited)
 
         self.doEval = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/python.svg"), "", parent=self,
+            QtGui.QIcon(":/icons/python.svg"),
+            "",
+            parent=self,
         )
         self.doEval.setCheckable(True)
         self.doEval.setChecked(True)
-        self.doEval.setToolTip("Evaluate input as python expression.\n"
-                               "If evaluation fails, treat as string.")
+        self.doEval.setToolTip(
+            "Evaluate input as python expression.\n"
+            "If evaluation fails, treat as string."
+        )
         keepSmallHorizontally(self.doEval)
 
         layout = QtWidgets.QHBoxLayout(self)
@@ -238,7 +258,9 @@ QPushButton:checked { background-color: palegreen }
         try:
             self.input.setText(float_formater(val))
         except RuntimeError as e:
-            logger.debug(f"Could not set value {val} in AnyInput element does not exists, raised {type(e)}: {e.args}")
+            logger.debug(
+                f"Could not set value {val} in AnyInput element does not exists, raised {type(e)}: {e.args}"
+            )
 
     @QtCore.Slot(str)
     def _processTextEdited(self, val: str):
@@ -281,7 +303,10 @@ class NumberInput(QtWidgets.QLineEdit):
         try:
             self.setText(float_formater(value))
         except RuntimeError as e:
-            logger.debug(f"Could not set value {value} in NumberInput, raised {type(e)}: {e.args}")
+            logger.debug(
+                f"Could not set value {value} in NumberInput, raised {type(e)}: {e.args}"
+            )
+
 
 class AnyInputForMethod(AnyInput):
     """
@@ -292,17 +317,18 @@ class AnyInputForMethod(AnyInput):
     All arguments and keyword arguments are evaluated if the doEval button is checked, if not everything is treated like
     a long string.
     """
+
     def value(self):
         if self.doEval.isChecked():
             # If '=' is present we need to separate the keyword from the value
             # If ',' is present we have more than one argument.
-            if '=' in self.input.text() or ',' in self.input.text():
-                rawArgs = self.input.text().split(',')
+            if "=" in self.input.text() or "," in self.input.text():
+                rawArgs = self.input.text().split(",")
                 args = []
                 kwargs = {}
                 for x in rawArgs:
-                    if '=' in x:
-                        key, value = x.split('=')
+                    if "=" in x:
+                        key, value = x.split("=")
                         key = key.replace(" ", "")
                         kwargs[key] = eval(value)
                     else:
@@ -315,7 +341,6 @@ class AnyInputForMethod(AnyInput):
 
 
 class SetButton(QtWidgets.QPushButton):
-
     @QtCore.Slot(bool)
     def setPending(self, isPending: bool):
         if isPending:

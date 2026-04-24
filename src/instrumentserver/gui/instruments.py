@@ -8,7 +8,13 @@ from instrumentserver.gui.misc import AlertLabelGreen
 from qcodes import Parameter, Instrument
 
 from . import parameters, keepSmallHorizontally
-from .base_instrument import InstrumentDisplayBase, ItemBase, InstrumentModelBase, InstrumentTreeViewBase, DelegateBase
+from .base_instrument import (
+    InstrumentDisplayBase,
+    ItemBase,
+    InstrumentModelBase,
+    InstrumentTreeViewBase,
+    DelegateBase,
+)
 from .parameters import ParameterWidget, AnyInput, AnyInputForMethod
 from .. import QtWidgets, QtCore, QtGui, DEFAULT_PORT
 from ..blueprints import ParameterBroadcastBluePrint
@@ -38,8 +44,9 @@ class AddParameterWidget(QtWidgets.QWidget):
     #: Signal(str)
     invalidParamRequested = QtCore.Signal(str)
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None,
-                 typeInput: bool = False):
+    def __init__(
+        self, parent: Optional[QtWidgets.QWidget] = None, typeInput: bool = False
+    ):
         super().__init__(parent)
 
         self.typeInput = typeInput
@@ -69,31 +76,34 @@ class AddParameterWidget(QtWidgets.QWidget):
             self.typeSelect = QtWidgets.QComboBox(self)
             names: list[str] = []
             for t, v in parameterTypes.items():
-                names.append(str(v['name']))
+                names.append(str(v["name"]))
             for n in sorted(names):
                 self.typeSelect.addItem(n)
-            self.typeSelect.setCurrentText(str(parameterTypes[ParameterTypes.numeric]['name']))
+            self.typeSelect.setCurrentText(
+                str(parameterTypes[ParameterTypes.numeric]["name"])
+            )
             lbl = QtWidgets.QLabel("Type:")
             lbl.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
             layout.addWidget(lbl, 1, 0)
             layout.addWidget(self.typeSelect, 1, 1)
 
             self.valsArgsEdit = QtWidgets.QLineEdit(self)
-            lbl = QtWidgets.QLabel('Type opts.:')
-            lbl.setToolTip("Optional, for constraining parameter values."
-                           "Allowed args and defaults:\n"
-                           " - 'Numeric': min_value=-1e18, max_value=1e18\n"
-                           " - 'Integer': min_value=-inf, max_value=inf\n"
-                           " - 'String': min_length=0, max_length=1e9\n"
-                           'See qcodes.utils.validators for details.')
+            lbl = QtWidgets.QLabel("Type opts.:")
+            lbl.setToolTip(
+                "Optional, for constraining parameter values."
+                "Allowed args and defaults:\n"
+                " - 'Numeric': min_value=-1e18, max_value=1e18\n"
+                " - 'Integer': min_value=-inf, max_value=inf\n"
+                " - 'String': min_length=0, max_length=1e9\n"
+                "See qcodes.utils.validators for details."
+            )
             lbl.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
             layout.addWidget(lbl, 1, 2)
             layout.addWidget(self.valsArgsEdit, 1, 3)
 
         self.addButton = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/plus-square.svg"),
-            ' Add',
-            parent=self)
+            QtGui.QIcon(":/icons/plus-square.svg"), " Add", parent=self
+        )
 
         self.addButton.clicked.connect(self.requestNewParameter)
         self.nameEdit.returnPressed.connect(self.addButton.click)
@@ -103,9 +113,8 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.addButton.setAutoDefault(True)
 
         self.clearButton = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/delete.svg"),
-            ' Clear',
-            parent=self)
+            QtGui.QIcon(":/icons/delete.svg"), " Clear", parent=self
+        )
 
         self.clearButton.setAutoDefault(True)
         self.clearButton.clicked.connect(self.clear)
@@ -117,12 +126,14 @@ class AddParameterWidget(QtWidgets.QWidget):
     @QtCore.Slot()
     def clear(self):
         self.clearError()
-        self.nameEdit.setText('')
-        self.valueEdit.setText('')
-        self.unitEdit.setText('')
+        self.nameEdit.setText("")
+        self.valueEdit.setText("")
+        self.unitEdit.setText("")
         if self.typeInput:
-            self.typeSelect.setCurrentText(parameterTypes[ParameterTypes.numeric]['name'])
-            self.valsArgsEdit.setText('')
+            self.typeSelect.setCurrentText(
+                parameterTypes[ParameterTypes.numeric]["name"]
+            )
+            self.valsArgsEdit.setText("")
 
     @QtCore.Slot(bool)
     def requestNewParameter(self, _):
@@ -135,12 +146,12 @@ class AddParameterWidget(QtWidgets.QWidget):
         value = self.valueEdit.text()
         unit = self.unitEdit.text()
 
-        if hasattr(self, 'typeSelect'):
+        if hasattr(self, "typeSelect"):
             ptype = paramTypeFromName(self.typeSelect.currentText())
             valsArgs = self.valsArgsEdit.text()
         else:
             ptype = ParameterTypes.any
-            valsArgs = ''
+            valsArgs = ""
 
         self.newParamRequested.emit(name, value, unit, ptype, valsArgs)
 
@@ -200,7 +211,7 @@ class MethodDisplay(QtWidgets.QWidget):
             if kwargs is not None:
                 ret = self.fun(*args, **kwargs)
             else:
-                if isinstance(args, list) or isinstance(args, tuple) or args != '':
+                if isinstance(args, list) or isinstance(args, tuple) or args != "":
                     ret = self.fun(*args)
                 else:
                     ret = self.fun()
@@ -218,13 +229,14 @@ class MethodDisplay(QtWidgets.QWidget):
         """
         sig = inspect.signature(fun)
         doc = inspect.getdoc(fun)
-        return str(sig) + '\n\n' + str(doc)
+        return str(sig) + "\n\n" + str(doc)
 
 
 # ----------------- Parameters Display Classes - Beginning -----------------------------
 
+
 class ItemParameters(ItemBase):
-    def __init__(self, unit='', **kwargs):
+    def __init__(self, unit="", **kwargs):
         super().__init__(**kwargs)
 
         self.unit = unit
@@ -242,8 +254,12 @@ class ParameterDelegate(DelegateBase):
         # used to keep a reference to the widget.
         self.parameters: Dict[str, QtWidgets.QWidget] = {}
 
-    def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
-                     index: QtCore.QModelIndex) -> QtWidgets.QWidget:
+    def createEditor(
+        self,
+        widget: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        index: QtCore.QModelIndex,
+    ) -> QtWidgets.QWidget:
         """
         This is the function that is supposed to create the widget. It should return it.
         """
@@ -270,12 +286,14 @@ class ModelParameters(InstrumentModelBase):
 
     def __init__(self, *args, **kwargs):
         # make sure we pass the server ip and port properly to the subscriber when the values are not defaults.
-        subClientArgs = {"sub_host": kwargs.pop("sub_host", 'localhost'),
-                         "sub_port": kwargs.pop("sub_port", DEFAULT_PORT + 1)}
+        subClientArgs = {
+            "sub_host": kwargs.pop("sub_host", "localhost"),
+            "sub_port": kwargs.pop("sub_port", DEFAULT_PORT + 1),
+        }
         super().__init__(*args, **kwargs)
 
         self.setColumnCount(3)
-        self.setHorizontalHeaderLabels([self.attr, 'unit', ''])
+        self.setHorizontalHeaderLabels([self.attr, "unit", ""])
 
         # Live updates items
         self.cliThread = QtCore.QThread()
@@ -298,26 +316,38 @@ class ModelParameters(InstrumentModelBase):
 
     @QtCore.Slot(ParameterBroadcastBluePrint)
     def updateParameter(self, bp: ParameterBroadcastBluePrint):
-        fullName = '.'.join(bp.name.split('.')[1:])
+        fullName = ".".join(bp.name.split(".")[1:])
 
-        if bp.action == 'parameter-creation':
+        if bp.action == "parameter-creation":
             if fullName not in self.instrument.list():
                 self.instrument.update()
             if fullName in self.instrument.list():
-                self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
+                self.addItem(
+                    fullName,
+                    element=nestedAttributeFromString(self.instrument, fullName),
+                )
 
-        elif bp.action == 'parameter-deletion':
+        elif bp.action == "parameter-deletion":
             self.removeItem(fullName)
 
-        elif bp.action == 'parameter-update' or bp.action == 'parameter-call':
-            item = self.findItems(fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0)
+        elif bp.action == "parameter-update" or bp.action == "parameter-call":
+            item = self.findItems(
+                fullName, QtCore.Qt.MatchExactly | QtCore.Qt.MatchRecursive, 0
+            )
             if len(item) == 0:
                 if fullName not in self.itemsHide:
                     try:
-                        self.addItem(fullName, element=nestedAttributeFromString(self.instrument, fullName))
+                        self.addItem(
+                            fullName,
+                            element=nestedAttributeFromString(
+                                self.instrument, fullName
+                            ),
+                        )
                     except AttributeError:
                         # Parameter/submodule no longer exists (likely due to profile switch)
-                        logger.debug(f"Ignoring broadcast for non-existent parameter: {fullName}")
+                        logger.debug(
+                            f"Ignoring broadcast for non-existent parameter: {fullName}"
+                        )
             else:
                 assert isinstance(item[0], ItemBase)
                 # The model can't actually modify the widget since it knows nothing about the view itself.
@@ -326,7 +356,7 @@ class ModelParameters(InstrumentModelBase):
     def insertItemTo(self, parent: QtGui.QStandardItem, item):
         if item is not None:
             # A parameter might not have a unit
-            unit = ''
+            unit = ""
             if item.element is not None:
                 unit = item.element.unit
             unitItem = QtGui.QStandardItem(unit)
@@ -359,35 +389,46 @@ class ParametersTreeView(InstrumentTreeViewBase):
             # use the abstract set method defined in parameter widget so it works for different types of widgets
             widget._setMethod(value)
         except RuntimeError as e:
-            logger.debug(f"Could not set value for {itemName} to {value}. Object is not being shown right now.")
+            logger.debug(
+                f"Could not set value for {itemName} to {value}. Object is not being shown right now."
+            )
 
 
 class InstrumentParameters(InstrumentDisplayBase):
-    def __init__(self, instrument, parent=None, viewType=ParametersTreeView, callSignals: bool = True, **kwargs):
-        if 'instrument' in kwargs:
-            del kwargs['instrument']
+    def __init__(
+        self,
+        instrument,
+        parent=None,
+        viewType=ParametersTreeView,
+        callSignals: bool = True,
+        **kwargs,
+    ):
+        if "instrument" in kwargs:
+            del kwargs["instrument"]
         modelKwargs = {}
-        if 'parameters-star' in kwargs:
-            modelKwargs['itemsStar'] = kwargs.pop('parameters-star')
-        if 'parameters-trash' in kwargs:
-            modelKwargs['itemsTrash'] = kwargs.pop('parameters-trash')
-        if 'parameters-hide' in kwargs:
-            modelKwargs['itemsHide'] = kwargs.pop('parameters-hide')
+        if "parameters-star" in kwargs:
+            modelKwargs["itemsStar"] = kwargs.pop("parameters-star")
+        if "parameters-trash" in kwargs:
+            modelKwargs["itemsTrash"] = kwargs.pop("parameters-trash")
+        if "parameters-hide" in kwargs:
+            modelKwargs["itemsHide"] = kwargs.pop("parameters-hide")
 
         # parameters for realtime update subscriber
-        if 'sub_host' in kwargs:
-            modelKwargs['sub_host'] = kwargs.pop('sub_host')
-        if 'sub_port' in kwargs:
-            modelKwargs['sub_port'] = kwargs.pop('sub_port')
+        if "sub_host" in kwargs:
+            modelKwargs["sub_host"] = kwargs.pop("sub_host")
+        if "sub_port" in kwargs:
+            modelKwargs["sub_port"] = kwargs.pop("sub_port")
 
-        super().__init__(instrument=instrument,
-                         parent=parent,
-                         attr='parameters',
-                         itemType=ItemParameters,
-                         modelType=ModelParameters,
-                         viewType=viewType,
-                         callSignals=callSignals,
-                         **modelKwargs)
+        super().__init__(
+            instrument=instrument,
+            parent=parent,
+            attr="parameters",
+            itemType=ItemParameters,
+            modelType=ModelParameters,
+            viewType=viewType,
+            callSignals=callSignals,
+            **modelKwargs,
+        )
 
     def connectSignals(self):
         super().connectSignals()
@@ -404,8 +445,12 @@ class ParameterDeleteDelegate(ParameterDelegate):
     #: Emits the name of the parameter to be deleted when the user presses the delete button.
     removeParameter = QtCore.Signal(str)
 
-    def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
-                     index: QtCore.QModelIndex) -> QtWidgets.QWidget:
+    def createEditor(
+        self,
+        widget: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        index: QtCore.QModelIndex,
+    ) -> QtWidgets.QWidget:
         item = self.getItem(index)
         element = item.element
         rw = self.makeRemoveWidget(item.name, widget)
@@ -416,8 +461,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
         return ret
 
     def makeRemoveWidget(self, fullName: str, widget: QtWidgets.QWidget):
-        w = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/delete.svg"), "", parent=widget)
+        w = QtWidgets.QPushButton(QtGui.QIcon(":/icons/delete.svg"), "", parent=widget)
         w.setStyleSheet("""
             QPushButton { background-color: salmon }
         """)
@@ -445,7 +489,6 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
 
 
 class ProfilesManager(QtWidgets.QComboBox):
-
     #: Signal()
     #: Emitted when the selected index changed.
     indexChanged = QtCore.Signal()
@@ -490,8 +533,19 @@ class ParameterManagerGui(InstrumentParameters):
     #:  emitted when a parameter was created successfully
     parameterCreated = QtCore.Signal()
 
-    def __init__(self, instrument: Union[ProxyInstrument, ParameterManager], parent=None,  **kwargs):
-        super().__init__(instrument, parent=None, viewType=ParameterManagerTreeView, callSignals=False, **kwargs)
+    def __init__(
+        self,
+        instrument: Union[ProxyInstrument, ParameterManager],
+        parent=None,
+        **kwargs,
+    ):
+        super().__init__(
+            instrument,
+            parent=None,
+            viewType=ParameterManagerTreeView,
+            callSignals=False,
+            **kwargs,
+        )
         self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
         layout = self.layout()
@@ -540,13 +594,16 @@ class ParameterManagerGui(InstrumentParameters):
     def addParameter(self, fullName, value, unit):
         try:
             # Validators are commented out until they can be serialized.
-            self.instrument.add_parameter(fullName, initial_value=value,
-                                          unit=unit, )  # vals=vals)
+            self.instrument.add_parameter(
+                fullName,
+                initial_value=value,
+                unit=unit,
+            )  # vals=vals)
             self.parameterCreated.emit()
         except Exception as e:
-            self.parameterCreationError.emit(f"Could not create parameter."
-                                             f"Adding parameter raised"
-                                             f"{type(e)}: {e.args}")
+            self.parameterCreationError.emit(
+                f"Could not create parameter.Adding parameter raised{type(e)}: {e.args}"
+            )
             return
 
     @QtCore.Slot()
@@ -579,11 +636,10 @@ class ParameterManagerGui(InstrumentParameters):
 
 
 class MethodsModel(InstrumentModelBase):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setColumnCount(2)
-        self.setHorizontalHeaderLabels([self.attr, 'Arguments & Run'])
+        self.setHorizontalHeaderLabels([self.attr, "Arguments & Run"])
 
     def insertItemTo(self, parent, item):
         if item is not None:
@@ -600,20 +656,23 @@ class MethodsModel(InstrumentModelBase):
 
 
 class MethodsDelegate(DelegateBase):
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
         self.methods = {}
 
-    def createEditor(self, widget: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
-                     index: QtCore.QModelIndex) -> QtWidgets.QWidget:
+    def createEditor(
+        self,
+        widget: QtWidgets.QWidget,
+        option: QtWidgets.QStyleOptionViewItem,
+        index: QtCore.QModelIndex,
+    ) -> QtWidgets.QWidget:
         item = self.getItem(index)
         element = item.element
         ret = MethodDisplay(element, item.name, parent=widget)
 
         parent = self.parent()
-        assert hasattr(parent, 'clearAlertsAction')
+        assert hasattr(parent, "clearAlertsAction")
         # connecting the widget with the clear alert signal
         parent.clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)
 
@@ -626,7 +685,7 @@ class MethodsTreeView(InstrumentTreeViewBase):
         super().__init__(model, [1], *args, **kwargs)
 
         # Adding the clear alert to the context menu
-        self.clearAlertsAction = QtWidgets.QAction('Clear alerts')
+        self.clearAlertsAction = QtWidgets.QAction("Clear alerts")
         self.contextMenu.addSeparator()
         self.contextMenu.addAction(self.clearAlertsAction)
 
@@ -636,24 +695,25 @@ class MethodsTreeView(InstrumentTreeViewBase):
 
 
 class InstrumentMethods(InstrumentDisplayBase):
-
     def __init__(self, instrument, **kwargs):
-        if 'instrument' in kwargs:
-            del kwargs['instrument']
+        if "instrument" in kwargs:
+            del kwargs["instrument"]
 
         modelKwargs = {}
-        if 'methods-star' in kwargs:
-            modelKwargs['itemsStar'] = kwargs.pop('methods-star')
-        if 'methods-trash' in kwargs:
-            modelKwargs['itemsTrash'] = kwargs.pop('methods-trash')
-        if 'methods-hide' in kwargs:
-            modelKwargs['itemsHide'] = kwargs.pop('methods-hide')
+        if "methods-star" in kwargs:
+            modelKwargs["itemsStar"] = kwargs.pop("methods-star")
+        if "methods-trash" in kwargs:
+            modelKwargs["itemsTrash"] = kwargs.pop("methods-trash")
+        if "methods-hide" in kwargs:
+            modelKwargs["itemsHide"] = kwargs.pop("methods-hide")
 
-        super().__init__(instrument=instrument,
-                         attr='functions',
-                         modelType=MethodsModel,
-                         viewType=MethodsTreeView,
-                         **modelKwargs)
+        super().__init__(
+            instrument=instrument,
+            attr="functions",
+            modelType=MethodsModel,
+            viewType=MethodsTreeView,
+            **modelKwargs,
+        )
 
 
 # ----------------- Methods Display Classes - Ending -----------------------------------
@@ -664,22 +724,24 @@ class GenericInstrument(QtWidgets.QWidget):
     Widget that allows the display of real time parameters and changing their values.
     """
 
-    def __init__(self, ins: Union[ProxyInstrument, Instrument], parent=None, **modelKwargs):
+    def __init__(
+        self, ins: Union[ProxyInstrument, Instrument], parent=None, **modelKwargs
+    ):
         super().__init__(parent=parent)
 
         self.ins = ins
 
         if type(ins) is ProxyInstrument:
-            inst_type = "Proxy-" + ins.bp.instrument_module_class.split('.')[-1]
+            inst_type = "Proxy-" + ins.bp.instrument_module_class.split(".")[-1]
         else:
             inst_type = ins.__class__.__name__
-        
-        ins_label = f'{ins.name} | type: {inst_type}'
+
+        ins_label = f"{ins.name} | type: {inst_type}"
 
         try:
             # added a unique device_id if the instrument has that method
             device_id = ins.device_id()
-            ins_label += f' | id: {device_id}'
+            ins_label += f" | id: {device_id}"
         except AttributeError:
             pass
 
@@ -697,7 +759,6 @@ class GenericInstrument(QtWidgets.QWidget):
         self._layout.addWidget(self.splitter)
         self.splitter.addWidget(self.parametersList)
         self.splitter.addWidget(self.methodsList)
-      
 
         # Resize param name, unit, and function name columns after entries loaded
         self.parametersList.view.resizeColumnToContents(0)
@@ -706,7 +767,7 @@ class GenericInstrument(QtWidgets.QWidget):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Stop the parameter subscriber thread before destruction."""
-        model = getattr(self.parametersList, 'model', None)
-        if model is not None and hasattr(model, 'stopListener'):
+        model = getattr(self.parametersList, "model", None)
+        if model is not None and hasattr(model, "stopListener"):
             model.stopListener()
         super().closeEvent(event)

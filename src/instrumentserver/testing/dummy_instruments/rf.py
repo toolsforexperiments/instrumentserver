@@ -5,7 +5,6 @@ from qcodes import Instrument, ParameterWithSetpoints, find_or_create_instrument
 from qcodes.utils import validators
 
 
-
 class ResonatorResponse(Instrument):
     """A dummy instrument that generates the response of a resonator measured in
     reflection.
@@ -21,46 +20,88 @@ class ResonatorResponse(Instrument):
         self._frq_mod_multiply = False
 
         # add params of the resonator and the virtual detection chain
-        self.add_parameter('resonator_frequency', set_cmd=None, unit='Hz',
-                           vals=validators.Numbers(1, 50e9),
-                           initial_value=f0)
-        self.add_parameter('resonator_linewidth', set_cmd=None, unit='Hz',
-                           vals=validators.Numbers(1, 1e9),
-                           initial_value=df)
-        self.add_parameter('noise_temperature', set_cmd=None, unit='K',
-                           vals=validators.Numbers(0.05, 3000),
-                           initial_value=4.0)
-        self.add_parameter('input_attenuation', set_cmd=None, unit='dB',
-                           vals=validators.Numbers(0, 200),
-                           initial_value=70)
+        self.add_parameter(
+            "resonator_frequency",
+            set_cmd=None,
+            unit="Hz",
+            vals=validators.Numbers(1, 50e9),
+            initial_value=f0,
+        )
+        self.add_parameter(
+            "resonator_linewidth",
+            set_cmd=None,
+            unit="Hz",
+            vals=validators.Numbers(1, 1e9),
+            initial_value=df,
+        )
+        self.add_parameter(
+            "noise_temperature",
+            set_cmd=None,
+            unit="K",
+            vals=validators.Numbers(0.05, 3000),
+            initial_value=4.0,
+        )
+        self.add_parameter(
+            "input_attenuation",
+            set_cmd=None,
+            unit="dB",
+            vals=validators.Numbers(0, 200),
+            initial_value=70,
+        )
 
         # actual instrument parameters
-        self.add_parameter('start_frequency', set_cmd=None, unit='Hz',
-                           vals=validators.Numbers(20e3, 19.999e9),
-                           initial_value=20e3)
-        self.add_parameter('stop_frequency', set_cmd=None, unit='Hz',
-                           vals=validators.Numbers(20.1e3, 20e9),
-                           initial_value=20e9)
-        self.add_parameter('npoints', set_cmd=None, vals=validators.Ints(2, 40001),
-                           initial_value=1601)
-        self.add_parameter('bandwidth', set_cmd=None, unit='Hz',
-                           vals=validators.Numbers(1, 1e6), initial_value=10e3)
-        self.add_parameter('power', set_cmd=None, unit='dBm',
-                           vals=validators.Numbers(-100, 0), initial_value=-100)
+        self.add_parameter(
+            "start_frequency",
+            set_cmd=None,
+            unit="Hz",
+            vals=validators.Numbers(20e3, 19.999e9),
+            initial_value=20e3,
+        )
+        self.add_parameter(
+            "stop_frequency",
+            set_cmd=None,
+            unit="Hz",
+            vals=validators.Numbers(20.1e3, 20e9),
+            initial_value=20e9,
+        )
+        self.add_parameter(
+            "npoints", set_cmd=None, vals=validators.Ints(2, 40001), initial_value=1601
+        )
+        self.add_parameter(
+            "bandwidth",
+            set_cmd=None,
+            unit="Hz",
+            vals=validators.Numbers(1, 1e6),
+            initial_value=10e3,
+        )
+        self.add_parameter(
+            "power",
+            set_cmd=None,
+            unit="dBm",
+            vals=validators.Numbers(-100, 0),
+            initial_value=-100,
+        )
 
         # data parameters
-        self.add_parameter('frequency', unit='Hz',
-                           vals=validators.Arrays(shape=(self.npoints.get_latest,)),
-                           get_cmd=self._frequency_vals,
-                           snapshot_value=False, )
-        self.add_parameter('data',
-                           parameter_class=ParameterWithSetpoints,
-                           setpoints=[self.frequency, ],
-                           vals=validators.Arrays(
-                               shape=(self.npoints.get_latest,),
-                               valid_types=[np.complexfloating],
-                           ),
-                           get_cmd=self._get_data, )
+        self.add_parameter(
+            "frequency",
+            unit="Hz",
+            vals=validators.Arrays(shape=(self.npoints.get_latest,)),
+            get_cmd=self._frequency_vals,
+            snapshot_value=False,
+        )
+        self.add_parameter(
+            "data",
+            parameter_class=ParameterWithSetpoints,
+            setpoints=[
+                self.frequency,
+            ],
+            vals=validators.Arrays(
+                shape=(self.npoints.get_latest,),
+                valid_types=[np.complexfloating],
+            ),
+            get_cmd=self._get_data,
+        )
 
     def modulate_frequency(self, delta: float = 0, multiply=False) -> None:
         """Add an offset to the resonance frequency.
@@ -73,7 +114,9 @@ class ResonatorResponse(Instrument):
 
     # private utility methods
     def _frequency_vals(self):
-        return np.linspace(self.start_frequency(), self.stop_frequency(), self.npoints())
+        return np.linspace(
+            self.start_frequency(), self.stop_frequency(), self.npoints()
+        )
 
     def _get_data(self):
         f0 = self.resonator_frequency()
@@ -89,7 +132,8 @@ class ResonatorResponse(Instrument):
             self.resonator_linewidth(),
             self.power() - self.input_attenuation(),
             self.bandwidth(),
-            self.noise_temperature())
+            self.noise_temperature(),
+        )
 
         return data
 
@@ -109,7 +153,7 @@ class ResonatorResponse(Instrument):
         det = fvals - f0
         pwr = 1e-3 * 10 ** (P_in / 10)  # convert dBm to Watt
         ideal_signal = (2j * det - df) / (2j * det + df)
-        noise = (constants.k * T_N * BW / pwr) ** .5
+        noise = (constants.k * T_N * BW / pwr) ** 0.5
         noise_real = np.random.normal(size=ideal_signal.size, loc=0, scale=noise)
         noise_imag = np.random.normal(size=ideal_signal.size, loc=0, scale=noise)
         return ideal_signal + noise_real + 1j * noise_imag
@@ -121,42 +165,55 @@ class Generator(Instrument):
     def __init__(self, name, *arg, **kw):
         super().__init__(name, *arg, **kw)
 
-        self.add_parameter('frequency', unit='Hz',
-                           set_cmd=None,
-                           vals=validators.Numbers(1e3, 20e9),
-                           initial_value=10e9)
+        self.add_parameter(
+            "frequency",
+            unit="Hz",
+            set_cmd=None,
+            vals=validators.Numbers(1e3, 20e9),
+            initial_value=10e9,
+        )
 
-        self.add_parameter('power', unit='dBm',
-                           set_cmd=None,
-                           vals=validators.Numbers(-100, 25),
-                           initial_value=-100)
+        self.add_parameter(
+            "power",
+            unit="dBm",
+            set_cmd=None,
+            vals=validators.Numbers(-100, 25),
+            initial_value=-100,
+        )
 
-        self.add_parameter('rf_on', set_cmd=None,
-                           vals=validators.Bool(),
-                           initial_value=False)
+        self.add_parameter(
+            "rf_on", set_cmd=None, vals=validators.Bool(), initial_value=False
+        )
 
 
 class FluxControl(Instrument):
     """A dummy that hooks to :class:`.ResonatorResponse` and modifies its
     resonance frequency as if the resonator were a squid."""
 
-    def __init__(self, name: str, resonator_instrument: str,
-                 *args, **kwargs):
+    def __init__(self, name: str, resonator_instrument: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
-        self._resonator = find_or_create_instrument(instrument_class=ResonatorResponse,
-                                                    name=resonator_instrument)
+        self._resonator = find_or_create_instrument(
+            instrument_class=ResonatorResponse, name=resonator_instrument
+        )
 
-        self.add_parameter('inductive_participation_ratio',
-                           set_cmd=None,
-                           vals=validators.Numbers(0, 1),
-                           initial_value=0.05)
+        self.add_parameter(
+            "inductive_participation_ratio",
+            set_cmd=None,
+            vals=validators.Numbers(0, 1),
+            initial_value=0.05,
+        )
 
-        self.add_parameter('flux', unit='Phi_0',
-                           set_cmd=self._set_flux,
-                           vals=validators.Numbers(-1, 1),
-                           initial_value=0)
+        self.add_parameter(
+            "flux",
+            unit="Phi_0",
+            set_cmd=self._set_flux,
+            vals=validators.Numbers(-1, 1),
+            initial_value=0,
+        )
 
     def _set_flux(self, flux):
-        mod = 1./(1. + self.inductive_participation_ratio() / np.abs(np.cos(np.pi*flux)))
+        mod = 1.0 / (
+            1.0 + self.inductive_participation_ratio() / np.abs(np.cos(np.pi * flux))
+        )
         self._resonator.modulate_frequency(mod, True)

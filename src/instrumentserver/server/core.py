@@ -34,21 +34,39 @@ import zmq
 
 import qcodes as qc
 from qcodes import (
-    Station, Instrument, InstrumentChannel, Parameter, ParameterWithSetpoints)
+    Station,
+    Instrument,
+    InstrumentChannel,
+    Parameter,
+    ParameterWithSetpoints,
+)
 from qcodes.instrument.base import InstrumentBase
 from qcodes.utils.validators import Validator
 
 from .. import QtCore, serialize
-from ..blueprints import (ParameterBluePrint, MethodBluePrint, InstrumentModuleBluePrint, ParameterBroadcastBluePrint,
-                          bluePrintFromMethod, bluePrintFromInstrumentModule, bluePrintFromParameter,
-                          INSTRUMENT_MODULE_BASE_CLASSES, PARAMETER_BASE_CLASSES, Operation,
-                          InstrumentCreationSpec, CallSpec, ParameterSerializeSpec, ServerInstruction, ServerResponse,)
+from ..blueprints import (
+    ParameterBluePrint,
+    MethodBluePrint,
+    InstrumentModuleBluePrint,
+    ParameterBroadcastBluePrint,
+    bluePrintFromMethod,
+    bluePrintFromInstrumentModule,
+    bluePrintFromParameter,
+    INSTRUMENT_MODULE_BASE_CLASSES,
+    PARAMETER_BASE_CLASSES,
+    Operation,
+    InstrumentCreationSpec,
+    CallSpec,
+    ParameterSerializeSpec,
+    ServerInstruction,
+    ServerResponse,
+)
 
 from ..base import send_router, recv_router, sendBroadcast
 from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
 
-__author__ = 'Wolfgang Pfaff', 'Chao Zhou'
-__license__ = 'MIT'
+__author__ = "Wolfgang Pfaff", "Chao Zhou"
+__license__ = "MIT"
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +84,7 @@ class StationServer(QtCore.QObject):
     # If this string is sent as message to the server, it'll shut down and close
     # the socket. Should only be used from within this module.
     # It's randomized in the instantiated server for a little bit of safety.
-    SAFEWORD = 'BANANA'
+    SAFEWORD = "BANANA"
 
     #: Signal(str, str) -- emit messages for display in the gui (or other stuff the gui
     #: wants to do with it.
@@ -96,31 +114,34 @@ class StationServer(QtCore.QObject):
     #: Arguments: full function location as string, arguments, kw arguments, return value.
     funcCalled = QtCore.Signal(str, object, object, object)
 
-    def __init__(self,
-                 parent: Optional[QtCore.QObject] = None,
-                 port: int = 5555,
-                 allowUserShutdown: bool = False,
-                 addresses: List[str] = [],
-                 initScript: Optional[str] = None,
-                 serverConfig: Optional[Dict[str, Any]] = None,
-                 stationConfig: Optional[str] = None,
-                 guiConfig: Optional[dict[str, Any]] = None,
-                 pollingThread: Optional[QtCore.QThread] = None,
-                 ipAddresses: Optional[Dict[str, str]] = None
-                 ) -> None:
+    def __init__(
+        self,
+        parent: Optional[QtCore.QObject] = None,
+        port: int = 5555,
+        allowUserShutdown: bool = False,
+        addresses: List[str] = [],
+        initScript: Optional[str] = None,
+        serverConfig: Optional[Dict[str, Any]] = None,
+        stationConfig: Optional[str] = None,
+        guiConfig: Optional[dict[str, Any]] = None,
+        pollingThread: Optional[QtCore.QThread] = None,
+        ipAddresses: Optional[Dict[str, str]] = None,
+    ) -> None:
         super().__init__(parent)
 
         if addresses is None:
             addresses = []
         if initScript is None:
-            initScript = ''
+            initScript = ""
 
-        if (ipAddresses is not None 
-            and 'listeningAddress' in ipAddresses 
-            and (listening_addr := ipAddresses.get('listeningAddress')) is not None):
+        if (
+            ipAddresses is not None
+            and "listeningAddress" in ipAddresses
+            and (listening_addr := ipAddresses.get("listeningAddress")) is not None
+        ):
             addresses.append(listening_addr)
 
-        self.SAFEWORD = ''.join(random.choices([chr(i) for i in range(65, 91)], k=16))
+        self.SAFEWORD = "".join(random.choices([chr(i) for i in range(65, 91)], k=16))
         self.serverRunning = False
         self.port = int(port)
         self.serverConfig = serverConfig
@@ -132,19 +153,23 @@ class StationServer(QtCore.QObject):
         # For now the only server configs are whether to start an instrument.
         if self.serverConfig is not None:
             for instrumentName, settings in self.serverConfig.items():
-                if settings['initialize']:
+                if settings["initialize"]:
                     self.station.load_instrument(instrumentName)
 
         self.allowUserShutdown = allowUserShutdown
-        self.listenAddresses = list(set(['127.0.0.1'] + addresses))
+        self.listenAddresses = list(set(["127.0.0.1"] + addresses))
         self.initScript = initScript
 
         self.broadcastPort = self.port + 1
         self.broadcastSocket: zmq.Socket | None = None
         self.externalBroadcastAddr = None
 
-        if ipAddresses is not None and 'externalBroadcast' in ipAddresses and ipAddresses.get('externalBroadcast') is not None:
-            self.externalBroadcastAddr = ipAddresses.get('externalBroadcast')
+        if (
+            ipAddresses is not None
+            and "externalBroadcast" in ipAddresses
+            and ipAddresses.get("externalBroadcast") is not None
+        ):
+            self.externalBroadcastAddr = ipAddresses.get("externalBroadcast")
         self.externalBroadcastSocket: zmq.Socket | None = None
 
         self.pollingThread = pollingThread
@@ -158,18 +183,18 @@ class StationServer(QtCore.QObject):
             lambda n, v: logger.info(f"Parameter '{n}' retrieved: {str(v)}")
         )
         self.funcCalled.connect(
-            lambda n, args, kw, ret: logger.info(f"Function called:"
-                                                  f"'{n}', args: {str(args)}, "
-                                                  f"kwargs: {str(kw)})'.")
+            lambda n, args, kw, ret: logger.info(
+                f"Function called:'{n}', args: {str(args)}, kwargs: {str(kw)})'."
+            )
         )
-        
+
         # a queue for responses that are ready to be sent to client
         self._response_queue = queue.Queue()
         # a socket pair for immediate wakeup of the main thread that sends response to client
         self._wakeup_r, self._wakeup_w = socket.socketpair()
         self._wakeup_r.setblocking(False)
         self._wakeup_w.setblocking(False)
-        
+
         # Per-instrument locks to avoid races when multiple threads talk to the same instrument concurrently
         self._instrument_locks: dict[str, threading.RLock] = {}
         self._instrument_locks_lock = threading.Lock()
@@ -216,22 +241,26 @@ class StationServer(QtCore.QObject):
             logger.info(f"Not broadcasting to external address")
 
         self.serverRunning = True
-        if self.initScript not in ['', None]:
+        if self.initScript not in ["", None]:
             logger.info(f"Running init script")
             self._runInitScript()
-            
+
         # create a thread pool for handling incoming client requests concurrently
         with ThreadPoolExecutor() as pool:
             while self.serverRunning or not self._response_queue.empty():
                 try:
                     # check if there is either incoming request from client, or a processing worker has finished
                     socks = dict(poller.poll(10))
-                    
+
                     # handle router socket events (incoming requests)
-                    if self.serverRunning and socket in socks and (socks[socket] & zmq.POLLIN):
+                    if (
+                        self.serverRunning
+                        and socket in socks
+                        and (socks[socket] & zmq.POLLIN)
+                    ):
                         identity, message = recv_router(socket)
                         pool.submit(self._handleRouterMessage, identity, message)
-                    
+
                     # handle wakeup events (one or more workers finished)
                     if self._wakeup_r in socks and (socks[self._wakeup_r] & zmq.POLLIN):
                         # Drain the wakeup pipe so it doesn't stay "always readable"
@@ -240,30 +269,34 @@ class StationServer(QtCore.QObject):
                             self._wakeup_r.recv(1024)
                         except BlockingIOError:
                             pass
-                    
+
                     # drain completed responses from workers
                     while True:
                         try:
-                            identity, response_to_client, response_log, shutdown = self._response_queue.get_nowait()
+                            identity, response_to_client, response_log, shutdown = (
+                                self._response_queue.get_nowait()
+                            )
                         except queue.Empty:
                             break
-                        
+
                         try:
                             send_router(socket, identity, response_to_client)
                         except Exception as e:
                             logger.error(f"Failed to send response to client: {e}")
-                        
+
                         # emit log signal
-                        self.messageReceived.emit(str(response_to_client.message), response_log)
-                        
+                        self.messageReceived.emit(
+                            str(response_to_client.message), response_log
+                        )
+
                         # flip the shutdown flag in the main thread
                         if shutdown:
                             self.serverRunning = False
-                
+
                 except Exception as e:
                     logger.exception(f"Unexpected error in server loop: {e}")
                     break
-        
+
         socket.close(linger=0)
         self._wakeup_r.close()
         self._wakeup_w.close()
@@ -280,27 +313,27 @@ class StationServer(QtCore.QObject):
         self.finished.emit()
         logger.info("StationServer shut down cleanly.")
         return True
-    
+
     def _handleRouterMessage(self, identity, message):
         """
         Handle a router message and put the response message in the response queue.
-        
+
         """
         message_ok = True
         response_to_client = None
         response_log = None
-        shutdown = False # flag for letting the main thread shut down the server
+        shutdown = False  # flag for letting the main thread shut down the server
 
         # Allow the test client from within the same process to make sure the
         # server shuts down.
         if message == self.SAFEWORD:
-            response_log = 'Server has received the safeword and will shut down.'
+            response_log = "Server has received the safeword and will shut down."
             response_to_client = ServerResponse(message=response_log)
             shutdown = True
             logger.warning(response_log)
 
-        elif self.allowUserShutdown and message == 'SHUTDOWN':
-            response_log = 'Server shutdown requested by client.'
+        elif self.allowUserShutdown and message == "SHUTDOWN":
+            response_log = "Server shutdown requested by client."
             response_to_client = ServerResponse(message=response_log)
             shutdown = True
             logger.warning(response_log)
@@ -317,13 +350,13 @@ class StationServer(QtCore.QObject):
             instruction = message
             try:
                 instruction.validate()
-                logger.debug(f"Received request for operation: "
-                             f"{str(instruction.operation)}")
-                logger.debug(f"Instruction received: "
-                             f"{str(instruction)}")
+                logger.debug(
+                    f"Received request for operation: {str(instruction.operation)}"
+                )
+                logger.debug(f"Instruction received: {str(instruction)}")
             except Exception as e:
                 message_ok = False
-                response_log = f'Received invalid message. Error raised: {str(e)}'
+                response_log = f"Received invalid message. Error raised: {str(e)}"
                 response_to_client = ServerResponse(message=None, error=e)
                 logger.warning(response_log)
 
@@ -343,7 +376,7 @@ class StationServer(QtCore.QObject):
             response_to_client = ServerResponse(message=None, error=response_log)
             logger.warning(f"Invalid message type: {type(message)}.")
             logger.debug(f"Invalid message received: {str(message)}")
-        
+
         self._response_queue.put((identity, response_to_client, response_log, shutdown))
         # wake up the server loop so it can send the response immediately
         try:
@@ -351,9 +384,10 @@ class StationServer(QtCore.QObject):
         except OSError:
             # If we're shutting down / socket closed, ignore
             pass
-    
-    def executeServerInstruction(self, instruction: ServerInstruction) \
-            -> Tuple[ServerResponse, str]:
+
+    def executeServerInstruction(
+        self, instruction: ServerInstruction
+    ) -> Tuple[ServerResponse, str]:
         """
         This is the interpreter function that the server will call to translate the
         dictionary received from the proxy to instrument calls.
@@ -412,59 +446,71 @@ class StationServer(QtCore.QObject):
 
     def _createInstrument(self, spec: InstrumentCreationSpec) -> None:
         """Create a new instrument on the server."""
-        sep_class = spec.instrument_class.split('.')
-        modName = '.'.join(sep_class[:-1])
+        sep_class = spec.instrument_class.split(".")
+        modName = ".".join(sep_class[:-1])
         clsName = sep_class[-1]
         mod = importlib.import_module(modName)
         cls = getattr(mod, clsName)
 
         args = [] if spec.args is None else spec.args
         kwargs = dict() if spec.kwargs is None else spec.kwargs
-    
+
         # lock based on the intended instrument name
         lock = self._get_lock_for_target(spec.name)
         if lock is None:
             # in case name isn't in station yet, just guard creation with the dict lock
-            lock = self._instrument_locks_lock  # coarse but fine for this rare operation
+            lock = (
+                self._instrument_locks_lock
+            )  # coarse but fine for this rare operation
 
         with lock:
             new_instrument = qc.find_or_create_instrument(
-                cls, spec.name, *args, **kwargs)
-                
+                cls, spec.name, *args, **kwargs
+            )
+
             if new_instrument.name not in self.station.components:
                 self.station.add_component(new_instrument)
-    
-                self.instrumentCreated.emit(bluePrintFromInstrumentModule(new_instrument.name, new_instrument),
-                                            args, kwargs)
+
+                self.instrumentCreated.emit(
+                    bluePrintFromInstrumentModule(new_instrument.name, new_instrument),
+                    args,
+                    kwargs,
+                )
 
     def _callObject(self, spec: CallSpec) -> Any:
         """Call some callable found in the station."""
         obj = nestedAttributeFromString(self.station, spec.target)
         args = spec.args if spec.args is not None else []
         kwargs = spec.kwargs if spec.kwargs is not None else {}
-        
+
         def _invoke():
             ret = obj(*args, **kwargs)
-    
+
             # Check if a new parameter is being created.
             self._newOrDeleteParameterDetection(spec, args, kwargs)
-    
+
             if isinstance(obj, Parameter):
                 if len(args) > 0:
                     self.parameterSet.emit(spec.target, args[0])
-    
+
                     # Broadcast changes in parameter values.
-                    self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-update', args[0]))
+                    self._broadcastParameterChange(
+                        ParameterBroadcastBluePrint(
+                            spec.target, "parameter-update", args[0]
+                        )
+                    )
                 else:
                     self.parameterGet.emit(spec.target, ret)
-    
+
                     # Broadcast calls of parameters.
-                    self._broadcastParameterChange(ParameterBroadcastBluePrint(spec.target, 'parameter-call', ret))
+                    self._broadcastParameterChange(
+                        ParameterBroadcastBluePrint(spec.target, "parameter-call", ret)
+                    )
             else:
                 self.funcCalled.emit(spec.target, args, kwargs, ret)
-    
+
             return ret
-        
+
         # Get the appropriate per-instrument lock, if any
         lock = self._get_lock_for_target(spec.target)
         if lock is None:
@@ -475,28 +521,30 @@ class StationServer(QtCore.QObject):
             with lock:
                 return _invoke()
 
-    def _getBluePrint(self, path: str) -> Union[InstrumentModuleBluePrint,
-                                                ParameterBluePrint,
-                                                MethodBluePrint]:
+    def _getBluePrint(
+        self, path: str
+    ) -> Union[InstrumentModuleBluePrint, ParameterBluePrint, MethodBluePrint]:
         logger.debug(f"Fetching blueprint for: {path}")
         obj = nestedAttributeFromString(self.station, path)
         if isinstance(obj, tuple(INSTRUMENT_MODULE_BASE_CLASSES)):
             instrument_blueprint = bluePrintFromInstrumentModule(path, obj)
             if instrument_blueprint is None:
-                raise ValueError(f'Failed to create blueprint for instrument module {path}')
+                raise ValueError(
+                    f"Failed to create blueprint for instrument module {path}"
+                )
             return instrument_blueprint
         elif isinstance(obj, tuple(PARAMETER_BASE_CLASSES)):
             parameter_blueprint = bluePrintFromParameter(path, obj)
             if parameter_blueprint is None:
-                raise ValueError(f'Failed to create blueprint for parameter {path}')
+                raise ValueError(f"Failed to create blueprint for parameter {path}")
             return parameter_blueprint
         elif callable(obj):
             method_blueprint = bluePrintFromMethod(path, obj)
             if method_blueprint is None:
-                raise ValueError(f'Failed to create blueprint for method {path}')
+                raise ValueError(f"Failed to create blueprint for method {path}")
             return method_blueprint
         else:
-            raise ValueError(f'Cannot create a blueprint for {type(obj)}')
+            raise ValueError(f"Cannot create a blueprint for {type(obj)}")
 
     def _toParamDict(self, opts: ParameterSerializeSpec) -> Dict[str, Any]:
         obj: list[Any] | Station
@@ -505,7 +553,7 @@ class StationServer(QtCore.QObject):
         else:
             obj = [nestedAttributeFromString(self.station, opts.path)]
 
-        includeMeta = [k for k in opts.attrs if k != 'value']
+        includeMeta = [k for k in opts.attrs if k != "value"]
         args = opts.args if opts.args else []
         kwargs = dict(opts.kwargs) if opts.kwargs else {}
         kwargs.update(includeMeta=includeMeta)
@@ -520,7 +568,7 @@ class StationServer(QtCore.QObject):
         """
         if self.station is None:
             raise ValueError("Station is not initialized.")
-        
+
         if instrumentName not in self.station.components:
             raise ValueError(f"Instrument {instrumentName} not found in station.")
 
@@ -539,11 +587,15 @@ class StationServer(QtCore.QObject):
 
         :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
-        sendBroadcast(self.broadcastSocket, blueprint.name.split('.')[0], blueprint)
+        sendBroadcast(self.broadcastSocket, blueprint.name.split(".")[0], blueprint)
         if self.externalBroadcastAddr is not None:
-            sendBroadcast(self.externalBroadcastSocket, blueprint.name.split('.')[0], blueprint)
-        logger.info(f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
-                     f" with a value: {blueprint.value}.")
+            sendBroadcast(
+                self.externalBroadcastSocket, blueprint.name.split(".")[0], blueprint
+            )
+        logger.info(
+            f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"
+            f" with a value: {blueprint.value}."
+        )
 
     def _newOrDeleteParameterDetection(self, spec, args, kwargs):
         """
@@ -555,19 +607,17 @@ class StationServer(QtCore.QObject):
         :param kwargs: kwargs being passed to the call method.
         """
 
-        if spec.target.split('.')[-1] == 'add_parameter':
-            name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
-            pb = ParameterBroadcastBluePrint(name,
-                                             'parameter-creation',
-                                             kwargs['initial_value'],
-                                             kwargs['unit'])
+        if spec.target.split(".")[-1] == "add_parameter":
+            name = spec.target.split(".")[0] + "." + ".".join(spec.args)
+            pb = ParameterBroadcastBluePrint(
+                name, "parameter-creation", kwargs["initial_value"], kwargs["unit"]
+            )
             self._broadcastParameterChange(pb)
-        elif spec.target.split('.')[-1] == 'remove_parameter':
-            name = spec.target.split('.')[0] + '.' + '.'.join(spec.args)
-            pb = ParameterBroadcastBluePrint(name,
-                                             'parameter-deletion')
+        elif spec.target.split(".")[-1] == "remove_parameter":
+            name = spec.target.split(".")[0] + "." + ".".join(spec.args)
+            pb = ParameterBroadcastBluePrint(name, "parameter-deletion")
             self._broadcastParameterChange(pb)
-    
+
     def _get_lock_for_target(self, target: str) -> Optional[threading.RLock]:
         """
         Given a call target like 'dac1.ch1.offset' or 'awg.ch2.set_sq_wave',
@@ -581,8 +631,8 @@ class StationServer(QtCore.QObject):
             return None
 
         # First token before the first dot: assumed to be instrument name
-        root = target.split('.')[0]
-        
+        root = target.split(".")[0]
+
         # Only lock if this actually corresponds to an instrument in the station
         if root not in self.station.components:
             return None
@@ -594,29 +644,33 @@ class StationServer(QtCore.QObject):
                 self._instrument_locks[root] = lock
             return lock
 
-def startServer(port: int = 5555,
-                allowUserShutdown: bool = False,
-                addresses: List[str] = [],
-                initScript: Optional[str] = None,
-                serverConfig: Optional[Dict[str, Any]] = None,
-                stationConfig: Optional[str] = None,
-                guiConfig: Optional[dict[str, Any]] = None,
-                pollingThread: Optional[QtCore.QThread] = None,
-                ipAddresses: Optional[Dict[str, str]] = None) -> \
-        Tuple[StationServer, QtCore.QThread]:
+
+def startServer(
+    port: int = 5555,
+    allowUserShutdown: bool = False,
+    addresses: List[str] = [],
+    initScript: Optional[str] = None,
+    serverConfig: Optional[Dict[str, Any]] = None,
+    stationConfig: Optional[str] = None,
+    guiConfig: Optional[dict[str, Any]] = None,
+    pollingThread: Optional[QtCore.QThread] = None,
+    ipAddresses: Optional[Dict[str, str]] = None,
+) -> Tuple[StationServer, QtCore.QThread]:
     """Create a server and run in a separate thread.
 
     :returns: The server object and the thread it's running in.
     """
-    server = StationServer(port=port,
-                           allowUserShutdown=allowUserShutdown,
-                           addresses=addresses,
-                           initScript=initScript,
-                           serverConfig=serverConfig,
-                           stationConfig=stationConfig,
-                           guiConfig=guiConfig,
-                           pollingThread=pollingThread,
-                           ipAddresses=ipAddresses)
+    server = StationServer(
+        port=port,
+        allowUserShutdown=allowUserShutdown,
+        addresses=addresses,
+        initScript=initScript,
+        serverConfig=serverConfig,
+        stationConfig=stationConfig,
+        guiConfig=guiConfig,
+        pollingThread=pollingThread,
+        ipAddresses=ipAddresses,
+    )
     thread = QtCore.QThread()
     server.moveToThread(thread)
     server.finished.connect(thread.quit)
