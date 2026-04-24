@@ -1,10 +1,9 @@
 import inspect
-from typing import Dict, Any, List, Union, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from qcodes import Instrument, Parameter
 
 from .serialize import toParamDict
-
 
 # TODO: check for usage of get params / methods functions -- might not be needed
 

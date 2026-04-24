@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import logging
 
 # %% imports
-from qcodes import Instrument
-from instrumentserver.server import *
-from instrumentserver.client import *
 from pprint import pprint
+
+from qcodes import Instrument
+
+from instrumentserver.client import Client
+from instrumentserver.server import *  # noqa: F401,F403
 
 # from instrumentserver import log
 # log.setupLogging(addStreamHandler=True, streamHandlerLevel=logging.DEBUG)

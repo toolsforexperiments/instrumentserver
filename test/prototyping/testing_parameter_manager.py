@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
 
 # %% imports
-import inspect
 
-import numpy as np
-from qcodes import Station, Instrument
-from qcodes.utils import validators
+from qcodes import Instrument, Station
 
-from instrumentserver import QtWidgets
-
-from instrumentserver.gui import widgetDialog
-from instrumentserver.params import ParameterManager
-from instrumentserver.gui.instruments import ParameterManagerGui
 from instrumentserver.client import Client, ProxyInstrument
-
+from instrumentserver.gui import widgetDialog
+from instrumentserver.gui.instruments import ParameterManagerGui
+from instrumentserver.params import ParameterManager
 
 # %% run the PM locally
 Instrument.close_all()

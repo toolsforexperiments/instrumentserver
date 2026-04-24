@@ -1,4 +1,4 @@
-from .. import QtCore, QtWidgets, resource
+from .. import QtCore, QtWidgets
 
 
 def getStyleSheet():

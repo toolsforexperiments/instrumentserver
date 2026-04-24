@@ -1,10 +1,9 @@
-import instrumentserver.testing.dummy_instruments.generic
 import pytest  # type: ignore[import-not-found]
 import qcodes as qc
 
-from instrumentserver.server.core import startServer
 from instrumentserver.client.core import BaseClient
 from instrumentserver.client.proxy import Client
+from instrumentserver.server.core import startServer
 
 
 @pytest.fixture(autouse=True, scope="module")

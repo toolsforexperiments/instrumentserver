@@ -1,6 +1,7 @@
-from instrumentserver.client import Client
 import sys
 import time
+
+from instrumentserver.client import Client
 
 """
 Simple concurrency demo.

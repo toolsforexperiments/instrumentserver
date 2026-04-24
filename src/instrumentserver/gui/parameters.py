@@ -1,15 +1,14 @@
 import logging
-import math
 import numbers
-from typing import Any, Optional, List
 import re
+from typing import Any, Callable, List, Optional
 
 from qcodes import Parameter
 
+from .. import QtCore, QtGui, QtWidgets
+from ..params import ParameterTypes, paramTypeFromVals
 from . import keepSmallHorizontally
 from .misc import AlertLabel
-from .. import QtWidgets, QtCore, QtGui, resource
-from ..params import ParameterTypes, paramTypeFromVals
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +90,6 @@ class ParameterWidget(QtWidgets.QWidget):
             # depending on the validator of the parameter, we'll create a fitting
             # input widget
             ptype = paramTypeFromVals(parameter.vals)
-            vals = parameter.vals
             self.paramWidget: (
                 NumberInput
                 | AnyInput
@@ -248,7 +246,7 @@ QPushButton:checked { background-color: palegreen }
         if self.doEval.isChecked():
             try:
                 ret = eval(self.input.text())
-            except Exception as e:
+            except Exception:
                 ret = self.input.text()
             return ret
         else:
@@ -277,7 +275,7 @@ class NumberInput(QtWidgets.QLineEdit):
     def checkIfNumber(self, value: str):
         try:
             val = eval(value)
-        except:
+        except Exception:
             val = None
 
         if not isinstance(val, numbers.Number):
@@ -292,7 +290,7 @@ class NumberInput(QtWidgets.QLineEdit):
     def value(self):
         try:
             value = eval(self.text())
-        except:
+        except Exception:
             return None
         if isinstance(value, numbers.Number):
             return value

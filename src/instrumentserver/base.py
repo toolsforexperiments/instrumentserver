@@ -1,8 +1,9 @@
-import zmq
 import json
 import logging
 
-from .blueprints import to_dict, deserialize_obj
+import zmq
+
+from .blueprints import deserialize_obj, to_dict
 
 logger = logging.getLogger(__name__)
 

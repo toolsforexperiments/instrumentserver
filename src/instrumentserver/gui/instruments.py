@@ -1,28 +1,25 @@
-import json
-import logging
 import inspect
-from pprint import pprint
-from typing import Optional, Any, List, Tuple, Union, Callable, Dict, Type
+import logging
+from typing import Callable, Dict, Optional, Union
+
+from qcodes import Instrument
 
 from instrumentserver.gui.misc import AlertLabelGreen
-from qcodes import Parameter, Instrument
 
-from . import parameters, keepSmallHorizontally
-from .base_instrument import (
-    InstrumentDisplayBase,
-    ItemBase,
-    InstrumentModelBase,
-    InstrumentTreeViewBase,
-    DelegateBase,
-)
-from .parameters import ParameterWidget, AnyInput, AnyInputForMethod
-from .. import QtWidgets, QtCore, QtGui, DEFAULT_PORT
+from .. import DEFAULT_PORT, QtCore, QtGui, QtWidgets
 from ..blueprints import ParameterBroadcastBluePrint
 from ..client import ProxyInstrument, SubClient
-from ..helpers import stringToArgsAndKwargs, nestedAttributeFromString
-from ..params import ParameterManager, paramTypeFromName, ParameterTypes, parameterTypes
-from ..serialize import toParamDict
-from ast import literal_eval
+from ..helpers import nestedAttributeFromString
+from ..params import ParameterManager, ParameterTypes, parameterTypes, paramTypeFromName
+from . import keepSmallHorizontally
+from .base_instrument import (
+    DelegateBase,
+    InstrumentDisplayBase,
+    InstrumentModelBase,
+    InstrumentTreeViewBase,
+    ItemBase,
+)
+from .parameters import AnyInputForMethod, ParameterWidget
 
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
@@ -388,7 +385,7 @@ class ParametersTreeView(InstrumentTreeViewBase):
         try:
             # use the abstract set method defined in parameter widget so it works for different types of widgets
             widget._setMethod(value)
-        except RuntimeError as e:
+        except RuntimeError:
             logger.debug(
                 f"Could not set value for {itemName} to {value}. Object is not being shown right now."
             )

@@ -1,15 +1,14 @@
 import pytest
 
 from instrumentserver.helpers import (
-    stringToArgsAndKwargs,
     flat_to_nested_dict,
     flatten_dict,
     is_flat_dict,
     nestedAttributeFromString,
-    typeClassPath,
     objectClassPath,
+    stringToArgsAndKwargs,
+    typeClassPath,
 )
-
 
 # ---------------------------------------------------------------------------
 # stringToArgsAndKwargs

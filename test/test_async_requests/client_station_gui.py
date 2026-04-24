@@ -1,9 +1,9 @@
 import sys
 from pathlib import Path
-from instrumentserver.client import ClientStation
-from instrumentserver.client.application import ClientStationGui
 
 from instrumentserver import QtWidgets
+from instrumentserver.client import ClientStation
+from instrumentserver.client.application import ClientStationGui
 
 if __name__ == "__main__":
     # gather some test config files

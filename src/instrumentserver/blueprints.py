@@ -53,21 +53,19 @@ import importlib
 import inspect
 import json
 import logging
-from enum import Enum, unique
 from collections.abc import Iterable
-from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
-from typing import Union, Optional, List, Dict, Callable, Tuple, Any, get_args, cast
+from dataclasses import asdict, dataclass, field, fields
+from enum import Enum, unique
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast, get_args
 
 import numpy as np
 from qcodes import (
-    Station,
     Instrument,
     InstrumentChannel,
     Parameter,
     ParameterWithSetpoints,
 )
 from qcodes.instrument.base import InstrumentBase
-from qcodes.utils.validators import Validator
 
 from .helpers import objectClassPath, typeClassPath
 
@@ -372,7 +370,7 @@ class ParameterBroadcastBluePrint:
             ret = ret + f'\n    "value":"{self.value}"'
         if self.unit is not None:
             ret = ret + f'\n    "unit":"{self.unit}"'
-        ret = ret + f"""\n}}"""
+        ret = ret + """\n}"""
         return ret
 
     def __repr__(self):
@@ -689,7 +687,7 @@ class ServerResponse:
                 message = message.replace("none", "null")
                 after_json_loads = json.loads(message)
                 self.message = after_json_loads
-            except json.JSONDecodeError as e:
+            except json.JSONDecodeError:
                 logger.debug(
                     f"message could not be decoded by JSON and will be treated as a string: {message}"
                 )
@@ -870,7 +868,7 @@ def _is_numeric(val) -> Optional[Union[float, complex]]:
     Tries to convert the input into a int or a float. If it can, returns the conversion. Otherwise returns None.
     """
     try:
-        if val is not None and not "." in val:
+        if val is not None and "." not in val:
             int_conversion = int(val)
             return int_conversion
     except Exception:
@@ -931,7 +929,7 @@ def deserialize_obj(data: Any):
                 try:
                     loaded_json = json.loads(data.replace("'", '"'))
                     return deserialize_obj(loaded_json)
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError:
                     logger.debug("str could not be decoded, treating it as a str")
 
         return data

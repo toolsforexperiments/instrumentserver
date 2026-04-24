@@ -1,17 +1,16 @@
-import os
-from pathlib import Path
-from typing import Any, Dict, Union, List
-from enum import Enum, unique, auto
-import logging
-
 import json
+import logging
+import os
+from enum import Enum, auto, unique
+from pathlib import Path
+from typing import Any, Dict, List, Union
+
 from qcodes import Parameter
 from qcodes.instrument.base import InstrumentBase
 from qcodes.parameters import ParameterBase
 from qcodes.utils import validators
 
 from . import serialize
-
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +195,7 @@ class ParameterManager(InstrumentBase):
 
     def has_param(self, param_name: str):
         try:
-            param = self._get_param(param_name)
+            self._get_param(param_name)
             return True
         except ValueError:
             return False

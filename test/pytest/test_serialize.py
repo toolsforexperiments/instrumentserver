@@ -1,4 +1,5 @@
-from qcodes import Station, Instrument, Parameter
+from qcodes import Parameter, Station
+
 from instrumentserver.serialize import toParamDict
 
 

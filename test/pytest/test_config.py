@@ -1,9 +1,10 @@
 """Tests for instrumentserver.config.loadConfig."""
 
-import pytest
 from pathlib import Path
 
-from instrumentserver.config import loadConfig, GUIFIELD
+import pytest
+
+from instrumentserver.config import GUIFIELD, loadConfig
 
 
 def _write_config(tmp_path: Path, content: str) -> Path:

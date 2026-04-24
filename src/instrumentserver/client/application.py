@@ -1,24 +1,21 @@
-from pathlib import Path
-from typing import Optional, Union
-import sys
-import json
-import logging
 import importlib
+import logging
+import sys
+from pathlib import Path
+from typing import Union
 
-from qcodes import Instrument
-from qtpy.QtWidgets import QFileDialog, QMenu, QWidget, QSizePolicy, QSplitter
 from qtpy.QtGui import QGuiApplication
-from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QFileDialog, QWidget
 
-from instrumentserver import QtCore, QtWidgets, QtGui, getInstrumentserverPath
-from instrumentserver.client import QtClient, Client, ClientStation
+from instrumentserver import QtCore, QtGui, QtWidgets, getInstrumentserverPath
+from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from instrumentserver.client import ClientStation
 from instrumentserver.client.proxy import SubClient
 from instrumentserver.gui.instruments import GenericInstrument
 from instrumentserver.gui.misc import DetachableTabWidget
-from instrumentserver.log import LogLevels, LogWidget, log
+from instrumentserver.log import LogWidget
 from instrumentserver.log import logger as get_instrument_logger
 from instrumentserver.server.application import StationList, StationObjectInfo
-from instrumentserver.blueprints import ParameterBroadcastBluePrint
 
 # instrument class key in configuration files for configurations that will be applied to all instruments
 DEFAULT_INSTRUMENT_KEY = "__default__"

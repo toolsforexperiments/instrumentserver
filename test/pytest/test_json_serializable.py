@@ -3,15 +3,14 @@ import qcodes as qc
 from qcodes.math_utils.field_vector import FieldVector
 
 from instrumentserver.blueprints import (
+    ParameterBroadcastBluePrint,
     bluePrintFromInstrumentModule,
     bluePrintFromMethod,
     bluePrintFromParameter,
     bluePrintToDict,
     deserialize_obj,
-    ParameterBroadcastBluePrint,
-    iterable_to_serialized_dict,
     dict_to_serialized_dict,
-    to_dict,
+    iterable_to_serialized_dict,
 )
 from instrumentserver.testing.dummy_instruments.generic import (
     DummyInstrumentWithSubmodule,
@@ -44,7 +43,7 @@ class MyClass:
         self.z = z
 
     def customFunction(self, x: int, y: int) -> int:
-        print(f"I am in my function")
+        print("I am in my function")
         return x * y
 
 

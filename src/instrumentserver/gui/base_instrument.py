@@ -104,7 +104,7 @@ To add more items to the toolbar for any extra functionality, you can do so by o
 
 import fnmatch
 from pprint import pprint
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 
@@ -300,7 +300,6 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         :param fullName: The name of the parameter
         """
         path = fullName.split(".")[:-1]
-        paramName = fullName.split(".")[-1]
 
         parent = self
         smName = None

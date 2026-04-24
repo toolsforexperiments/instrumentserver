@@ -15,55 +15,44 @@ Core functionality of the instrument server.
 
 # TODO: client white list
 
-import os
 import importlib
 import json
 import logging
-import random
+import os
 import queue
+import random
 import socket
-
-from pathlib import Path
-from dataclasses import dataclass, field, fields
-from enum import Enum, unique
-from typing import Dict, Any, Union, Optional, Tuple, List, Callable
-from concurrent.futures import ThreadPoolExecutor
 import threading
-
-import zmq
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import qcodes as qc
+import zmq
 from qcodes import (
-    Station,
-    Instrument,
-    InstrumentChannel,
     Parameter,
-    ParameterWithSetpoints,
+    Station,
 )
-from qcodes.instrument.base import InstrumentBase
-from qcodes.utils.validators import Validator
 
 from .. import QtCore, serialize
+from ..base import recv_router, send_router, sendBroadcast
 from ..blueprints import (
-    ParameterBluePrint,
-    MethodBluePrint,
-    InstrumentModuleBluePrint,
-    ParameterBroadcastBluePrint,
-    bluePrintFromMethod,
-    bluePrintFromInstrumentModule,
-    bluePrintFromParameter,
     INSTRUMENT_MODULE_BASE_CLASSES,
     PARAMETER_BASE_CLASSES,
-    Operation,
-    InstrumentCreationSpec,
     CallSpec,
+    InstrumentCreationSpec,
+    InstrumentModuleBluePrint,
+    MethodBluePrint,
+    Operation,
+    ParameterBluePrint,
+    ParameterBroadcastBluePrint,
     ParameterSerializeSpec,
     ServerInstruction,
     ServerResponse,
+    bluePrintFromInstrumentModule,
+    bluePrintFromMethod,
+    bluePrintFromParameter,
 )
-
-from ..base import send_router, recv_router, sendBroadcast
-from ..helpers import nestedAttributeFromString, objectClassPath, typeClassPath
+from ..helpers import nestedAttributeFromString
 
 __author__ = "Wolfgang Pfaff", "Chao Zhou"
 __license__ = "MIT"
@@ -212,7 +201,7 @@ class StationServer(QtCore.QObject):
         """Start the server. This function does not return until the ZMQ server
         has been shut down."""
 
-        logger.info(f"Starting server.")
+        logger.info("Starting server.")
         logger.info(f"The safe word is: {self.SAFEWORD}")
         context = zmq.Context()
         socket = context.socket(zmq.ROUTER)
@@ -238,11 +227,11 @@ class StationServer(QtCore.QObject):
             self.externalBroadcastSocket = context.socket(zmq.PUB)
             self.externalBroadcastSocket.bind(self.externalBroadcastAddr)
         else:
-            logger.info(f"Not broadcasting to external address")
+            logger.info("Not broadcasting to external address")
 
         self.serverRunning = True
         if self.initScript not in ["", None]:
-            logger.info(f"Running init script")
+            logger.info("Running init script")
             self._runInitScript()
 
         # create a thread pool for handling incoming client requests concurrently
@@ -366,13 +355,13 @@ class StationServer(QtCore.QObject):
                 response_to_client = self.executeServerInstruction(instruction)
                 response_log = f"Response to client: {str(response_to_client)}"
                 if response_to_client.error is None:
-                    logger.debug(f"Response sent to client.")
+                    logger.debug("Response sent to client.")
                     logger.debug(response_log)
                 else:
                     logger.warning(response_log)
 
         else:
-            response_log = f"Invalid message type."
+            response_log = "Invalid message type."
             response_to_client = ServerResponse(message=None, error=response_log)
             logger.warning(f"Invalid message type: {type(message)}.")
             logger.debug(f"Invalid message received: {str(message)}")

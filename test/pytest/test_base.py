@@ -10,21 +10,18 @@ import pytest
 import zmq
 
 from instrumentserver.base import (
-    encode,
     decode,
-    send,
+    encode,
     recv,
-    sendBroadcast,
     recvMultipart,
+    send,
+    sendBroadcast,
 )
 from instrumentserver.blueprints import (
+    Operation,
     ParameterBroadcastBluePrint,
     ServerInstruction,
-    Operation,
-    bluePrintToDict,
-    deserialize_obj,
 )
-
 
 # ---------------------------------------------------------------------------
 # encode / decode (blueprint objects only)

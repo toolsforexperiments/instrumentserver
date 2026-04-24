@@ -1,7 +1,5 @@
 """Tests for ClientStation and ClientStationGui."""
 
-import json
-from pathlib import Path
 
 import pytest
 
@@ -25,7 +23,7 @@ def client_station(start_server):
 
 
 def test_client_station_creates_instruments(client_station):
-    ins = client_station.find_or_create_instrument("cs_dummy", DUMMY_CLASS)
+    client_station.find_or_create_instrument("cs_dummy", DUMMY_CLASS)
     assert "cs_dummy" in client_station.instruments
 
 
@@ -121,7 +119,6 @@ def test_client_station_gui_server_widget_shows_host_port(qtbot, start_server):
 
 def test_client_station_gui_station_list_populated(qtbot, start_server):
     from instrumentserver.client.application import ClientStationGui
-    from instrumentserver import QtCore
 
     station = ClientStation(host="localhost", port=5555)
     station.find_or_create_instrument("gui_cs_dummy", DUMMY_CLASS)
@@ -135,9 +132,9 @@ def test_client_station_gui_station_list_populated(qtbot, start_server):
 
 
 def test_client_station_gui_open_instrument_tab(qtbot, start_server):
+    from instrumentserver import QtCore
     from instrumentserver.client.application import ClientStationGui
     from instrumentserver.gui.instruments import GenericInstrument
-    from instrumentserver import QtCore
 
     station = ClientStation(host="localhost", port=5555)
     station.find_or_create_instrument("gui_cs_dummy2", DUMMY_CLASS)

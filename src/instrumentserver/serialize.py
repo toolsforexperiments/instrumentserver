@@ -68,17 +68,14 @@ parameters that are not present yet.
 
 import json
 import logging
-import os
-from typing import Dict, List, Any, Union
-from dataclasses import fields, dataclass
+from typing import Any, Dict, List, Union
 
-from jsonschema import validate
 import pandas as pd
-from qcodes import Instrument, Station, Parameter
+from jsonschema import validate
+from qcodes import Parameter, Station
 from qcodes.instrument.base import InstrumentBase
 
 from . import PARAMS_SCHEMA_PATH
-
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +198,7 @@ def isSimpleFormat(paramDict: Dict[str, Any]):
     are a dictionary with a least the key `value` in it.
     """
     for k, v in paramDict.items():
-        if not isinstance(v, dict) or not "value" in v:
+        if not isinstance(v, dict) or "value" not in v:
             return True
 
     return False

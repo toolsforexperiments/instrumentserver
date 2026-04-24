@@ -44,6 +44,17 @@ def test_param(param_manager):
     assert params.my_param() == 456
 
 
+def test_proxy_add_remove_parameter(param_manager):
+    cli, params = param_manager
+
+    params.add_parameter(name="probe_param", initial_value=42, unit="V")
+    assert "probe_param" in params.parameters
+    assert params.probe_param() == 42
+
+    params.remove_parameter(name="probe_param")
+    assert "probe_param" not in params.parameters
+
+
 def test_removing_all_params():
     params = ParameterManager(name="params")
 

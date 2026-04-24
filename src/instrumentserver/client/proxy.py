@@ -5,37 +5,37 @@ Created on Sat Apr 18 16:13:40 2020
 @author: Chao
 """
 
+import collections
 import inspect
 import json
-import yaml
 import logging
 import os
-from types import MethodType
-import collections
-from typing import Any, Union, Optional, Dict, List
 import threading
 from contextlib import contextmanager
+from types import MethodType
+from typing import Any, Dict, List, Optional, Union
 
 import qcodes as qc
 import zmq
 from qcodes import Instrument, Parameter
 from qcodes.instrument.base import InstrumentBase
 
-from instrumentserver import QtCore, DEFAULT_PORT
+from instrumentserver import DEFAULT_PORT, QtCore
 from instrumentserver.helpers import flat_to_nested_dict, flatten_dict, is_flat_dict
 from instrumentserver.server.core import (
-    ServerInstruction,
-    InstrumentModuleBluePrint,
-    ParameterBluePrint,
-    MethodBluePrint,
     CallSpec,
-    Operation,
     InstrumentCreationSpec,
+    InstrumentModuleBluePrint,
+    MethodBluePrint,
+    Operation,
+    ParameterBluePrint,
     ParameterSerializeSpec,
+    ServerInstruction,
 )
-from .core import sendRequest, BaseClient
+
 from ..base import recvMultipart
 from ..blueprints import ParameterBroadcastBluePrint
+from .core import BaseClient, sendRequest
 
 logger = logging.getLogger(__name__)
 
@@ -285,10 +285,8 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         if name in self.parameters:
             raise ValueError(f"Parameter: {name} already present in the proxy.")
 
-        bp: InstrumentModuleBluePrint
         if self.cli is None:
             raise ValueError("No client is connected to the proxy instrument.")
-        bp = self.cli.getBluePrint(self.name)
         self.cli.call(self.name + ".add_parameter", name, *arg, **kw)
         self.update()
 
@@ -298,10 +296,8 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         Checking whether the paremeter exists or not is left to the instrument in the server. This is to avoid having
         to check on every submodule for the parameter manager.
         """
-        bp: InstrumentModuleBluePrint
         if self.cli is None:
             raise ValueError("No client is connected to the proxy instrument.")
-        bp = self.cli.getBluePrint(self.name)
         self.cli.call(self.name + ".remove_parameter", name, *arg, **kw)
         self.update()
 
@@ -921,7 +917,7 @@ class ClientStation:
                 )
                 self.client = self._make_client(connect=True)
                 self._create_instruments(self.full_config)
-                logger.info(f"Successfully remade instrument client.")
+                logger.info("Successfully remade instrument client.")
                 retval = func(self, *args, **kwargs)
             return retval
 

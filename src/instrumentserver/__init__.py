@@ -1,9 +1,9 @@
-import sys
-import os
-import logging
 import json
+import os
 
-from qtpy import QtGui, QtCore, QtWidgets
+from qtpy import QtCore as QtCore
+from qtpy import QtGui as QtGui
+from qtpy import QtWidgets as QtWidgets
 
 
 def getInstrumentserverPath(*subfolder: str) -> str:
@@ -27,8 +27,8 @@ DEFAULT_PORT = 5555
 with open(PARAMS_SCHEMA_PATH) as f:
     paramDictSchema = json.load(f)
 
-from .log import setupLogging, logger
-
-from .client import Client
+from .client import Client  # noqa: E402
+from .log import logger as logger  # noqa: E402
+from .log import setupLogging as setupLogging  # noqa: E402
 
 InstrumentClient = Client

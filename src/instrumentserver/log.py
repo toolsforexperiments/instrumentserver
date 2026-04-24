@@ -2,13 +2,13 @@
 instrumentserver.log : Logging tools and defaults for instrumentserver.
 """
 
-import sys
 import logging
+import re
+import sys
 from enum import Enum, auto, unique
 from html import escape
-import re
 
-from . import QtGui, QtWidgets, QtCore
+from . import QtCore, QtGui, QtWidgets
 
 
 @unique

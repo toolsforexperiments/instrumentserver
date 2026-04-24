@@ -1,23 +1,21 @@
-import os
 import argparse
 import logging
+import os
 import signal
 from pathlib import Path
 
-from . import QtWidgets, QtCore
-from .log import setupLogging
-from .config import loadConfig
-from .server.application import startServerGuiApplication
-from .server.core import startServer
-
-from .client import Client, ClientStation
-from .client.application import ClientStationGui
-from .gui import widgetMainWindow
-from .gui.instruments import ParameterManagerGui
-from .server.pollingWorker import PollingWorker
-
 from instrumentserver.server.application import DetachedServerGui
 
+from . import QtCore, QtWidgets
+from .client import Client, ClientStation
+from .client.application import ClientStationGui
+from .config import loadConfig
+from .gui import widgetMainWindow
+from .gui.instruments import ParameterManagerGui
+from .log import setupLogging
+from .server.application import startServerGuiApplication
+from .server.core import startServer
+from .server.pollingWorker import PollingWorker
 
 setupLogging(addStreamHandler=True, logFile=os.path.abspath("instrumentserver.log"))
 logger = logging.getLogger("instrumentserver")
@@ -37,7 +35,7 @@ def server(**kwargs):
 
 def serverWithGui(**kwargs):
     app = QtWidgets.QApplication([])
-    window = startServerGuiApplication(**kwargs)
+    startServerGuiApplication(**kwargs)
     return app.exec_()
 
 

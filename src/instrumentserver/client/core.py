@@ -1,12 +1,12 @@
 import logging
-import warnings
-import zmq
 import uuid
+import warnings
+
+import zmq
 
 from instrumentserver import DEFAULT_PORT
-from instrumentserver.base import send, recv
+from instrumentserver.base import recv, send
 from instrumentserver.server.core import ServerResponse
-
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class BaseClient:
         try:
             send(self.socket, message)
             ret = recv(self.socket)
-            logger.debug(f"Response received.")
+            logger.debug("Response received.")
             logger.debug(f"Response: {str(ret)}")
         except zmq.error.Again:
             self._reset_connection()

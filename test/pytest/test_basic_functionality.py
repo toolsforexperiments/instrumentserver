@@ -12,11 +12,11 @@ def test_creating_and_accessing_param(param_manager):
 
 
 def test_getting_all_instruments(cli):
-    dummy = cli.find_or_create_instrument(
+    cli.find_or_create_instrument(
         "dummy",
         "instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule",
     )
-    params = cli.find_or_create_instrument(
+    cli.find_or_create_instrument(
         "parameter_manager", "instrumentserver.params.ParameterManager"
     )
     all_ins = cli.list_instruments()

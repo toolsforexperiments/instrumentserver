@@ -2,19 +2,19 @@ import html
 import importlib
 import logging
 import os
-import time
 import sys
-from typing import Union, Optional, Any, Dict
+import time
+from typing import Any, Dict, Optional, Union
 
 from instrumentserver.client import QtClient
 from instrumentserver.log import LogLevels, LogWidget, log
 
-from .core import StationServer, InstrumentModuleBluePrint, ParameterBluePrint
-from .. import QtCore, QtWidgets, QtGui, Client, getInstrumentserverPath
-from ..gui.misc import DetachableTabWidget, BaseDialog
-from ..gui.parameters import AnyInputForMethod
-from ..gui.instruments import GenericInstrument
+from .. import Client, QtCore, QtGui, QtWidgets, getInstrumentserverPath
 from ..config import GUIFIELD
+from ..gui.instruments import GenericInstrument
+from ..gui.misc import BaseDialog, DetachableTabWidget
+from ..gui.parameters import AnyInputForMethod
+from .core import InstrumentModuleBluePrint, ParameterBluePrint, StationServer
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +236,7 @@ def onExceptionDialog(exception: str):
     dialog.setWindowTitle("Instrument Creation Error")
     layout = QtWidgets.QVBoxLayout(dialog)
 
-    exceptionRaisedLabel = QtWidgets.QLabel(f"Exception Raised:")
+    exceptionRaisedLabel = QtWidgets.QLabel("Exception Raised:")
     exceptionLabel = QtWidgets.QLabel(exception)
 
     accept = QtWidgets.QPushButton("Accept")
@@ -298,7 +298,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         self.setHeaderLabels(self.cols)
 
         self.basedInstrumentAction = QtWidgets.QAction(
-            f"Create instrument based on this"
+            "Create instrument based on this"
         )
         self.basedInstrumentAction.setShortcut("N")
         # you need to add the action to the widget so that it can detect the shortcut
@@ -956,7 +956,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
                     kwargs = guiConfig[name]["gui"]["kwargs"]
 
             # If the instrument does not have a guiconfig an exception is raised. just use defaults values
-            except Exception as e:
+            except Exception:
                 pass
 
             insWidget = widgetClass(ins, parent=self, **kwargs)

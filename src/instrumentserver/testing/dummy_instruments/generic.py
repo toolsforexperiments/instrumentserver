@@ -1,13 +1,13 @@
 # mypy: ignore-errors
 # No need to mypy check dummy testing instruments.
 
+import time
 from typing import List
 
-from qcodes import Instrument
-from qcodes.utils import validators
-from qcodes.math_utils.field_vector import FieldVector
 import numpy as np
-import time
+from qcodes import Instrument
+from qcodes.math_utils.field_vector import FieldVector
+from qcodes.utils import validators
 
 
 class DummyChannel(Instrument):
@@ -249,5 +249,5 @@ class FieldVectorIns(Instrument):
         self.complex_lst = value
 
     def generic_function(self):
-        print(f"this generic function has been called")
+        print("this generic function has been called")
         return 3

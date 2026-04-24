@@ -6,10 +6,10 @@ variables since we parse the config using those.
 
 import io
 import tempfile
-from typing import IO, Any
+from pathlib import Path
+from typing import IO
 
 import ruamel.yaml  # type: ignore[import-untyped] # Known bugfix under no-fix status: https://sourceforge.net/p/ruamel-yaml/tickets/328/
-from pathlib import Path
 
 # Centralised point of extra fields for the server with its default as value
 SERVERFIELDS = {"initialize": True}
@@ -73,7 +73,7 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
         if "gui" in configDict:
             guiDict = configDict.pop("gui")
             if guiDict is None:
-                raise AttributeError(f'"gui" field cannot be None')
+                raise AttributeError('"gui" field cannot be None')
             if "type" in guiDict:
                 if guiDict["type"] == "generic" or guiDict["type"] == "Generic":
                     guiDict["type"] = GUIFIELD["type"]

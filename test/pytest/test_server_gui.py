@@ -38,7 +38,7 @@ def test_saving_button(qtbot):
     }
 
     window = startServerGuiApplication()
-    rr = window.client.find_or_create_instrument(
+    window.client.find_or_create_instrument(
         "rr", "instrumentserver.testing.dummy_instruments.rf.ResonatorResponse"
     )
 
@@ -100,7 +100,7 @@ def test_refresh_button(qtbot):
     try:
         assert window.stationList.topLevelItemCount() == 0
 
-        dummy = window.client.find_or_create_instrument(
+        window.client.find_or_create_instrument(
             "dummy",
             "instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule",
         )
@@ -121,7 +121,7 @@ def test_clicking_an_item(qtbot):
     try:
         assert window.stationList.topLevelItemCount() == 0
 
-        dummy = window.client.find_or_create_instrument(
+        window.client.find_or_create_instrument(
             "dummy",
             "instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule",
         )
@@ -142,7 +142,7 @@ def test_opening_new_tab_generic_object(qtbot):
     window = startServerGuiApplication()
     qtbot.addWidget(window)
     try:
-        dummy = window.client.find_or_create_instrument(
+        window.client.find_or_create_instrument(
             "dummy",
             "instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule",
         )

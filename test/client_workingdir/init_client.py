@@ -4,9 +4,8 @@
 import os
 
 from qcodes import Instrument
-from instrumentserver.client import Client
-from instrumentserver.client import ProxyInstrument
 
+from instrumentserver.client import Client
 
 # %% Create all my instruments
 Instrument.close_all()

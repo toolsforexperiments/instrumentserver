@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from .. import QtWidgets, QtGui, QtCore
+from .. import QtCore, QtGui, QtWidgets
 
 
 class AlertLabel(QtWidgets.QLabel):
@@ -222,7 +222,7 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
         if name in self.unclosableTabs:
             self.addUnclosableTab(widget, name)
         else:
-            index = self.addTab(widget, name)
+            self.addTab(widget, name)
 
     @QtCore.Slot(int, int)
     def onMoveTab(self, fromIndex, toIndex):

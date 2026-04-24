@@ -1,6 +1,5 @@
 from instrumentserver.client import Client
 
-
 """
 A simple script for testing the new features on the server/client.
 

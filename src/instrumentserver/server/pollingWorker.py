@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Optional
 
 from .. import QtCore
-
 from ..client import Client
 from ..helpers import nestedAttributeFromString
 
