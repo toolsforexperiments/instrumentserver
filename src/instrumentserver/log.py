@@ -38,7 +38,9 @@ class QLogHandler(QtCore.QObject, logging.Handler):
 
         self.widget = QtWidgets.QTextEdit(parent)
         self.widget.setReadOnly(True)
-        self._transform: Optional[Callable[[logging.LogRecord, str], Optional[str]]] = None
+        self._transform: Optional[Callable[[logging.LogRecord, str], Optional[str]]] = (
+            None
+        )
 
         # connect signal to slot that actually touches the widget (GUI thread)
         self.new_html.connect(self._append_html)
@@ -147,9 +149,7 @@ class LogWidget(QtWidgets.QWidget):
         self.handler.set_transform(_param_update_formatter)
 
 
-def _param_update_formatter(
-    record: logging.LogRecord, raw_msg: str
-) -> Optional[str]:
+def _param_update_formatter(record: logging.LogRecord, raw_msg: str) -> Optional[str]:
     """
     A formater that makes parameter updates more prominent in the gui log window.
     """

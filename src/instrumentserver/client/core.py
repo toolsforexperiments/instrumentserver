@@ -156,9 +156,7 @@ class BaseClient:
         self.connected = False
 
 
-def sendRequest(
-    message: Any, host: str = "localhost", port: int = DEFAULT_PORT
-) -> Any:
+def sendRequest(message: Any, host: str = "localhost", port: int = DEFAULT_PORT) -> Any:
     with BaseClient(host, port) as cli:
         ret = cli.ask(message)
     return ret

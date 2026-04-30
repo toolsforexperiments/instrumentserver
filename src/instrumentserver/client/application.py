@@ -38,8 +38,12 @@ class ServerWidget(QtWidgets.QWidget):
         form_layout = QtWidgets.QFormLayout(form)
         form_layout.setContentsMargins(0, 0, 0, 0)
         form_layout.setSpacing(8)
-        form_layout.setLabelAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
-        form_layout.setFieldGrowthPolicy(QtWidgets.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form_layout.setLabelAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )  # type: ignore[arg-type]
+        form_layout.setFieldGrowthPolicy(
+            QtWidgets.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
 
         # Non-editable
         self.host = QtWidgets.QLineEdit(self.client_station._host)
@@ -179,9 +183,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
         if message.action == "parameter-update":
             logger.info(f"{message.action}: {message.name}: {message.value}")
 
-    def openInstrumentTab(
-        self, item: QtWidgets.QTreeWidgetItem, index: int
-    ) -> None:
+    def openInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int) -> None:
         """
         Gets called when the user double clicks and item of the instrument list.
          Adds a new generic instrument GUI window to the tab bar.
@@ -256,7 +258,9 @@ class ClientStationGui(QtWidgets.QMainWindow):
         # --- toolbar basics ---
         self.toolBar = QtWidgets.QToolBar("Params", self)
         self.toolBar.setIconSize(QtCore.QSize(22, 22))
-        self.toolBar.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toolBar.setToolButtonStyle(
+            QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
         self.addToolBar(self.toolBar)
 
         # --- composite path widget
@@ -339,7 +343,8 @@ class ClientStationGui(QtWidgets.QMainWindow):
             for i in range(self.tabs.count()):
                 widget = self.tabs.widget(i)
                 if hasattr(widget, "parametersList") and hasattr(
-                    widget.parametersList, "model"  # type: ignore[union-attr]
+                    widget.parametersList,
+                    "model",  # type: ignore[union-attr]
                 ):
                     widget.parametersList.model.refreshAll()  # type: ignore[union-attr]
 

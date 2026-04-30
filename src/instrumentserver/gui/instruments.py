@@ -53,19 +53,25 @@ class AddParameterWidget(QtWidgets.QWidget):
 
         self.nameEdit = QtWidgets.QLineEdit(self)
         lbl = QtWidgets.QLabel("Name:")
-        lbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
+        lbl.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )  # type: ignore[arg-type]
         layout.addWidget(lbl, 0, 0)
         layout.addWidget(self.nameEdit, 0, 1)
 
         self.valueEdit = QtWidgets.QLineEdit(self)
         lbl = QtWidgets.QLabel("Value:")
-        lbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
+        lbl.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )  # type: ignore[arg-type]
         layout.addWidget(lbl, 0, 2)
         layout.addWidget(self.valueEdit, 0, 3)
 
         self.unitEdit = QtWidgets.QLineEdit(self)
         lbl = QtWidgets.QLabel("Unit:")
-        lbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
+        lbl.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )  # type: ignore[arg-type]
         layout.addWidget(lbl, 0, 4)
         layout.addWidget(self.unitEdit, 0, 5)
 
@@ -80,7 +86,10 @@ class AddParameterWidget(QtWidgets.QWidget):
                 str(parameterTypes[ParameterTypes.numeric]["name"])
             )
             lbl = QtWidgets.QLabel("Type:")
-            lbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
+            lbl.setAlignment(
+                QtCore.Qt.AlignmentFlag.AlignRight
+                | QtCore.Qt.AlignmentFlag.AlignVCenter
+            )  # type: ignore[arg-type]
             layout.addWidget(lbl, 1, 0)
             layout.addWidget(self.typeSelect, 1, 1)
 
@@ -94,7 +103,10 @@ class AddParameterWidget(QtWidgets.QWidget):
                 " - 'String': min_length=0, max_length=1e9\n"
                 "See qcodes.utils.validators for details."
             )
-            lbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)  # type: ignore[arg-type]
+            lbl.setAlignment(
+                QtCore.Qt.AlignmentFlag.AlignRight
+                | QtCore.Qt.AlignmentFlag.AlignVCenter
+            )  # type: ignore[arg-type]
             layout.addWidget(lbl, 1, 2)
             layout.addWidget(self.valsArgsEdit, 1, 3)
 
@@ -335,7 +347,9 @@ class ModelParameters(InstrumentModelBase):
 
         elif bp.action == "parameter-update" or bp.action == "parameter-call":
             item = self.findItems(
-                fullName, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
+                fullName,
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+                0,  # type: ignore[arg-type]
             )
             if len(item) == 0:
                 if fullName not in self.itemsHide:  # type: ignore[operator]

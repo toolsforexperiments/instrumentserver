@@ -72,7 +72,9 @@ class StationList(QtWidgets.QTreeWidget):
 
     def removeObject(self, name: str) -> None:
         items = self.findItems(
-            name, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
+            name,
+            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+            0,  # type: ignore[arg-type]
         )
         if len(items) > 0:
             item = items[0]
@@ -179,7 +181,10 @@ class CreateInstrumentDialog(BaseDialog):
         insName: Optional[str] = None,
         kwargsStr: Optional[str] = None,
         parent: Optional[QtWidgets.QWidget] = None,
-        flags: Any = (QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.WindowCloseButtonHint),
+        flags: Any = (
+            QtCore.Qt.WindowType.CustomizeWindowHint
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+        ),
     ) -> None:
         super().__init__(parent, flags)
 
@@ -354,7 +359,9 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         """
         insType = fullInsType.split(".")[-1]
         items = self.findItems(
-            insType, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchExactly, 0  # type: ignore[arg-type]
+            insType,
+            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchExactly,
+            0,  # type: ignore[arg-type]
         )
 
         # Only add the instrument to the tree if there are no other instruments of the same type already
@@ -380,7 +387,10 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         lineEdit.returnPressed.connect(lambda: createButton.clicked.emit())
         lineEdit.setText(insName)
         item = PossibleInstrumentDisplayItem(
-            lst, fullInsType=fullInsType, configName=configName, lineEdit=lineEdit  # type: ignore[arg-type]
+            lst,
+            fullInsType=fullInsType,
+            configName=configName,
+            lineEdit=lineEdit,  # type: ignore[arg-type]
         )
         parent.addChild(item)
 
@@ -400,7 +410,9 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
             if item.lineEdit is not None:  # type: ignore[attr-defined]
                 insName = item.lineEdit.text()  # type: ignore[attr-defined]
             self.basedInstrumentRequested.emit(
-                item.configName, item.fullInsType, insName  # type: ignore[attr-defined]
+                item.configName,
+                item.fullInsType,
+                insName,  # type: ignore[attr-defined]
             )
 
     @QtCore.Slot()
@@ -445,9 +457,7 @@ class InstrumentsCreator(QtWidgets.QWidget):
     #: Arguments -- The str message of the error/reason as to why it could not create the instrument
     newInstrumentFailed = QtCore.Signal(object)
 
-    def __init__(
-        self, cli: Client, guiConfig: dict, *args: Any, **kwargs: Any
-    ) -> None:
+    def __init__(self, cli: Client, guiConfig: dict, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self.guiConfig = guiConfig
@@ -846,9 +856,7 @@ class ServerGui(QtWidgets.QMainWindow):
         self.stationObjInfo.setObject(bp)  # type: ignore[arg-type]
 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
-    def addInstrumentTab(
-        self, item: QtWidgets.QTreeWidgetItem, index: int
-    ) -> None:
+    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int) -> None:
         """
         Gets called when the user double clicks and item of the instrument list.
          Adds a new generic instrument GUI window to the tab bar.
@@ -888,9 +896,7 @@ class ServerGui(QtWidgets.QMainWindow):
             del self.instrumentTabsOpen[name]
 
     @QtCore.Slot(str, object, object, object)
-    def onFuncCalled(
-        self, n: str, args: Any, kw: Any, ret: Any
-    ) -> None:
+    def onFuncCalled(self, n: str, args: Any, kw: Any, ret: Any) -> None:
         if n == "close_and_remove_instrument":
             for ins in args:
                 self.removeInstrumentFromGui(ins)
@@ -960,9 +966,7 @@ class DetachedServerGui(QtWidgets.QMainWindow):
             self.stationObjInfo.setObject(self.client.getBluePrint(name))
 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
-    def addInstrumentTab(
-        self, item: QtWidgets.QTreeWidgetItem, index: int
-    ) -> None:
+    def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int) -> None:
         name = item.text(0)
         if name not in self.instrumentTabsOpen:
             ins = self.client.find_or_create_instrument(name)

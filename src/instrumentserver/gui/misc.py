@@ -11,7 +11,9 @@ class AlertLabel(QtWidgets.QLabel):
     ):
         super().__init__(parent)
 
-        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignHCenter)  # type: ignore[arg-type]
+        self.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignHCenter
+        )  # type: ignore[arg-type]
         self._pixmapSize = pixmapSize
         pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(*pixmapSize)
         self.setPixmap(pix)
@@ -132,7 +134,9 @@ class SeparableTabBar(QtWidgets.QTabBar):
             painter.end()
             drag.setPixmap(targetPixmap)
 
-            dropAction = drag.exec_(QtCore.Qt.DropAction.MoveAction | QtCore.Qt.DropAction.CopyAction)  # type: ignore[call-overload]
+            dropAction = drag.exec_(
+                QtCore.Qt.DropAction.MoveAction | QtCore.Qt.DropAction.CopyAction
+            )  # type: ignore[call-overload]
 
             # In linux the drag.exec_ does not return MoveAction, so it must be set manually.
             if self.dragDroppedPos.x() != 0 and self.dragDroppedPos.y() != 0:
@@ -275,7 +279,10 @@ class BaseDialog(QtWidgets.QDialog):
     def __init__(
         self,
         parent: Optional[QtWidgets.QWidget] = None,
-        flags: Any = (QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.WindowCloseButtonHint),
+        flags: Any = (
+            QtCore.Qt.WindowType.CustomizeWindowHint
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+        ),
         tittleBarButtonsWidth: int = 108,
     ) -> None:
         super().__init__(parent, flags=flags)

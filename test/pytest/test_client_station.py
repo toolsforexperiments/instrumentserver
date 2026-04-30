@@ -1,6 +1,5 @@
 """Tests for ClientStation and ClientStationGui."""
 
-
 import pytest
 
 from instrumentserver.client.proxy import ClientStation

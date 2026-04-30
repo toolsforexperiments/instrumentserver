@@ -312,7 +312,9 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
                 smName = smName + f".{sm}"
 
             items = self.findItems(
-                smName, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
+                smName,
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+                0,  # type: ignore[arg-type]
             )
 
             if len(items) == 0:
@@ -344,7 +346,9 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
     def removeItem(self, fullName: str) -> None:
         items = self.findItems(
-            fullName, QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive, 0  # type: ignore[arg-type]
+            fullName,
+            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+            0,  # type: ignore[arg-type]
         )
 
         if len(items) > 0:
@@ -627,7 +631,8 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                     for x in self.delegateColumns  # type: ignore[union-attr]
                 ]
                 proxyDelegateIndexes = [
-                    self.model().mapFromSource(index) for index in delegateIndexes  # type: ignore[union-attr]
+                    self.model().mapFromSource(index)
+                    for index in delegateIndexes  # type: ignore[union-attr]
                 ]
                 for delegateIndex in proxyDelegateIndexes:
                     self.openPersistentEditor(delegateIndex)

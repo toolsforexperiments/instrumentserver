@@ -766,9 +766,7 @@ class SubClient(QtCore.QObject):
 
 
 class _QtAdapter(QtCore.QObject):
-    def __init__(
-        self, parent: Optional[QtCore.QObject], *arg: Any, **kw: Any
-    ) -> None:
+    def __init__(self, parent: Optional[QtCore.QObject], *arg: Any, **kw: Any) -> None:
         super().__init__(parent)
 
 

@@ -9,7 +9,9 @@ from .. import (
 
 def getStyleSheet() -> Optional[str]:
     f = QtCore.QFile(":/style.css")
-    if f.open(QtCore.QIODevice.OpenModeFlag.ReadOnly | QtCore.QIODevice.OpenModeFlag.Text):  # type: ignore[call-overload]
+    if f.open(
+        QtCore.QIODevice.OpenModeFlag.ReadOnly | QtCore.QIODevice.OpenModeFlag.Text
+    ):  # type: ignore[call-overload]
         style = f.readAll()
         f.close()
         return str(style, "utf-8")
