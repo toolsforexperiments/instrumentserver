@@ -1,7 +1,10 @@
 from typing import Optional
 
-from .. import QtCore, QtWidgets
-from .. import resource  # noqa: F401
+from .. import (
+    QtCore,
+    QtWidgets,
+    resource,  # noqa: F401
+)
 
 
 def getStyleSheet() -> Optional[str]:

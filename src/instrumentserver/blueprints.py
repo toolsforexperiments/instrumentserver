@@ -377,14 +377,11 @@ class ParameterBroadcastBluePrint:
         return str(self)
 
     def pprint(self, indent: int = 0) -> str:
-
         i = indent * " "
-        bp_type = self.bp_type  # type: ignore[attr-defined]
         ret = f"""name: {self.name}
 {i}- action: {self.action}
 {i}- value: {self.value}
 {i}- unit: {self.unit}
-{i}- bp_type: {bp_type}
     """
         return ret
 
