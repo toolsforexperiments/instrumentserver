@@ -576,12 +576,14 @@ class StationServer(QtCore.QObject):
 
         :param blueprint: The parameter broadcast blueprint that is being broadcast
         """
-        sendBroadcast(self.broadcastSocket, blueprint.name.split(".")[0], blueprint)  # type: ignore[arg-type]
+        assert self.broadcastSocket is not None
+        sendBroadcast(self.broadcastSocket, blueprint.name.split(".")[0], blueprint)
         if self.externalBroadcastAddr is not None:
+            assert self.externalBroadcastSocket is not None
             sendBroadcast(
                 self.externalBroadcastSocket,
                 blueprint.name.split(".")[0],
-                blueprint,  # type: ignore[arg-type]
+                blueprint,
             )
         logger.info(
             f"Parameter {blueprint.name} has broadcast an update of type: {blueprint.action},"

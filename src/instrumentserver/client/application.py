@@ -2,7 +2,7 @@ import importlib
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, cast
 
 from qtpy.QtGui import QGuiApplication
 from qtpy.QtWidgets import QFileDialog, QWidget
@@ -39,8 +39,12 @@ class ServerWidget(QtWidgets.QWidget):
         form_layout.setContentsMargins(0, 0, 0, 0)
         form_layout.setSpacing(8)
         form_layout.setLabelAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )  # type: ignore[arg-type]
+            cast(
+                "QtCore.Qt.Alignment",
+                QtCore.Qt.AlignmentFlag.AlignRight
+                | QtCore.Qt.AlignmentFlag.AlignVCenter,
+            )
+        )
         form_layout.setFieldGrowthPolicy(
             QtWidgets.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
         )
@@ -342,11 +346,15 @@ class ClientStationGui(QtWidgets.QMainWindow):
             # Refresh all tabs
             for i in range(self.tabs.count()):
                 widget = self.tabs.widget(i)
-                if hasattr(widget, "parametersList") and hasattr(
-                    widget.parametersList,
-                    "model",  # type: ignore[union-attr]
+                if (
+                    widget is not None
+                    and hasattr(widget, "parametersList")
+                    and hasattr(
+                        widget.parametersList,
+                        "model",
+                    )
                 ):
-                    widget.parametersList.model.refreshAll()  # type: ignore[union-attr]
+                    widget.parametersList.model.refreshAll()
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Load Error", str(e))

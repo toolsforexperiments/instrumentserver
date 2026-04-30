@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from instrumentserver.client import QtClient
 from instrumentserver.log import LogLevels, LogWidget, log
@@ -73,8 +73,11 @@ class StationList(QtWidgets.QTreeWidget):
     def removeObject(self, name: str) -> None:
         items = self.findItems(
             name,
-            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
-            0,  # type: ignore[arg-type]
+            cast(
+                "QtCore.Qt.MatchFlags",
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+            ),
+            0,
         )
         if len(items) > 0:
             item = items[0]
@@ -360,8 +363,11 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         insType = fullInsType.split(".")[-1]
         items = self.findItems(
             insType,
-            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchExactly,
-            0,  # type: ignore[arg-type]
+            cast(
+                "QtCore.Qt.MatchFlags",
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchExactly,
+            ),
+            0,
         )
 
         # Only add the instrument to the tree if there are no other instruments of the same type already
@@ -382,7 +388,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
 
         createButton = QtWidgets.QPushButton("Create")
 
-        lst = [configName, insName, "create"]
+        lst: list[str] = [configName or "", insName, "create"]
         lineEdit = QtWidgets.QLineEdit()
         lineEdit.returnPressed.connect(lambda: createButton.clicked.emit())
         lineEdit.setText(insName)
@@ -390,7 +396,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
             lst,
             fullInsType=fullInsType,
             configName=configName,
-            lineEdit=lineEdit,  # type: ignore[arg-type]
+            lineEdit=lineEdit,
         )
         parent.addChild(item)
 
@@ -405,14 +411,15 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
 
     def onBasedInstrumentAction(self) -> None:
         items = self.selectedItems()
-        for item in items:
+        for raw_item in items:
+            item = cast(PossibleInstrumentDisplayItem, raw_item)
             insName = None
-            if item.lineEdit is not None:  # type: ignore[attr-defined]
-                insName = item.lineEdit.text()  # type: ignore[attr-defined]
+            if item.lineEdit is not None:
+                insName = item.lineEdit.text()
             self.basedInstrumentRequested.emit(
                 item.configName,
                 item.fullInsType,
-                insName,  # type: ignore[attr-defined]
+                insName,
             )
 
     @QtCore.Slot()

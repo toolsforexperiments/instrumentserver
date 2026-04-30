@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, cast
 
 from .. import QtCore, QtGui, QtWidgets
 
@@ -12,8 +12,12 @@ class AlertLabel(QtWidgets.QLabel):
         super().__init__(parent)
 
         self.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignHCenter
-        )  # type: ignore[arg-type]
+            cast(
+                "QtCore.Qt.Alignment",
+                QtCore.Qt.AlignmentFlag.AlignVCenter
+                | QtCore.Qt.AlignmentFlag.AlignHCenter,
+            )
+        )
         self._pixmapSize = pixmapSize
         pix = QtGui.QIcon(":/icons/no-alert.svg").pixmap(*pixmapSize)
         self.setPixmap(pix)

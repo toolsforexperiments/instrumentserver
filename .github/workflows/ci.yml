@@ -15,7 +15,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.13"
       - run: uv lock --locked
 
   lint:
@@ -26,7 +26,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.13"
       - run: uv sync --locked --group dev
       - run: uv run ruff check
 
@@ -38,7 +38,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.13"
       - run: uv sync --locked --group dev
       - run: uv run ruff format --check
 
@@ -50,7 +50,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.13"
       - run: uv sync --locked --group dev
       - run: uv run mypy
 
@@ -64,7 +64,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install system deps for PyQt5
         run: |
           sudo apt-get update
@@ -84,5 +84,5 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          python-version: "3.12"
+          python-version: "3.13"
       - run: uv build

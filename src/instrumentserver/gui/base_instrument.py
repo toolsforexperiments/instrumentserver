@@ -104,7 +104,7 @@ To add more items to the toolbar for any extra functionality, you can do so by o
 
 import fnmatch
 from pprint import pprint
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 
@@ -313,8 +313,12 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
             items = self.findItems(
                 smName,
-                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
-                0,  # type: ignore[arg-type]
+                cast(
+                    "QtCore.Qt.MatchFlags",
+                    QtCore.Qt.MatchFlag.MatchExactly
+                    | QtCore.Qt.MatchFlag.MatchRecursive,
+                ),
+                0,
             )
 
             if len(items) == 0:
@@ -347,8 +351,11 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
     def removeItem(self, fullName: str) -> None:
         items = self.findItems(
             fullName,
-            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
-            0,  # type: ignore[arg-type]
+            cast(
+                "QtCore.Qt.MatchFlags",
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+            ),
+            0,
         )
 
         if len(items) > 0:
@@ -631,8 +638,8 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                     for x in self.delegateColumns  # type: ignore[union-attr]
                 ]
                 proxyDelegateIndexes = [
-                    self.model().mapFromSource(index)
-                    for index in delegateIndexes  # type: ignore[union-attr]
+                    self.model().mapFromSource(index)  # type: ignore[union-attr]
+                    for index in delegateIndexes
                 ]
                 for delegateIndex in proxyDelegateIndexes:
                     self.openPersistentEditor(delegateIndex)
