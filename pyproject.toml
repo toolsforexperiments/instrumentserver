@@ -1,0 +1,114 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "instrumentserver"
+version = "0.0.1"
+description = "Distributed instrument control server and client for QCoDeS."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+authors = [
+    {name = "Wolfgang Pfaff", email = "wolfgangpfff@gmail.com"},
+    {name = "Marcos Frenkel", email = "marcosf2@illinois.edu"}
+]
+dependencies = [
+    "pyqt5",
+    "pyzmq",
+    "qcodes",
+    "qtpy",
+    "scipy",
+    "numpy",
+    "pandas",
+    "jsonschema",
+    "ruamel.yaml",
+    "PyYAML",
+]
+
+[project.optional-dependencies]
+monitoring = ["influxdb-client"]
+
+[project.urls]
+Homepage = "https://github.com/toolsforexperiments/instrumentserver"
+
+[project.scripts]
+instrumentserver = "instrumentserver.apps:serverScript"
+instrumentserver-client-station = "instrumentserver.apps:clientStationScript"
+instrumentserver-detached = "instrumentserver.apps:detachedServerScript"
+instrumentserver-listener = "instrumentserver.monitoring.listener:startListener"
+instrumentserver-param-manager = "instrumentserver.apps:parameterManagerScript"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+exclude = ["docs"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["E402"]
+
+[tool.mypy]
+files = ["src"]
+exclude = ["src/instrumentserver/resource\\.py$"]
+strict_optional = true
+show_column_numbers = true
+warn_unused_ignores = true
+warn_unused_configs = true
+warn_redundant_casts = true
+no_implicit_optional = true
+disallow_untyped_defs = true
+show_error_codes = true
+enable_error_code = "ignore-without-code"
+
+[[tool.mypy.overrides]]
+module = [
+    "PyQt5",
+    "PyQt5.*",
+    "qcodes",
+    "qcodes.*",
+    "qtpy",
+    "qtpy.*",
+    "scipy",
+    "scipy.*",
+    "zmq",
+    "zmq.*",
+    "ruamel",
+    "ruamel.*",
+    "jsonschema",
+    "jsonschema.*",
+    "yaml",
+    "pandas",
+    "pandas.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["test/pytest"]
+qt_api = "pyqt5"
+log_cli = true
+
+[tool.coverage.run]
+branch = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-qt>=4.5.0",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+docs = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "myst-parser",
+    "nbsphinx",
+    "linkify-it-py",
+]

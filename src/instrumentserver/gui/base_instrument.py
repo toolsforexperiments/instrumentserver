@@ -1,0 +1,921 @@
+"""
+Quick Introduction
+==================
+
+This module contains all the base classes necessaries to display different properties dictionaries of instruments.
+The goal is to have a base design such that implementing further GUIS is simplified and can be done without repeating
+much code. To implement your own GUI you just need to inherit any particular part you want to customize.
+
+The assembled widget uses a TreeView to display some attribute of the passed instrument.
+It will go through the submodules contained in it and display them accordingly.
+
+All the classes here assume that arguments present in them will exist in inherited ones. E.g.: all classes
+assume that the items used have a property star and trash. If your implementation of ItemBase deletes those properties
+unexpected things might break.
+
+You should be careful when using Signals:
+I tried keeping signals and direct interaction between classes to a minimum, however,
+there still is a need for inter object signal connection.
+This is the responsibility of the InstrumentDisplayBase (or whatever your specific widget implementation is).
+If you are adding more connections that happen between signals it is recommended to overload the
+connectSignals function, call the super version and add whatever new signals you need.
+The exception is with the toolbar actions themselves, those are handled by the makeToolBar function.
+
+Full Description
+================
+
+The following is a more through and linear guide on how to implement your own custom instrument widgets.
+
+The goal of any widget implementation of the following classes is to display some attribute of a Qcodes instrument.
+Following this design will allow you to display items similarly to how the generic gui for instruments looks like. It
+is recommended to understand the basic of model/view in Qt to more easily understand this guide, but I would do my
+best to guide you through.
+
+Classes
+-------
+
+ItemBase
+^^^^^^^^
+
+This is based of the QStandardItem. It does not do much other than hold the individual data of each item. The actual
+object that you are interested in displaying is stored in the variable element.
+
+InstrumentModelBase
+^^^^^^^^^^^^^^^^^^^
+
+Based on a QStandardItemModel, it stores all the items in the correct structure. It is in charge of keeping its data
+up to date (if needed). All the information of the model is contained in the column 0, this includes any
+hierarchical (items inside of items representing submodules) or any other information that should be shown in other
+columns. When adding items to the model, use the addItem method, this will take care of hierarchical things for you.
+**don't use insertItemTo** This should just be used to insert the correct number of items to the correct place.
+
+Things to pay attention when implementing your own:
+    * If your model is going to display more than one column (this is usually the case) you need to set the correct
+     number of columns and set the horizontal headers.
+    * Implement the function insertItemTo: This is the only function that actually adds items to the model. When the
+     model contains more than one column this function creates QStandardItems and adds them to the correct columns.
+     **don't forget** to emit the newItem signal if you are going to implement a view that utilizes delegates.
+
+InstrumentSortFilterProxyModel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This class is in charge of filtering and sorting of the model. For most things, you should not have to care about this
+class.
+
+It might be helpful to know, before a new filtering happens, the proxy model emits the signal filterIncoming,
+when the filtering is done it will emit the signal filterFinished. These signals are used to set delegates and
+collapsed states in the view.
+
+InstrumentTreeViewBase
+^^^^^^^^^^^^^^^^^^^^^^
+
+The view is in charge of displaying the model data. It uses the ProxyModel to filter and sort the items for it. The
+main thing you need to implement for this class is its delegate. Delegates are classes in charge of creating the
+widgets that are shown for each row of the view. Usually they are the way we represent the information we want to
+show and allows us to interact with it.
+
+When creating your own delegate, you need to inherit from the class QStyledItemDelegate.
+Other than the constructor, the only class that your delegate should have implemented is the createEditor class.
+This class is responsible to return an already created widget for a specific item.
+If any signal needs to be connected from or to this widget, it should happen in the createEditor function.
+
+Things to pay attention when implementing the constructor:
+    * You can add any extra action that you want in the context menu here.
+    * When calling the super, don't forget to pass the delegateColumns argument to the base model indicating
+       what columns utilize delegates.
+    * Don't forget to call the setItemDelegateForColumn for all the columns that utilize delegates.
+    * Don't forget to end the constructor by calling the function setAllDelegatesPersistent,
+        if not, the delegates will not be shown.
+
+InstrumentDisplayBase
+^^^^^^^^^^^^^^^^^^^^^
+
+This is the class that brings everything together. It is the widget that should be added to a layout.
+When calling the constructor, you can pass any of the 4 previous classes to it to utilize your version of it, instead
+of the base one.
+
+All items connect their own signals with their own slots, but if any class needs to connect to a slot of a different
+class, that happens in the connectSignal method If you need to implement any of your own signals, override this
+method and after calling the super version of it, connect your signals.
+
+To add more items to the toolbar for any extra functionality, you can do so by overriding the makeToolbar method.
+
+"""
+
+import fnmatch
+from pprint import pprint
+from typing import Any, Dict, List, Optional, cast
+
+from instrumentserver import QtCore, QtGui, QtWidgets
+
+
+class ItemBase(QtGui.QStandardItem):
+    """
+    Base item for instrument models.
+
+    :param name: The name. This should include all of the submodules.
+    :param star: indicates if the item is starred.
+    :param trash: indicates if the item is trashed.
+    :param showDelegate: If true, the delegate for that item will be shown.
+    :param element: The object we want to store here, this can be a parameter or a method at the moment.
+        If this is None, it means that the item is a submodule and should only be there to store the children.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        star: bool = False,
+        trash: bool = False,
+        showDelegate: bool = True,
+        element: Any = None,
+    ) -> None:
+        super().__init__()
+
+        self.name = name
+        self.star = star
+        self.trash = trash
+        self.showDelegate = showDelegate
+        self.element = element
+
+        self.setText(self.name)
+
+
+class DelegateBase(QtWidgets.QStyledItemDelegate):
+    """
+    The parent of the delegate should be the view. The signals should go through the view too.
+    """
+
+    @classmethod
+    def getItem(cls, QModelIndex: QtCore.QModelIndex) -> QtGui.QStandardItem:
+
+        proxyModel = QModelIndex.model()
+        model = proxyModel.sourceModel()  # type: ignore[union-attr]
+        item = model.itemFromIndex(proxyModel.mapToSource(QModelIndex))  # type: ignore[union-attr]
+        if item.column != 0:
+            parent = item.parent()
+            row = item.row()
+            if parent is None:
+                item = model.item(row, 0)
+            else:
+                item = parent.child(row, 0)
+
+        return item
+
+
+class InstrumentModelBase(QtGui.QStandardItemModel):
+    """
+    Base model used to display information of an instrument (like parameters or methods).
+
+    In the constructor of the implemented model, you should specify how many columns it has and set the header labels
+
+    If you are implementing the addChildTo function it is very important that you emit the newItem signal in the end.
+    Delegates will not work properly unless you do so. This is because the integrated signal that Qt has, is emitted
+    at the beginning of the insertion process and not in the end, not allowing the delegates to be properly set
+
+    The attribute you are trying to display must be a dictionary.
+
+    :param instrument: The instrument we are trying to show.
+    :param attr: The string name of the dictionary of the items we want to show ("parameters", for example)
+    :param itemClass: The item class the model should use.
+    :param itemsStar: List of items that will start being starred.
+    :param itemsTrash: List of items that will start trashed.
+    :param itemsHide: List of items that will not be loaded. If the user adds the same parameters to the model manually,
+        they will be shown.
+    """
+
+    #: Signal(ItemBase)
+    #: Gets emitted after a new item has been added. The user is in charge of emitting it in their implementation
+    #: of addChildTo
+    newItem = QtCore.Signal(object)
+
+    #: Signal()
+    #: Emitted when the model refreshes.
+    modelRefreshed = QtCore.Signal()
+
+    def __init__(
+        self,
+        instrument: Any,
+        attr: str,
+        itemClass: type[ItemBase] = ItemBase,
+        itemsStar: Optional[List[str]] = [],
+        itemsTrash: Optional[List[str]] = [],
+        itemsHide: Optional[List[str]] = [],
+        parent: Optional[QtCore.QObject] = None,
+    ) -> None:
+
+        super().__init__(parent=parent)
+
+        self.instrument = instrument
+        # Indicates the name of the attributes we are creating the model: Parameters or methods for now.
+        self.attr = attr
+        self.objectDictionary = getattr(self.instrument, self.attr)
+        self.itemClass = itemClass
+
+        self.itemsStar = itemsStar
+        self.itemsTrash = itemsTrash
+        self.itemsHide = itemsHide
+
+        self.setHorizontalHeaderLabels([attr])
+
+        # Indicates if when adding items to the model, should pay attention to the itemsStar, itemsTrash or itemsHide.
+        self.loadingItems = True
+        self.loadItems()
+        self.loadingItems = False
+
+    @staticmethod
+    def _matches_any_pattern(name: str, patterns: List[str]) -> bool:
+        """
+        Check if a name matches any glob pattern in the list.
+
+        Supports standard glob patterns:
+        - `*` matches any number of characters
+        - `?` matches a single character
+        - `[seq]` matches any character in seq
+        - `[!seq]` matches any character not in seq
+
+        :param name: The item name to check
+        :param patterns: List of glob patterns to match against (e.g., 'power_*', '*_frequency')
+        :return: True if name matches any pattern, False otherwise
+        """
+        for pattern in patterns:
+            if fnmatch.fnmatch(name, pattern):
+                return True
+        return False
+
+    def loadItems(self, module: Any = None, prefix: Optional[str] = None) -> None:
+        """
+        The argument for either submodules or the instrument itself.
+
+        :param module: A proxy instrument from which we want to add all of its attributes and submodules.
+            If `None`, self.instrument will be used.
+        :param prefix: any submodule name that should be added before the name of a parameter.
+        """
+        if module is None:
+            module = self.instrument
+
+        for objectName, obj in getattr(module, self.attr).items():
+            # addItem only requires fullName, everything else is going to be passed as args and kwargs to the item
+            # constructor
+            if prefix is not None:
+                objectName = ".".join([prefix, objectName])
+            if not self._matches_any_pattern(objectName, self.itemsHide):  # type: ignore[arg-type]
+                item = self.addItem(
+                    fullName=objectName, star=False, trash=False, element=obj
+                )
+                if self._matches_any_pattern(objectName, self.itemsTrash):  # type: ignore[arg-type]
+                    self.onItemTrashToggle(item)
+                if self._matches_any_pattern(objectName, self.itemsStar):  # type: ignore[arg-type]
+                    self.onItemStarToggle(item)
+
+        for submodName, submod in module.submodules.items():
+            if prefix is not None:
+                submodName = ".".join([prefix, submodName])
+            self.loadItems(submod, submodName)
+
+    def refreshAll(self) -> None:
+        """
+        Removes all the rows from the model, updates the instrument and loads the model again.
+        """
+        self.removeRows(0, self.rowCount())
+        self.instrument.update()
+        self.loadItems()
+        self.modelRefreshed.emit()
+
+    def insertItemTo(
+        self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
+    ) -> None:
+        """
+        This is the only function that actually inserts items into the model.
+        Overload for models that utilize more columns. **Don't call directly**
+
+        If you are using delegates, this function should emit the newItem signal
+        """
+        if parent == self:
+            self.setItem(self.rowCount(), 0, item)
+        else:
+            parent.appendRow(item)
+
+    def addItem(self, fullName: str, **kwargs: Any) -> "ItemBase":
+        """
+        Adds an item to the model. The *args and **kwargs are whatever the specific item needs for a new item.
+
+        :param fullName: The name of the parameter
+        """
+        path = fullName.split(".")[:-1]
+
+        parent = self
+        smName = None
+        for sm in path:
+            if smName is None:
+                smName = sm
+            else:
+                smName = smName + f".{sm}"
+
+            items = self.findItems(
+                smName,
+                cast(
+                    "QtCore.Qt.MatchFlags",
+                    QtCore.Qt.MatchFlag.MatchExactly
+                    | QtCore.Qt.MatchFlag.MatchRecursive,
+                ),
+                0,
+            )
+
+            if len(items) == 0:
+                subModItem = self.itemClass(
+                    name=smName,
+                    star=False,
+                    trash=False,
+                    showDelegate=False,
+                    element=None,
+                )
+                # submodules get directly added here and not in the load function, so need to have it here too.
+                if self.loadingItems:
+                    if not self._matches_any_pattern(smName, self.itemsHide):  # type: ignore[arg-type]
+                        self.insertItemTo(parent, subModItem)  # type: ignore[arg-type]
+                        if self._matches_any_pattern(smName, self.itemsTrash):  # type: ignore[arg-type]
+                            self.onItemTrashToggle(subModItem)
+                        if self._matches_any_pattern(smName, self.itemsStar):  # type: ignore[arg-type]
+                            self.onItemStarToggle(subModItem)
+                else:
+                    self.insertItemTo(parent, subModItem)  # type: ignore[arg-type]
+                parent = subModItem  # type: ignore[assignment]
+            else:
+                parent = items[0]  # type: ignore[assignment]
+
+        newItem = self.itemClass(name=fullName, **kwargs)
+        self.insertItemTo(parent, newItem)  # type: ignore[arg-type]
+
+        return newItem
+
+    def removeItem(self, fullName: str) -> None:
+        items = self.findItems(
+            fullName,
+            cast(
+                "QtCore.Qt.MatchFlags",
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+            ),
+            0,
+        )
+
+        if len(items) > 0:
+            item = items[0]
+            parent = item.parent()
+            if isinstance(parent, self.itemClass):
+                parent.removeRow(item.row())
+                if parent.rowCount() == 0:
+                    self.removeItem(parent.name)
+            else:
+                self.removeRow(item.row())
+
+    @QtCore.Slot(ItemBase)
+    def onItemStarToggle(self, item: "ItemBase") -> None:
+        assert isinstance(item, ItemBase)
+        if item.star:
+            item.star = False
+            item.setIcon(QtGui.QIcon())
+        else:
+            item.star = True
+            item.trash = False
+            item.setIcon(QtGui.QIcon(":/icons/star.svg"))
+
+    @QtCore.Slot(ItemBase)
+    def onItemTrashToggle(self, item: "ItemBase") -> None:
+        assert isinstance(item, ItemBase)
+        if item.trash:
+            item.trash = False
+            item.setIcon(QtGui.QIcon())
+        else:
+            item.trash = True
+            item.star = False
+            item.setIcon(QtGui.QIcon(":/icons/trash.svg"))
+
+
+class InstrumentSortFilterProxyModel(QtCore.QSortFilterProxyModel):
+    #: Signal()
+    #: Emitted before a filter occurs
+    filterIncoming = QtCore.Signal()
+
+    #: Signal()
+    #: Emitted after a filter has occurred.
+    filterFinished = QtCore.Signal()
+
+    def __init__(
+        self, sourceModel: InstrumentModelBase, parent: Optional[QtCore.QObject] = None
+    ):
+        super().__init__(parent=parent)
+
+        self.setSourceModel(sourceModel)
+        self.setRecursiveFilteringEnabled(True)
+        self.setDynamicSortFilter(True)
+
+        self.star = False
+        self.trash = False
+
+        self.sort(0, QtCore.Qt.SortOrder.DescendingOrder)
+
+    @QtCore.Slot(int, QtCore.Qt.SortOrder)
+    def onSortingIndicatorChanged(
+        self, index: int, sortingOrder: QtCore.Qt.SortOrder
+    ) -> None:
+        self.sort(index, sortingOrder)
+
+    @QtCore.Slot()
+    def onToggleStar(self) -> None:
+        if self.star:
+            self.star = False
+        else:
+            self.star = True
+
+        # When the start status changes, trigger a sorting so that the star items move.
+        if self.sortOrder() == QtCore.Qt.SortOrder.DescendingOrder:
+            self.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
+            self.sort(0, QtCore.Qt.SortOrder.DescendingOrder)
+        elif self.sortOrder() == QtCore.Qt.SortOrder.AscendingOrder:
+            self.sort(0, QtCore.Qt.SortOrder.DescendingOrder)
+            self.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
+
+    @QtCore.Slot()
+    def onToggleTrash(self) -> None:
+        if self.trash:
+            self.trash = False
+        else:
+            self.trash = True
+        self.triggerFiltering()
+
+    @QtCore.Slot(str)
+    def onTextFilterChange(self, filter: str) -> None:
+        self.filterIncoming.emit()
+        self.setFilterRegExp(filter)
+        self.filterFinished.emit()
+
+    def triggerFiltering(self) -> None:
+        self.filterIncoming.emit()
+        self.invalidateFilter()
+        self.filterFinished.emit()
+
+    def _isParentTrash(self, parent: Optional["ItemBase"]) -> bool:
+        """
+        Recursive function to see if any parent of an item is trash.
+        """
+        if parent is None:
+            return False
+
+        if parent.trash:
+            return True
+
+        return self._isParentTrash(parent.parent())  # type: ignore[arg-type]
+
+    def filterAcceptsRow(
+        self, source_row: int, source_parent: QtCore.QModelIndex
+    ) -> bool:
+        """
+        Calls for the super() unless trash is active and the item or one of its parent is trash.
+        """
+        model = self.sourceModel()
+        assert isinstance(model, InstrumentModelBase)
+        parent = model.itemFromIndex(source_parent)
+        if parent is None:
+            item = model.item(source_row, 0)
+        else:
+            item = parent.child(source_row, 0)
+
+        # The order in which things get constructed seems to impact this.
+        # When the application is first starting, the  proxy model does not have the trash attribute.
+        if hasattr(self, "trash"):
+            if self.trash:
+                # Assertion is there to satisfy mypy. item can be None, that is why we check before making the assertion
+                if item is not None:
+                    assert isinstance(item, ItemBase)
+                if self._isParentTrash(parent) or getattr(  # type: ignore[arg-type]
+                    item, "trash", False
+                ):  # item could be None when it's trashed and hidden
+                    return False
+
+        return super().filterAcceptsRow(source_row, source_parent)
+
+    def lessThan(self, left: QtCore.QModelIndex, right: QtCore.QModelIndex) -> bool:
+        """
+        If star is active, we want the star items to always be on the top.
+        """
+
+        # The order in which things get constructed seems to impact this.
+        # When the application is first starting, the proxy model does not have the star attribute.
+        if hasattr(self, "star"):
+            if self.star:
+                model = self.sourceModel()
+                assert isinstance(model, InstrumentModelBase)
+                leftItem = model.itemFromIndex(left)
+                rightItem = model.itemFromIndex(right)
+                if hasattr(leftItem, "star") and hasattr(rightItem, "star"):
+                    if self.sortOrder() == QtCore.Qt.SortOrder.DescendingOrder:
+                        if rightItem.star and not leftItem.star:  # type: ignore[union-attr]
+                            return True
+                        elif not rightItem.star and leftItem.star:  # type: ignore[union-attr]
+                            return False
+
+                    elif self.sortOrder() == QtCore.Qt.SortOrder.AscendingOrder:
+                        if rightItem.star and not leftItem.star:  # type: ignore[union-attr]
+                            return False
+                        elif not rightItem.star and leftItem.star:  # type: ignore[union-attr]
+                            return True
+
+        return super().lessThan(left, right)
+
+
+class InstrumentTreeViewBase(QtWidgets.QTreeView):
+    #: Signal(ItemBase)
+    #: emitted when this item got its trashed action triggered.
+    itemTrashToggle = QtCore.Signal(ItemBase)
+
+    #: Signal(ItemBase)
+    #: emitted when this item got its star action triggered.
+    itemStarToggle = QtCore.Signal(ItemBase)
+
+    def __init__(
+        self,
+        model: QtCore.QAbstractItemModel,
+        delegateColumns: Optional[List[int]] = None,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        super().__init__(parent=parent)
+
+        # Indicates if a column is using delegates.
+        self.delegateColumns = delegateColumns
+        self.lastSelectedItem = None
+        # Stores the last collapsed state before a change in filtering to restore it afterwards.
+        # The keys are persistent indexes from the original model (not the proxy one) and the values a bool
+        # indicating its collapsed state
+        self.collapsedState: Dict[QtCore.QPersistentModelIndex, bool] = {}
+        self.collapsedStateDebug: Dict[str, bool] = {}
+
+        self.setModel(model)
+
+        # Because we are filtering we set a proxy model as the model, however, there are times we want to work with
+        # the real model
+        m = self.model()
+        assert isinstance(m, InstrumentSortFilterProxyModel)
+        assert hasattr(m, "sourceModel")
+        self.modelActual = m.sourceModel()
+
+        # We need to turn sorting off so that the view sorting does not interfere with the proxy model sorting.
+        self.setSortingEnabled(False)
+
+        # The tree should not have anything to do with filtering itself since that is left for the proxy model.
+        self.header().setSortIndicatorShown(True)  # type: ignore[union-attr]
+        self.header().setSectionsClickable(True)  # type: ignore[union-attr]
+
+        self.setAlternatingRowColors(True)
+
+        self.starIcon = QtGui.QIcon(":/icons/star.svg")
+        self.starCrossedIcon = QtGui.QIcon(":/icons/star-crossed.svg")
+        self.trashIcon = QtGui.QIcon(":/icons/trash.svg")
+        self.trashCrossedIcon = QtGui.QIcon(":/icons/trash-crossed")
+
+        self.starItemAction = QtWidgets.QAction(self.starIcon, "Star Item")
+        self.starItemAction.triggered.connect(self.onStarActionTrigger)
+        self.trashItemAction = QtWidgets.QAction(self.trashIcon, "Trash Item")
+        self.trashItemAction.triggered.connect(self.onTrashActionTrigger)
+
+        self.contextMenu = QtWidgets.QMenu(self)
+        self.contextMenu.addAction(self.starItemAction)
+        self.contextMenu.addAction(self.trashItemAction)
+
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.onContextMenuRequested)
+
+    @QtCore.Slot()
+    def fillCollapsedDict(self, parentItem: Optional[ItemBase] = None) -> None:
+        """
+        Fills the collapsed state dictionary to be recovered after a filter event occured.
+        """
+        assert isinstance(self.modelActual, InstrumentModelBase)
+        if parentItem is None:
+            for i in range(self.modelActual.rowCount()):
+                index = self.modelActual.index(i, 0)
+                item = self.modelActual.itemFromIndex(index)
+                persistentIndex = QtCore.QPersistentModelIndex(index)
+                m = self.model()
+                assert isinstance(m, InstrumentSortFilterProxyModel)
+                proxyIndex = m.mapFromSource(index)
+                if proxyIndex.isValid():
+                    self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
+                    if item.hasChildren():  # type: ignore[union-attr]
+                        self.fillCollapsedDict(item)  # type: ignore[arg-type]
+        else:
+            for i in range(parentItem.rowCount()):
+                child = parentItem.child(i, 0)
+                childIndex = self.modelActual.indexFromItem(child)
+                persistentIndex = QtCore.QPersistentModelIndex(childIndex)
+                m = self.model()
+                assert isinstance(m, InstrumentSortFilterProxyModel)
+                proxyIndex = m.mapFromSource(childIndex)
+                if proxyIndex.isValid():
+                    self.collapsedState[persistentIndex] = self.isExpanded(proxyIndex)
+                    if child.hasChildren():  # type: ignore[union-attr]
+                        self.fillCollapsedDict(child)  # type: ignore[arg-type]
+
+    @QtCore.Slot()
+    def restoreCollapsedDict(self) -> None:
+        """
+        Goes through the collapsed state dictionary, and expands any item that should be expanded. It also resets
+        the persistent editors and triggers a resizing of delegates.
+        """
+        for persistentIndex, state in self.collapsedState.items():
+            modelIndex = self.modelActual.index(  # type: ignore[union-attr]
+                persistentIndex.row(),
+                persistentIndex.column(),
+                persistentIndex.parent(),
+            )
+            item = self.modelActual.itemFromIndex(modelIndex)  # type: ignore[union-attr]
+            proxyIndex = self.model().mapFromSource(modelIndex)  # type: ignore[union-attr]
+            self.setExpanded(proxyIndex, state)
+            if item.showDelegate:
+                delegateIndexes = [
+                    self.modelActual.index(  # type: ignore[union-attr]
+                        persistentIndex.row(), x, persistentIndex.parent()
+                    )
+                    for x in self.delegateColumns  # type: ignore[union-attr]
+                ]
+                proxyDelegateIndexes = [
+                    self.model().mapFromSource(index)  # type: ignore[union-attr]
+                    for index in delegateIndexes
+                ]
+                for delegateIndex in proxyDelegateIndexes:
+                    self.openPersistentEditor(delegateIndex)
+        self.scheduleDelayedItemsLayout()
+
+    def setAllDelegatesPersistent(
+        self, parentIndex: Optional[QtCore.QModelIndex] = None
+    ) -> None:
+        """
+        Recursive function that goes through the entire model and sets all delegates to be persistent editors
+
+        :param parentIndex: If None, start the process. if it's an item, it will go through the children
+        """
+        if parentIndex is None:
+            for i in range(self.model().rowCount()):  # type: ignore[union-attr]
+                for column in self.delegateColumns:  # type: ignore[union-attr]
+                    index = self.model().index(i, column)  # type: ignore[union-attr]
+                    index0 = self.model().index(  # type: ignore[union-attr]
+                        i, 0
+                    )  # Only items at column 0 hold children and model info
+                    item0 = self.modelActual.itemFromIndex(  # type: ignore[union-attr]
+                        self.model().mapToSource(index0)  # type: ignore[union-attr]
+                    )
+                    if item0.showDelegate:
+                        self.openPersistentEditor(index)
+                    if item0.hasChildren():
+                        self.setAllDelegatesPersistent(index0)
+
+        else:
+            parentItem = self.modelActual.itemFromIndex(  # type: ignore[union-attr]
+                self.model().mapToSource(parentIndex)  # type: ignore[union-attr]
+            )
+            for i in range(parentItem.rowCount()):
+                for column in self.delegateColumns:  # type: ignore[union-attr]
+                    item = parentItem.child(i, column)
+                    item0 = parentItem.child(i, 0)
+                    index = self.model().mapFromSource(  # type: ignore[union-attr]
+                        self.modelActual.indexFromItem(item)  # type: ignore[union-attr]
+                    )
+                    index0 = self.model().mapFromSource(  # type: ignore[union-attr]
+                        self.modelActual.indexFromItem(item0)  # type: ignore[union-attr]
+                    )
+                    if item0.showDelegate:
+                        self.openPersistentEditor(index)
+                    if item0.hasChildren():
+                        self.setAllDelegatesPersistent(index0)
+
+    @QtCore.Slot(object)
+    def onCheckDelegate(self, item: Optional["ItemBase"]) -> None:
+        """
+        Makes sure that the delegates are shown if needed.
+
+        :param item: The item whose row the delegates need to be activated
+        """
+        if item is not None:
+            if item.showDelegate:
+                row = item.row()
+                parent = item.parent()
+                for column in self.delegateColumns:  # type: ignore[union-attr]
+                    if parent is None:
+                        sibling = self.modelActual.item(row, column)  # type: ignore[union-attr]
+                    else:
+                        sibling = parent.child(row, column)
+                    index = self.model().mapFromSource(  # type: ignore[union-attr]
+                        self.modelActual.indexFromItem(sibling)  # type: ignore[union-attr]
+                    )
+                    self.openPersistentEditor(index)
+            self.scheduleDelayedItemsLayout()
+
+    @QtCore.Slot(QtCore.QPoint)
+    def onContextMenuRequested(self, pos: QtCore.QPoint) -> None:
+
+        # We get the item from the real model, not the proxy model
+        originalModel = self.model().sourceModel()  # type: ignore[union-attr]
+        proxyIndex = self.indexAt(pos)
+        index = self.model().mapToSource(proxyIndex)  # type: ignore[union-attr]
+
+        # catch the case if the user rightcliks on any other column
+        if index.column() != 0:
+            parent = originalModel.itemFromIndex(index.parent())
+            if parent is None:
+                item = originalModel.item(index.row(), 0)
+            else:
+                item = parent.child(index.row(), 0)
+        else:
+            item = originalModel.itemFromIndex(index)
+
+        # if item is none the user right clicked in an empty part of the widget
+        if item is not None:
+            self.lastSelectedItem = item
+
+            if item.star:
+                self.starItemAction.setText("un-star item")
+                self.starItemAction.setIcon(self.starCrossedIcon)
+            else:
+                self.starItemAction.setText("star item")
+                self.starItemAction.setIcon(self.starIcon)
+
+            if item.trash:
+                self.trashItemAction.setText("un-trash item")
+                self.trashItemAction.setIcon(self.trashCrossedIcon)
+            else:
+                self.trashItemAction.setText("trash item")
+                self.trashItemAction.setIcon(self.trashIcon)
+
+            self.contextMenu.exec_(self.mapToGlobal(pos))
+
+    @QtCore.Slot()
+    def onStarActionTrigger(self) -> None:
+        self.itemStarToggle.emit(self.lastSelectedItem)
+
+    @QtCore.Slot()
+    def onTrashActionTrigger(self) -> None:
+        self.itemTrashToggle.emit(self.lastSelectedItem)
+
+
+class InstrumentDisplayBase(QtWidgets.QWidget):
+    """
+    Basic widget. To implement new toolbars overload the makeToolBar function. To connect any extra signals overload the connectSignals function.
+
+    All the type variables, require the class type and not an initialized object of the variables.
+
+    :param instrument: The instrument we want to display the attribute from.
+    :param attr: string of the name of the dictionary we want to display, like 'parameters' or 'function'
+    :param itemType: The type of item the model should use.
+    :param modelType: The type of model that should be used.
+    :param proxyModelType: The type of proxy model that should be used.
+    :param viewType: The type of view that should be used.
+    :param callSignals: If False, the constructor will not call the method connectSignals
+    """
+
+    def __init__(
+        self,
+        instrument: Any,
+        attr: str,
+        itemType: type = ItemBase,
+        modelType: type = InstrumentModelBase,
+        proxyModelType: type = InstrumentSortFilterProxyModel,
+        viewType: type = InstrumentTreeViewBase,
+        callSignals: bool = True,
+        parent: Optional[QtWidgets.QWidget] = None,
+        **modelKwargs: Any,
+    ) -> None:
+        super().__init__(parent=parent)
+
+        # initializing variables
+        self.instrument = instrument
+        self.attr = attr
+        self.itemClass = itemType
+
+        # initializing all the different classes
+        self.model = modelType(instrument, attr, itemType, parent=self, **modelKwargs)
+        self.proxyModel = proxyModelType(self.model)
+        self.view = viewType(self.proxyModel)
+
+        self.layout_ = QtWidgets.QVBoxLayout()
+
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.lineEdit.setPlaceholderText(f"Filter {self.attr}")
+        self.toolbar = self.makeToolbar()
+        self.toolbar.addWidget(self.lineEdit)
+
+        self.layout_.addWidget(self.toolbar)
+        self.layout_.addWidget(self.view)
+        self.setLayout(self.layout_)
+
+        self.view.expandAll()
+
+        if callSignals:
+            self.connectSignals()
+
+    def connectSignals(self) -> None:
+        """
+        Connects all the signals to slots of different classes. Override to add more signals
+        """
+        self.model.newItem.connect(self.view.onCheckDelegate)
+        self.model.modelRefreshed.connect(self.view.expandAll)
+
+        self.proxyModel.filterIncoming.connect(self.view.fillCollapsedDict)
+        self.proxyModel.filterFinished.connect(self.view.restoreCollapsedDict)
+
+        self.view.itemStarToggle.connect(self.model.onItemStarToggle)
+        self.view.itemTrashToggle.connect(self.model.onItemTrashToggle)
+
+        self.lineEdit.textChanged.connect(self.proxyModel.onTextFilterChange)
+
+        self.view.header().sortIndicatorChanged.connect(
+            self.proxyModel.onSortingIndicatorChanged
+        )
+
+    def makeToolbar(self) -> QtWidgets.QToolBar:
+        """
+        Creates the toolbar, override to add more buttons to the toolbar.
+        """
+        toolbar = QtWidgets.QToolBar(self)
+        toolbar.setIconSize(QtCore.QSize(16, 16))
+
+        refreshAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/refresh.svg"),
+            "refresh all items from the instrument",
+        )
+        refreshAction.triggered.connect(lambda x: self.refreshAll())  # type: ignore[union-attr]
+
+        toolbar.addSeparator()
+
+        expandAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/expand.svg"),
+            "expand tree",
+        )
+        expandAction.triggered.connect(lambda x: self.view.expandAll())  # type: ignore[union-attr]
+
+        collapseAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/collapse.svg"),
+            "collapse tree",
+        )
+        collapseAction.triggered.connect(lambda x: self.view.collapseAll())  # type: ignore[union-attr]
+
+        toolbar.addSeparator()
+
+        starAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/star.svg"), "Move Starred items to the top"
+        )
+        starAction.setCheckable(True)  # type: ignore[union-attr]
+        starAction.triggered.connect(lambda x: self.promoteStar())  # type: ignore[union-attr]
+
+        trashAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/trash-crossed.svg"), "Hide trashed items"
+        )
+        trashAction.setCheckable(True)  # type: ignore[union-attr]
+        trashAction.triggered.connect(lambda x: self.hideTrash())  # type: ignore[union-attr]
+
+        # Debugging tools keep commented for commits.
+        # printAction = toolbar.addAction(
+        #     QtGui.QIcon(":/icons/code.svg"),
+        #     "print empty space",
+        # )
+        # printAction.triggered.connect(self.debuggingMethod)
+        #
+        # toolbar.addSeparator()
+
+        return toolbar
+
+    @QtCore.Slot()
+    def hideTrash(self) -> None:
+        self.proxyModel.onToggleTrash()
+
+    @QtCore.Slot()
+    def promoteStar(self) -> None:
+        self.proxyModel.onToggleStar()
+
+    @QtCore.Slot()
+    def refreshAll(self) -> None:
+        self.model.refreshAll()
+
+    def debuggingMethod(self) -> None:
+        """
+        This is just a debugging method.
+        """
+        items: Dict[str, Any] = {}
+
+        def fillChildren(parent: QtGui.QStandardItem) -> None:
+            for i in range(parent.rowCount()):
+                item = parent.child(i, 0)
+                items[item.name] = {  # type: ignore[union-attr]
+                    "item": item,
+                    "star": item.star,  # type: ignore[union-attr]
+                    "trash": item.trash,  # type: ignore[union-attr]
+                }
+                if item.hasChildren():  # type: ignore[union-attr]
+                    fillChildren(item)  # type: ignore[arg-type]
+
+        for i in range(self.model.rowCount()):
+            item = self.model.item(i, 0)
+            items[item.name] = {"item": item, "star": item.star, "trash": item.trash}
+            if item.hasChildren():
+                fillChildren(item)
+
+        pprint(items)
+        print("\n \n \n \n")

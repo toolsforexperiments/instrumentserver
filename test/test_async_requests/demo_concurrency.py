@@ -1,8 +1,9 @@
-from instrumentserver.client import Client
 import sys
 import time
 
-'''
+from instrumentserver.client import Client
+
+"""
 Simple concurrency demo.
 
 Usage (server already running):
@@ -23,7 +24,7 @@ Terminal B (start while A is still running):
 This mimics the case when one client is ramping bias voltage, while another client wants to change a parameter of
 a different instrument. Or more commonly, a client is ramping bias voltage, and we want to view parameter of an instrument
 in the server gui (which also is basically another client that runs in a different thread.)
-'''
+"""
 
 if __name__ == "__main__":
     role = sys.argv[1] if len(sys.argv) > 1 else "ramp"
@@ -43,17 +44,21 @@ if __name__ == "__main__":
 
     t0 = time.time()
 
-    if role == "ramp": # within a single process, operations are always blocking
+    if role == "ramp":  # within a single process, operations are always blocking
         print("[ramp] dummy1.get_random_timeout(10)")
         print(dummy1.get_random_timeout(10))
         print("[after ramp] dummy2.get_random()")
         print(dummy2.get_random())
 
-    elif role == "same": # from a different process, operations on the same instrument are still blocked
+    elif (
+        role == "same"
+    ):  # from a different process, operations on the same instrument are still blocked
         print("[same] dummy1.get_random() (same instrument as ramp)")
         print(dummy1.get_random())
 
-    elif role == "other": # from a different process, operations on a different instrument are NOT blocked
+    elif (
+        role == "other"
+    ):  # from a different process, operations on a different instrument are NOT blocked
         print("[other] dummy2.get_random() (different instrument)")
         print(dummy2.get_random())
 
@@ -61,5 +66,3 @@ if __name__ == "__main__":
         print(f"Unknown role {role!r}. Use 'ramp', 'same', or 'other'.")
 
     print(f"[{role}] took {time.time() - t0:.3f} s")
-
-
