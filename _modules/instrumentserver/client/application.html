@@ -26,22 +26,23 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
   
   <!-- So that users can add custom icons -->
-  <script src="../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/client/application';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/_modules/instrumentserver/client/application.html" />
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -49,20 +50,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="auto">
-
+  <body data-default-mode="auto">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -88,7 +95,7 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
   <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
     <span class="fa-solid fa-bars"></span>
@@ -419,27 +426,24 @@
                 <article class="bd-article">
                   
   <h1>Source code for instrumentserver.client.application</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instrument</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">qtpy.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">QFileDialog</span><span class="p">,</span> <span class="n">QMenu</span><span class="p">,</span> <span class="n">QWidget</span><span class="p">,</span> <span class="n">QSizePolicy</span><span class="p">,</span> <span class="n">QSplitter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qtpy.QtGui</span><span class="w"> </span><span class="kn">import</span> <span class="n">QGuiApplication</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">qtpy.QtCore</span><span class="w"> </span><span class="kn">import</span> <span class="n">Qt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qtpy.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">QFileDialog</span><span class="p">,</span> <span class="n">QWidget</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="p">,</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">getInstrumentserverPath</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">QtClient</span><span class="p">,</span> <span class="n">Client</span><span class="p">,</span> <span class="n">ClientStation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="p">,</span> <span class="n">getInstrumentserverPath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterBroadcastBluePrint</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientStation</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client.proxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubClient</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.gui.instruments</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericInstrument</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.gui.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">DetachableTabWidget</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogLevels</span><span class="p">,</span> <span class="n">LogWidget</span><span class="p">,</span> <span class="n">log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogWidget</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span> <span class="k">as</span> <span class="n">get_instrument_logger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.server.application</span><span class="w"> </span><span class="kn">import</span> <span class="n">StationList</span><span class="p">,</span> <span class="n">StationObjectInfo</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterBroadcastBluePrint</span>
 
 <span class="c1"># instrument class key in configuration files for configurations that will be applied to all instruments</span>
 <span class="n">DEFAULT_INSTRUMENT_KEY</span> <span class="o">=</span> <span class="s2">&quot;__default__&quot;</span>
@@ -451,7 +455,11 @@
 <div class="viewcode-block" id="ServerWidget">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ServerWidget">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ServerWidget</span><span class="p">(</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_station</span><span class="p">:</span><span class="n">ClientStation</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">client_station</span><span class="p">:</span> <span class="n">ClientStation</span><span class="p">,</span>
+        <span class="n">parent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client_station</span> <span class="o">=</span> <span class="n">client_station</span>
 
@@ -460,8 +468,16 @@
         <span class="n">form_layout</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QFormLayout</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
         <span class="n">form_layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">form_layout</span><span class="o">.</span><span class="n">setSpacing</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
-        <span class="n">form_layout</span><span class="o">.</span><span class="n">setLabelAlignment</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignRight</span> <span class="o">|</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignVCenter</span><span class="p">)</span>
-        <span class="n">form_layout</span><span class="o">.</span><span class="n">setFieldGrowthPolicy</span><span class="p">(</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QFormLayout</span><span class="o">.</span><span class="n">AllNonFixedFieldsGrow</span><span class="p">)</span>
+        <span class="n">form_layout</span><span class="o">.</span><span class="n">setLabelAlignment</span><span class="p">(</span>
+            <span class="n">cast</span><span class="p">(</span>
+                <span class="s2">&quot;QtCore.Qt.Alignment&quot;</span><span class="p">,</span>
+                <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignmentFlag</span><span class="o">.</span><span class="n">AlignRight</span>
+                <span class="o">|</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignmentFlag</span><span class="o">.</span><span class="n">AlignVCenter</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">form_layout</span><span class="o">.</span><span class="n">setFieldGrowthPolicy</span><span class="p">(</span>
+            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QFormLayout</span><span class="o">.</span><span class="n">FieldGrowthPolicy</span><span class="o">.</span><span class="n">AllNonFixedFieldsGrow</span>
+        <span class="p">)</span>
 
         <span class="c1"># Non-editable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_station</span><span class="o">.</span><span class="n">_host</span><span class="p">)</span>
@@ -481,7 +497,9 @@
         <span class="n">lh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="o">.</span><span class="n">fontMetrics</span><span class="p">()</span><span class="o">.</span><span class="n">lineSpacing</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="o">.</span><span class="n">setFixedHeight</span><span class="p">(</span><span class="n">lh</span> <span class="o">*</span> <span class="n">rows</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="o">.</span><span class="n">frameWidth</span><span class="p">()</span> <span class="o">+</span> <span class="mi">8</span><span class="p">)</span>
         <span class="c1"># Let it grow horizontally</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Fixed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="o">.</span><span class="n">setSizePolicy</span><span class="p">(</span>
+            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Expanding</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QSizePolicy</span><span class="o">.</span><span class="n">Fixed</span>
+        <span class="p">)</span>
 
         <span class="n">form_layout</span><span class="o">.</span><span class="n">addRow</span><span class="p">(</span><span class="s2">&quot;Host:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">)</span>
         <span class="n">form_layout</span><span class="o">.</span><span class="n">addRow</span><span class="p">(</span><span class="s2">&quot;Port:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
@@ -504,17 +522,16 @@
         <span class="c1"># main.addLayout(btns)</span>
         <span class="n">main</span><span class="o">.</span><span class="n">addStretch</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_tint_readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">bg</span><span class="o">=</span><span class="s2">&quot;#f3f6fa&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_tint_readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">le</span><span class="p">:</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">,</span> <span class="n">bg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;#f3f6fa&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">pal</span> <span class="o">=</span> <span class="n">le</span><span class="o">.</span><span class="n">palette</span><span class="p">()</span>
         <span class="n">pal</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QPalette</span><span class="o">.</span><span class="n">Base</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="n">bg</span><span class="p">))</span>
         <span class="n">le</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">pal</span><span class="p">)</span></div>
 
 
     <span class="c1"># def restart_server(self):</span>
-        <span class="c1"># todo: to be implemented, ssh to server pc and start the server there.</span>
-        <span class="c1">#   need to close the port if occupied.</span>
-        <span class="c1"># print(self.cmd.toPlainText())</span>
-
+    <span class="c1"># todo: to be implemented, ssh to server pc and start the server there.</span>
+    <span class="c1">#   need to close the port if occupied.</span>
+    <span class="c1"># print(self.cmd.toPlainText())</span>
 
 
 <div class="viewcode-block" id="ClientStationGui">
@@ -532,23 +549,32 @@
         <span class="c1"># Set unique Windows App ID so that this app can have separate taskbar entry than other Qt apps</span>
         <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
             <span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
-            <span class="n">ctypes</span><span class="o">.</span><span class="n">windll</span><span class="o">.</span><span class="n">shell32</span><span class="o">.</span><span class="n">SetCurrentProcessExplicitAppUserModelID</span><span class="p">(</span><span class="s2">&quot;InstrumentServer.ClientStation&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowIcon</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QIcon</span><span class="p">(</span><span class="n">getInstrumentserverPath</span><span class="p">(</span><span class="s2">&quot;resource&quot;</span><span class="p">,</span><span class="s2">&quot;icons&quot;</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;/client_app_icon.svg&quot;</span><span class="p">))</span>
+
+            <span class="n">ctypes</span><span class="o">.</span><span class="n">windll</span><span class="o">.</span><span class="n">shell32</span><span class="o">.</span><span class="n">SetCurrentProcessExplicitAppUserModelID</span><span class="p">(</span>
+                <span class="s2">&quot;InstrumentServer.ClientStation&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowIcon</span><span class="p">(</span>
+            <span class="n">QtGui</span><span class="o">.</span><span class="n">QIcon</span><span class="p">(</span>
+                <span class="n">getInstrumentserverPath</span><span class="p">(</span><span class="s2">&quot;resource&quot;</span><span class="p">,</span> <span class="s2">&quot;icons&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/client_app_icon.svg&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">station</span> <span class="o">=</span> <span class="n">station</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cli</span> <span class="o">=</span> <span class="n">station</span><span class="o">.</span><span class="n">client</span>
 
         <span class="c1"># set up the listener thread and worker that listens to update messages emitted by the server (from all clients)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">listener</span> <span class="o">=</span> <span class="n">SubClient</span><span class="p">(</span><span class="n">instruments</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sub_host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">sub_port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">port</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">listener</span> <span class="o">=</span> <span class="n">SubClient</span><span class="p">(</span>
+            <span class="n">instruments</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sub_host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">sub_port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">port</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">moveToThread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">started</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">started</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">quit</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">deleteLater</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">deleteLater</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">listenerEvent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">instrumentTabsOpen</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrumentTabsOpen</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># --- main tabs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="n">DetachableTabWidget</span><span class="p">()</span>
@@ -557,8 +583,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">currentChanged</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onTabChanged</span><span class="p">)</span>
 
         <span class="c1"># --- client station</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stationList</span> <span class="o">=</span> <span class="n">StationList</span><span class="p">()</span> <span class="c1"># instrument list</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stationObjInfo</span> <span class="o">=</span> <span class="n">StationObjectInfo</span><span class="p">()</span> <span class="c1"># instrument docs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stationList</span> <span class="o">=</span> <span class="n">StationList</span><span class="p">()</span>  <span class="c1"># instrument list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stationObjInfo</span> <span class="o">=</span> <span class="n">StationObjectInfo</span><span class="p">()</span>  <span class="c1"># instrument docs</span>
 
         <span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">instruments</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stationList</span><span class="o">.</span><span class="n">addInstrument</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">bp</span><span class="p">)</span>
@@ -566,26 +592,25 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stationList</span><span class="o">.</span><span class="n">itemDoubleClicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">openInstrumentTab</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stationList</span><span class="o">.</span><span class="n">closeRequested</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">closeInstrument</span><span class="p">)</span>
 
-        <span class="n">stationWidgets</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QSplitter</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">)</span>
+        <span class="n">stationWidgets</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QSplitter</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">Orientation</span><span class="o">.</span><span class="n">Horizontal</span><span class="p">)</span>
         <span class="n">stationWidgets</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stationList</span><span class="p">)</span>
         <span class="n">stationWidgets</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stationObjInfo</span><span class="p">)</span>
         <span class="n">stationWidgets</span><span class="o">.</span><span class="n">setSizes</span><span class="p">([</span><span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">])</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addUnclosableTab</span><span class="p">(</span><span class="n">stationWidgets</span><span class="p">,</span> <span class="s1">&#39;Station&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addUnclosableTab</span><span class="p">(</span><span class="n">stationWidgets</span><span class="p">,</span> <span class="s2">&quot;Station&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">addParameterLoadSaveToolbar</span><span class="p">()</span>
 
         <span class="c1"># --- log widget</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_widget</span> <span class="o">=</span> <span class="n">LogWidget</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addUnclosableTab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_widget</span><span class="p">,</span> <span class="s1">&#39;Log&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addUnclosableTab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_widget</span><span class="p">,</span> <span class="s2">&quot;Log&quot;</span><span class="p">)</span>
 
         <span class="c1"># --- server widget</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server_widget</span> <span class="o">=</span> <span class="n">ServerWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addUnclosableTab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server_widget</span><span class="p">,</span> <span class="s1">&#39;Server&#39;</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">addUnclosableTab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server_widget</span><span class="p">,</span> <span class="s2">&quot;Server&quot;</span><span class="p">)</span>
 
         <span class="c1"># adjust window size</span>
-        <span class="n">screen_geometry</span> <span class="o">=</span> <span class="n">QGuiApplication</span><span class="o">.</span><span class="n">primaryScreen</span><span class="p">()</span><span class="o">.</span><span class="n">availableGeometry</span><span class="p">()</span>
+        <span class="n">screen_geometry</span> <span class="o">=</span> <span class="n">QGuiApplication</span><span class="o">.</span><span class="n">primaryScreen</span><span class="p">()</span><span class="o">.</span><span class="n">availableGeometry</span><span class="p">()</span>  <span class="c1"># type: ignore[union-attr]</span>
         <span class="n">width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">screen_geometry</span><span class="o">.</span><span class="n">width</span><span class="p">()</span> <span class="o">*</span> <span class="mf">0.3</span><span class="p">)</span>  <span class="c1"># 30% of screen width</span>
         <span class="n">height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">screen_geometry</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">*</span> <span class="mf">0.7</span><span class="p">)</span>  <span class="c1"># 70% of screen height</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
@@ -593,14 +618,14 @@
 <div class="viewcode-block" id="ClientStationGui.listenerEvent">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.listenerEvent">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">(</span><span class="n">ParameterBroadcastBluePrint</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">listenerEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s1">&#39;parameter-update&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listenerEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;parameter-update&quot;</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">action</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ClientStationGui.openInstrumentTab">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.openInstrumentTab">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">openInstrumentTab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QListWidgetItem</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">openInstrumentTab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QTreeWidgetItem</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Gets called when the user double clicks and item of the instrument list.</span>
 <span class="sd">         Adds a new generic instrument GUI window to the tab bar.</span>
@@ -612,25 +637,32 @@
 
             <span class="c1"># Get GUI config from station config (patterns already merged by config.py)</span>
             <span class="n">instrument_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">full_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="n">gui_config</span> <span class="o">=</span> <span class="n">instrument_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gui&#39;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="n">gui_kwargs</span> <span class="o">=</span> <span class="n">gui_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;kwargs&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">gui_config</span> <span class="o">=</span> <span class="n">instrument_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gui&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">gui_kwargs</span> <span class="o">=</span> <span class="n">gui_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="p">{})</span>
 
             <span class="n">widgetClass</span> <span class="o">=</span> <span class="n">GenericInstrument</span>
 
             <span class="c1"># Check if a custom GUI type is specified</span>
-            <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">gui_config</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="n">gui_config</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="c1"># import the widget</span>
-                    <span class="n">moduleName</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gui_config</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-                    <span class="n">widgetClassName</span> <span class="o">=</span> <span class="n">gui_config</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">moduleName</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gui_config</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">widgetClassName</span> <span class="o">=</span> <span class="n">gui_config</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                     <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">moduleName</span><span class="p">)</span>
                     <span class="n">widgetClass</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">widgetClassName</span><span class="p">)</span>
                 <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to load custom GUI &#39;</span><span class="si">{</span><span class="n">gui_config</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Using default GenericInstrument.&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Failed to load custom GUI &#39;</span><span class="si">{</span><span class="n">gui_config</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Using default GenericInstrument.&quot;</span>
+                    <span class="p">)</span>
                     <span class="n">widgetClass</span> <span class="o">=</span> <span class="n">GenericInstrument</span>
 
-            <span class="n">ins_widget</span> <span class="o">=</span> <span class="n">widgetClass</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">sub_host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">sub_port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">port</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
-                                     <span class="o">**</span><span class="n">gui_kwargs</span><span class="p">)</span>
+            <span class="n">ins_widget</span> <span class="o">=</span> <span class="n">widgetClass</span><span class="p">(</span>
+                <span class="n">instrument</span><span class="p">,</span>
+                <span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">sub_host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                <span class="n">sub_port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cli</span><span class="o">.</span><span class="n">port</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">gui_kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
 
             <span class="c1"># add tab</span>
             <span class="n">ins_widget</span><span class="o">.</span><span class="n">setObjectName</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -643,7 +675,7 @@
 
 
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_displayComponentInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_displayComponentInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">bp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">bp</span>
         <span class="k">else</span><span class="p">:</span>
@@ -653,12 +685,14 @@
 <div class="viewcode-block" id="ClientStationGui.onTabChanged">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.onTabChanged">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">onTabChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">onTabChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">widget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
         <span class="c1"># if instrument tab is not in &#39;instrumentTabsOpen&#39; yet, tab must be just open, in this case the constructor</span>
         <span class="c1"># of the parameter widget should have already called refresh, so we don&#39;t have to do that again.</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="s2">&quot;parametersList&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">widget</span><span class="o">.</span><span class="n">objectName</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrumentTabsOpen</span><span class="p">):</span>
-            <span class="n">widget</span><span class="o">.</span><span class="n">parametersList</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">refreshAll</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="s2">&quot;parametersList&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">widget</span><span class="o">.</span><span class="n">objectName</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">instrumentTabsOpen</span>  <span class="c1"># type: ignore[union-attr]</span>
+        <span class="p">):</span>
+            <span class="n">widget</span><span class="o">.</span><span class="n">parametersList</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">refreshAll</span><span class="p">()</span>  <span class="c1"># type: ignore[union-attr]</span></div>
 
 
 <div class="viewcode-block" id="ClientStationGui.onTabDeleted">
@@ -671,11 +705,13 @@
 
 <div class="viewcode-block" id="ClientStationGui.addParameterLoadSaveToolbar">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.addParameterLoadSaveToolbar">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">addParameterLoadSaveToolbar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">addParameterLoadSaveToolbar</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># --- toolbar basics ---</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QToolBar</span><span class="p">(</span><span class="s2">&quot;Params&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">setIconSize</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QSize</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="mi">22</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">setToolButtonStyle</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ToolButtonTextBesideIcon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">setToolButtonStyle</span><span class="p">(</span>
+            <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ToolButtonStyle</span><span class="o">.</span><span class="n">ToolButtonTextBesideIcon</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">addToolBar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="p">)</span>
 
         <span class="c1"># --- composite path widget</span>
@@ -688,7 +724,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="n">pathWidget</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">setPlaceholderText</span><span class="p">(</span><span class="s2">&quot;Parameter file path&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">/</span><span class="s2">&quot;client_params.json&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;client_params.json&quot;</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">setClearButtonEnabled</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">setMinimumWidth</span><span class="p">(</span><span class="mi">280</span><span class="p">)</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">fontMetrics</span><span class="p">()</span><span class="o">.</span><span class="n">height</span><span class="p">()</span> <span class="o">+</span> <span class="mi">10</span>
@@ -700,7 +736,7 @@
 
         <span class="n">pathLayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">lbl</span><span class="p">)</span>
         <span class="n">pathLayout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># stretch</span>
-        
+
         <span class="n">pathAction</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidgetAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="p">)</span>
         <span class="n">pathAction</span><span class="o">.</span><span class="n">setDefaultWidget</span><span class="p">(</span><span class="n">pathWidget</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">pathAction</span><span class="p">)</span>
@@ -712,7 +748,7 @@
         <span class="n">saveAct</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QAction</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QIcon</span><span class="p">(</span><span class="s2">&quot;:/icons/save.svg&quot;</span><span class="p">),</span> <span class="s2">&quot;Save&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="n">loadAct</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loadParams</span><span class="p">)</span>
         <span class="n">saveAct</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">saveParams</span><span class="p">)</span>
-        
+
         <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">browseBtn</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">loadAct</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">toolBar</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">saveAct</span><span class="p">)</span>
@@ -724,7 +760,7 @@
 <div class="viewcode-block" id="ClientStationGui.browseParamPath">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.browseParamPath">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">browseParamPath</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">browseParamPath</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">filePath</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">QFileDialog</span><span class="o">.</span><span class="n">getOpenFileName</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Select Parameter File&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;JSON Files (*.json);;All Files (*)&quot;</span>
         <span class="p">)</span>
@@ -735,10 +771,12 @@
 <div class="viewcode-block" id="ClientStationGui.saveParams">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.saveParams">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">saveParams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">saveParams</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span>
-            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;No file path&quot;</span><span class="p">,</span> <span class="s2">&quot;Please specify a path to save parameters.&quot;</span><span class="p">)</span>
+            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;No file path&quot;</span><span class="p">,</span> <span class="s2">&quot;Please specify a path to save parameters.&quot;</span>
+            <span class="p">)</span>
             <span class="k">return</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">save_parameters</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
@@ -750,10 +788,12 @@
 <div class="viewcode-block" id="ClientStationGui.loadParams">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.loadParams">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">loadParams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loadParams</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">paramPathEdit</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span>
-            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;No file path&quot;</span><span class="p">,</span> <span class="s2">&quot;Please specify a path to load parameters.&quot;</span><span class="p">)</span>
+            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;No file path&quot;</span><span class="p">,</span> <span class="s2">&quot;Please specify a path to load parameters.&quot;</span>
+            <span class="p">)</span>
             <span class="k">return</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">load_parameters</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
@@ -762,23 +802,31 @@
             <span class="c1"># Refresh all tabs</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">count</span><span class="p">()):</span>
                 <span class="n">widget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span><span class="o">.</span><span class="n">widget</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="s1">&#39;parametersList&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">widget</span><span class="o">.</span><span class="n">parametersList</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">widget</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="s2">&quot;parametersList&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span>
+                        <span class="n">widget</span><span class="o">.</span><span class="n">parametersList</span><span class="p">,</span>
+                        <span class="s2">&quot;model&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">):</span>
                     <span class="n">widget</span><span class="o">.</span><span class="n">parametersList</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">refreshAll</span><span class="p">()</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Load Error&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
 
 
-
 <div class="viewcode-block" id="ClientStationGui.closeInstrument">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.closeInstrument">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">closeInstrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span><span class="c1">#, item: QtWidgets.QListWidgetItem):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">closeInstrument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># , item: QtWidgets.QListWidgetItem):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># close instrument on server</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">close_instrument</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Close Error&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Failed to close &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;Close Error&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Failed to close &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
             <span class="k">return</span>
 
         <span class="c1"># remove from gui</span>
@@ -787,10 +835,9 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Closed instrument &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
 
 
-
 <div class="viewcode-block" id="ClientStationGui.removeInstrumentFromGui">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.removeInstrumentFromGui">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">removeInstrumentFromGui</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">removeInstrumentFromGui</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an instrument from the station list.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stationList</span><span class="o">.</span><span class="n">removeObject</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stationObjInfo</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
@@ -801,8 +848,15 @@
 
 <div class="viewcode-block" id="ClientStationGui.closeEvent">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.closeEvent">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QCloseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">closeEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QCloseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore[override]</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleanup listener thread before closing the window.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">widget</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instrumentTabsOpen</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">widget</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instrumentTabsOpen</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listenerThread</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span>  <span class="c1"># Wait up to 3 seconds for thread to finish</span>
@@ -838,8 +892,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -864,7 +918,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     <br/>
   </p>
 </div>
@@ -877,7 +931,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>
