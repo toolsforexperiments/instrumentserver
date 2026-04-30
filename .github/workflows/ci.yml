@@ -1,37 +1,68 @@
-name: CI
+name: Code quality
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
-    branches:
-      - master
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
 
 jobs:
-  lint:
+  lockfile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: Install dependencies
-        run: uv sync --frozen --group dev
-      - name: Ruff
-        run: uv run ruff check src/
-      - name: Mypy
-        run: uv run mypy
+          python-version: "3.12"
+      - run: uv lock --locked
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --locked --group dev
+      - run: uv run ruff check
+
+  format:
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --locked --group dev
+      - run: uv run ruff format --check
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --locked --group dev
+      - run: uv run mypy
 
   test:
     runs-on: ubuntu-latest
+    needs: lockfile
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+          python-version: "3.12"
       - name: Install system deps for PyQt5
         run: |
           sudo apt-get update
@@ -51,7 +82,16 @@ jobs:
             libxcb-xinerama0 \
             libxcb-xkb1 \
             xvfb
-      - name: Install dependencies
-        run: uv sync --frozen --group dev
-      - name: Pytest
-        run: xvfb-run -a uv run pytest -v
+      - run: uv sync --locked --group dev
+      - run: xvfb-run -a uv run pytest test/ -v
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, format, typecheck, test]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv build
