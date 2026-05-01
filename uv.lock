@@ -845,7 +845,7 @@ requires-dist = [
     { name = "pyqt5" },
     { name = "pyyaml" },
     { name = "pyzmq" },
-    { name = "qcodes" },
+    { name = "qcodes", specifier = "<0.55" },
     { name = "qtpy" },
     { name = "ruamel-yaml" },
     { name = "scipy" },
@@ -2224,14 +2224,14 @@ wheels = [
 
 [[package]]
 name = "pyvisa"
-version = "1.16.2"
+version = "1.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/13/72/a50adff945e66f2161a44b243970f809de19152a2e7da0473ae8ff96d642/pyvisa-1.16.2.tar.gz", hash = "sha256:75beb93eeafe20a50be5726fa4e3a645948c93d86819f9c1f8c542efa4085a38", size = 238729, upload-time = "2026-02-27T12:14:08.54Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/04/1833acfa4ddefc5cdcfd76607f1bf494e7b7b658d890626e23026655d599/pyvisa-1.15.0.tar.gz", hash = "sha256:cec3cb91703a2849f6faa42b1ecd7689a0175baabff8ca33fce9f45934ce45e6", size = 236289, upload-time = "2025-04-01T15:52:25.377Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/a9/776da4f397003cca093659524c3526590522f81b642936838428c11274e6/pyvisa-1.16.2-py3-none-any.whl", hash = "sha256:54f034adafd3e8d1858d57cdafec64e920444f4b84b31c9fd17487fbad0a197a", size = 181413, upload-time = "2026-02-27T12:14:07.301Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/12/4979772f36acceb57664bde282fc7bd3e67f8d0ce85f2a521a05e90baaa5/pyvisa-1.15.0-py3-none-any.whl", hash = "sha256:e3ac8d9e863fbdbbe7e6d4d91401bceb7914d1c4a558a89b2cc755789f1e8309", size = 179199, upload-time = "2025-04-01T15:52:23.631Z" },
 ]
 
 [[package]]
@@ -2349,7 +2349,7 @@ wheels = [
 
 [[package]]
 name = "qcodes"
-version = "0.55.0"
+version = "0.54.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "broadbean" },
@@ -2378,9 +2378,9 @@ dependencies = [
     { name = "websockets" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/f6/b482fe84ff76cab62c7cf967ef658b4958f384d065f89b238a9b9e618f7a/qcodes-0.55.0.tar.gz", hash = "sha256:56d07628a00087546b750ef3f92f503362f0e8a70e1685f887771e074f9293e2", size = 825296, upload-time = "2026-02-25T12:18:09.801Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/3b/38c613958911c7ea14d852632042e834749558416eea6b93761802bdf6da/qcodes-0.54.4.tar.gz", hash = "sha256:949cf3907fda1af176f545ee7aa3853119204a4c34beafef3fd569aa46521d9a", size = 817999, upload-time = "2025-12-12T17:39:33.878Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/2c/687cd527aba1594148692a962661612f90a74a1b305e4d10ded8adaa93a8/qcodes-0.55.0-py3-none-any.whl", hash = "sha256:e5b4db0c498020b765821221cca7c50b5194f365a511b65f466c819af33acd38", size = 984458, upload-time = "2026-02-25T12:18:07.889Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/ee/a08a9240e25b132f1becc86609ccf98f1261a06370aec3ef6458519962e7/qcodes-0.54.4-py3-none-any.whl", hash = "sha256:29df1dfe9b84ae38c03342eb035e7c0523ff3824a51ff45c858cbb04212a7162", size = 977283, upload-time = "2025-12-12T17:39:31.669Z" },
 ]
 
 [[package]]
