@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "pyqt5",
     "pyzmq",
-    "qcodes",
+    "qcodes<0.55",
     "qtpy",
     "scipy",
     "numpy",
