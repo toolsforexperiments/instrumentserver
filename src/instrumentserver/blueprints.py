@@ -65,7 +65,7 @@ from qcodes import (
     Parameter,
     ParameterWithSetpoints,
 )
-from qcodes.instrument.base import InstrumentBase
+from qcodes.instrument import InstrumentBase
 
 from .helpers import objectClassPath, typeClassPath
 

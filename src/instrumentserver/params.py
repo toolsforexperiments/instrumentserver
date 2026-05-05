@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from qcodes import Parameter
-from qcodes.instrument.base import InstrumentBase
+from qcodes.instrument import InstrumentBase
 from qcodes.parameters import ParameterBase
 from qcodes.utils import validators
 

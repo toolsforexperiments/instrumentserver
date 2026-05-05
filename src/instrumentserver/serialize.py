@@ -73,7 +73,7 @@ from typing import Any, Dict, List, Union
 import pandas as pd
 from jsonschema import validate
 from qcodes import Parameter, Station
-from qcodes.instrument.base import InstrumentBase
+from qcodes.instrument import InstrumentBase
 
 from . import PARAMS_SCHEMA_PATH
 
