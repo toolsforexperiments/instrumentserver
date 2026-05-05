@@ -845,7 +845,7 @@ requires-dist = [
     { name = "pyqt5" },
     { name = "pyyaml" },
     { name = "pyzmq" },
-    { name = "qcodes", specifier = "<0.55" },
+    { name = "qcodes" },
     { name = "qtpy" },
     { name = "ruamel-yaml" },
     { name = "scipy" },
