@@ -14,7 +14,9 @@ from ..config import GUIFIELD
 from ..gui.instruments import GenericInstrument
 from ..gui.misc import BaseDialog, DetachableTabWidget
 from ..gui.parameters import AnyInputForMethod
+from ..gui.shortcuts import KeyboardShortcutManager, ShortcutEditorWidget
 from .core import InstrumentModuleBluePrint, ParameterBluePrint, StationServer
+
 
 logger = logging.getLogger(__name__)
 
@@ -659,6 +661,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self.serverStatus = ServerStatus()
         self.tabs.addUnclosableTab(self.serverStatus, "Server")
 
+        self.shortcutManager = KeyboardShortcutManager()
+        self.shortcutEditor = ShortcutEditorWidget(self.shortcutManager)
+        self.tabs.addUnclosableTab(self.shortcutEditor, "Shortcuts")
+
         # Toolbar.
         self.toolBar = self.addToolBar("Tools")
         self.toolBar.setIconSize(QtCore.QSize(16, 16))  # type: ignore[union-attr]
@@ -889,6 +895,7 @@ class ServerGui(QtWidgets.QMainWindow):
                     kwargs = self._guiConfig[name]["gui"]["kwargs"]
 
             kwargs["sub_port"] = kwargs.get("sub_port", self.stationServer.port + 1)  # type: ignore[union-attr]
+            kwargs["shortcutManager"] = self.shortcutManager
             insWidget = widgetClass(ins, parent=self, **kwargs)
             index = self.tabs.addTab(insWidget, ins.name)
             self.instrumentTabsOpen[ins.name] = insWidget

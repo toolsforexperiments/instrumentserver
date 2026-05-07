@@ -107,7 +107,7 @@ from pprint import pprint
 from typing import Any, Dict, List, Optional, cast
 
 from instrumentserver import QtCore, QtGui, QtWidgets
-from .shortcuts import KeyboardShortcutManager, ShortcutEditorDialog
+from .shortcuts import KeyboardShortcutManager
 
 
 class ItemBase(QtGui.QStandardItem):
@@ -884,13 +884,6 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         trashAction.triggered.connect(lambda x: self.hideTrash())  # type: ignore[union-attr]
         self.shortcutManager.apply_to_action("toggle_trash", trashAction)  # type: ignore[union-attr]
 
-        toolbar.addSeparator()
-
-        shortcutsAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/code.svg"), "Edit keyboard shortcuts"
-        )
-        shortcutsAction.triggered.connect(self.openShortcutEditor)  # type: ignore[union-attr]
-
         # Debugging tools keep commented for commits.
         # printAction = toolbar.addAction(
         #     QtGui.QIcon(":/icons/code.svg"),
@@ -939,11 +932,6 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         if isinstance(item, ItemBase):
             self.view.lastSelectedItem = item
             self.view.itemTrashToggle.emit(item)
-
-    @QtCore.Slot()
-    def openShortcutEditor(self) -> None:
-        dialog = ShortcutEditorDialog(self.shortcutManager, self)
-        dialog.exec_()
 
     def debuggingMethod(self) -> None:
         """

@@ -465,6 +465,8 @@ class InstrumentParameters(InstrumentDisplayBase):
         if "sub_port" in kwargs:
             modelKwargs["sub_port"] = kwargs.pop("sub_port")
 
+        shortcutManager = kwargs.pop("shortcutManager", None)
+
         super().__init__(
             instrument=instrument,
             parent=parent,
@@ -473,6 +475,7 @@ class InstrumentParameters(InstrumentDisplayBase):
             modelType=ModelParameters,
             viewType=viewType,
             callSignals=callSignals,
+            shortcutManager=shortcutManager,
             **modelKwargs,
         )
 
@@ -767,11 +770,14 @@ class InstrumentMethods(InstrumentDisplayBase):
         if "methods-hide" in kwargs:
             modelKwargs["itemsHide"] = kwargs.pop("methods-hide")
 
+        shortcutManager = kwargs.pop("shortcutManager", None)
+
         super().__init__(
             instrument=instrument,
             attr="functions",
             modelType=MethodsModel,
             viewType=MethodsTreeView,
+            shortcutManager=shortcutManager,
             **modelKwargs,
         )
 
