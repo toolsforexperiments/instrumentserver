@@ -158,7 +158,7 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.unitEdit.setText("")
         if self.typeInput:
             self.typeSelect.setCurrentText(
-                parameterTypes[ParameterTypes.numeric]["name"]  # type: ignore[arg-type]
+                parameterTypes[ParameterTypes.numeric]["name"]
             )
             self.valsArgsEdit.setText("")
 
@@ -287,7 +287,7 @@ class ParameterDelegate(DelegateBase):
         # used to keep a reference to the widget.
         self.parameters: Dict[str, QtWidgets.QWidget] = {}
 
-    def createEditor(  # type: ignore[override]
+    def createEditor(
         self,
         widget: QtWidgets.QWidget,
         option: QtWidgets.QStyleOptionViewItem,
@@ -297,10 +297,10 @@ class ParameterDelegate(DelegateBase):
         This is the function that is supposed to create the widget. It should return it.
         """
         item = self.getItem(index)
-        element = item.element  # type: ignore[attr-defined]
+        element = item.element
 
         ret = ParameterWidget(element, widget)
-        self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        self.parameters[item.name] = ret
         # Try to fetch and display current value immediately
         # ---- Chao: removed because the constructor of ParameterWidget object already calls parameter get ----
         # if element.gettable:
@@ -333,7 +333,7 @@ class ModelParameters(InstrumentModelBase):
         self.subClient = SubClient([self.instrument.name], **subClientArgs)
         self.subClient.moveToThread(self.cliThread)
 
-        self.cliThread.started.connect(self.subClient.connect)  # type: ignore[arg-type]
+        self.cliThread.started.connect(self.subClient.connect)
         self.subClient.update.connect(self.updateParameter)
         self.subClient.finished.connect(self.cliThread.quit)
 
@@ -398,8 +398,8 @@ class ModelParameters(InstrumentModelBase):
         if item is not None:
             # A parameter might not have a unit
             unit = ""
-            if item.element is not None:  # type: ignore[attr-defined]
-                unit = item.element.unit  # type: ignore[attr-defined]
+            if item.element is not None:
+                unit = item.element.unit
             unitItem = QtGui.QStandardItem(unit)
             extraItem = QtGui.QStandardItem()
 
@@ -483,7 +483,9 @@ class InstrumentParameters(InstrumentDisplayBase):
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
         self.shortcutManager.register("refresh_item", self._refreshCurrentItem, self)
-        self.shortcutManager.register("toggle_python", self._togglePythonCurrentItem, self)
+        self.shortcutManager.register(
+            "toggle_python", self._togglePythonCurrentItem, self
+        )
 
     @QtCore.Slot()
     def _refreshCurrentItem(self) -> None:
@@ -524,18 +526,18 @@ class ParameterDeleteDelegate(ParameterDelegate):
     #: Emits the name of the parameter to be deleted when the user presses the delete button.
     removeParameter = QtCore.Signal(str)
 
-    def createEditor(  # type: ignore[override]
+    def createEditor(
         self,
         widget: QtWidgets.QWidget,
         option: QtWidgets.QStyleOptionViewItem,
         index: QtCore.QModelIndex,
     ) -> QtWidgets.QWidget:
         item = self.getItem(index)
-        element = item.element  # type: ignore[attr-defined]
-        rw = self.makeRemoveWidget(item.name, widget)  # type: ignore[attr-defined]
+        element = item.element
+        rw = self.makeRemoveWidget(item.name, widget)
 
         ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
-        self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        self.parameters[item.name] = ret
 
         return ret
 
@@ -583,7 +585,7 @@ class ProfilesManager(QtWidgets.QComboBox):
         super().__init__(*args, **kwargs)
 
         self.setEditable(False)
-        self.params = self.parent().instrument  # type: ignore[union-attr]
+        self.params = self.parent().instrument
         self.refreshing = False
 
         loadingProfile = None
@@ -675,15 +677,15 @@ class ParameterManagerGui(InstrumentParameters):
             QtGui.QIcon(":/icons/load.svg"),
             "Load parameters from file",
         )
-        loadParamAction.triggered.connect(lambda x: self.loadFromFile())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("load_items", loadParamAction)  # type: ignore[union-attr]
+        loadParamAction.triggered.connect(lambda x: self.loadFromFile())
+        self.shortcutManager.apply_to_action("load_items", loadParamAction)
 
         saveParamAction = toolbar.addAction(
             QtGui.QIcon(":/icons/save.svg"),
             "Save parameters to file",
         )
-        saveParamAction.triggered.connect(lambda x: self.saveToFile())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("save_items", saveParamAction)  # type: ignore[union-attr]
+        saveParamAction.triggered.connect(lambda x: self.saveToFile())
+        self.shortcutManager.apply_to_action("save_items", saveParamAction)
 
         return toolbar
 
@@ -768,22 +770,22 @@ class MethodsDelegate(DelegateBase):
 
         self.methods: Dict[str, "MethodDisplay"] = {}
 
-    def createEditor(  # type: ignore[override]
+    def createEditor(
         self,
         widget: QtWidgets.QWidget,
         option: QtWidgets.QStyleOptionViewItem,
         index: QtCore.QModelIndex,
     ) -> QtWidgets.QWidget:
         item = self.getItem(index)
-        element = item.element  # type: ignore[attr-defined]
-        ret = MethodDisplay(element, item.name, parent=widget)  # type: ignore[attr-defined]
+        element = item.element
+        ret = MethodDisplay(element, item.name, parent=widget)
 
         parent = self.parent()
         assert hasattr(parent, "clearAlertsAction")
         # connecting the widget with the clear alert signal
-        parent.clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)  # type: ignore[union-attr]
+        parent.clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)
 
-        self.methods[item.name] = ret  # type: ignore[attr-defined]
+        self.methods[item.name] = ret
         return ret
 
 
@@ -883,7 +885,7 @@ class GenericInstrument(QtWidgets.QWidget):
         self.parametersList.view.resizeColumnToContents(1)
         self.methodsList.view.resizeColumnToContents(0)
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # type: ignore[override]
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Stop the parameter subscriber thread before destruction."""
         model = getattr(self.parametersList, "model", None)
         if model is not None and hasattr(model, "stopListener"):
