@@ -5,10 +5,9 @@ from enum import Enum, auto, unique
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-from qcodes import Parameter
+from qcodes import Parameter, validators
 from qcodes.instrument import InstrumentBase
 from qcodes.parameters import ParameterBase
-from qcodes.utils import validators
 
 from . import serialize
 

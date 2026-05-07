@@ -5,9 +5,8 @@ import time
 from typing import List
 
 import numpy as np
-from qcodes import Instrument
+from qcodes import Instrument, validators
 from qcodes.math_utils.field_vector import FieldVector
-from qcodes.utils import validators
 
 
 class DummyChannel(Instrument):
