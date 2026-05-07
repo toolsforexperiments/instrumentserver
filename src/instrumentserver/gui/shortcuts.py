@@ -11,6 +11,7 @@ _ICON_DIR = getInstrumentserverPath("resource", "icons")
 
 logger = logging.getLogger(__name__)
 
+
 class KeyboardShortcutManager:
     """
     Manages keyboard shortcut mappings for the instrument GUI.
@@ -26,23 +27,23 @@ class KeyboardShortcutManager:
 
     REGISTRY: dict[str, tuple[str, str]] = {
         # action_id: (default_key_sequence, description)
-        "jump_filter":   ("Ctrl+F",            "Jump cursor to the filter search bar"),
-        "collapse_all":  ("Ctrl+Shift+E",      "Collapse all tree nodes"),
-        "expand_all":    ("Ctrl+E",            "Expand all tree nodes"),
-        "toggle_star":   ("Ctrl+Shift+A",      "Toggle star filter"),
-        "star_item":     ("Ctrl+A",            "Star/un-star the selected parameter"),
-        "toggle_trash":  ("Ctrl+Shift+T",      "Toggle trash filter"),
-        "trash_item":    ("Ctrl+T",            "Trash/un-trash the selected parameter"),
-        "refresh_all":   ("Ctrl+Shift+R",      "Refresh all parameters from instrument"),
-        "refresh_item":  ("Ctrl+R",            "Refresh the selected parameter"),
-        "toggle_python": ("Ctrl+P",            "Toggle Python eval for selected parameter"),
-        "delete_item":   ("Ctrl+Backspace",    "Delete the selected parameter"),
-        "clear_add":     ("Ctrl+Shift+N",      "Clear regions of add parameter bar"),
-        "add_item":      ("Ctrl+N",            "Jump cursor to the add parameter bar"),
-        "load_items":    ("Ctrl+O",            "Load parameters from JSON file"),
-        "save_items":    ("Ctrl+S",            "Save parameters to JSON file"),
-        "fit_column":    ("Ctrl+Shift+D",      "Fits column width"),
-        "sort_column":   ("Ctrl+D",            "Toggle sorting of selected column")
+        "jump_filter": ("Ctrl+F", "Jump cursor to the filter search bar"),
+        "collapse_all": ("Ctrl+Shift+E", "Collapse all tree nodes"),
+        "expand_all": ("Ctrl+E", "Expand all tree nodes"),
+        "toggle_star": ("Ctrl+Shift+A", "Toggle star filter"),
+        "star_item": ("Ctrl+A", "Star/un-star the selected parameter"),
+        "toggle_trash": ("Ctrl+Shift+T", "Toggle trash filter"),
+        "trash_item": ("Ctrl+T", "Trash/un-trash the selected parameter"),
+        "refresh_all": ("Ctrl+Shift+R", "Refresh all parameters from instrument"),
+        "refresh_item": ("Ctrl+R", "Refresh the selected parameter"),
+        "toggle_python": ("Ctrl+P", "Toggle Python eval for selected parameter"),
+        "delete_item": ("Ctrl+Backspace", "Delete the selected parameter"),
+        "clear_add": ("Ctrl+Shift+N", "Clear regions of add parameter bar"),
+        "add_item": ("Ctrl+N", "Jump cursor to the add parameter bar"),
+        "load_items": ("Ctrl+O", "Load parameters from JSON file"),
+        "save_items": ("Ctrl+S", "Save parameters to JSON file"),
+        "fit_column": ("Ctrl+Shift+D", "Fits column width"),
+        "sort_column": ("Ctrl+D", "Toggle sorting of selected column"),
     }
 
     def __init__(self) -> None:
@@ -61,8 +62,12 @@ class KeyboardShortcutManager:
         with open(path, "w") as f:
             json.dump(self.mapping, f, indent=2)
 
-    def apply_to_action(self, action_id: str, qaction: QtWidgets.QAction) -> None:
+    def apply_to_action(
+        self, action_id: str, qaction: Optional[QtWidgets.QAction]
+    ) -> None:
         """Set the shortcut from the current mapping on an existing QAction and retain a reference for live rebinding."""
+        if qaction is None:
+            return
         key = self.mapping.get(action_id)
         if key:
             qaction.setShortcut(QtGui.QKeySequence(key))
@@ -124,10 +129,14 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         self._table = QtWidgets.QTableWidget(len(manager.REGISTRY), 4, self)
         self._table.setHorizontalHeaderLabels(["Action", "Description", "Shortcut", ""])
         header = self._table.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)  # type: ignore[union-attr]
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)  # type: ignore[union-attr]
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)  # type: ignore[union-attr]
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Fixed)  # type: ignore[union-attr]
+        header.setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        )
+        header.setSectionResizeMode(
+            1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        )
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self._table.setColumnWidth(3, 32)
         self._table.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
@@ -166,9 +175,15 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             current = self.manager.mapping.get(action_id, "")
 
             id_item = QtWidgets.QTableWidgetItem(action_id)
-            id_item.setFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            id_item.setFlags(
+                QtCore.Qt.ItemFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            )
             desc_item = QtWidgets.QTableWidgetItem(description)
-            desc_item.setFlags(desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+            desc_item.setFlags(
+                QtCore.Qt.ItemFlags(
+                    desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable
+                )
+            )
             self._table.setItem(row, 0, id_item)
             self._table.setItem(row, 1, desc_item)
 
@@ -221,8 +236,9 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             current = widget.keySequence().toString()
             if current in duplicates:
                 others = [a for a in duplicates[current] if a != action_id]
-                self._applyIndicator(dot, "duplicate",
-                                     f"Duplicate: also bound to {', '.join(others)}")
+                self._applyIndicator(
+                    dot, "duplicate", f"Duplicate: also bound to {', '.join(others)}"
+                )
             elif current != self.manager.mapping.get(action_id, ""):
                 self._applyIndicator(dot, "unsaved", "Unsaved change")
             else:
@@ -245,20 +261,13 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         self._updateAllIndicators()
 
     def _onEditingFinished(self, widget: QtWidgets.QKeySequenceEdit) -> None:
-        # Capture the intended value before Qt resets the recording state.
-        # Block signals for one event-loop tick so the spurious keySequenceChanged
-        # that follows the internal reset never reaches _onUnsavedChange.
         intended = widget.keySequence().toString()
         widget.blockSignals(True)
-        QtCore.QTimer.singleShot(
-            0, lambda: self._restoreAfterRevert(intended, widget)
-        )
+        QtCore.QTimer.singleShot(0, lambda: self._restoreAfterRevert(intended, widget))
 
     def _restoreAfterRevert(
         self, intended: str, widget: QtWidgets.QKeySequenceEdit
     ) -> None:
-        # If the widget reverted its stored sequence during the block window,
-        # put it back so the display and _save() read the correct value.
         if widget.keySequence().toString() != intended:
             widget.setKeySequence(QtGui.QKeySequence(intended))
         widget.blockSignals(False)
@@ -289,7 +298,10 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
     def _saveToFile(self) -> None:
         self._save()
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Save Shortcuts", "shortcuts.json", "JSON Files (*.json);;All Files (*)"
+            self,
+            "Save Shortcuts",
+            "shortcuts.json",
+            "JSON Files (*.json);;All Files (*)",
         )
         if path:
             try:
