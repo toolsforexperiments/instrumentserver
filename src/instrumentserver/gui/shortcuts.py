@@ -26,14 +26,23 @@ class KeyboardShortcutManager:
 
     REGISTRY: dict[str, tuple[str, str]] = {
         # action_id: (default_key_sequence, description)
-        "refresh_all":  ("Ctrl+R",       "Refresh all parameters from instrument"),
-        "expand_all":   ("Ctrl+E",       "Expand all tree nodes"),
-        "collapse_all": ("Ctrl+Shift+E", "Collapse all tree nodes"),
-        "toggle_star":  ("Ctrl+Shift+S", "Toggle star filter"),
-        "toggle_trash": ("Ctrl+Shift+T", "Toggle trash filter"),
-        "focus_filter": ("Ctrl+F",       "Focus the filter search bar"),
-        "star_item":    ("Ctrl+S",       "Star/un-star the selected parameter"),
-        "trash_item":   ("Ctrl+T",       "Trash/un-trash the selected parameter"),
+        "jump_filter":   ("Ctrl+F",            "Jump cursor to the filter search bar"),
+        "collapse_all":  ("Ctrl+Shift+E",      "Collapse all tree nodes"),
+        "expand_all":    ("Ctrl+E",            "Expand all tree nodes"),
+        "toggle_star":   ("Ctrl+Shift+A",      "Toggle star filter"),
+        "star_item":     ("Ctrl+A",            "Star/un-star the selected parameter"),
+        "toggle_trash":  ("Ctrl+Shift+T",      "Toggle trash filter"),
+        "trash_item":    ("Ctrl+T",            "Trash/un-trash the selected parameter"),
+        "refresh_all":   ("Ctrl+Shift+R",      "Refresh all parameters from instrument"),
+        "refresh_item":  ("Ctrl+R",            "Refresh the selected parameter"),
+        "toggle_python": ("Ctrl+P",            "Toggle Python eval for selected parameter"),
+        "delete_item":   ("Ctrl+Backspace",    "Delete the selected parameter"),
+        "clear_add":     ("Ctrl+Shift+N",      "Clear regions of add parameter bar"),
+        "add_item":      ("Ctrl+N",            "Jump cursor to the add parameter bar"),
+        "load_items":    ("Ctrl+O",            "Load parameters from JSON file"),
+        "save_items":    ("Ctrl+S",            "Save parameters to JSON file"),
+        "fit_column":    ("Ctrl+Shift+D",      "Fits column width"),
+        "sort_column":   ("Ctrl+D",            "Toggle sorting of selected column")
     }
 
     def __init__(self) -> None:

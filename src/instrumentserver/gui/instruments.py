@@ -19,7 +19,7 @@ from .base_instrument import (
     InstrumentTreeViewBase,
     ItemBase,
 )
-from .parameters import AnyInputForMethod, ParameterWidget
+from .parameters import AnyInput, AnyInputForMethod, ParameterWidget
 
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
@@ -482,6 +482,36 @@ class InstrumentParameters(InstrumentDisplayBase):
     def connectSignals(self) -> None:
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
+        self.shortcutManager.register("refresh_item", self._refreshCurrentItem, self)
+        self.shortcutManager.register("toggle_python", self._togglePythonCurrentItem, self)
+
+    @QtCore.Slot()
+    def _refreshCurrentItem(self) -> None:
+        proxy_index = self.view.currentIndex()
+        if not proxy_index.isValid():
+            return
+        source_index = self.proxyModel.mapToSource(proxy_index)
+        if source_index.column() != 0:
+            source_index = source_index.sibling(source_index.row(), 0)
+        item = self.model.itemFromIndex(source_index)
+        if isinstance(item, ItemBase):
+            widget = self.view.delegate.parameters.get(item.name)
+            if widget is not None:
+                widget.setWidgetFromParameter()
+
+    @QtCore.Slot()
+    def _togglePythonCurrentItem(self) -> None:
+        proxy_index = self.view.currentIndex()
+        if not proxy_index.isValid():
+            return
+        source_index = self.proxyModel.mapToSource(proxy_index)
+        if source_index.column() != 0:
+            source_index = source_index.sibling(source_index.row(), 0)
+        item = self.model.itemFromIndex(source_index)
+        if isinstance(item, ItemBase):
+            widget = self.view.delegate.parameters.get(item.name)
+            if widget is not None and isinstance(widget.paramWidget, AnyInput):
+                widget.paramWidget.doEval.toggle()
 
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
@@ -618,6 +648,23 @@ class ParameterManagerGui(InstrumentParameters):
         self.parameterCreationError.connect(self.addParam.setError)
         self.parameterCreated.connect(self.addParam.clear)
         self.profileManager.indexChanged.connect(self.loadProfile)
+        self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
+        self.shortcutManager.register("clear_add", self.addParam.clear, self)
+        self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
+        self.shortcutManager.register("load_items", self.loadFromFile, self)
+        self.shortcutManager.register("save_items", self.saveToFile, self)
+
+    @QtCore.Slot()
+    def _deleteCurrentItem(self) -> None:
+        proxy_index = self.view.currentIndex()
+        if not proxy_index.isValid():
+            return
+        source_index = self.proxyModel.mapToSource(proxy_index)
+        if source_index.column() != 0:
+            source_index = source_index.sibling(source_index.row(), 0)
+        item = self.model.itemFromIndex(source_index)
+        if isinstance(item, ItemBase):
+            self.removeParameter(item.name)
 
     def makeToolbar(self) -> QtWidgets.QToolBar:
         toolbar = super().makeToolbar()
@@ -629,12 +676,14 @@ class ParameterManagerGui(InstrumentParameters):
             "Load parameters from file",
         )
         loadParamAction.triggered.connect(lambda x: self.loadFromFile())  # type: ignore[union-attr]
+        self.shortcutManager.apply_to_action("load_items", loadParamAction)  # type: ignore[union-attr]
 
         saveParamAction = toolbar.addAction(
             QtGui.QIcon(":/icons/save.svg"),
             "Save parameters to file",
         )
         saveParamAction.triggered.connect(lambda x: self.saveToFile())  # type: ignore[union-attr]
+        self.shortcutManager.apply_to_action("save_items", saveParamAction)  # type: ignore[union-attr]
 
         return toolbar
 
