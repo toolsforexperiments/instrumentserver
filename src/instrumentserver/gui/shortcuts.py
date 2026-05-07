@@ -1,10 +1,13 @@
 import json
 import logging
+import os
+from collections import defaultdict
 from typing import Callable, Optional
 
-from instrumentserver import QtCore, QtGui, QtWidgets
+from instrumentserver import QtCore, QtGui, QtWidgets, getInstrumentserverPath
 
-from .misc import BaseDialog
+_ICON_DIR = getInstrumentserverPath("resource", "icons")
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,13 +85,23 @@ class KeyboardShortcutManager:
         logger.debug(f"Rebound '{action_id}' to '{new_key}'")
 
 
-class ShortcutEditorDialog(BaseDialog):
+class ShortcutEditorWidget(QtWidgets.QWidget):
     """
-    Dialog for viewing and editing keyboard shortcuts.
+    Permanent widget for viewing and editing keyboard shortcuts.
 
-    Displays all registered actions in a table. The Shortcut column is editable.
-    Use 'Save to file' to persist changes; 'Load from file' to restore a saved mapping.
-    Changes take effect on the next application start.
+    Intended to be embedded as a tab in the server window. Changes made in the
+    table are applied live to the manager (and therefore all registered shortcuts)
+    when Save is clicked. Use 'Save to file' / 'Load from file' to persist across sessions.
+
+    Each row has a small colored indicator dot in the rightmost column:
+      - white : saved and unique
+      - orange: unsaved change (widget value differs from manager.mapping)
+      - red   : duplicate key sequence shared with another action (takes priority)
+
+    QKeySequenceEdit emits a spurious keySequenceChanged after its finishing timeout
+    resets the internal recording state. _onEditingFinished blocks that widget's signals
+    for one event-loop tick (swallowing the revert signal at the source), then restores
+    the display if the widget actually changed its stored sequence during the block.
     """
 
     def __init__(
@@ -98,61 +111,157 @@ class ShortcutEditorDialog(BaseDialog):
     ) -> None:
         super().__init__(parent)
         self.manager = manager
-        self.setWindowTitle("Keyboard Shortcuts")
 
-        self._table = QtWidgets.QTableWidget(len(manager.REGISTRY), 3, self)
-        self._table.setHorizontalHeaderLabels(["Action", "Description", "Shortcut"])
-        self._table.horizontalHeader().setStretchLastSection(True)  # type: ignore[union-attr]
+        self._table = QtWidgets.QTableWidget(len(manager.REGISTRY), 4, self)
+        self._table.setHorizontalHeaderLabels(["Action", "Description", "Shortcut", ""])
+        header = self._table.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)  # type: ignore[union-attr]
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)  # type: ignore[union-attr]
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)  # type: ignore[union-attr]
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Fixed)  # type: ignore[union-attr]
+        self._table.setColumnWidth(3, 32)
         self._table.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
         )
+
+        self._indicators: list[QtWidgets.QLabel] = []
         self._populateTable()
 
         btnLoad = QtWidgets.QPushButton("Load from file")
         btnLoad.clicked.connect(self._loadFromFile)
-        btnSave = QtWidgets.QPushButton("Save to file")
-        btnSave.clicked.connect(self._saveToFile)
+        btnSaveFile = QtWidgets.QPushButton("Save to file")
+        btnSaveFile.clicked.connect(self._saveToFile)
         btnReset = QtWidgets.QPushButton("Reset to defaults")
         btnReset.clicked.connect(self._resetDefaults)
-        btnClose = QtWidgets.QPushButton("Close")
-        btnClose.clicked.connect(self.accept)
+        btnSave = QtWidgets.QPushButton("Save")
+        btnSave.clicked.connect(self._save)
 
         btnRow = QtWidgets.QHBoxLayout()
         btnRow.addWidget(btnLoad)
-        btnRow.addWidget(btnSave)
+        btnRow.addWidget(btnSaveFile)
         btnRow.addStretch()
         btnRow.addWidget(btnReset)
-        btnRow.addWidget(btnClose)
+        btnRow.addWidget(btnSave)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._table)
         layout.addLayout(btnRow)
         self.setLayout(layout)
-        self.resize(600, 300)
 
     def _populateTable(self) -> None:
+        self._indicators.clear()
         self._table.clearContents()
         for row, (action_id, (_, description)) in enumerate(
             self.manager.REGISTRY.items()
         ):
             current = self.manager.mapping.get(action_id, "")
+
             id_item = QtWidgets.QTableWidgetItem(action_id)
             id_item.setFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
             desc_item = QtWidgets.QTableWidgetItem(description)
             desc_item.setFlags(desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
             self._table.setItem(row, 0, id_item)
             self._table.setItem(row, 1, desc_item)
+
             key_edit = QtWidgets.QKeySequenceEdit(
                 QtGui.QKeySequence(current), self._table
             )
+            key_edit.keySequenceChanged.connect(self._onUnsavedChange)
+            key_edit.editingFinished.connect(
+                lambda w=key_edit: self._onEditingFinished(w)
+            )
             self._table.setCellWidget(row, 2, key_edit)
-        self._table.resizeColumnsToContents()
 
-    def _commitTableToManager(self) -> None:
+            dot = QtWidgets.QLabel()
+            dot.setFixedSize(20, 20)
+            dot.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            dot.setStyleSheet(
+                "QToolTip { color: black; background-color: white;"
+                " border: 1px solid #cccccc; }"
+            )
+            container = QtWidgets.QWidget()
+            cl = QtWidgets.QHBoxLayout(container)
+            cl.addWidget(dot)
+            cl.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            cl.setContentsMargins(0, 0, 0, 0)
+            self._table.setCellWidget(row, 3, container)
+            self._indicators.append(dot)
+
+        self._updateAllIndicators()
+
+    def _collectDuplicates(self) -> dict[str, list[str]]:
+        """Return {key_sequence: [action_ids]} for every key bound to more than one action."""
+        seen: dict[str, list[str]] = defaultdict(list)
+        for row, action_id in enumerate(self.manager.REGISTRY):
+            widget = self._table.cellWidget(row, 2)
+            if isinstance(widget, QtWidgets.QKeySequenceEdit):
+                key = widget.keySequence().toString()
+                if key:
+                    seen[key].append(action_id)
+        return {k: v for k, v in seen.items() if len(v) > 1}
+
+    def _updateAllIndicators(self) -> None:
+        duplicates = self._collectDuplicates()
+        for row, action_id in enumerate(self.manager.REGISTRY):
+            if row >= len(self._indicators):
+                break
+            dot = self._indicators[row]
+            widget = self._table.cellWidget(row, 2)
+            if not isinstance(widget, QtWidgets.QKeySequenceEdit):
+                continue
+            current = widget.keySequence().toString()
+            if current in duplicates:
+                others = [a for a in duplicates[current] if a != action_id]
+                self._applyIndicator(dot, "duplicate",
+                                     f"Duplicate: also bound to {', '.join(others)}")
+            elif current != self.manager.mapping.get(action_id, ""):
+                self._applyIndicator(dot, "unsaved", "Unsaved change")
+            else:
+                self._applyIndicator(dot, "ok", "")
+
+    @staticmethod
+    def _applyIndicator(dot: QtWidgets.QLabel, state: str, tooltip: str) -> None:
+        dot.setToolTip(tooltip)
+        if state == "ok":
+            icon_file = "alert-octagon.svg"
+        elif state == "unsaved":
+            icon_file = "alert-octagon-orange.svg"
+        else:  # duplicate
+            icon_file = "alert-octagon-red.svg"
+        pix = QtGui.QIcon(os.path.join(_ICON_DIR, icon_file)).pixmap(20, 20)
+        dot.setPixmap(pix)
+
+    @QtCore.Slot()
+    def _onUnsavedChange(self) -> None:
+        self._updateAllIndicators()
+
+    def _onEditingFinished(self, widget: QtWidgets.QKeySequenceEdit) -> None:
+        # Capture the intended value before Qt resets the recording state.
+        # Block signals for one event-loop tick so the spurious keySequenceChanged
+        # that follows the internal reset never reaches _onUnsavedChange.
+        intended = widget.keySequence().toString()
+        widget.blockSignals(True)
+        QtCore.QTimer.singleShot(
+            0, lambda: self._restoreAfterRevert(intended, widget)
+        )
+
+    def _restoreAfterRevert(
+        self, intended: str, widget: QtWidgets.QKeySequenceEdit
+    ) -> None:
+        # If the widget reverted its stored sequence during the block window,
+        # put it back so the display and _save() read the correct value.
+        if widget.keySequence().toString() != intended:
+            widget.setKeySequence(QtGui.QKeySequence(intended))
+        widget.blockSignals(False)
+
+    @QtCore.Slot()
+    def _save(self) -> None:
         for row, action_id in enumerate(self.manager.REGISTRY):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
                 self.manager.rebind(action_id, widget.keySequence().toString())
+        self._updateAllIndicators()
+        logger.info("Shortcuts saved locally")
 
     @QtCore.Slot()
     def _loadFromFile(self) -> None:
@@ -165,11 +274,11 @@ class ShortcutEditorDialog(BaseDialog):
                 self._populateTable()
                 logger.info(f"Loaded shortcuts from {path}")
             except Exception as e:
-                logger.warning(f"Failed to load shortcuts from {path} : {e}")
+                logger.warning(f"Failed to load shortcuts from {path}: {e}")
 
     @QtCore.Slot()
     def _saveToFile(self) -> None:
-        self._commitTableToManager()
+        self._save()
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, "Save Shortcuts", "shortcuts.json", "JSON Files (*.json);;All Files (*)"
         )
@@ -178,7 +287,7 @@ class ShortcutEditorDialog(BaseDialog):
                 self.manager.save(path)
                 logger.info(f"Saved shortcuts to {path}")
             except Exception as e:
-                logger.warning(f"Failed to save shortcuts to {path} : {e}")
+                logger.warning(f"Failed to save shortcuts to {path}: {e}")
 
     @QtCore.Slot()
     def _resetDefaults(self) -> None:
@@ -189,3 +298,4 @@ class ShortcutEditorDialog(BaseDialog):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
                 widget.setKeySequence(QtGui.QKeySequence(default_key))
+        self._updateAllIndicators()
