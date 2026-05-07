@@ -834,9 +834,11 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             self.proxyModel.onSortingIndicatorChanged
         )
 
-        self.shortcutManager.register("focus_filter", self.lineEdit.setFocus, self)
+        self.shortcutManager.register("jump_filter", self.lineEdit.setFocus, self)
         self.shortcutManager.register("star_item", self._starCurrentItem, self)
         self.shortcutManager.register("trash_item", self._trashCurrentItem, self)
+        self.shortcutManager.register("fit_column", self._fitCurrentColumn, self)
+        self.shortcutManager.register("sort_column", self._sortCurrentColumn, self)
 
     def makeToolbar(self) -> QtWidgets.QToolBar:
         """
@@ -932,6 +934,25 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         if isinstance(item, ItemBase):
             self.view.lastSelectedItem = item
             self.view.itemTrashToggle.emit(item)
+
+    @QtCore.Slot()
+    def _fitCurrentColumn(self) -> None:
+        col = self.view.currentIndex().column()
+        self.view.resizeColumnToContents(col if col >= 0 else 0)
+
+    @QtCore.Slot()
+    def _sortCurrentColumn(self) -> None:
+        header = self.view.header()
+        col = self.view.currentIndex().column()
+        if col < 0:
+            col = header.sortIndicatorSection()
+        current_order = header.sortIndicatorOrder()
+        new_order = (
+            QtCore.Qt.SortOrder.AscendingOrder
+            if current_order == QtCore.Qt.SortOrder.DescendingOrder
+            else QtCore.Qt.SortOrder.DescendingOrder
+        )
+        header.setSortIndicator(col, new_order)
 
     def debuggingMethod(self) -> None:
         """
