@@ -2,8 +2,12 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-from qcodes import Instrument, ParameterWithSetpoints, find_or_create_instrument
-from qcodes.utils import validators
+from qcodes import (
+    Instrument,
+    ParameterWithSetpoints,
+    find_or_create_instrument,
+    validators,
+)
 from scipy import constants
 
 
