@@ -859,7 +859,7 @@ class ClientStation:
             # Use config.py to parse server config format
             from instrumentserver.config import loadConfig
 
-            _, serverConfig, fullConfig, tempFile, _, _ = loadConfig(config_path)
+            _, serverConfig, fullConfig, _, tempFile, _, _ = loadConfig(config_path)
             tempFile.close()  # Clean up temp file
 
             self.full_config = fullConfig

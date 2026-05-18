@@ -108,7 +108,7 @@ from typing import Any, Dict, List, Optional, cast
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 
-from .shortcuts import KeyboardShortcutManager
+from instrumentserver.gui.shortcuts import KeyboardShortcutManager
 
 
 class ItemBase(QtGui.QStandardItem):

@@ -18,7 +18,7 @@ SERVERFIELDS = {"initialize": True}
 GUIFIELD = {"type": "instrumentserver.gui.instruments.GenericInstrument", "kwargs": {}}
 
 
-def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict, dict]:
+def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, dict, IO[bytes], dict, dict]:
     """
     Loads the config for the instrumentserver. From 1 config file it splits the respective fields into 3 different
     objects: a serverConfig (the configurations for the server), a stationConfig(the qcodes station config file clean
@@ -36,6 +36,7 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
     serverConfig: dict = {}  # Config for the server
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
+    shortcutConfig = {} # Preferences for keyboard shortcuts
     pollingRates = {}  # Polling rates for each parameter
     ipAddresses = {}  # Dictionary of IP Addresses to send broadcasts to:
     # externalBroadcast: where to externally send parameter change broadcasts to, formatted like "tcp://address:port"
@@ -149,6 +150,11 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
 
             # Update fullConfig with merged GUI config
             fullConfig[instrumentName]["gui"] = guiConfig[instrumentName]
+        
+    # Gets all shortcuts different to REGISTRY defaults from the config file
+    if "shortcuts" in rawConfig:
+        shortcutConfig = rawConfig["shortcuts"]
+        rawConfig.pop("shortcuts")
 
     # Gets all of the broadcasting and listening addresses from the config file
     if "networking" in rawConfig:
@@ -170,4 +176,4 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, IO[bytes], dict
     tempFilePath = tempFile.name
 
     # You need to return the tempFile itself so that the garbage collector doesn't touch it
-    return tempFilePath, serverConfig, fullConfig, tempFile, pollingRates, ipAddresses
+    return tempFilePath, serverConfig, fullConfig, shortcutConfig, tempFile, pollingRates, ipAddresses
