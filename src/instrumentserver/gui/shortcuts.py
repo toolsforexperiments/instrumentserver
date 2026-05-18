@@ -1,4 +1,4 @@
-import json
+import yaml
 import logging
 import os
 from collections import defaultdict
@@ -51,16 +51,22 @@ class KeyboardShortcutManager:
         self._shortcut_map: dict[str, QtWidgets.QShortcut] = {}
         self._action_map: dict[str, QtWidgets.QAction] = {}
 
-    def load(self, path: str) -> None:
-        """Override the current mapping with entries read from a JSON file."""
-        with open(path) as f:
-            data = json.load(f)
-        self.mapping.update(data)
+    def load_from_dict(self, config) -> None:
+        """Override the current mapping with entries read from serverConfig file."""
+        self.mapping.update(config)
 
     def save(self, path: str) -> None:
-        """Write the current mapping to a JSON file."""
+        """Write the current mapping to the serverConfig file."""
+        with open(path, "r") as f:
+            data = yaml.safe_load(f) or {}
+
+        diffs = {k: v for k, v in self.mapping.items() if v != self.REGISTRY[k][0]}
+        if diffs:
+            data["shortcuts"] = diffs
+        elif "shortcuts" in data:
+            del data["shortcuts"]
         with open(path, "w") as f:
-            json.dump(self.mapping, f, indent=2)
+            yaml.dump(data, f, indent=2)
 
     def apply_to_action(
         self, action_id: str, qaction: Optional[QtWidgets.QAction]
@@ -105,7 +111,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
 
     Intended to be embedded as a tab in the server window. Changes made in the
     table are applied live to the manager (and therefore all registered shortcuts)
-    when Save is clicked. Use 'Save to file' / 'Load from file' to persist across sessions.
+    when Save is clicked. Use 'Save to file' to persist across sessions. 
 
     Each row has a small colored indicator dot in the rightmost column:
       - white : saved and unique
@@ -121,6 +127,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
     def __init__(
         self,
         manager: KeyboardShortcutManager,
+        configPath: str,
         parent: Optional[QtWidgets.QWidget] = None,
     ) -> None:
         super().__init__(parent)
@@ -145,8 +152,6 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         self._indicators: list[QtWidgets.QLabel] = []
         self._populateTable()
 
-        btnLoad = QtWidgets.QPushButton("Load from file")
-        btnLoad.clicked.connect(self._loadFromFile)
         btnSaveFile = QtWidgets.QPushButton("Save to file")
         btnSaveFile.clicked.connect(self._saveToFile)
         btnReset = QtWidgets.QPushButton("Reset to defaults")
@@ -155,7 +160,6 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         btnSave.clicked.connect(self._save)
 
         btnRow = QtWidgets.QHBoxLayout()
-        btnRow.addWidget(btnLoad)
         btnRow.addWidget(btnSaveFile)
         btnRow.addStretch()
         btnRow.addWidget(btnReset)
@@ -165,6 +169,8 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         layout.addWidget(self._table)
         layout.addLayout(btnRow)
         self.setLayout(layout)
+
+        self.configPath = configPath
 
     def _populateTable(self) -> None:
         self._indicators.clear()
@@ -282,33 +288,14 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         logger.info("Shortcuts saved locally")
 
     @QtCore.Slot()
-    def _loadFromFile(self) -> None:
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Load Shortcuts", ".", "JSON Files (*.json);;All Files (*)"
-        )
-        if path:
-            try:
-                self.manager.load(path)
-                self._populateTable()
-                logger.info(f"Loaded shortcuts from {path}")
-            except Exception as e:
-                logger.warning(f"Failed to load shortcuts from {path}: {e}")
-
-    @QtCore.Slot()
     def _saveToFile(self) -> None:
         self._save()
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self,
-            "Save Shortcuts",
-            "shortcuts.json",
-            "JSON Files (*.json);;All Files (*)",
-        )
-        if path:
+        if self.configPath:
             try:
-                self.manager.save(path)
-                logger.info(f"Saved shortcuts to {path}")
+                self.manager.save(self.configPath)
+                logger.info(f"Saved shortcuts to {self.configPath}")
             except Exception as e:
-                logger.warning(f"Failed to save shortcuts to {path}: {e}")
+                logger.warning(f"Failed to save shortcuts to {self.configPath}: {e}")
 
     @QtCore.Slot()
     def _resetDefaults(self) -> None:

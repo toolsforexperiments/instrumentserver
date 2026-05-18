@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import qcodes as qc
 import zmq
 from qcodes import Instrument, Parameter
-from qcodes.instrument.base import InstrumentBase
+from qcodes.instrument import InstrumentBase
 
 from instrumentserver import DEFAULT_PORT, QtCore
 from instrumentserver.helpers import flat_to_nested_dict, flatten_dict, is_flat_dict
@@ -859,7 +859,7 @@ class ClientStation:
             # Use config.py to parse server config format
             from instrumentserver.config import loadConfig
 
-            _, serverConfig, fullConfig, tempFile, _, _ = loadConfig(config_path)
+            _, serverConfig, fullConfig, _, tempFile, _, _ = loadConfig(config_path)
             tempFile.close()  # Clean up temp file
 
             self.full_config = fullConfig

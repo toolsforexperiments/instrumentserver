@@ -63,14 +63,15 @@ def serverScript() -> None:
         stationConfig,
         serverConfig,
         guiConfig,
+        shortcutConfig,
         tempFile,
         pollingRates,
         pollingThread,
         ipAddresses,
-    ) = None, None, None, None, None, None, None
+    ) = None, None, None, None, None, None, None, None
     if configPath != "":
         # Separates the corresponding settings into the 5 necessary parts
-        stationConfig, serverConfig, guiConfig, tempFile, pollingRates, ipAddresses = (
+        stationConfig, serverConfig, guiConfig, shortcutConfig, tempFile, pollingRates, ipAddresses = (
             loadConfig(configPath)
         )
     if pollingRates is not None and pollingRates != {}:
@@ -89,8 +90,10 @@ def serverScript() -> None:
             serverConfig=serverConfig,
             stationConfig=stationConfig,
             guiConfig=guiConfig,
+            shortcutConfig=shortcutConfig,
             pollingThread=pollingThread,
             ipAddresses=ipAddresses,
+            configPath=configPath
         )
     else:
         serverWithGui(
@@ -100,8 +103,10 @@ def serverScript() -> None:
             serverConfig=serverConfig,
             stationConfig=stationConfig,
             guiConfig=guiConfig,
+            shortcutConfig=shortcutConfig,
             pollingThread=pollingThread,
             ipAddresses=ipAddresses,
+            configPath=configPath
         )
 
     # Close and delete the temporary files

@@ -609,6 +609,9 @@ class ServerGui(QtWidgets.QMainWindow):
         else:
             self._guiConfig = guiConfig
 
+        shortcutConfig = serverKwargs.pop("shortcutConfig", {})
+        configPath = serverKwargs.pop("configPath", None)
+
         self.stationServer: Optional[StationServer] = None
         self.stationServerThread: Optional[QtCore.QThread] = None
 
@@ -661,7 +664,10 @@ class ServerGui(QtWidgets.QMainWindow):
         self.tabs.addUnclosableTab(self.serverStatus, "Server")
 
         self.shortcutManager = KeyboardShortcutManager()
-        self.shortcutEditor = ShortcutEditorWidget(self.shortcutManager)
+        if shortcutConfig:
+            self.shortcutManager.load_from_dict(shortcutConfig)
+
+        self.shortcutEditor = ShortcutEditorWidget(self.shortcutManager, configPath)
         self.tabs.addUnclosableTab(self.shortcutEditor, "Shortcuts")
 
         # Toolbar.
