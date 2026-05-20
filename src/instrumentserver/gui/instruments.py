@@ -466,6 +466,7 @@ class InstrumentParameters(InstrumentDisplayBase):
             modelKwargs["sub_port"] = kwargs.pop("sub_port")
 
         shortcutManager = kwargs.pop("shortcutManager", None)
+        print(shortcutManager)
 
         super().__init__(
             instrument=instrument,
@@ -485,6 +486,11 @@ class InstrumentParameters(InstrumentDisplayBase):
         self.shortcutManager.register("refresh_item", self._refreshCurrentItem, self)
         self.shortcutManager.register(
             "toggle_python", self._togglePythonCurrentItem, self
+        )
+        self.shortcutManager.register("edit_value", self._focusToParameterValue, self)
+        print(
+            "edit_value registered",
+            self.shortcutManager._shortcut_map.get("edit_value"),
         )
 
     @QtCore.Slot()
@@ -514,6 +520,25 @@ class InstrumentParameters(InstrumentDisplayBase):
             widget = self.view.delegate.parameters.get(item.name)
             if widget is not None and isinstance(widget.paramWidget, AnyInput):
                 widget.paramWidget.doEval.toggle()
+
+    @QtCore.Slot()
+    def _focusToParameterValue(self) -> None:
+        logger.debug("test")
+        proxy_index = self.view.currentIndex()
+        if not proxy_index.isValid():
+            return
+        source_index = self.proxyModel.mapToSource(proxy_index)
+        if source_index.column() != 0:
+            source_index = source_index.sibling(source_index.row(), 0)
+        item = self.model.itemFromIndex(source_index)
+        if isinstance(item, ItemBase):
+            widget = self.view.delegate.parameters.get(item.name)
+            if widget and hasattr(widget, "paramWidget"):
+                pw = widget.paramWidget
+                if isinstance(pw, AnyInput):
+                    pw.input.setFocus()
+                else:
+                    pw.setFocus()
 
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
