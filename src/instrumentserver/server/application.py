@@ -906,11 +906,9 @@ class ServerGui(QtWidgets.QMainWindow):
                 if "kwargs" in self._guiConfig[name]["gui"]:
                     kwargs = self._guiConfig[name]["gui"]["kwargs"]
 
-            station_server = self.stationServer
-            if station_server is None:
-                raise RuntimeError("addInstrumentToGui called before server started")
-            kwargs["sub_port"] = kwargs.get("sub_port", station_server.port + 1)
+            kwargs["sub_port"] = kwargs.get("sub_port", self.stationServer.port + 1)  # type: ignore[union-attr]
             kwargs["shortcutManager"] = self.shortcutManager
+
             insWidget = widgetClass(ins, parent=self, **kwargs)
             index = self.tabs.addTab(insWidget, ins.name)
             self.instrumentTabsOpen[ins.name] = insWidget

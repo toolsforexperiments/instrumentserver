@@ -1,8 +1,9 @@
-import yaml
 import logging
 import os
 from collections import defaultdict
 from typing import Callable, Optional
+
+import yaml
 
 from instrumentserver import QtCore, QtGui, QtWidgets, getInstrumentserverPath
 
@@ -44,6 +45,7 @@ class KeyboardShortcutManager:
         "save_items": ("Ctrl+S", "Save parameters to JSON file"),
         "fit_column": ("Ctrl+Shift+D", "Fits column width"),
         "sort_column": ("Ctrl+D", "Toggle sorting of selected column"),
+        "edit_value": ("Right", "Jump cursor to value field for selected parameter"),
     }
 
     def __init__(self) -> None:
@@ -111,7 +113,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
 
     Intended to be embedded as a tab in the server window. Changes made in the
     table are applied live to the manager (and therefore all registered shortcuts)
-    when Save is clicked. Use 'Save to file' to persist across sessions. 
+    when Save is clicked. Use 'Save to file' to persist across sessions.
 
     Each row has a small colored indicator dot in the rightmost column:
       - white : saved and unique
@@ -182,7 +184,9 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
 
             id_item = QtWidgets.QTableWidgetItem(action_id)
             id_item.setFlags(
-                QtCore.Qt.ItemFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+                QtCore.Qt.ItemFlags(
+                    id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable
+                )
             )
             desc_item = QtWidgets.QTableWidgetItem(description)
             desc_item.setFlags(

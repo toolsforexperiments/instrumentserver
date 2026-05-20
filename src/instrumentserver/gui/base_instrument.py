@@ -107,7 +107,6 @@ from pprint import pprint
 from typing import Any, Dict, List, Optional, cast
 
 from instrumentserver import QtCore, QtGui, QtWidgets
-
 from instrumentserver.gui.shortcuts import KeyboardShortcutManager
 
 
@@ -225,7 +224,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         self.loadingItems = False
 
     @staticmethod
-    def _matches_any_pattern(name: str, patterns: Optional[List[str]]) -> bool:
+    def _matches_any_pattern(name: str, patterns: List[str]) -> bool:
         """
         Check if a name matches any glob pattern in the list.
 
@@ -545,7 +544,7 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         super().__init__(parent=parent)
 
         # Indicates if a column is using delegates.
-        self.delegateColumns: List[int] = delegateColumns or []
+        self.delegateColumns: List[int] = delegateColumns
         self.lastSelectedItem = None
         # Stores the last collapsed state before a change in filtering to restore it afterwards.
         # The keys are persistent indexes from the original model (not the proxy one) and the values a bool
@@ -772,6 +771,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
     :param proxyModelType: The type of proxy model that should be used.
     :param viewType: The type of view that should be used.
     :param callSignals: If False, the constructor will not call the method connectSignals
+    :param shortcutManager: Manager shared across the application so actions can be registered to shortcuts
     """
 
     def __init__(
@@ -783,7 +783,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         proxyModelType: type = InstrumentSortFilterProxyModel,
         viewType: type = InstrumentTreeViewBase,
         callSignals: bool = True,
-        shortcutManager: Optional[KeyboardShortcutManager] = None,
+        shortcutManager: type = KeyboardShortcutManager,
         parent: Optional[QtWidgets.QWidget] = None,
         **modelKwargs: Any,
     ) -> None:
@@ -799,11 +799,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.proxyModel = proxyModelType(self.model)
         self.view = viewType(self.proxyModel)
 
-        self.shortcutManager = (
-            shortcutManager
-            if shortcutManager is not None
-            else KeyboardShortcutManager()
-        )
+        self.shortcutManager = shortcutManager
 
         self.layout_ = QtWidgets.QVBoxLayout()
 
@@ -882,14 +878,14 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             QtGui.QIcon(":/icons/star.svg"), "Move Starred items to the top"
         )
         starAction.setCheckable(True)
-        starAction.triggered.connect(lambda x: self.promoteStar())
+        starAction.triggered.connect(lambda x: self.proxyModel.onToggleStar())
         self.shortcutManager.apply_to_action("toggle_star", starAction)
 
         trashAction = toolbar.addAction(
             QtGui.QIcon(":/icons/trash-crossed.svg"), "Hide trashed items"
         )
         trashAction.setCheckable(True)
-        trashAction.triggered.connect(lambda x: self.hideTrash())
+        trashAction.triggered.connect(lambda x: self.proxyModel.onToggleTrash())
         self.shortcutManager.apply_to_action("toggle_trash", trashAction)
 
         # Debugging tools keep commented for commits.
@@ -902,14 +898,6 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         # toolbar.addSeparator()
 
         return toolbar
-
-    @QtCore.Slot()
-    def hideTrash(self) -> None:
-        self.proxyModel.onToggleTrash()
-
-    @QtCore.Slot()
-    def promoteStar(self) -> None:
-        self.proxyModel.onToggleStar()
 
     @QtCore.Slot()
     def refreshAll(self) -> None:
