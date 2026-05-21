@@ -641,8 +641,8 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                     for x in self.delegateColumns  # type: ignore[union-attr]
                 ]
                 proxyDelegateIndexes = [
-                    self.model().mapFromSource(index)
-                    for index in delegateIndexes  # type: ignore[union-attr]
+                    self.model().mapFromSource(index)  # type: ignore[union-attr]
+                    for index in delegateIndexes
                 ]
                 for delegateIndex in proxyDelegateIndexes:
                     self.openPersistentEditor(delegateIndex)
