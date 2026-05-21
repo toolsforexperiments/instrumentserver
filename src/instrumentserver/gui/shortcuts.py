@@ -184,10 +184,10 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             current = self.manager.mapping.get(action_id, "")
 
             id_item = QtWidgets.QTableWidgetItem(action_id)
-            id_item.setFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable) # type: ignore[arg-type]
+            id_item.setFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)  # type: ignore[arg-type]
 
             desc_item = QtWidgets.QTableWidgetItem(description)
-            desc_item.setFlags(desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable) # type: ignore[arg-type]
+            desc_item.setFlags(desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)  # type: ignore[arg-type]
 
             self._table.setItem(row, 0, id_item)
             self._table.setItem(row, 1, desc_item)
