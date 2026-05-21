@@ -71,9 +71,15 @@ def serverScript() -> None:
     ) = None, None, None, None, None, None, None, None
     if configPath != "":
         # Separates the corresponding settings into the 5 necessary parts
-        stationConfig, serverConfig, guiConfig, shortcutConfig, tempFile, pollingRates, ipAddresses = (
-            loadConfig(configPath)
-        )
+        (
+            stationConfig,
+            serverConfig,
+            guiConfig,
+            shortcutConfig,
+            tempFile,
+            pollingRates,
+            ipAddresses,
+        ) = loadConfig(configPath)
     if pollingRates is not None and pollingRates != {}:
         pollingThread = QtCore.QThread()
         pollWorker = PollingWorker(pollingRates=pollingRates)
@@ -93,7 +99,7 @@ def serverScript() -> None:
             shortcutConfig=shortcutConfig,
             pollingThread=pollingThread,
             ipAddresses=ipAddresses,
-            configPath=configPath
+            configPath=configPath,
         )
     else:
         serverWithGui(
@@ -106,7 +112,7 @@ def serverScript() -> None:
             shortcutConfig=shortcutConfig,
             pollingThread=pollingThread,
             ipAddresses=ipAddresses,
-            configPath=configPath
+            configPath=configPath,
         )
 
     # Close and delete the temporary files
