@@ -738,30 +738,30 @@ class ServerGui(QtWidgets.QMainWindow):
             self.client.disconnect()
         except Exception:
             pass
-        event.accept() # type: ignore[union-attr]
+        event.accept()  # type: ignore[union-attr]
 
     def startServer(self) -> None:
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(**self._serverKwargs)  # type: ignore[assignment]
-        self.stationServerThread = QtCore.QThread()  # type: ignore[assignment]
-        self.stationServer.moveToThread(self.stationServerThread)  # type: ignore[attr-defined]
-        self.stationServerThread.started.connect(self.stationServer.startServer)  # type: ignore[arg-type,attr-defined]
-        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))  # type: ignore[attr-defined]
-        self.stationServer.finished.connect(self.stationServerThread.quit)  # type: ignore[attr-defined]
-        self.stationServer.finished.connect(self.stationServer.deleteLater)  # type: ignore[attr-defined]
+        self.stationServer = StationServer(**self._serverKwargs)
+        self.stationServerThread = QtCore.QThread()
+        self.stationServer.moveToThread(self.stationServerThread)
+        self.stationServerThread.started.connect(self.stationServer.startServer)  # type: ignore[arg-type]
+        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))
+        self.stationServer.finished.connect(self.stationServerThread.quit)
+        self.stationServer.finished.connect(self.stationServer.deleteLater)
 
         # Connecting some additional things for messages.
-        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)  # type: ignore[attr-defined]
-        self.stationServer.serverStarted.connect(self.client.start)  # type: ignore[attr-defined]
-        self.stationServer.serverStarted.connect(self.refreshStationComponents)  # type: ignore[attr-defined]
-        self.stationServer.finished.connect(  # type: ignore[attr-defined]
+        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
+        self.stationServer.serverStarted.connect(self.client.start)
+        self.stationServer.serverStarted.connect(self.refreshStationComponents)
+        self.stationServer.finished.connect(
             lambda: self.log("Server thread finished.", LogLevels.info)
         )
-        self.stationServer.messageReceived.connect(self._messageReceived)  # type: ignore[attr-defined]
-        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)  # type: ignore[attr-defined]
-        self.stationServer.funcCalled.connect(self.onFuncCalled)  # type: ignore[attr-defined]
+        self.stationServer.messageReceived.connect(self._messageReceived)
+        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)
+        self.stationServer.funcCalled.connect(self.onFuncCalled)
 
-        self.stationServerThread.start()  # type: ignore[attr-defined]
+        self.stationServerThread.start()
 
     def getServerIfRunning(self) -> Optional["StationServer"]:
         if (

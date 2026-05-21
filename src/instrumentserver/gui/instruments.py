@@ -158,7 +158,7 @@ class AddParameterWidget(QtWidgets.QWidget):
         self.unitEdit.setText("")
         if self.typeInput:
             self.typeSelect.setCurrentText(
-                parameterTypes[ParameterTypes.numeric]["name"] # type: ignore[arg-type]
+                parameterTypes[ParameterTypes.numeric]["name"]  # type: ignore[arg-type]
             )
             self.valsArgsEdit.setText("")
 
@@ -287,7 +287,7 @@ class ParameterDelegate(DelegateBase):
         # used to keep a reference to the widget.
         self.parameters: Dict[str, QtWidgets.QWidget] = {}
 
-    def createEditor( # type: ignore[override]
+    def createEditor(  # type: ignore[override]
         self,
         widget: QtWidgets.QWidget,
         option: QtWidgets.QStyleOptionViewItem,
