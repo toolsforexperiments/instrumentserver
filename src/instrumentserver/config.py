@@ -18,7 +18,9 @@ SERVERFIELDS = {"initialize": True}
 GUIFIELD = {"type": "instrumentserver.gui.instruments.GenericInstrument", "kwargs": {}}
 
 
-def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, dict, IO[bytes], dict, dict]:
+def loadConfig(
+    configPath: str | Path,
+) -> tuple[str, dict, dict, dict, IO[bytes], dict, dict]:
     """
     Loads the config for the instrumentserver. From 1 config file it splits the respective fields into 3 different
     objects: a serverConfig (the configurations for the server), a stationConfig(the qcodes station config file clean
@@ -36,7 +38,7 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, dict, IO[bytes]
     serverConfig: dict = {}  # Config for the server
     guiConfig = {}  # Individual gui config of each instrument
     fullConfig = {}  # serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui
-    shortcutConfig = {} # Preferences for keyboard shortcuts
+    shortcutConfig = {}  # Preferences for keyboard shortcuts
     pollingRates = {}  # Polling rates for each parameter
     ipAddresses = {}  # Dictionary of IP Addresses to send broadcasts to:
     # externalBroadcast: where to externally send parameter change broadcasts to, formatted like "tcp://address:port"
@@ -150,7 +152,7 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, dict, IO[bytes]
 
             # Update fullConfig with merged GUI config
             fullConfig[instrumentName]["gui"] = guiConfig[instrumentName]
-        
+
     # Gets all shortcuts different to REGISTRY defaults from the config file
     if "shortcuts" in rawConfig:
         shortcutConfig = rawConfig["shortcuts"]
@@ -176,4 +178,12 @@ def loadConfig(configPath: str | Path) -> tuple[str, dict, dict, dict, IO[bytes]
     tempFilePath = tempFile.name
 
     # You need to return the tempFile itself so that the garbage collector doesn't touch it
-    return tempFilePath, serverConfig, fullConfig, shortcutConfig, tempFile, pollingRates, ipAddresses
+    return (
+        tempFilePath,
+        serverConfig,
+        fullConfig,
+        shortcutConfig,
+        tempFile,
+        pollingRates,
+        ipAddresses,
+    )
