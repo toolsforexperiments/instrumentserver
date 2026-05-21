@@ -61,7 +61,7 @@ class StationList(QtWidgets.QTreeWidget):
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
 
         self.customContextMenuRequested.connect(
-            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))
+            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))  # type: ignore[arg-type]
         )
         self.deleteAction.triggered.connect(self.onDeleteAction)
         self.itemSelectionChanged.connect(self._processSelection)
@@ -130,7 +130,7 @@ class ServerStatus(QtWidgets.QWidget):
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout = QtWidgets.QVBoxLayout(self)  # type: ignore[assignment,method-assign]
 
         # At the top: a status label, and a button for emitting a test message
         self.addressLabel = QtWidgets.QLabel()
@@ -144,13 +144,13 @@ class ServerStatus(QtWidgets.QWidget):
             )
         )
 
-        self.layout.addLayout(self.statusLayout)
+        self.layout.addLayout(self.statusLayout)  # type: ignore[attr-defined]
 
         # next row: a window for displaying the incoming messages.
-        self.layout.addWidget(QtWidgets.QLabel("Messages:"))
+        self.layout.addWidget(QtWidgets.QLabel("Messages:"))  # type: ignore[attr-defined]
         self.messages = QtWidgets.QTextEdit()
         self.messages.setReadOnly(True)
-        self.layout.addWidget(self.messages)
+        self.layout.addWidget(self.messages)  # type: ignore[attr-defined]
 
     @QtCore.Slot(str)
     def setListeningAddress(self, addr: str) -> None:
@@ -328,7 +328,7 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         self.contextMenu.addSeparator()
         self.contextMenu.addAction(self.deletePossibleInstrumentAction)
         self.customContextMenuRequested.connect(
-            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))
+            lambda x: self.contextMenu.exec_(self.mapToGlobal(x))  # type: ignore[arg-type]
         )
 
         self.basedInstrumentAction.triggered.connect(self.onBasedInstrumentAction)
@@ -432,16 +432,16 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
         for item in items:
             if item.childCount() == 0:
                 parent = item.parent()
-                if item.configName is not None and item.configName in self.config:
-                    del self.config[item.configName]
-                parent.removeChild(item)
-                if parent.childCount() == 0:
+                if item.configName is not None and item.configName in self.config:  # type: ignore[attr-defined]
+                    del self.config[item.configName]  # type: ignore[attr-defined]
+                parent.removeChild(item)  # type: ignore[union-attr]
+                if parent.childCount() == 0:  # type: ignore[union-attr]
                     self.takeTopLevelItem((self.indexOfTopLevelItem(parent)))
             else:
                 for i in range(item.childCount()):
                     child = item.child(i)
-                    if child.configName in self.config:
-                        del self.config[child.configName]
+                    if child.configName in self.config:  # type: ignore[union-attr]
+                        del self.config[child.configName]  # type: ignore[union-attr]
                 self.takeTopLevelItem(self.indexOfTopLevelItem(item))
 
 
@@ -672,31 +672,31 @@ class ServerGui(QtWidgets.QMainWindow):
 
         # Toolbar.
         self.toolBar = self.addToolBar("Tools")
-        self.toolBar.setIconSize(QtCore.QSize(16, 16))
+        self.toolBar.setIconSize(QtCore.QSize(16, 16))  # type: ignore[union-attr]
 
         # Station tools.
-        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))
+        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))  # type: ignore[union-attr]
         self.refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), "Refresh", self
         )
         self.refreshStationAction.triggered.connect(self.refreshStationComponents)
-        self.toolBar.addAction(self.refreshStationAction)
+        self.toolBar.addAction(self.refreshStationAction)  # type: ignore[union-attr]
 
         # Parameter tools.
-        self.toolBar.addSeparator()
-        self.toolBar.addWidget(QtWidgets.QLabel("Params:"))
+        self.toolBar.addSeparator()  # type: ignore[union-attr]
+        self.toolBar.addWidget(QtWidgets.QLabel("Params:"))  # type: ignore[union-attr]
 
         self.loadParamsAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/load.svg"), "Load from file", self
         )
         self.loadParamsAction.triggered.connect(self.loadParamsFromFile)
-        self.toolBar.addAction(self.loadParamsAction)
+        self.toolBar.addAction(self.loadParamsAction)  # type: ignore[union-attr]
 
         self.saveParamsAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/save.svg"), "Save to file", self
         )
         self.saveParamsAction.triggered.connect(self.saveParamsToFile)
-        self.toolBar.addAction(self.saveParamsAction)
+        self.toolBar.addAction(self.saveParamsAction)  # type: ignore[union-attr]
 
         self.serverStatus.testButton.clicked.connect(
             lambda x: self.client.ask("Ping server.")
@@ -715,7 +715,7 @@ class ServerGui(QtWidgets.QMainWindow):
     def log(self, message: str, level: LogLevels = LogLevels.info) -> None:
         log(logger, message, level)
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def closeEvent(self, event: Optional[QtGui.QCloseEvent]) -> None:
         for name, widget in list(self.instrumentTabsOpen.items()):
             try:
                 widget.close()
@@ -738,32 +738,30 @@ class ServerGui(QtWidgets.QMainWindow):
             self.client.disconnect()
         except Exception:
             pass
-        event.accept()
+        event.accept() # type: ignore[union-attr]
 
     def startServer(self) -> None:
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(**self._serverKwargs)
-        self.stationServerThread = QtCore.QThread()
-        assert self.stationServer is not None
-        assert self.stationServerThread is not None
-        self.stationServer.moveToThread(self.stationServerThread)
-        self.stationServerThread.started.connect(self.stationServer.startServer)
-        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))
-        self.stationServer.finished.connect(self.stationServerThread.quit)
-        self.stationServer.finished.connect(self.stationServer.deleteLater)
+        self.stationServer = StationServer(**self._serverKwargs)  # type: ignore[assignment]
+        self.stationServerThread = QtCore.QThread()  # type: ignore[assignment]
+        self.stationServer.moveToThread(self.stationServerThread)  # type: ignore[attr-defined]
+        self.stationServerThread.started.connect(self.stationServer.startServer)  # type: ignore[arg-type,attr-defined]
+        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))  # type: ignore[attr-defined]
+        self.stationServer.finished.connect(self.stationServerThread.quit)  # type: ignore[attr-defined]
+        self.stationServer.finished.connect(self.stationServer.deleteLater)  # type: ignore[attr-defined]
 
         # Connecting some additional things for messages.
-        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
-        self.stationServer.serverStarted.connect(self.client.start)
-        self.stationServer.serverStarted.connect(self.refreshStationComponents)
-        self.stationServer.finished.connect(
+        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)  # type: ignore[attr-defined]
+        self.stationServer.serverStarted.connect(self.client.start)  # type: ignore[attr-defined]
+        self.stationServer.serverStarted.connect(self.refreshStationComponents)  # type: ignore[attr-defined]
+        self.stationServer.finished.connect(  # type: ignore[attr-defined]
             lambda: self.log("Server thread finished.", LogLevels.info)
         )
-        self.stationServer.messageReceived.connect(self._messageReceived)
-        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)
-        self.stationServer.funcCalled.connect(self.onFuncCalled)
+        self.stationServer.messageReceived.connect(self._messageReceived)  # type: ignore[attr-defined]
+        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)  # type: ignore[attr-defined]
+        self.stationServer.funcCalled.connect(self.onFuncCalled)  # type: ignore[attr-defined]
 
-        self.stationServerThread.start()
+        self.stationServerThread.start()  # type: ignore[attr-defined]
 
     def getServerIfRunning(self) -> Optional["StationServer"]:
         if (
@@ -878,7 +876,7 @@ class ServerGui(QtWidgets.QMainWindow):
             bp = self._bluePrints[name]
         else:
             bp = None
-        self.stationObjInfo.setObject(bp)
+        self.stationObjInfo.setObject(bp)  # type: ignore[arg-type]
 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, int)
     def addInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int) -> None:
@@ -966,15 +964,15 @@ class DetachedServerGui(QtWidgets.QMainWindow):
 
         # Toolbar.
         self.toolBar = self.addToolBar("Tools")
-        self.toolBar.setIconSize(QtCore.QSize(16, 16))
+        self.toolBar.setIconSize(QtCore.QSize(16, 16))  # type: ignore[union-attr]
 
         # Station tools.
-        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))
+        self.toolBar.addWidget(QtWidgets.QLabel("Station:"))  # type: ignore[union-attr]
         self.refreshStationAction = QtWidgets.QAction(
             QtGui.QIcon(":/icons/refresh.svg"), "Refresh", self
         )
         self.refreshStationAction.triggered.connect(self.refreshStationComponents)
-        self.toolBar.addAction(self.refreshStationAction)
+        self.toolBar.addAction(self.refreshStationAction)  # type: ignore[union-attr]
 
         self.refreshStationComponents()
 

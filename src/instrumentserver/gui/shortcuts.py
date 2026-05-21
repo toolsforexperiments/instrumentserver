@@ -53,7 +53,7 @@ class KeyboardShortcutManager:
         self._shortcut_map: dict[str, QtWidgets.QShortcut] = {}
         self._action_map: dict[str, QtWidgets.QAction] = {}
 
-    def load_from_dict(self, config) -> None:
+    def load_from_dict(self, config: dict[str, str]) -> None:
         """Override the current mapping with entries read from serverConfig file."""
         self.mapping.update(config)
 
@@ -138,6 +138,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         self._table = QtWidgets.QTableWidget(len(manager.REGISTRY), 4, self)
         self._table.setHorizontalHeaderLabels(["Action", "Description", "Shortcut", ""])
         header = self._table.horizontalHeader()
+        assert header is not None
         header.setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
@@ -183,17 +184,11 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             current = self.manager.mapping.get(action_id, "")
 
             id_item = QtWidgets.QTableWidgetItem(action_id)
-            id_item.setFlags(
-                QtCore.Qt.ItemFlags(
-                    id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable
-                )
-            )
+            id_item.setFlags(id_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable) # type: ignore[arg-type]
+
             desc_item = QtWidgets.QTableWidgetItem(description)
-            desc_item.setFlags(
-                QtCore.Qt.ItemFlags(
-                    desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable
-                )
-            )
+            desc_item.setFlags(desc_item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable) # type: ignore[arg-type]
+
             self._table.setItem(row, 0, id_item)
             self._table.setItem(row, 1, desc_item)
 
