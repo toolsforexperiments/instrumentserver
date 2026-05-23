@@ -27,13 +27,20 @@ instruments:
     type: instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule
 """,
     )
-    path, serverConfig, fullConfig, tempFile, pollingRates, ipAddresses = loadConfig(
-        cfg
-    )
+    (
+        path,
+        serverConfig,
+        fullConfig,
+        shortcutConfig,
+        tempFile,
+        pollingRates,
+        ipAddresses,
+    ) = loadConfig(cfg)
     tempFile.close()
 
     assert "my_ins" in serverConfig
     assert "my_ins" in fullConfig
+    assert shortcutConfig == {}
     assert pollingRates == {}
     assert ipAddresses == {}
     # returned path is a string
@@ -49,7 +56,7 @@ instruments:
     type: some.Type
 """,
     )
-    tempFilePath, _, _, tempFile, _, _ = loadConfig(cfg)
+    tempFilePath, _, _, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.seek(0)
     content = tempFile.read()
     assert len(content) > 0
@@ -70,7 +77,7 @@ instruments:
     type: some.Type
 """,
     )
-    _, serverConfig, _, tempFile, _, _ = loadConfig(cfg)
+    _, serverConfig, _, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     assert serverConfig["my_ins"]["initialize"] is True
 
@@ -85,7 +92,7 @@ instruments:
     initialize: false
 """,
     )
-    _, serverConfig, _, tempFile, _, _ = loadConfig(cfg)
+    _, serverConfig, _, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     assert serverConfig["my_ins"]["initialize"] is False
 
@@ -118,7 +125,7 @@ instruments:
     type: some.Type
 """,
     )
-    _, _, fullConfig, tempFile, _, _ = loadConfig(cfg)
+    _, _, fullConfig, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     assert fullConfig["my_ins"]["gui"]["type"] == GUIFIELD["type"]
 
@@ -134,7 +141,7 @@ instruments:
       type: generic
 """,
     )
-    _, _, fullConfig, tempFile, _, _ = loadConfig(cfg)
+    _, _, fullConfig, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     assert fullConfig["my_ins"]["gui"]["type"] == GUIFIELD["type"]
 
@@ -187,7 +194,7 @@ instruments:
       param2: 200
 """,
     )
-    _, _, _, tempFile, pollingRates, _ = loadConfig(cfg)
+    _, _, _, _, tempFile, pollingRates, _ = loadConfig(cfg)
     tempFile.close()
     assert pollingRates == {"my_ins.param1": 100, "my_ins.param2": 200}
 
@@ -202,7 +209,7 @@ instruments:
     pollingRate:
 """,
     )
-    _, _, _, tempFile, pollingRates, _ = loadConfig(cfg)
+    _, _, _, _, tempFile, pollingRates, _ = loadConfig(cfg)
     tempFile.close()
     assert pollingRates == {}
 
@@ -224,7 +231,7 @@ networking:
   listeningAddress: 192.168.1.1
 """,
     )
-    _, _, _, tempFile, _, ipAddresses = loadConfig(cfg)
+    _, _, _, _, tempFile, _, ipAddresses = loadConfig(cfg)
     tempFile.close()
     assert ipAddresses["externalBroadcast"] == "tcp://192.168.1.1:5556"
     assert ipAddresses["listeningAddress"] == "192.168.1.1"
@@ -239,7 +246,7 @@ instruments:
     type: some.Type
 """,
     )
-    _, _, _, tempFile, _, ipAddresses = loadConfig(cfg)
+    _, _, _, _, tempFile, _, ipAddresses = loadConfig(cfg)
     tempFile.close()
     assert ipAddresses == {}
 
@@ -262,7 +269,7 @@ gui_defaults:
       - IDN
 """,
     )
-    _, _, fullConfig, tempFile, _, _ = loadConfig(cfg)
+    _, _, fullConfig, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     kwargs = fullConfig["my_ins"]["gui"].get("kwargs", {})
     assert "parameters-hide" in kwargs
@@ -282,7 +289,7 @@ gui_defaults:
       - power_level
 """,
     )
-    _, _, fullConfig, tempFile, _, _ = loadConfig(cfg)
+    _, _, fullConfig, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     kwargs = fullConfig["my_ins"]["gui"].get("kwargs", {})
     assert "parameters-hide" in kwargs
@@ -310,9 +317,39 @@ gui_defaults:
       - class_param
 """,
     )
-    _, _, fullConfig, tempFile, _, _ = loadConfig(cfg)
+    _, _, fullConfig, _, tempFile, _, _ = loadConfig(cfg)
     tempFile.close()
     hide = fullConfig["my_ins"]["gui"]["kwargs"]["parameters-hide"]
     assert "default_param" in hide
     assert "class_param" in hide
     assert "instance_param" in hide
+
+
+def test_shortcuts_parsed(tmp_path):
+    cfg = _write_config(
+        tmp_path,
+        """\
+instruments:
+  my_ins:
+    type: some.Type
+shortcuts:
+  jump_filter: "Ctrl+G"
+""",
+    )
+    _, _, _, shortcutConfig, tempFile, _, _ = loadConfig(cfg)
+    tempFile.close()
+    assert shortcutConfig == {"jump_filter": "Ctrl+G"}
+
+
+def test_no_shortcuts_gives_empty_dict(tmp_path):
+    cfg = _write_config(
+        tmp_path,
+        """\
+instruments:
+  my_ins:
+    type: some.Type
+""",
+    )
+    _, _, _, shortcutConfig, tempFile, _, _ = loadConfig(cfg)
+    tempFile.close()
+    assert shortcutConfig == {}
