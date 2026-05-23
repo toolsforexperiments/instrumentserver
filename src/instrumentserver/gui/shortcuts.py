@@ -155,18 +155,15 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         self._indicators: list[QtWidgets.QLabel] = []
         self._populateTable()
 
-        btnSaveFile = QtWidgets.QPushButton("Save to file")
-        btnSaveFile.clicked.connect(self._saveToFile)
         btnReset = QtWidgets.QPushButton("Reset to defaults")
         btnReset.clicked.connect(self._resetDefaults)
-        btnSave = QtWidgets.QPushButton("Save")
-        btnSave.clicked.connect(self._save)
+        btnSaveFile = QtWidgets.QPushButton("Save to file")
+        btnSaveFile.clicked.connect(self._saveToFile)
 
         btnRow = QtWidgets.QHBoxLayout()
-        btnRow.addWidget(btnSaveFile)
         btnRow.addStretch()
         btnRow.addWidget(btnReset)
-        btnRow.addWidget(btnSave)
+        btnRow.addWidget(btnSaveFile)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._table)
@@ -277,14 +274,12 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             widget.setKeySequence(QtGui.QKeySequence(intended))
         widget.blockSignals(False)
 
-    @QtCore.Slot()
     def _save(self) -> None:
         for row, action_id in enumerate(self.manager.REGISTRY):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
                 self.manager.rebind(action_id, widget.keySequence().toString())
         self._updateAllIndicators()
-        logger.info("Shortcuts saved locally")
 
     @QtCore.Slot()
     def _saveToFile(self) -> None:
