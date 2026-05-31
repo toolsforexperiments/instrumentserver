@@ -238,8 +238,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
         :param patterns: List of glob patterns to match against (e.g., 'power_*', '*_frequency')
         :return: True if name matches any pattern, False otherwise
         """
-        if not patterns:
-            return False
+
         for pattern in patterns:
             if fnmatch.fnmatch(name, pattern):
                 return True
@@ -846,6 +845,11 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.shortcutManager.register("trash_item", self._trashCurrentItem, self)
         self.shortcutManager.register("fit_column", self._fitCurrentColumn, self)
         self.shortcutManager.register("sort_column", self._sortCurrentColumn, self)
+        self.shortcutManager.register("refresh_all", self.refreshAll, self)
+        self.shortcutManager.register("expand_all", self.view.expandAll, self)
+        self.shortcutManager.register("collapse_all", self.view.collapseAll, self)
+        self.shortcutManager.register("toggle_star", self._starAction.trigger, self)  # type: ignore[union-attr]
+        self.shortcutManager.register("toggle_trash", self._trashAction.trigger, self)  # type: ignore[union-attr]
 
     def makeToolbar(self) -> QtWidgets.QToolBar:
         """
@@ -859,7 +863,7 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             "refresh all items from the instrument",
         )
         refreshAction.triggered.connect(lambda x: self.refreshAll())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("refresh_all", refreshAction)
+        self.shortcutManager.register_tooltip("refresh_all", refreshAction)
 
         toolbar.addSeparator()
 
@@ -868,30 +872,30 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             "expand tree",
         )
         expandAction.triggered.connect(lambda x: self.view.expandAll())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("expand_all", expandAction)
+        self.shortcutManager.register_tooltip("expand_all", expandAction)
 
         collapseAction = toolbar.addAction(
             QtGui.QIcon(":/icons/collapse.svg"),
             "collapse tree",
         )
         collapseAction.triggered.connect(lambda x: self.view.collapseAll())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("collapse_all", collapseAction)
+        self.shortcutManager.register_tooltip("collapse_all", collapseAction)
 
         toolbar.addSeparator()
 
-        starAction = toolbar.addAction(
+        self._starAction = toolbar.addAction(
             QtGui.QIcon(":/icons/star.svg"), "Move Starred items to the top"
         )
-        starAction.setCheckable(True)  # type: ignore[union-attr]
-        starAction.triggered.connect(lambda x: self.proxyModel.onToggleStar())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("toggle_star", starAction)
+        self._starAction.setCheckable(True)  # type: ignore[union-attr]
+        self._starAction.triggered.connect(lambda x: self.proxyModel.onToggleStar())  # type: ignore[union-attr]
+        self.shortcutManager.register_tooltip("toggle_star", self._starAction)
 
-        trashAction = toolbar.addAction(
+        self._trashAction = toolbar.addAction(
             QtGui.QIcon(":/icons/trash-crossed.svg"), "Hide trashed items"
         )
-        trashAction.setCheckable(True)  # type: ignore[union-attr]
-        trashAction.triggered.connect(lambda x: self.proxyModel.onToggleTrash())  # type: ignore[union-attr]
-        self.shortcutManager.apply_to_action("toggle_trash", trashAction)
+        self._trashAction.setCheckable(True)  # type: ignore[union-attr]
+        self._trashAction.triggered.connect(lambda x: self.proxyModel.onToggleTrash())  # type: ignore[union-attr]
+        self.shortcutManager.register_tooltip("toggle_trash", self._trashAction)
 
         # Debugging tools keep commented for commits.
         # printAction = toolbar.addAction(
@@ -908,31 +912,29 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
     def refreshAll(self) -> None:
         self.model.refreshAll()
 
-    @QtCore.Slot()
-    def _starCurrentItem(self) -> None:
+    def _getCurrentItem(self) -> Optional[ItemBase]:
         proxy_index = self.view.currentIndex()
         if not proxy_index.isValid():
-            return
+            return None
         source_index = self.proxyModel.mapToSource(proxy_index)
         if source_index.column() != 0:
             source_index = source_index.sibling(source_index.row(), 0)
         item = self.model.itemFromIndex(source_index)
-        if isinstance(item, ItemBase):
+        return item if isinstance(item, ItemBase) else None
+
+    def _toggleCurrentItem(self, signal: QtCore.SignalInstance) -> None:
+        item = self._getCurrentItem()
+        if item is not None:
             self.view.lastSelectedItem = item
-            self.view.itemStarToggle.emit(item)
+            signal.emit(item)
+
+    @QtCore.Slot()
+    def _starCurrentItem(self) -> None:
+        self._toggleCurrentItem(self.view.itemStarToggle)
 
     @QtCore.Slot()
     def _trashCurrentItem(self) -> None:
-        proxy_index = self.view.currentIndex()
-        if not proxy_index.isValid():
-            return
-        source_index = self.proxyModel.mapToSource(proxy_index)
-        if source_index.column() != 0:
-            source_index = source_index.sibling(source_index.row(), 0)
-        item = self.model.itemFromIndex(source_index)
-        if isinstance(item, ItemBase):
-            self.view.lastSelectedItem = item
-            self.view.itemTrashToggle.emit(item)
+        self._toggleCurrentItem(self.view.itemTrashToggle)
 
     @QtCore.Slot()
     def _fitCurrentColumn(self) -> None:

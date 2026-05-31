@@ -1,14 +1,10 @@
 import logging
-import os
 from collections import defaultdict
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import yaml
 
-from instrumentserver import QtCore, QtGui, QtWidgets, getInstrumentserverPath
-
-_ICON_DIR = getInstrumentserverPath("resource", "icons")
-
+from instrumentserver import QtCore, QtGui, QtWidgets
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +17,10 @@ class KeyboardShortcutManager:
     The active mapping starts from defaults and can be customized by the user and
     persisted to a JSON file.
 
-    Qt does not poll for key presses — instead, register() and apply_to_action()
-    hand each mapping entry to Qt's event system (QShortcut / QAction.setShortcut),
-    which fires the associated callback when the key is pressed.
+    Qt does not poll for key presses — instead, register() hands each mapping entry
+    to Qt's event system via QShortcut, which fires the associated callback when the
+    key is pressed. register_tooltip() tracks widgets whose tooltips should display
+    the current key hint and be updated live when the user rebinds.
     """
 
     REGISTRY: dict[str, tuple[str, str]] = {
@@ -39,10 +36,11 @@ class KeyboardShortcutManager:
         "refresh_item": ("Ctrl+R", "Refresh the selected parameter"),
         "toggle_python": ("Ctrl+P", "Toggle Python eval for selected parameter"),
         "delete_item": ("Ctrl+Backspace", "Delete the selected parameter"),
+        "run_method": ("Ctrl+Return", "Runs the selected method"),
         "clear_add": ("Ctrl+Shift+N", "Clear regions of add parameter bar"),
         "add_item": ("Ctrl+N", "Jump cursor to the add parameter bar"),
-        "load_items": ("Ctrl+O", "Load parameters from JSON file"),
-        "save_items": ("Ctrl+S", "Save parameters to JSON file"),
+        "load_items": ("Ctrl+Shift+O", "Load parameters from JSON file"),
+        "save_items": ("Ctrl+Shift+S", "Save parameters to JSON file"),
         "fit_column": ("Ctrl+Shift+D", "Fits column width"),
         "sort_column": ("Ctrl+D", "Toggle sorting of selected column"),
         "edit_value": ("Right", "Jump cursor to value field for selected parameter"),
@@ -50,8 +48,10 @@ class KeyboardShortcutManager:
 
     def __init__(self) -> None:
         self.mapping: dict[str, str] = {k: v[0] for k, v in self.REGISTRY.items()}
-        self._shortcut_map: dict[str, QtWidgets.QShortcut] = {}
-        self._action_map: dict[str, QtWidgets.QAction] = {}
+        self._shortcut_map: dict[str, list[QtWidgets.QShortcut]] = defaultdict(list)
+        self._tooltip_widgets: dict[
+            str, list[tuple[Union[QtWidgets.QAction, QtWidgets.QWidget], str]]
+        ] = defaultdict(list)
 
     def load_from_dict(self, config: dict[str, str]) -> None:
         """Override the current mapping with entries read from serverConfig file."""
@@ -70,16 +70,30 @@ class KeyboardShortcutManager:
         with open(path, "w") as f:
             yaml.dump(data, f, indent=2)
 
-    def apply_to_action(
-        self, action_id: str, qaction: Optional[QtWidgets.QAction]
+    def register_tooltip(
+        self,
+        action_id: str,
+        widget: Optional[Union[QtWidgets.QAction, QtWidgets.QWidget]],
     ) -> None:
-        """Set the shortcut from the current mapping on an existing QAction and retain a reference for live rebinding."""
-        if qaction is None:
+        """Append the current key hint to widget's tooltip and track it for live rebinding."""
+        if widget is None:
             return
-        key = self.mapping.get(action_id)
-        if key:
-            qaction.setShortcut(QtGui.QKeySequence(key))
-            self._action_map[action_id] = qaction
+        key = self.mapping.get(action_id, "")
+        if not key:
+            return
+        base_tip = widget.toolTip()
+        widget.setToolTip(f"{base_tip}  [{key}]" if base_tip else f"[{key}]")
+        self._tooltip_widgets[action_id].append((widget, base_tip))
+        widget.destroyed.connect(
+            lambda _, aid=action_id, ref=widget: self._remove_tooltip_widget(aid, ref)
+        )
+
+    def _remove_tooltip_widget(
+        self, action_id: str, widget: Union[QtWidgets.QAction, QtWidgets.QWidget]
+    ) -> None:
+        self._tooltip_widgets[action_id] = [
+            (w, t) for w, t in self._tooltip_widgets[action_id] if w is not widget
+        ]
 
     def register(
         self, action_id: str, callback: Callable, widget: QtWidgets.QWidget
@@ -94,16 +108,26 @@ class KeyboardShortcutManager:
         key = self.mapping.get(action_id)
         if key:
             sc = QtWidgets.QShortcut(QtGui.QKeySequence(key), widget)
+            sc.setContext(QtCore.Qt.ShortcutContext.WidgetWithChildrenShortcut)
             sc.activated.connect(callback)
-            self._shortcut_map[action_id] = sc
+            self._shortcut_map[action_id].append(sc)
+            sc.destroyed.connect(
+                lambda _, aid=action_id, ref=sc: (
+                    self._shortcut_map[aid].remove(ref)
+                    if ref in self._shortcut_map[aid]
+                    else None
+                )
+            )
 
     def rebind(self, action_id: str, new_key: str) -> None:
         """Update a shortcut immediately. Updates the mapping and the live Qt objects."""
         self.mapping[action_id] = new_key
-        if action_id in self._shortcut_map:
-            self._shortcut_map[action_id].setKey(QtGui.QKeySequence(new_key))
-        if action_id in self._action_map:
-            self._action_map[action_id].setShortcut(QtGui.QKeySequence(new_key))
+        for sc in self._shortcut_map.get(action_id, []):
+            sc.setKey(QtGui.QKeySequence(new_key))
+        for widget, base_tip in self._tooltip_widgets.get(action_id, []):
+            widget.setToolTip(
+                f"{base_tip}  [{new_key}]" if base_tip else f"[{new_key}]"
+            )
         logger.debug(f"Rebound '{action_id}' to '{new_key}'")
 
 
@@ -113,10 +137,10 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
 
     Intended to be embedded as a tab in the server window. Changes made in the
     table are applied live to the manager (and therefore all registered shortcuts)
-    when Save is clicked. Use 'Save to file' to persist across sessions.
+    when 'Save to File' is clicked. Also use 'Save to file' to persist across sessions.
 
     Each row has a small colored indicator dot in the rightmost column:
-      - white : saved and unique
+      - transparent : saved and unique
       - orange: unsaved change (widget value differs from manager.mapping)
       - red   : duplicate key sequence shared with another action (takes priority)
 
@@ -134,6 +158,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
     ) -> None:
         super().__init__(parent)
         self.manager = manager
+        self._file_mapping: dict[str, str] = dict(manager.mapping)
 
         self._table = QtWidgets.QTableWidget(len(manager.REGISTRY), 4, self)
         self._table.setHorizontalHeaderLabels(["Action", "Description", "Shortcut", ""])
@@ -241,7 +266,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
                 self._applyIndicator(
                     dot, "duplicate", f"Duplicate: also bound to {', '.join(others)}"
                 )
-            elif current != self.manager.mapping.get(action_id, ""):
+            elif current != self._file_mapping.get(action_id, ""):
                 self._applyIndicator(dot, "unsaved", "Unsaved change")
             else:
                 self._applyIndicator(dot, "ok", "")
@@ -249,13 +274,14 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
     @staticmethod
     def _applyIndicator(dot: QtWidgets.QLabel, state: str, tooltip: str) -> None:
         dot.setToolTip(tooltip)
+
         if state == "ok":
-            icon_file = "alert-octagon.svg"
+            icon = QtGui.QIcon(":/icons/no-alert.svg")
         elif state == "unsaved":
-            icon_file = "alert-octagon-orange.svg"
+            icon = QtGui.QIcon(":/icons/orange-alert.svg")
         else:  # duplicate
-            icon_file = "alert-octagon-red.svg"
-        pix = QtGui.QIcon(os.path.join(_ICON_DIR, icon_file)).pixmap(20, 20)
+            icon = QtGui.QIcon(":/icons/red-alert.svg")
+        pix = icon.pixmap(20, 20)
         dot.setPixmap(pix)
 
     @QtCore.Slot()
@@ -279,7 +305,6 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
                 self.manager.rebind(action_id, widget.keySequence().toString())
-        self._updateAllIndicators()
 
     @QtCore.Slot()
     def _saveToFile(self) -> None:
@@ -287,6 +312,8 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         if self.configPath:
             try:
                 self.manager.save(self.configPath)
+                self._file_mapping = dict(self.manager.mapping)
+                self._updateAllIndicators()
                 logger.info(f"Saved shortcuts to {self.configPath}")
             except Exception as e:
                 logger.warning(f"Failed to save shortcuts to {self.configPath}: {e}")
