@@ -19,7 +19,7 @@ from .base_instrument import (
     InstrumentTreeViewBase,
     ItemBase,
 )
-from .parameters import AnyInputForMethod, ParameterWidget
+from .parameters import AnyInput, AnyInputForMethod, ParameterWidget
 
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
@@ -465,6 +465,8 @@ class InstrumentParameters(InstrumentDisplayBase):
         if "sub_port" in kwargs:
             modelKwargs["sub_port"] = kwargs.pop("sub_port")
 
+        shortcutManager = kwargs.pop("shortcutManager", None)
+
         super().__init__(
             instrument=instrument,
             parent=parent,
@@ -473,12 +475,51 @@ class InstrumentParameters(InstrumentDisplayBase):
             modelType=ModelParameters,
             viewType=viewType,
             callSignals=callSignals,
+            shortcutManager=shortcutManager,
             **modelKwargs,
         )
 
     def connectSignals(self) -> None:
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
+        self.shortcutManager.register("refresh_item", self._refreshCurrentItem, self)
+        self.shortcutManager.register(
+            "toggle_python", self._togglePythonCurrentItem, self
+        )
+        self.shortcutManager.register("edit_value", self._focusToParameterValue, self)
+
+    def _withCurrentParameter(
+        self, callback: Callable[["ParameterWidget"], None]
+    ) -> None:
+        item = self._getCurrentItem()
+        if item is not None:
+            widget = self.view.delegate.parameters.get(item.name)
+            if widget is not None:
+                callback(widget)
+
+    @QtCore.Slot()
+    def _refreshCurrentItem(self) -> None:
+        self._withCurrentParameter(lambda w: w.setWidgetFromParameter())
+
+    @QtCore.Slot()
+    def _togglePythonCurrentItem(self) -> None:
+        self._withCurrentParameter(
+            lambda w: (
+                w.paramWidget.doEval.toggle()
+                if isinstance(w.paramWidget, AnyInput)
+                else None
+            )
+        )
+
+    @QtCore.Slot()
+    def _focusToParameterValue(self) -> None:
+        self._withCurrentParameter(
+            lambda w: (
+                w.paramWidget.input.setFocus()
+                if isinstance(w.paramWidget, AnyInput)
+                else w.paramWidget.setFocus()
+            )
+        )
 
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
@@ -615,6 +656,17 @@ class ParameterManagerGui(InstrumentParameters):
         self.parameterCreationError.connect(self.addParam.setError)
         self.parameterCreated.connect(self.addParam.clear)
         self.profileManager.indexChanged.connect(self.loadProfile)
+        self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
+        self.shortcutManager.register("clear_add", self.addParam.clear, self)
+        self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
+        self.shortcutManager.register("load_items", self.loadFromFile, self)
+        self.shortcutManager.register("save_items", self.saveToFile, self)
+
+    @QtCore.Slot()
+    def _deleteCurrentItem(self) -> None:
+        item = self._getCurrentItem()
+        if item is not None:
+            self.removeParameter(item.name)
 
     def makeToolbar(self) -> QtWidgets.QToolBar:
         toolbar = super().makeToolbar()
@@ -626,12 +678,14 @@ class ParameterManagerGui(InstrumentParameters):
             "Load parameters from file",
         )
         loadParamAction.triggered.connect(lambda x: self.loadFromFile())  # type: ignore[union-attr]
+        self.shortcutManager.register_tooltip("load_items", loadParamAction)
 
         saveParamAction = toolbar.addAction(
             QtGui.QIcon(":/icons/save.svg"),
             "Save parameters to file",
         )
         saveParamAction.triggered.connect(lambda x: self.saveToFile())  # type: ignore[union-attr]
+        self.shortcutManager.register_tooltip("save_items", saveParamAction)
 
         return toolbar
 
@@ -767,13 +821,43 @@ class InstrumentMethods(InstrumentDisplayBase):
         if "methods-hide" in kwargs:
             modelKwargs["itemsHide"] = kwargs.pop("methods-hide")
 
+        shortcutManager = kwargs.pop("shortcutManager", None)
+
         super().__init__(
             instrument=instrument,
             attr="functions",
             modelType=MethodsModel,
             viewType=MethodsTreeView,
+            shortcutManager=shortcutManager,
             **modelKwargs,
         )
+
+    def connectSignals(self) -> None:
+        super().connectSignals()
+        self.shortcutManager.register(
+            "toggle_python", self._togglePythonCurrentItem, self
+        )
+        self.shortcutManager.register("edit_value", self._focusToMethodValue, self)
+        self.shortcutManager.register("run_method", self._runCurrentMethod, self)
+
+    def _withCurrentMethod(self, callback: Callable[["MethodDisplay"], None]) -> None:
+        item = self._getCurrentItem()
+        if item is not None:
+            widget = self.view.delegate.methods.get(item.name)
+            if widget is not None:
+                callback(widget)
+
+    @QtCore.Slot()
+    def _togglePythonCurrentItem(self) -> None:
+        self._withCurrentMethod(lambda w: w.anyInput.doEval.toggle())
+
+    @QtCore.Slot()
+    def _focusToMethodValue(self) -> None:
+        self._withCurrentMethod(lambda w: w.anyInput.input.setFocus())
+
+    @QtCore.Slot()
+    def _runCurrentMethod(self) -> None:
+        self._withCurrentMethod(lambda w: w.runFun())
 
 
 # ----------------- Methods Display Classes - Ending -----------------------------------

@@ -14,6 +14,7 @@ from ..config import GUIFIELD
 from ..gui.instruments import GenericInstrument
 from ..gui.misc import BaseDialog, DetachableTabWidget
 from ..gui.parameters import AnyInputForMethod
+from ..gui.shortcuts import KeyboardShortcutManager, ShortcutEditorWidget
 from .core import InstrumentModuleBluePrint, ParameterBluePrint, StationServer
 
 logger = logging.getLogger(__name__)
@@ -608,8 +609,11 @@ class ServerGui(QtWidgets.QMainWindow):
         else:
             self._guiConfig = guiConfig
 
-        self.stationServer = None
-        self.stationServerThread = None
+        shortcutConfig = serverKwargs.pop("shortcutConfig", {})
+        configPath = serverKwargs.pop("configPath", None)
+
+        self.stationServer: Optional[StationServer] = None
+        self.stationServerThread: Optional[QtCore.QThread] = None
 
         self.instrumentTabsOpen: dict[str, GenericInstrument] = {}
 
@@ -658,6 +662,13 @@ class ServerGui(QtWidgets.QMainWindow):
 
         self.serverStatus = ServerStatus()
         self.tabs.addUnclosableTab(self.serverStatus, "Server")
+
+        self.shortcutManager = KeyboardShortcutManager()
+        if shortcutConfig:
+            self.shortcutManager.load_from_dict(shortcutConfig)
+
+        self.shortcutEditor = ShortcutEditorWidget(self.shortcutManager, configPath)
+        self.tabs.addUnclosableTab(self.shortcutEditor, "Shortcuts")
 
         # Toolbar.
         self.toolBar = self.addToolBar("Tools")
@@ -715,6 +726,7 @@ class ServerGui(QtWidgets.QMainWindow):
         if (
             hasattr(self, "stationServerThread")
             and self.stationServerThread is not None
+            and self.stationServer is not None
         ):
             if self.stationServerThread.isRunning():
                 try:
@@ -730,29 +742,33 @@ class ServerGui(QtWidgets.QMainWindow):
 
     def startServer(self) -> None:
         """Start the instrument server in a separate thread."""
-        self.stationServer = StationServer(**self._serverKwargs)  # type: ignore[assignment]
-        self.stationServerThread = QtCore.QThread()  # type: ignore[assignment]
-        self.stationServer.moveToThread(self.stationServerThread)  # type: ignore[attr-defined]
-        self.stationServerThread.started.connect(self.stationServer.startServer)  # type: ignore[arg-type,attr-defined]
-        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))  # type: ignore[attr-defined]
-        self.stationServer.finished.connect(self.stationServerThread.quit)  # type: ignore[attr-defined]
-        self.stationServer.finished.connect(self.stationServer.deleteLater)  # type: ignore[attr-defined]
+        self.stationServer = StationServer(**self._serverKwargs)
+        self.stationServerThread = QtCore.QThread()
+        self.stationServer.moveToThread(self.stationServerThread)
+        self.stationServerThread.started.connect(self.stationServer.startServer)  # type: ignore[arg-type]
+        self.stationServer.finished.connect(lambda: self.log("ZMQ server closed."))
+        self.stationServer.finished.connect(self.stationServerThread.quit)
+        self.stationServer.finished.connect(self.stationServer.deleteLater)
 
         # Connecting some additional things for messages.
-        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)  # type: ignore[attr-defined]
-        self.stationServer.serverStarted.connect(self.client.start)  # type: ignore[attr-defined]
-        self.stationServer.serverStarted.connect(self.refreshStationComponents)  # type: ignore[attr-defined]
-        self.stationServer.finished.connect(  # type: ignore[attr-defined]
+        self.stationServer.serverStarted.connect(self.serverStatus.setListeningAddress)
+        self.stationServer.serverStarted.connect(self.client.start)
+        self.stationServer.serverStarted.connect(self.refreshStationComponents)
+        self.stationServer.finished.connect(
             lambda: self.log("Server thread finished.", LogLevels.info)
         )
-        self.stationServer.messageReceived.connect(self._messageReceived)  # type: ignore[attr-defined]
-        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)  # type: ignore[attr-defined]
-        self.stationServer.funcCalled.connect(self.onFuncCalled)  # type: ignore[attr-defined]
+        self.stationServer.messageReceived.connect(self._messageReceived)
+        self.stationServer.instrumentCreated.connect(self.addInstrumentToGui)
+        self.stationServer.funcCalled.connect(self.onFuncCalled)
 
-        self.stationServerThread.start()  # type: ignore[attr-defined]
+        self.stationServerThread.start()
 
     def getServerIfRunning(self) -> Optional["StationServer"]:
-        if self.stationServer is not None and self.stationServerThread.isRunning():  # type: ignore[union-attr]
+        if (
+            self.stationServer is not None
+            and self.stationServerThread is not None
+            and self.stationServerThread.isRunning()
+        ):
             return self.stationServer
         else:
             return None
@@ -889,6 +905,8 @@ class ServerGui(QtWidgets.QMainWindow):
                     kwargs = self._guiConfig[name]["gui"]["kwargs"]
 
             kwargs["sub_port"] = kwargs.get("sub_port", self.stationServer.port + 1)  # type: ignore[union-attr]
+            kwargs["shortcutManager"] = self.shortcutManager
+
             insWidget = widgetClass(ins, parent=self, **kwargs)
             index = self.tabs.addTab(insWidget, ins.name)
             self.instrumentTabsOpen[ins.name] = insWidget

@@ -7,6 +7,7 @@
     <file alias="icons/set.svg">resource/icons/set.svg</file>
     <file alias="icons/no-alert.svg">resource/icons/alert-octagon.svg</file>
     <file alias="icons/red-alert.svg">resource/icons/alert-octagon-red.svg</file>
+    <file alias="icons/orange-alert.svg">resource/icons/alert-octagon-orange.svg</file>
     <file alias="icons/python.svg">resource/icons/python.svg</file>
     <file alias="icons/code.svg">resource/icons/code.svg</file>
     <file alias="icons/delete.svg">resource/icons/delete.svg</file>
@@ -14,6 +15,7 @@
     <file alias="icons/collapse.svg">resource/icons/collapse.svg</file>
     <file alias="icons/expand.svg">resource/icons/expand.svg</file>
     <file alias="icons/green-alert.svg">resource/icons/alert-octagon-green.svg</file>
+    <file alias="icons/yellow-alert.svg">resource/icons/alert-octagon-yellow.svg</file>
     <file alias="icons/star.svg">resource/icons/star.svg</file>
     <file alias="icons/star-crossed.svg">resource/icons/star-crossed.svg</file>
     <file alias="icons/trash.svg">resource/icons/trash.svg</file>
