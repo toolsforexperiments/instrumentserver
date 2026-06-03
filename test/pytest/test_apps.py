@@ -476,7 +476,11 @@ def test_subprocess_gui_default(free_port, launch_process):
 
     proc = launch_process(["instrumentserver", "--port", str(free_port)])
     time.sleep(2)
-    assert proc.poll() is None, f"Process exited early: {proc.returncode}"
+    if proc.poll() is not None:
+        stderr_out = proc.stderr.read().decode(errors="replace")
+        pytest.fail(
+            f"Process exited early (code {proc.returncode}).\nstderr:\n{stderr_out}"
+        )
 
 
 @pytest.mark.integration
