@@ -96,10 +96,8 @@ def serverScript() -> None:
             serverConfig=serverConfig,
             stationConfig=stationConfig,
             guiConfig=guiConfig,
-            shortcutConfig=shortcutConfig,
             pollingThread=pollingThread,
             ipAddresses=ipAddresses,
-            configPath=configPath,
         )
     else:
         serverWithGui(
