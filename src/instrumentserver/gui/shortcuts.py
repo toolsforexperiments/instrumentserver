@@ -283,7 +283,9 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             widget = self._table.cellWidget(row, 2)
             if not isinstance(widget, QtWidgets.QKeySequenceEdit):
                 continue
-            current = self._pending_restores.get(widget, widget.keySequence().toString())
+            current = self._pending_restores.get(
+                widget, widget.keySequence().toString()
+            )
             if current in duplicates:
                 others = [a for a in duplicates[current] if a != action_id]
                 self._applyIndicator(
@@ -292,7 +294,9 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             elif current != self.manager.mapping.get(action_id, ""):
                 self._applyIndicator(dot, "unsaved", "Unsaved and unapplied changes")
             elif current != self._file_mapping.get(action_id, ""):
-                self._applyIndicator(dot, "applied", "Changes applied but not saved to file")
+                self._applyIndicator(
+                    dot, "applied", "Changes applied but not saved to file"
+                )
             else:
                 self._applyIndicator(dot, "ok", "")
 
@@ -317,7 +321,9 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         for row, action_id in enumerate(self.manager.REGISTRY):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
-                if widget.keySequence().toString() != self.manager.mapping.get(action_id, ""):
+                if widget.keySequence().toString() != self.manager.mapping.get(
+                    action_id, ""
+                ):
                     has_pending = True
                     break
         has_conflicts = bool(self._collectDuplicates())
@@ -352,7 +358,9 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         for row, action_id in enumerate(self.manager.REGISTRY):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
-                key = self._pending_restores.get(widget, widget.keySequence().toString())
+                key = self._pending_restores.get(
+                    widget, widget.keySequence().toString()
+                )
                 self.manager.rebind(action_id, key)
 
     @QtCore.Slot()

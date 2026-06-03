@@ -210,7 +210,9 @@ def test_indicator_green_after_save(qtbot, widget_with_path):
     assert w._indicators[0].toolTip() == ""
 
 
-def test_restoreAfterRevert_refreshes_indicators_after_spurious_clear(qtbot, widget_with_path):
+def test_restoreAfterRevert_refreshes_indicators_after_spurious_clear(
+    qtbot, widget_with_path
+):
     """
     _restoreAfterRevert must call _updateAllIndicators after unblocking signals.
 

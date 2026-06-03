@@ -9,6 +9,7 @@ Integration tests (marked @pytest.mark.integration) spawn real subprocesses.
 Run unit only: pytest test/pytest/test_apps.py -m "not integration" -v
 Run integration: pytest test/pytest/test_apps.py -m "integration" -v
 """
+
 import os
 import subprocess
 import sys
@@ -47,13 +48,13 @@ def fake_load_config():
 
     def _fake(configPath):
         return (
-            station_path,       # stationConfig
-            {"instrument1": {}}, # serverConfig
-            {},                  # guiConfig
-            {},                  # shortcutConfig
-            tf,                  # tempFile
-            {},                  # pollingRates (empty → no polling thread)
-            {},                  # ipAddresses
+            station_path,  # stationConfig
+            {"instrument1": {}},  # serverConfig
+            {},  # guiConfig
+            {},  # shortcutConfig
+            tf,  # tempFile
+            {},  # pollingRates (empty → no polling thread)
+            {},  # ipAddresses
         )
 
     with patch("instrumentserver.apps.loadConfig", side_effect=_fake) as mock_lc:
@@ -104,6 +105,7 @@ def test_server_script_gui_default_no_config():
         patch("instrumentserver.apps.loadConfig") as mock_lc,
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     mock_gui.assert_called_once()
@@ -124,6 +126,7 @@ def test_server_script_no_gui_no_config():
         patch("instrumentserver.apps.loadConfig") as mock_lc,
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     mock_srv.assert_called_once()
@@ -143,6 +146,7 @@ def test_server_script_gui_with_config(fake_load_config, config_file):
         patch("instrumentserver.apps.server") as mock_srv,
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     fake_load_config.assert_called_once_with(config_file)
@@ -167,6 +171,7 @@ def test_server_script_no_gui_with_config(fake_load_config, config_file):
         patch("instrumentserver.apps.server") as mock_srv,
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     fake_load_config.assert_called_once_with(config_file)
@@ -175,7 +180,9 @@ def test_server_script_no_gui_with_config(fake_load_config, config_file):
 
     kwargs = mock_srv.call_args.kwargs
     assert kwargs["serverConfig"] == {"instrument1": {}}
-    assert "shortcutConfig" not in kwargs, "shortcutConfig must not be passed to server()"
+    assert "shortcutConfig" not in kwargs, (
+        "shortcutConfig must not be passed to server()"
+    )
     assert "configPath" not in kwargs, "configPath must not be passed to server()"
 
 
@@ -189,6 +196,7 @@ def test_server_script_gui_with_polling(fake_load_config_polling, config_file):
         patch("instrumentserver.apps.QtCore.QThread") as mock_qt,
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     mock_gui.assert_called_once()
@@ -210,6 +218,7 @@ def test_server_script_no_gui_with_polling(fake_load_config_polling, config_file
         patch("instrumentserver.apps.QtCore.QThread") as mock_qt,
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     mock_srv.assert_called_once()
@@ -226,8 +235,17 @@ def test_server_script_no_gui_with_polling(fake_load_config_polling, config_file
 @pytest.mark.parametrize("gui", [True, False])
 def test_server_script_passthrough_args(gui):
     """Pass-through: --port, --allow_user_shutdown, --listen_at, --init_script arrive unchanged."""
-    argv = ["instrumentserver", "--port", "9999", "--allow_user_shutdown", "True",
-            "--listen_at", "192.168.1.1", "--init_script", "/tmp/init.py"]
+    argv = [
+        "instrumentserver",
+        "--port",
+        "9999",
+        "--allow_user_shutdown",
+        "True",
+        "--listen_at",
+        "192.168.1.1",
+        "--init_script",
+        "/tmp/init.py",
+    ]
     if not gui:
         argv += ["--gui", "False"]
     sys.argv = argv
@@ -238,6 +256,7 @@ def test_server_script_passthrough_args(gui):
         patch("instrumentserver.apps.loadConfig"),
     ):
         from instrumentserver.apps import serverScript
+
         serverScript()
 
     mock_fn = mock_gui if gui else mock_srv
@@ -266,6 +285,7 @@ def test_client_station_script_no_config():
     ):
         mock_app.return_value.exec_.return_value = 0
         from instrumentserver.apps import clientStationScript
+
         clientStationScript()
 
     mock_cs.assert_called_once_with(host="localhost", port=5555, config_path=None)
@@ -282,6 +302,7 @@ def test_client_station_script_with_config(tmp_path):
     ):
         mock_app.return_value.exec_.return_value = 0
         from instrumentserver.apps import clientStationScript
+
         clientStationScript()
 
     mock_cs.assert_called_once_with(host="localhost", port=5555, config_path=cfg)
@@ -297,6 +318,7 @@ def test_detached_server_script_defaults():
         mock_app.return_value.exec_.return_value = 0
         mock_dsg.return_value.show = MagicMock()
         from instrumentserver.apps import detachedServerScript
+
         detachedServerScript()
 
     mock_dsg.assert_called_once_with(host="localhost", port=5555)
@@ -312,9 +334,12 @@ def test_detached_server_script_custom():
         mock_app.return_value.exec_.return_value = 0
         mock_dsg.return_value.show = MagicMock()
         from instrumentserver.apps import detachedServerScript
+
         detachedServerScript()
 
-    mock_dsg.assert_called_once_with(host="10.0.0.1", port="9000")  # string because no type= in argparse
+    mock_dsg.assert_called_once_with(
+        host="10.0.0.1", port="9000"
+    )  # string because no type= in argparse
 
 
 # ---------------------------------------------------------------------------
@@ -338,6 +363,7 @@ def test_param_manager_script_instrument_exists():
     ):
         mock_app.return_value.exec_.return_value = 0
         from instrumentserver.apps import parameterManagerScript
+
         parameterManagerScript()
 
     mock_cli.get_instrument.assert_called_once_with("parameter_manager")
@@ -362,6 +388,7 @@ def test_param_manager_script_instrument_missing():
     ):
         mock_app.return_value.exec_.return_value = 0
         from instrumentserver.apps import parameterManagerScript
+
         parameterManagerScript()
 
     mock_cli.find_or_create_instrument.assert_called_once_with(
@@ -378,9 +405,11 @@ def test_param_manager_script_instrument_missing():
 # Phase 4 — Subprocess integration tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def free_port():
     import socket
+
     with socket.socket() as s:
         s.bind(("", 0))
         yield s.getsockname()[1]
@@ -418,10 +447,13 @@ def launch_process(free_port):
 @pytest.mark.integration
 def test_subprocess_headless_no_config(free_port, launch_process):
     """instrumentserver --gui False --port <free> starts without crashing."""
-    proc = launch_process(["instrumentserver", "--gui", "False", "--port", str(free_port)])
+    proc = launch_process(
+        ["instrumentserver", "--gui", "False", "--port", str(free_port)]
+    )
     # Wait for "Starting server." in stderr within 5 seconds
     import select
     import time
+
     deadline = time.monotonic() + 5
     found = False
     while time.monotonic() < deadline:
@@ -441,6 +473,7 @@ def test_subprocess_headless_no_config(free_port, launch_process):
 def test_subprocess_gui_default(free_port, launch_process):
     """instrumentserver --port <free> (GUI) stays alive for at least 2 seconds."""
     import time
+
     proc = launch_process(["instrumentserver", "--port", str(free_port)])
     time.sleep(2)
     assert proc.poll() is None, f"Process exited early: {proc.returncode}"
@@ -452,14 +485,21 @@ def test_subprocess_headless_with_config(free_port, launch_process, tmp_path):
     cfg = tmp_path / "config.yml"
     cfg.write_text(MINIMAL_CONFIG)
 
-    proc = launch_process([
-        "instrumentserver", "--gui", "False",
-        "-c", str(cfg),
-        "--port", str(free_port),
-    ])
+    proc = launch_process(
+        [
+            "instrumentserver",
+            "--gui",
+            "False",
+            "-c",
+            str(cfg),
+            "--port",
+            str(free_port),
+        ]
+    )
 
     import select
     import time
+
     deadline = time.monotonic() + 5
     found = False
     while time.monotonic() < deadline:
@@ -479,6 +519,7 @@ def test_subprocess_headless_with_config(free_port, launch_process, tmp_path):
 def test_subprocess_detached_server(free_port, launch_process):
     """instrumentserver-detached --port <free> stays alive for at least 2 seconds."""
     import time
+
     proc = launch_process(["instrumentserver-detached", "--port", str(free_port)])
     time.sleep(2)
     assert proc.poll() is None, f"Process exited early: {proc.returncode}"
