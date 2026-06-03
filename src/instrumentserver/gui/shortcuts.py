@@ -159,6 +159,10 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self.manager = manager
         self._file_mapping: dict[str, str] = dict(manager.mapping)
+        # Widgets currently mid _onEditingFinished / _restoreAfterRevert cycle.
+        # Maps widget → intended key so _applyToManager can read the correct value
+        # even when the widget's internal state has been temporarily cleared.
+        self._pending_restores: dict[QtWidgets.QKeySequenceEdit, str] = {}
 
         self._table = QtWidgets.QTableWidget(len(manager.REGISTRY), 4, self)
         self._table.setHorizontalHeaderLabels(["Action", "Description", "Shortcut", ""])
@@ -182,13 +186,31 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
 
         btnReset = QtWidgets.QPushButton("Reset to defaults")
         btnReset.clicked.connect(self._resetDefaults)
-        btnSaveFile = QtWidgets.QPushButton("Save to file")
-        btnSaveFile.clicked.connect(self._saveToFile)
+
+        self._btnCancel = QtWidgets.QPushButton("Cancel")
+        self._btnCancel.setEnabled(False)
+        self._btnCancel.clicked.connect(self._cancel)
+
+        self._btnApply = QtWidgets.QPushButton("Apply")
+        self._btnApply.setEnabled(False)
+        self._btnApply.clicked.connect(self._apply)
+
+        self._btnSaveFile = QtWidgets.QPushButton("Save to file")
+        self._btnSaveFile.clicked.connect(self._saveToFile)
+        if configPath:
+            self._btnSaveFile.setEnabled(True)
+        else:
+            self._btnSaveFile.setEnabled(False)
+            self._btnSaveFile.setToolTip(
+                "Start the server with a config file to enable this button"
+            )
 
         btnRow = QtWidgets.QHBoxLayout()
         btnRow.addStretch()
         btnRow.addWidget(btnReset)
-        btnRow.addWidget(btnSaveFile)
+        btnRow.addWidget(self._btnCancel)
+        btnRow.addWidget(self._btnApply)
+        btnRow.addWidget(self._btnSaveFile)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._table)
@@ -260,14 +282,16 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             widget = self._table.cellWidget(row, 2)
             if not isinstance(widget, QtWidgets.QKeySequenceEdit):
                 continue
-            current = widget.keySequence().toString()
+            current = self._pending_restores.get(widget, widget.keySequence().toString())
             if current in duplicates:
                 others = [a for a in duplicates[current] if a != action_id]
                 self._applyIndicator(
                     dot, "duplicate", f"Duplicate: also bound to {', '.join(others)}"
                 )
+            elif current != self.manager.mapping.get(action_id, ""):
+                self._applyIndicator(dot, "unsaved", "Unsaved and unapplied changes")
             elif current != self._file_mapping.get(action_id, ""):
-                self._applyIndicator(dot, "unsaved", "Unsaved change")
+                self._applyIndicator(dot, "applied", "Changes applied but not saved to file")
             else:
                 self._applyIndicator(dot, "ok", "")
 
@@ -279,17 +303,35 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             icon = QtGui.QIcon(":/icons/no-alert.svg")
         elif state == "unsaved":
             icon = QtGui.QIcon(":/icons/orange-alert.svg")
+        elif state == "applied":
+            icon = QtGui.QIcon(":/icons/yellow-alert.svg")
         else:  # duplicate
             icon = QtGui.QIcon(":/icons/red-alert.svg")
         pix = icon.pixmap(20, 20)
         dot.setPixmap(pix)
 
+    def _updateApplyCancelState(self) -> None:
+        """Enable Apply/Cancel/Save based on pending changes and conflicts."""
+        has_pending = False
+        for row, action_id in enumerate(self.manager.REGISTRY):
+            widget = self._table.cellWidget(row, 2)
+            if isinstance(widget, QtWidgets.QKeySequenceEdit):
+                if widget.keySequence().toString() != self.manager.mapping.get(action_id, ""):
+                    has_pending = True
+                    break
+        has_conflicts = bool(self._collectDuplicates())
+        self._btnApply.setEnabled(has_pending and not has_conflicts)
+        self._btnCancel.setEnabled(has_pending)
+        self._btnSaveFile.setEnabled(bool(self.configPath) and not has_conflicts)
+
     @QtCore.Slot()
     def _onUnsavedChange(self) -> None:
         self._updateAllIndicators()
+        self._updateApplyCancelState()
 
     def _onEditingFinished(self, widget: QtWidgets.QKeySequenceEdit) -> None:
         intended = widget.keySequence().toString()
+        self._pending_restores[widget] = intended
         widget.blockSignals(True)
         QtCore.QTimer.singleShot(0, lambda: self._restoreAfterRevert(intended, widget))
 
@@ -299,24 +341,48 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
         if widget.keySequence().toString() != intended:
             widget.setKeySequence(QtGui.QKeySequence(intended))
         widget.blockSignals(False)
+        self._pending_restores.pop(widget, None)
+        # No keySequenceChanged fires after unblocking, so refresh state explicitly.
+        self._updateAllIndicators()
+        self._updateApplyCancelState()
 
-    def _save(self) -> None:
+    def _applyToManager(self) -> None:
+        """Apply all table values to the live manager."""
         for row, action_id in enumerate(self.manager.REGISTRY):
             widget = self._table.cellWidget(row, 2)
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
-                self.manager.rebind(action_id, widget.keySequence().toString())
+                key = self._pending_restores.get(widget, widget.keySequence().toString())
+                self.manager.rebind(action_id, key)
+
+    @QtCore.Slot()
+    def _apply(self) -> None:
+        self._applyToManager()
+        self._updateAllIndicators()
+        self._updateApplyCancelState()
+
+    @QtCore.Slot()
+    def _cancel(self) -> None:
+        for row, action_id in enumerate(self.manager.REGISTRY):
+            widget = self._table.cellWidget(row, 2)
+            if isinstance(widget, QtWidgets.QKeySequenceEdit):
+                widget.setKeySequence(
+                    QtGui.QKeySequence(self.manager.mapping.get(action_id, ""))
+                )
+        self._updateAllIndicators()
+        self._updateApplyCancelState()
 
     @QtCore.Slot()
     def _saveToFile(self) -> None:
-        self._save()
+        self._applyToManager()
         if self.configPath:
             try:
                 self.manager.save(self.configPath)
                 self._file_mapping = dict(self.manager.mapping)
-                self._updateAllIndicators()
                 logger.info(f"Saved shortcuts to {self.configPath}")
             except Exception as e:
                 logger.warning(f"Failed to save shortcuts to {self.configPath}: {e}")
+        self._updateAllIndicators()
+        self._updateApplyCancelState()
 
     @QtCore.Slot()
     def _resetDefaults(self) -> None:
@@ -328,3 +394,4 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
             if isinstance(widget, QtWidgets.QKeySequenceEdit):
                 widget.setKeySequence(QtGui.QKeySequence(default_key))
         self._updateAllIndicators()
+        self._updateApplyCancelState()
