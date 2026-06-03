@@ -142,6 +142,7 @@ class ShortcutEditorWidget(QtWidgets.QWidget):
     Each row has a small colored indicator dot in the rightmost column:
       - transparent : saved and unique
       - orange: unsaved change (widget value differs from manager.mapping)
+      - yellow: applied to the manager but not yet saved to file
       - red   : duplicate key sequence shared with another action (takes priority)
 
     QKeySequenceEdit emits a spurious keySequenceChanged after its finishing timeout
