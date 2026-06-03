@@ -412,7 +412,8 @@ def free_port():
 
     with socket.socket() as s:
         s.bind(("", 0))
-        yield s.getsockname()[1]
+        port = s.getsockname()[1]
+    yield port
 
 
 @pytest.fixture()
