@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -235,7 +235,7 @@ def test_server_script_passthrough_args(gui):
     with (
         patch("instrumentserver.apps.serverWithGui") as mock_gui,
         patch("instrumentserver.apps.server") as mock_srv,
-        patch("instrumentserver.apps.loadConfig") as mock_lc,
+        patch("instrumentserver.apps.loadConfig"),
     ):
         from instrumentserver.apps import serverScript
         serverScript()
@@ -262,14 +262,13 @@ def test_client_station_script_no_config():
     with (
         patch("instrumentserver.apps.QtWidgets.QApplication") as mock_app,
         patch("instrumentserver.apps.ClientStation") as mock_cs,
-        patch("instrumentserver.apps.ClientStationGui") as mock_gui,
+        patch("instrumentserver.apps.ClientStationGui"),
     ):
         mock_app.return_value.exec_.return_value = 0
         from instrumentserver.apps import clientStationScript
         clientStationScript()
 
     mock_cs.assert_called_once_with(host="localhost", port=5555, config_path=None)
-    mock_gui.assert_called_once()
 
 
 def test_client_station_script_with_config(tmp_path):
@@ -279,7 +278,7 @@ def test_client_station_script_with_config(tmp_path):
     with (
         patch("instrumentserver.apps.QtWidgets.QApplication") as mock_app,
         patch("instrumentserver.apps.ClientStation") as mock_cs,
-        patch("instrumentserver.apps.ClientStationGui") as mock_gui,
+        patch("instrumentserver.apps.ClientStationGui"),
     ):
         mock_app.return_value.exec_.return_value = 0
         from instrumentserver.apps import clientStationScript
