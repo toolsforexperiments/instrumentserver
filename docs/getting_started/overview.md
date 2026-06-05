@@ -1,5 +1,11 @@
 # Instrumentserver Overview
 
+:::{admonition} 🗃️ Legacy page
+:class: caution
+This page predates the documentation refactor and has not been re-verified; parts of
+it may be out of date. It will be replaced by the new Getting Started pages.
+:::
+
 The aim of Instrumentserver is to facilitate [QCoDeS](https://qcodes.github.io/Qcodes/) access across a variety of process and devices.
 We communicate with the server through a TCP/IP connection allowing us to talk to it from any independent process or
 separate device in the same network.

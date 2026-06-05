@@ -1,5 +1,11 @@
 # Instrument Monitoring
 
+:::{admonition} 🗃️ Legacy page
+:class: caution
+This page predates the documentation refactor and has not been re-verified; parts of
+it may be out of date. It will be replaced by the new monitoring guide.
+:::
+
 The following is a guide to set up a dashboard for the monitoring of instruments. It contains capabilities for data storage, data visualization, and real-time alerts. More information on the tool is provided in the next section.
 
 :::{note}
