@@ -42,6 +42,13 @@ instrumentserver-param-manager = "instrumentserver.apps:parameterManagerScript"
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+# Non-Python files inside the package are NOT picked up by packages.find and must be
+# declared here, or wheels/sdists ship without them. instrumentserver/__init__.py opens
+# schemas/parameters.json at import time, so a wheel without it cannot even be imported
+# (editable installs hide this because they read straight from the source tree).
+[tool.setuptools.package-data]
+instrumentserver = ["schemas/*.json", "deployment/**/*"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
