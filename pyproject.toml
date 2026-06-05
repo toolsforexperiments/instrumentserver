@@ -110,5 +110,6 @@ docs = [
     "pydata-sphinx-theme",
     "myst-parser",
     "nbsphinx",
+    "sphinx-design",
     "linkify-it-py",
 ]

@@ -177,6 +177,8 @@ class CreateInstrumentDialog(BaseDialog):
     :param kwargsStr: Optional, String with te args and kwargs separated by commas.
     """
 
+    #: Signal(str, str, tuple) -- emitted when the dialog is accepted. Arguments are
+    #: the instrument type path, the instrument name, and the constructor args.
     createInstrument = QtCore.Signal(str, str, tuple)
 
     def __init__(
@@ -290,18 +292,18 @@ class PossibleInstrumentsDisplay(QtWidgets.QTreeWidget):
     the config or are the original args and kwargs passed when the instrument was created.
     """
 
-    #: Signal(str, str, str) -- emitted when the one of the create buttons of the items gets pressed
+    #: Signal(str, str, str) -- emitted when the one of the create buttons of the items gets pressed.
     #: Arguments are in order:
-    #   The name of the instrument in the config,
-    #   the type of the instrument,
-    #   the name in the line edit indicating what the actual name in the station should be.
+    #: the name of the instrument in the config,
+    #: the type of the instrument,
+    #: the name in the line edit indicating what the actual name in the station should be.
     createButtonPressed = QtCore.Signal(str, str, str)
 
-    #: Signal(str, str, str) -- emitted when the create instrument based on this instrument is triggered
+    #: Signal(str, str, str) -- emitted when the create instrument based on this instrument is triggered.
     #: Arguments are in order:
-    #   The name of the instrument in the config,
-    #   the type of the instrument,
-    #   the name in the line edit indicating what the actual name in the station should be.
+    #: the name of the instrument in the config,
+    #: the type of the instrument,
+    #: the name in the line edit indicating what the actual name in the station should be.
     basedInstrumentRequested = QtCore.Signal(str, str, str)
 
     cols = ["Instrument Type & Preset", "Instrument Name", "Create Instrument"]
@@ -591,6 +593,7 @@ class InstrumentsCreator(QtWidgets.QWidget):
 class ServerGui(QtWidgets.QMainWindow):
     """Main window of the qcodes station server."""
 
+    #: Signal(int) -- declared but currently never emitted or connected.
     serverPortSet = QtCore.Signal(int)
 
     def __init__(

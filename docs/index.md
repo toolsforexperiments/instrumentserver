@@ -7,68 +7,59 @@ html_theme.sidebar_secondary.remove: true
 
 # InstrumentServer
 
-**Distributed instrument control system for QCoDeS instruments via ZMQ**
+Distributed control of QCoDeS instruments over ZMQ: one server owns the hardware, many
+clients talk to it through proxies. Part of the
+[Tools for Experiments](https://toolsforexperiments.github.io/) suite.
 
-[GitHub Repository](https://github.com/toolsforexperiments/instrumentserver) | [About](about.md)
+[GitHub Repository](https://github.com/toolsforexperiments/instrumentserver) | [About Us](https://toolsforexperiments.github.io/about_us/organization.html)
 
-:::{warning}
-The documentation site is currently under construction. This site is still very early so not all information here is up to date. Expect more changes incoming 🏗️👷
+:::{note}
+We are rewriting this site page by page. Pages marked 🚧 are planned but not yet
+written, and show what they will cover.
 :::
 
-## Overview
+::::{grid} 1 2 2 2
+:gutter: 3
 
-InstrumentServer is a distributed system for remote access to QCoDeS instruments. It enables multi-client instrument control through a ZMQ-based server-client architecture with real-time parameter broadcasting and concurrent request handling. 
+:::{grid-item-card} Getting Started
+:link: getting_started/index
+:link-type: doc
 
-For more information on how the server works please see our [overview page](./first_steps/overview.md)
+Installation, your first server and client connection, and a conceptual overview
+of how it all works.
+:::
 
-### Key Features
+:::{grid-item-card} User Guide
+:link: user_guide/index
+:link-type: doc
 
-**Multi-Client Access**
-- Multiple clients can simultaneously control the same server
-- Thread-safe per-instrument locking prevents race conditions
-- Concurrent access to different instruments
+How to use each feature: the Python client, the Server, the Parameter Manager,
+Client Stations, monitoring, and configuration.
+:::
 
-**Real-Time Monitoring**
-- Broadcast parameter changes to all listening clients
-- Asynchronous parameter updates via ZMQ PUB socket
-- Real-time GUI updates across the network
+:::{grid-item-card} Technical Guide
+:link: technical_guide/index
+:link-type: doc
 
-**QCoDeS Integration**
-- Native QCoDeS Station support
-- Full instrument metadata and blueprint system
-- Seamless proxy objects for remote instruments
+How instrumentserver works inside: architecture, Blueprints and proxies, Broadcasts,
+and custom widgets.
+:::
 
-**Robust Architecture**
-- ZMQ ROUTER/DEALER pattern for reliable messaging
-- ThreadPoolExecutor for concurrent request handling
-- Automatic connection recovery with retry logic
+:::{grid-item-card} API Reference
+:link: api/index
+:link-type: doc
 
-## Documentation
+Reference documentation for all public modules, generated from the source code.
+:::
+
+::::
 
 ```{toctree}
 :maxdepth: 2
-:caption: Contents
+:hidden:
 
-first_steps/index
+getting_started/index
 user_guide/index
-```
-
-## Code Examples
-
-```{toctree}
-:maxdepth: 1
-:caption: Examples
-
-examples/index
-```
-
-## API Reference
-
-The API documentation is automatically generated from the source code.
-
-```{toctree}
-:maxdepth: 1
-:caption: API Reference
-
+technical_guide/index
 api/index
 ```

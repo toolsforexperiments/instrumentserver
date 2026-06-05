@@ -8,11 +8,6 @@ Instrumentserver also includes a virtual instrument called Parameter Manager, wh
 single source of truth for various parameters values with a user-friendly graphical interface to facilitate changing
 parameters.
 
-:::{warning}
-This guide is not up to date. Some new core features are not currently documented like configuration files and
-new features are in development. If you have questions on how to use these, please contact Marcos at: [marcosf2@illinois.edu]().
-:::
-
 ## Installation
 
 At the moment Instrumentserver is not on pip or conda so the only way of installing it is to install it from github directly.

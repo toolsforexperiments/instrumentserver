@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'InstrumentServer'
-copyright = '2020-2026, Wolfgang Pfaff'
-author = 'Wolfgang Pfaff'
+copyright = '2020-2026, Tools For Experiments'
+author = 'Tools For Experiments'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -27,6 +27,7 @@ extensions = [
     'sphinx.ext.viewcode',    # Add links to source code
     'nbsphinx',               # Jupyter notebook support
     'sphinx.ext.intersphinx', # Link to other project docs
+    'sphinx_design',          # Tabs, cards, grids
 ]
 
 # MyST Parser configuration
@@ -70,12 +71,12 @@ nbsphinx_kernel_name = 'python3'
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
-    'qcodes': ('https://qcodes.github.io/Qcodes/', None),
-    'zmq': ('https://pyzmq.readthedocs.io/', None),
+    'qcodes': ('https://microsoft.github.io/Qcodes/', None),
+    'zmq': ('https://pyzmq.readthedocs.io/en/latest/', None),
 }
 
 templates_path = ['_templates']
-exclude_patterns = ['build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+exclude_patterns = ['build', 'agents', 'README.md', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # -- Internationalization ----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#internationalization

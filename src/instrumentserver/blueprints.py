@@ -796,10 +796,12 @@ def iterable_to_serialized_dict(
     returns a list with the args as serialized dictionaries.
 
     The current rules:
-        - Any arbitrary object that is being serialized here must have a class attribute listing all the classes attributes that
-        the constructor needs to create an identical instance of that class
-        - The serialized dictionary need to have the field: '_class_type', to indicate what it is that needs to be
-        instantiated.
+
+    - Any arbitrary object that is being serialized here must have a class attribute
+      listing all the class attributes that the constructor needs to create an
+      identical instance of that class.
+    - The serialized dictionary needs to have the field '_class_type', to indicate
+      what it is that needs to be instantiated.
     """
     converted_iterable: list | dict | None = None
     if iterable is not None:
