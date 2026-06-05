@@ -109,6 +109,13 @@ class ResonatorResponse(Instrument):
             get_cmd=self._get_data,
         )
 
+    def ask_raw(self, cmd: str) -> str:
+        """Dummy ``ask_raw`` so ``*IDN?`` and similar SCPI queries don't log a
+        scary traceback when qcodes asks for the IDN on instrument creation."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
     def modulate_frequency(self, delta: float = 0, multiply: bool = False) -> None:
         """Add an offset to the resonance frequency.
 
@@ -199,6 +206,13 @@ class Generator(Instrument):
             "rf_on", set_cmd=None, vals=validators.Bool(), initial_value=False
         )
 
+    def ask_raw(self, cmd: str) -> str:
+        """Dummy ``ask_raw`` so ``*IDN?`` and similar SCPI queries don't log a
+        scary traceback when qcodes asks for the IDN on instrument creation."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
 
 class FluxControl(Instrument):
     """A dummy that hooks to :class:`.ResonatorResponse` and modifies its
@@ -227,6 +241,13 @@ class FluxControl(Instrument):
             vals=validators.Numbers(-1, 1),
             initial_value=0,
         )
+
+    def ask_raw(self, cmd: str) -> str:
+        """Dummy ``ask_raw`` so ``*IDN?`` and similar SCPI queries don't log a
+        scary traceback when qcodes asks for the IDN on instrument creation."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
 
     def _set_flux(self, flux: float) -> None:
         mod = 1.0 / (
