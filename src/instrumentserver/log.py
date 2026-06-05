@@ -30,6 +30,7 @@ class QLogHandler(QtCore.QObject, logging.Handler):
         logging.DEBUG: QtGui.QColor("gray"),
     }
 
+    #: Signal(str) : Emitted with the html-formatted log record to append to the widget
     new_html = QtCore.Signal(str)
 
     def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:

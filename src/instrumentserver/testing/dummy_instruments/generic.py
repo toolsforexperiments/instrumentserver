@@ -91,7 +91,7 @@ class DummyInstrumentWithSubmodule(Instrument):
         super().close()
 
     def ask_raw(self, cmd):
-        """Dummy ask_raw so *IDN? and similar SCPI queries don't explode the GUI."""
+        """Dummy ask_raw so ``*IDN?`` and similar SCPI queries don't explode the GUI."""
         if cmd.strip().upper().startswith("*IDN"):
             return f"dummy,{self.name},0,0"
         return ""

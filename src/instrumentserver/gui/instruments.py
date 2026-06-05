@@ -313,8 +313,8 @@ class ParameterDelegate(DelegateBase):
 
 
 class ModelParameters(InstrumentModelBase):
-    # : Signal(item, object) : Emitted when an item in the model has received a new value, first object is the item's
-    # name, second object is its new value
+    #: Signal(item, object) : Emitted when an item in the model has received a new value, first object is the item's
+    #: name, second object is its new value
     itemNewValue = QtCore.Signal(object, object)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

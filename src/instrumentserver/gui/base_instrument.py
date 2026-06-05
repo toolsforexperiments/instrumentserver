@@ -50,11 +50,12 @@ columns. When adding items to the model, use the addItem method, this will take 
 **don't use insertItemTo** This should just be used to insert the correct number of items to the correct place.
 
 Things to pay attention when implementing your own:
-    * If your model is going to display more than one column (this is usually the case) you need to set the correct
-     number of columns and set the horizontal headers.
-    * Implement the function insertItemTo: This is the only function that actually adds items to the model. When the
-     model contains more than one column this function creates QStandardItems and adds them to the correct columns.
-     **don't forget** to emit the newItem signal if you are going to implement a view that utilizes delegates.
+
+* If your model is going to display more than one column (this is usually the case) you need to set the correct
+  number of columns and set the horizontal headers.
+* Implement the function insertItemTo: This is the only function that actually adds items to the model. When the
+  model contains more than one column this function creates QStandardItems and adds them to the correct columns.
+  **don't forget** to emit the newItem signal if you are going to implement a view that utilizes delegates.
 
 InstrumentSortFilterProxyModel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -299,7 +300,7 @@ class InstrumentModelBase(QtGui.QStandardItemModel):
 
     def addItem(self, fullName: str, **kwargs: Any) -> "ItemBase":
         """
-        Adds an item to the model. The *args and **kwargs are whatever the specific item needs for a new item.
+        Adds an item to the model. The ``*args`` and ``**kwargs`` are whatever the specific item needs for a new item.
 
         :param fullName: The name of the parameter
         """
