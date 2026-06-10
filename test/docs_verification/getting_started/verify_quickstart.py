@@ -5,8 +5,10 @@ test/docs_verification/README.md for conventions). Asserts every behavioral
 claim the quickstart makes; exits 0 on success.
 
 GUI claims (the server window opening, the live parameter update, the
-Parameter Manager widget embedded in the server window) cannot be asserted
-here; they are verified manually and captured in the page's screenshots.
+double-click-to-open generic instrument window and editing parameters from
+it, the Parameter Manager widget embedded in the server window) cannot be
+asserted here; they are verified manually and captured in the page's
+screenshots.
 """
 
 import sys
@@ -55,6 +57,16 @@ def section_first_client() -> None:
             generator = cli.find_or_create_instrument("generator", GENERATOR_CLASS)
 
             assert "generator" in cli.list_instruments()
+
+            # The Proxy Instrument mirrors the real instrument's interface;
+            # the page shows this exact parameter list.
+            assert sorted(generator.parameters) == [
+                "IDN",
+                "frequency",
+                "power",
+                "rf_on",
+            ], sorted(generator.parameters)
+
             assert generator.frequency() == 10e9
             assert generator.power() == -100
             assert generator.rf_on() is False
@@ -92,8 +104,8 @@ def section_get_set_broadcast() -> None:
 # ---------------------------------------------------------------------------
 # Section: Starting with a config file
 #
-# Page claims: the same setup can be declared in YAML; instruments marked
-# initialize: True exist as soon as the server is up, no client call needed.
+# Page claims: the same setup can be declared in YAML; an instrument marked
+# initialize: True exists as soon as the server is up, no client call needed.
 # Uses the exact config file the page shows (quickstartConfig.yml).
 # ---------------------------------------------------------------------------
 def section_config_file() -> None:
@@ -101,7 +113,6 @@ def section_config_file() -> None:
         with client() as cli:
             instruments = cli.list_instruments()
             assert "generator" in instruments, instruments
-            assert "parameter_manager" in instruments, instruments
 
             # The declared generator is the same instrument the page created
             # programmatically earlier.
