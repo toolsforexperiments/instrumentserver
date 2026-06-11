@@ -171,7 +171,7 @@ class DummyInstrumentRandomNumber(Instrument):
         )
 
         self.add_parameter(
-            "param2", set_cmd=None, valse=validators.Numbers(20, 30), initial_value=20
+            "param2", set_cmd=None, vals=validators.Numbers(20, 30), initial_value=20
         )
 
         self.add_parameter(
