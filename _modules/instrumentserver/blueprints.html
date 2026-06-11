@@ -1215,6 +1215,12 @@
             <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">toJson</span><span class="p">()</span>
         <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="s2">&quot;attributes&quot;</span><span class="p">):</span>
             <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_convert_arbitrary_obj_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="c1"># A top-level Enum/IntFlag message (e.g. the return of a parameter get)</span>
+        <span class="c1"># is serialized with its _class_type so the client can reconstruct the</span>
+        <span class="c1"># actual enum instance, not just its value. Must come before the generic</span>
+        <span class="c1"># Iterable check (Flag members are iterable on Python &gt;= 3.11).</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_convert_enum_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                 <span class="n">message_dict</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
@@ -1236,6 +1242,19 @@
         <span class="k">return</span> <span class="n">ret</span></div>
 </div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_convert_enum_to_dict</span><span class="p">(</span><span class="n">enum_member</span><span class="p">:</span> <span class="n">Enum</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts an Enum/IntFlag member into a serialized dictionary that can be</span>
+<span class="sd">    reconstructed by ``_convert_dict_to_obj``. The enum class must be importable</span>
+<span class="sd">    on the deserializing side, since reconstruction does ``EnumClass(value=...)``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">enum_member</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">enum_member</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="s2">&quot;_class_type&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_convert_arbitrary_obj_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -1309,6 +1328,13 @@
                 <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="n">dct</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
                 <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">serialized_iterable</span><span class="p">)</span>
 
+            <span class="c1"># Enum/IntFlag members are treated as scalars. This must come before</span>
+            <span class="c1"># the generic Iterable check: since Python 3.11 a Flag member is</span>
+            <span class="c1"># iterable and a single-bit member iterates to itself, which would</span>
+            <span class="c1"># otherwise recurse forever.</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+
             <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
                 <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="n">iterable</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
                 <span class="n">converted_iterable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">serialized_iterable</span><span class="p">)</span>
@@ -1353,6 +1379,13 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                 <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="n">dct</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
                 <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialized_iterable</span>
+
+            <span class="c1"># Enum/IntFlag members are treated as scalars. This must come before</span>
+            <span class="c1"># the generic Iterable check: since Python 3.11 a Flag member is</span>
+            <span class="c1"># iterable and a single-bit member iterates to itself, which would</span>
+            <span class="c1"># otherwise recurse forever.</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
             <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
                 <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">iterable_to_serialized_dict</span><span class="p">(</span><span class="n">iterable</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
