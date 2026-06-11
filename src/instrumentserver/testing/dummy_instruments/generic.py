@@ -2,11 +2,25 @@
 # No need to mypy check dummy testing instruments.
 
 import time
+from enum import IntFlag
 from typing import List
 
 import numpy as np
 from qcodes import Instrument, validators
 from qcodes.math_utils.field_vector import FieldVector
+
+
+class StatusFlag(IntFlag):
+    """An ``IntFlag`` mirroring drivers like the Yokogawa GS200 status byte.
+
+    On Python >= 3.11 flag members are iterable and a single-bit member
+    iterates to itself, which is what triggers the snapshot serialization
+    recursion bug this instrument is used to test.
+    """
+
+    EAV = 1 << 2
+    MAV = 1 << 4
+    ESB = 1 << 5
 
 
 class DummyChannel(Instrument):
@@ -157,7 +171,7 @@ class DummyInstrumentRandomNumber(Instrument):
         )
 
         self.add_parameter(
-            "param2", set_cmd=None, vals=validators.Numbers(20, 30), initial_value=20
+            "param2", set_cmd=None, valse=validators.Numbers(20, 30), initial_value=20
         )
 
         self.add_parameter(
@@ -250,3 +264,36 @@ class FieldVectorIns(Instrument):
     def generic_function(self):
         print("this generic function has been called")
         return 3
+
+
+class DummyInstrumentWithFlags(Instrument):
+    """Dummy instrument whose parameters return ``IntFlag`` values.
+
+    Mirrors the Yokogawa GS200 status/event register parameters, which store
+    ``IntFlag`` instances as their value. Used to test that station snapshots
+    containing flag values serialize (and round-trip) correctly.
+    """
+
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name=name, *args, **kwargs)
+
+        self._status = StatusFlag.EAV
+        self._condition = StatusFlag.EAV | StatusFlag.ESB
+
+        self.add_parameter(
+            name="status_byte",
+            label="Status Byte",
+            get_cmd=self.get_status,
+        )
+
+        self.add_parameter(
+            name="condition_register",
+            label="Condition Register",
+            get_cmd=self.get_condition,
+        )
+
+    def get_status(self):
+        return self._status
+
+    def get_condition(self):
+        return self._condition

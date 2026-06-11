@@ -702,6 +702,12 @@ class ServerResponse:
             ret["message"] = self.message.toJson()
         elif hasattr(self.message, "attributes"):
             ret["message"] = _convert_arbitrary_obj_to_dict(self.message)
+        # A top-level Enum/IntFlag message (e.g. the return of a parameter get)
+        # is serialized with its _class_type so the client can reconstruct the
+        # actual enum instance, not just its value. Must come before the generic
+        # Iterable check (Flag members are iterable on Python >= 3.11).
+        elif isinstance(self.message, Enum):
+            ret["message"] = _convert_enum_to_dict(self.message)
         elif not isinstance(self.message, str) and isinstance(self.message, Iterable):
             if isinstance(self.message, dict):
                 message_dict = dict_to_serialized_dict(self.message)
@@ -721,6 +727,19 @@ class ServerResponse:
         ret["_class_type"] = self._class_type
 
         return ret
+
+
+def _convert_enum_to_dict(enum_member: Enum) -> Dict[str, Any]:
+    """
+    Converts an Enum/IntFlag member into a serialized dictionary that can be
+    reconstructed by ``_convert_dict_to_obj``. The enum class must be importable
+    on the deserializing side, since reconstruction does ``EnumClass(value=...)``.
+    """
+    cls = type(enum_member)
+    return {
+        "value": enum_member.value,
+        "_class_type": f"{cls.__module__}.{cls.__qualname__}",
+    }
 
 
 def _convert_arbitrary_obj_to_dict(obj: object) -> Dict[str, Any]:
@@ -792,6 +811,13 @@ def iterable_to_serialized_dict(
                 serialized_iterable = dict_to_serialized_dict(dct=item)
                 converted_iterable.append(serialized_iterable)
 
+            # Enum/IntFlag members are treated as scalars. This must come before
+            # the generic Iterable check: since Python 3.11 a Flag member is
+            # iterable and a single-bit member iterates to itself, which would
+            # otherwise recurse forever.
+            elif isinstance(item, Enum):
+                converted_iterable.append(str(item.value))
+
             elif not isinstance(item, str) and isinstance(item, Iterable):
                 serialized_iterable = iterable_to_serialized_dict(iterable=item)
                 converted_iterable.append(serialized_iterable)
@@ -833,6 +859,13 @@ def dict_to_serialized_dict(
             if isinstance(value, dict):
                 serialized_iterable = dict_to_serialized_dict(dct=value)
                 converted_dict[name] = serialized_iterable
+
+            # Enum/IntFlag members are treated as scalars. This must come before
+            # the generic Iterable check: since Python 3.11 a Flag member is
+            # iterable and a single-bit member iterates to itself, which would
+            # otherwise recurse forever.
+            elif isinstance(value, Enum):
+                converted_dict[name] = str(value.value)
 
             elif not isinstance(value, str) and isinstance(value, Iterable):
                 serialized_iterable = iterable_to_serialized_dict(iterable=value)
