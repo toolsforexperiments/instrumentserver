@@ -178,6 +178,39 @@ my_ins:
 
 
 # ---------------------------------------------------------------------------
+# Error: empty / comments-only config file
+# ---------------------------------------------------------------------------
+
+
+def test_empty_config_raises(tmp_path):
+    """An empty config file must not crash with an opaque TypeError."""
+    cfg = _write_config(tmp_path, "")
+    with pytest.raises(AttributeError, match="empty"):
+        loadConfig(cfg)
+
+
+def test_comments_only_config_raises(tmp_path):
+    """A config file that contains only comments also parses to ``None``."""
+    cfg = _write_config(
+        tmp_path,
+        """\
+# this file is intentionally just comments
+# nothing else
+""",
+    )
+    with pytest.raises(AttributeError, match="empty"):
+        loadConfig(cfg)
+
+
+def test_empty_config_error_mentions_instruments(tmp_path):
+    """The empty-config error should guide the user toward the required key."""
+    cfg = _write_config(tmp_path, "")
+    with pytest.raises(AttributeError) as excinfo:
+        loadConfig(cfg)
+    assert "instruments" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
 # pollingRate
 # ---------------------------------------------------------------------------
 
