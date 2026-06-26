@@ -20,6 +20,7 @@ from .base_instrument import (
     ItemBase,
 )
 from .parameters import AnyInput, AnyInputForMethod, ParameterWidget
+from .undo_commands import DeleteParameterCommand, ToggleEvalCommand
 
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
@@ -213,14 +214,17 @@ class MethodDisplay(QtWidgets.QWidget):
         super().__init__(*args, **kwargs)
 
         self.fun = fun
-
-        # Only used for logging purposes.
         self.fullName = fullName
+        self.undoStack: Any = None
+        self._suppress_eval_push: bool = False
+        self._full_name: Any = None
+        self._delegate: Any = None
 
         self.anyInput = AnyInputForMethod()
         self.anyInput.input.setPlaceholderText(str(inspect.signature(fun)))
         self.anyInput.input.setToolTip(self.getTooltipFromFun(fun))
         self.anyInput.input.returnPressed.connect(self.runFun)
+        self.anyInput.doEval.toggled.connect(self._onDoEvalToggled)
 
         self.runButton = QtWidgets.QPushButton("Run", parent=self)
         self.runButton.clicked.connect(self.runFun)
@@ -255,6 +259,11 @@ class MethodDisplay(QtWidgets.QWidget):
             self.runFailed.emit(str(e))
             logger.warning(f"'{self.fullName}' Raised the following execution: {e}")
 
+    @QtCore.Slot(bool)
+    def _onDoEvalToggled(self, _: bool) -> None:
+        if not self._suppress_eval_push and self.undoStack is not None:
+            self.undoStack.push(ToggleEvalCommand(self._full_name, self._delegate))
+
     @classmethod
     def getTooltipFromFun(cls, fun: Callable) -> str:
         """
@@ -274,6 +283,7 @@ class ItemParameters(ItemBase):
 
         self.unit = unit
 
+
 class ParameterDelegate(DelegateBase):
     """
     The delegate for the InstrumentParameters widget.
@@ -286,6 +296,7 @@ class ParameterDelegate(DelegateBase):
         # used to keep a reference to the widget.
         self.parameters: Dict[str, QtWidgets.QWidget] = {}
         self.navFilter: Optional["ValueCellNavigationFilter"] = None
+        self.undoStack: Optional[QtWidgets.QUndoStack] = None
 
     def createEditor(  # type: ignore[override]
         self,
@@ -301,6 +312,9 @@ class ParameterDelegate(DelegateBase):
 
         ret = ParameterWidget(element, widget)
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        ret.undoStack = self.undoStack
+        ret._full_name = item.name  # type: ignore[attr-defined]
+        ret._delegate = self
 
         if self.navFilter is not None:
             if isinstance(ret.paramWidget, AnyInput):
@@ -332,7 +346,7 @@ class ValueCellNavigationFilter(QtCore.QObject):
     def registerWidget(self, widget: QtCore.QObject, index: QtCore.QModelIndex) -> None:
         self._widgetIndex[widget] = QtCore.QPersistentModelIndex(index)
 
-    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:  # type: ignore[override]
         if event.type() == QtCore.QEvent.Type.FocusIn:
             if obj in self._widgetIndex:
                 idx = self._widgetIndex[obj]
@@ -434,10 +448,20 @@ class ModelParameters(InstrumentModelBase):
             if fullName not in self.instrument.list():
                 self.instrument.update()
             if fullName in self.instrument.list():
-                self.addItem(
+                existing = self.findItems(
                     fullName,
-                    element=nestedAttributeFromString(self.instrument, fullName),
+                    cast(
+                        "QtCore.Qt.MatchFlags",
+                        QtCore.Qt.MatchFlag.MatchExactly
+                        | QtCore.Qt.MatchFlag.MatchRecursive,
+                    ),
+                    0,
                 )
+                if not existing:
+                    self.addItem(
+                        fullName,
+                        element=nestedAttributeFromString(self.instrument, fullName),
+                    )
 
         elif bp.action == "parameter-deletion":
             self.removeItem(fullName)
@@ -546,6 +570,7 @@ class InstrumentParameters(InstrumentDisplayBase):
             modelKwargs["sub_port"] = kwargs.pop("sub_port")
 
         shortcutManager = kwargs.pop("shortcutManager", None)
+        undo_stack = kwargs.pop("undo_stack", None)
 
         super().__init__(
             instrument=instrument,
@@ -559,9 +584,17 @@ class InstrumentParameters(InstrumentDisplayBase):
             **modelKwargs,
         )
 
+        self.undoStack: QtWidgets.QUndoStack = (
+            undo_stack if undo_stack is not None else QtWidgets.QUndoStack(self)
+        )
+        self.view.delegate.undoStack = self.undoStack
+        for widget in self.view.delegate.parameters.values():
+            widget.undoStack = self.undoStack
+        self.shortcutManager.register("undo", self.undoStack.undo, self)
+        self.shortcutManager.register("redo", self.undoStack.redo, self)
+
         self.view.editCurrentParameter.connect(self._focusToParameterValue)
         self.view.clearCurrentParameter.connect(self._clearCurrentParameter)
-
 
     def connectSignals(self) -> None:
         super().connectSignals()
@@ -586,13 +619,13 @@ class InstrumentParameters(InstrumentDisplayBase):
 
     @QtCore.Slot()
     def _togglePythonCurrentItem(self) -> None:
-        self._withCurrentParameter(
-            lambda w: (
-                w.paramWidget.doEval.toggle()
-                if isinstance(w.paramWidget, AnyInput)
-                else None
-            )
-        )
+        item = self._getCurrentItem()
+        if item is None:
+            return
+        widget = self.view.delegate.parameters.get(item.name)
+        if widget is None or not isinstance(widget.paramWidget, AnyInput):
+            return
+        widget.paramWidget.doEval.toggle()
 
     @QtCore.Slot()
     def _focusToParameterValue(self) -> None:
@@ -603,7 +636,7 @@ class InstrumentParameters(InstrumentDisplayBase):
                 else w.paramWidget.setFocus()
             )
         )
-    
+
     @QtCore.Slot()
     def _clearCurrentParameter(self) -> None:
         self._withCurrentParameter(
@@ -611,11 +644,10 @@ class InstrumentParameters(InstrumentDisplayBase):
                 w.paramWidget.input.clear()
                 if isinstance(w.paramWidget, AnyInput)
                 else w.paramWidget.clear()
-                if hasattr(w.paramWidget, 'clear')
+                if hasattr(w.paramWidget, "clear")
                 else None
             )
         )
-
 
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
@@ -640,6 +672,9 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
         ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        ret.undoStack = self.undoStack
+        ret._full_name = item.name  # type: ignore[attr-defined]
+        ret._delegate = self
 
         if self.navFilter is not None:
             if isinstance(ret.paramWidget, AnyInput):
@@ -800,8 +835,25 @@ class ParameterManagerGui(InstrumentParameters):
         self.profileManager.refresh()
 
     def removeParameter(self, fullName: str) -> None:
-        if self.instrument.has_param(fullName):
-            self.instrument.remove_parameter(fullName)
+        if not self.instrument.has_param(fullName):
+            return
+        param = nestedAttributeFromString(self.instrument, fullName)
+        try:
+            value = param.get()
+        except Exception:
+            value = None
+        unit = getattr(param, "unit", "")
+        items = self.model.findItems(
+            fullName,
+            QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+            0,
+        )
+        item = items[0] if items else None
+        star = item.star if item is not None else False
+        trash = item.trash if item is not None else False
+        self.undoStack.push(
+            DeleteParameterCommand(self, fullName, value, unit, star, trash)
+        )
 
     def addParameter(self, fullName: str, value: Any, unit: str) -> None:
         try:
@@ -875,6 +927,7 @@ class MethodsDelegate(DelegateBase):
 
         self.methods: Dict[str, "MethodDisplay"] = {}
         self.navFilter: Optional[ValueCellNavigationFilter] = None
+        self.undoStack: Any = None
 
     def createEditor(  # type: ignore[override]
         self,
@@ -885,6 +938,9 @@ class MethodsDelegate(DelegateBase):
         item = self.getItem(index)
         element = item.element  # type: ignore[attr-defined]
         ret = MethodDisplay(element, item.name, parent=widget)  # type: ignore[attr-defined]
+        ret.undoStack = self.undoStack
+        ret._full_name = item.name  # type: ignore[attr-defined]
+        ret._delegate = self
 
         parent = self.parent()
         assert hasattr(parent, "clearAlertsAction")
@@ -934,6 +990,7 @@ class InstrumentMethods(InstrumentDisplayBase):
             modelKwargs["itemsHide"] = kwargs.pop("methods-hide")
 
         shortcutManager = kwargs.pop("shortcutManager", None)
+        undo_stack = kwargs.pop("undo_stack", None)
 
         super().__init__(
             instrument=instrument,
@@ -943,6 +1000,15 @@ class InstrumentMethods(InstrumentDisplayBase):
             shortcutManager=shortcutManager,
             **modelKwargs,
         )
+
+        self.undoStack: QtWidgets.QUndoStack = (
+            undo_stack if undo_stack is not None else QtWidgets.QUndoStack(self)
+        )
+        self.shortcutManager.register("undo", self.undoStack.undo, self)
+        self.shortcutManager.register("redo", self.undoStack.redo, self)
+        self.view.delegate.undoStack = self.undoStack
+        for widget in self.view.delegate.methods.values():
+            widget.undoStack = self.undoStack
 
         self.view.editCurrentParameter.connect(self._focusToMethodValue)
         self.view.clearCurrentParameter.connect(self._clearCurrentMethod)
@@ -963,7 +1029,13 @@ class InstrumentMethods(InstrumentDisplayBase):
 
     @QtCore.Slot()
     def _togglePythonCurrentItem(self) -> None:
-        self._withCurrentMethod(lambda w: w.anyInput.doEval.toggle())
+        item = self._getCurrentItem()
+        if item is None:
+            return
+        widget = self.view.delegate.methods.get(item.name)
+        if widget is None:
+            return
+        widget.anyInput.doEval.toggle()
 
     @QtCore.Slot()
     def _focusToMethodValue(self) -> None:
@@ -1017,7 +1089,9 @@ class GenericInstrument(QtWidgets.QWidget):
         self.splitter.setOrientation(QtCore.Qt.Orientation.Vertical)
 
         self.parametersList = InstrumentParameters(instrument=ins, **modelKwargs)
-        self.methodsList = InstrumentMethods(instrument=ins, **modelKwargs)
+        self.methodsList = InstrumentMethods(
+            instrument=ins, undo_stack=self.parametersList.undoStack, **modelKwargs
+        )
         self.instrumentNameLabel = QtWidgets.QLabel(ins_label)
 
         self._layout.addWidget(self.instrumentNameLabel)

@@ -109,6 +109,8 @@ from typing import Any, Dict, List, Optional, cast
 from instrumentserver import QtCore, QtGui, QtWidgets
 from instrumentserver.gui.shortcuts import KeyboardShortcutManager
 
+from .undo_commands import ToggleStarTrashCommand
+
 
 class ItemBase(QtGui.QStandardItem):
     """
@@ -767,14 +769,14 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
             self.contextMenu.exec_(self.mapToGlobal(pos))
 
     def focusNextPrevChild(self, next: bool) -> bool:
-            current = self.currentIndex()
-            if current.isValid():
-                next_idx = self.indexBelow(current) if next else self.indexAbove(current)
-                if next_idx.isValid():
-                    self.setCurrentIndex(next_idx)
-                    return True
-            return super().focusNextPrevChild(next)
-       
+        current = self.currentIndex()
+        if current.isValid():
+            next_idx = self.indexBelow(current) if next else self.indexAbove(current)
+            if next_idx.isValid():
+                self.setCurrentIndex(next_idx)
+                return True
+        return super().focusNextPrevChild(next)
+
     @QtCore.Slot()
     def onStarActionTrigger(self) -> None:
         self.itemStarToggle.emit(self.lastSelectedItem)
@@ -842,6 +844,8 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.layout_.addWidget(self.view)
         self.setLayout(self.layout_)
 
+        self.undoStack: Any = None
+
         self.view.expandAll()
 
         if callSignals:
@@ -857,8 +861,12 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
         self.proxyModel.filterIncoming.connect(self.view.fillCollapsedDict)
         self.proxyModel.filterFinished.connect(self.view.restoreCollapsedDict)
 
-        self.view.itemStarToggle.connect(self.model.onItemStarToggle)
-        self.view.itemTrashToggle.connect(self.model.onItemTrashToggle)
+        self.view.itemStarToggle.connect(
+            lambda item: self._toggleStarTrash("star", item)
+        )
+        self.view.itemTrashToggle.connect(
+            lambda item: self._toggleStarTrash("trash", item)
+        )
 
         self.lineEdit.textChanged.connect(self.proxyModel.onTextFilterChange)
 
@@ -954,13 +962,28 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             self.view.lastSelectedItem = item
             signal.emit(item)
 
+    def _toggleStarTrash(self, mode: str, item: Optional["ItemBase"] = None) -> None:
+        if item is None:
+            item = self._getCurrentItem()
+        if item is None:
+            return
+        if self.undoStack is not None:
+            cmd = ToggleStarTrashCommand(item, self.model, mode)
+        self.view.lastSelectedItem = item
+        if mode == "star":
+            self.model.onItemStarToggle(item)
+        else:
+            self.model.onItemTrashToggle(item)
+        if self.undoStack is not None:
+            self.undoStack.push(cmd)
+
     @QtCore.Slot()
     def _starCurrentItem(self) -> None:
-        self._toggleCurrentItem(self.view.itemStarToggle)
+        self._toggleStarTrash("star")
 
     @QtCore.Slot()
     def _trashCurrentItem(self) -> None:
-        self._toggleCurrentItem(self.view.itemTrashToggle)
+        self._toggleStarTrash("trash")
 
     @QtCore.Slot()
     def _fitCurrentColumn(self) -> None:
