@@ -25,6 +25,8 @@ class KeyboardShortcutManager:
 
     REGISTRY: dict[str, tuple[str, str]] = {
         # action_id: (default_key_sequence, description)
+        "undo": ("Ctrl+Z", "Undoes the previous action"),
+        "redo": ("Ctrl+Shift+Z", "Redoes the previous action"),
         "jump_filter": ("Ctrl+F", "Jump cursor to the filter search bar"),
         "collapse_all": ("Ctrl+Shift+E", "Collapse all tree nodes"),
         "expand_all": ("Ctrl+E", "Expand all tree nodes"),
@@ -43,7 +45,6 @@ class KeyboardShortcutManager:
         "save_items": ("Ctrl+Shift+S", "Save parameters to JSON file"),
         "fit_column": ("Ctrl+Shift+D", "Fits column width"),
         "sort_column": ("Ctrl+D", "Toggle sorting of selected column"),
-        "edit_value": ("Right", "Jump cursor to value field for selected parameter"),
     }
 
     def __init__(self) -> None:
