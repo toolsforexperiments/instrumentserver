@@ -108,8 +108,7 @@ from typing import Any, Dict, List, Optional, cast
 
 from instrumentserver import QtCore, QtGui, QtWidgets
 from instrumentserver.gui.shortcuts import KeyboardShortcutManager
-
-from .undo_commands import ToggleStarTrashCommand
+from instrumentserver.gui.undo_commands import ToggleStarTrashCommand
 
 
 class ItemBase(QtGui.QStandardItem):
@@ -967,15 +966,14 @@ class InstrumentDisplayBase(QtWidgets.QWidget):
             item = self._getCurrentItem()
         if item is None:
             return
+        self.view.lastSelectedItem = item
         if self.undoStack is not None:
             cmd = ToggleStarTrashCommand(item, self.model, mode)
-        self.view.lastSelectedItem = item
+            self.undoStack.push(cmd)
         if mode == "star":
             self.model.onItemStarToggle(item)
         else:
             self.model.onItemTrashToggle(item)
-        if self.undoStack is not None:
-            self.undoStack.push(cmd)
 
     @QtCore.Slot()
     def _starCurrentItem(self) -> None:

@@ -197,4 +197,4 @@ class DeleteParameterCommand(QtWidgets.QUndoCommand):
     def redo(self) -> None:
         if self._gui.instrument.has_param(self._full_name):
             self._gui.instrument.remove_parameter(self._full_name)
-        self._gui.model.removeItem(self._full_name)
+            self._gui.model.removeItem(self._full_name)
