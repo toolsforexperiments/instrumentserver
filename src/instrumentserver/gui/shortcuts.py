@@ -25,8 +25,6 @@ class KeyboardShortcutManager:
 
     REGISTRY: dict[str, tuple[str, str]] = {
         # action_id: (default_key_sequence, description)
-        "undo": ("Ctrl+Z", "Undoes the previous action"),
-        "redo": ("Ctrl+Shift+Z", "Redoes the previous action"),
         "jump_filter": ("Ctrl+F", "Jump cursor to the filter search bar"),
         "collapse_all": ("Ctrl+Shift+E", "Collapse all tree nodes"),
         "expand_all": ("Ctrl+E", "Expand all tree nodes"),

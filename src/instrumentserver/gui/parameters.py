@@ -9,7 +9,6 @@ from .. import QtCore, QtGui, QtWidgets
 from ..params import ParameterTypes, paramTypeFromVals
 from . import keepSmallHorizontally
 from .misc import AlertLabel
-from .undo_commands import SetParameterCommand, ToggleEvalCommand
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +63,6 @@ class ParameterWidget(QtWidgets.QWidget):
         self._parameter = parameter
         self._getMethod: Callable[[], Optional[Any]] = lambda: None
         self._setMethod = lambda x: None
-        self.undoStack: Any = None
-        self._suppress_command_push: bool = False
-        self._suppress_eval_push: bool = False
-        self._full_name: Any = None
-        self._delegate: Any = None
 
         layout = QtWidgets.QGridLayout(self)
         self.getButton = QtWidgets.QPushButton(
@@ -147,7 +141,6 @@ class ParameterWidget(QtWidgets.QWidget):
                 self.paramWidget.setValue(parameter())
                 self.paramWidget.inputChanged.connect(self.setPending)
                 self.paramWidget.input.returnPressed.connect(self.onReturnPressed)
-                self.paramWidget.doEval.toggled.connect(self._onDoEvalToggled)
                 self._getMethod = self.paramWidget.value
                 self._setMethod = self.paramWidget.setValue
 
@@ -191,32 +184,13 @@ class ParameterWidget(QtWidgets.QWidget):
         self.setButton.setFocus()
 
     def setParameter(self, value: Any) -> None:
-        if not self._suppress_command_push and self.undoStack is not None:
-            try:
-                old_value = self._parameter.get()
-            except Exception:
-                old_value = None
-
         try:
             self._parameter.set(value)
-            actual = self._parameter.get()
-            if actual != value:
-                self.parameterSetError.emit(
-                    f"Parameter rejected value {value!r} (current: {actual!r})"
-                )
-                return
         except Exception as e:
             self.parameterSetError.emit(
                 f"Could not set parameter, raised {type(e)}: {e.args}"
             )
             return
-
-        if not self._suppress_command_push and self.undoStack is not None:
-            self.undoStack.push(
-                SetParameterCommand(
-                    self._parameter, self._full_name, self._delegate, old_value, value
-                )
-            )
 
         self.parameterSet.emit(value)
 
@@ -232,11 +206,6 @@ class ParameterWidget(QtWidgets.QWidget):
         val = self._parameter.get()
         self._setMethod(val)
         self.parameterSet.emit(val)
-
-    @QtCore.Slot(bool)
-    def _onDoEvalToggled(self, _: bool) -> None:
-        if not self._suppress_eval_push and self.undoStack is not None:
-            self.undoStack.push(ToggleEvalCommand(self._full_name, self._delegate))
 
 
 class AnyInput(QtWidgets.QWidget):
