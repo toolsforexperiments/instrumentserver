@@ -203,6 +203,10 @@ class MethodDisplay(QtWidgets.QWidget):
     #: emitted when the widget runs a function and is successful. Emits the return value as a string.
     runSuccessful = QtCore.Signal(str)
 
+    #: Signal() --
+    #: emitted when the user commits via Return/Enter, regardless of success or failure
+    valueCommitted = QtCore.Signal()
+
     def __init__(
         self,
         fun: Callable,
@@ -254,6 +258,8 @@ class MethodDisplay(QtWidgets.QWidget):
         except Exception as e:
             self.runFailed.emit(str(e))
             logger.warning(f"'{self.fullName}' Raised the following execution: {e}")
+        finally:
+            self.valueCommitted.emit()
 
     @classmethod
     def getTooltipFromFun(cls, fun: Callable) -> str:
@@ -273,6 +279,7 @@ class ItemParameters(ItemBase):
         super().__init__(**kwargs)
 
         self.unit = unit
+
 
 class ParameterDelegate(DelegateBase):
     """
@@ -301,6 +308,7 @@ class ParameterDelegate(DelegateBase):
 
         ret = ParameterWidget(element, widget)
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
         if self.navFilter is not None:
             if isinstance(ret.paramWidget, AnyInput):
@@ -332,7 +340,7 @@ class ValueCellNavigationFilter(QtCore.QObject):
     def registerWidget(self, widget: QtCore.QObject, index: QtCore.QModelIndex) -> None:
         self._widgetIndex[widget] = QtCore.QPersistentModelIndex(index)
 
-    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:  # type: ignore[override]
         if event.type() == QtCore.QEvent.Type.FocusIn:
             if obj in self._widgetIndex:
                 idx = self._widgetIndex[obj]
@@ -562,7 +570,6 @@ class InstrumentParameters(InstrumentDisplayBase):
         self.view.editCurrentParameter.connect(self._focusToParameterValue)
         self.view.clearCurrentParameter.connect(self._clearCurrentParameter)
 
-
     def connectSignals(self) -> None:
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
@@ -603,7 +610,7 @@ class InstrumentParameters(InstrumentDisplayBase):
                 else w.paramWidget.setFocus()
             )
         )
-    
+
     @QtCore.Slot()
     def _clearCurrentParameter(self) -> None:
         self._withCurrentParameter(
@@ -611,11 +618,10 @@ class InstrumentParameters(InstrumentDisplayBase):
                 w.paramWidget.input.clear()
                 if isinstance(w.paramWidget, AnyInput)
                 else w.paramWidget.clear()
-                if hasattr(w.paramWidget, 'clear')
+                if hasattr(w.paramWidget, "clear")
                 else None
             )
         )
-
 
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
@@ -640,6 +646,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
         ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
         if self.navFilter is not None:
             if isinstance(ret.paramWidget, AnyInput):
@@ -892,6 +899,7 @@ class MethodsDelegate(DelegateBase):
         parent.clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)  # type: ignore[union-attr]
 
         self.methods[item.name] = ret  # type: ignore[attr-defined]
+        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
         if self.navFilter is not None:
             ret.anyInput.input.installEventFilter(self.navFilter)

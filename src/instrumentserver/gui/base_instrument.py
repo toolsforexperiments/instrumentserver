@@ -767,14 +767,14 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
             self.contextMenu.exec_(self.mapToGlobal(pos))
 
     def focusNextPrevChild(self, next: bool) -> bool:
-            current = self.currentIndex()
-            if current.isValid():
-                next_idx = self.indexBelow(current) if next else self.indexAbove(current)
-                if next_idx.isValid():
-                    self.setCurrentIndex(next_idx)
-                    return True
-            return super().focusNextPrevChild(next)
-       
+        current = self.currentIndex()
+        if current.isValid():
+            next_idx = self.indexBelow(current) if next else self.indexAbove(current)
+            if next_idx.isValid():
+                self.setCurrentIndex(next_idx)
+                return True
+        return super().focusNextPrevChild(next)
+
     @QtCore.Slot()
     def onStarActionTrigger(self) -> None:
         self.itemStarToggle.emit(self.lastSelectedItem)
