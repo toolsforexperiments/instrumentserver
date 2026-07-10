@@ -49,6 +49,10 @@ class ParameterWidget(QtWidgets.QWidget):
     #: Signal(Any) --
     _valueFromWidget = QtCore.Signal(object)
 
+    #: Signal() --
+    #: emitted when the user commits a value via Return/Enter
+    valueCommitted = QtCore.Signal()
+
     def __init__(
         self,
         parameter: Parameter,
@@ -181,7 +185,7 @@ class ParameterWidget(QtWidgets.QWidget):
         """Activates the setButton when the input is selected and enter is pressed."""
         self.setButton.click()
         self.paramWidget.input.deselect()
-        self.setButton.setFocus()
+        self.valueCommitted.emit()
 
     def setParameter(self, value: Any) -> None:
         try:

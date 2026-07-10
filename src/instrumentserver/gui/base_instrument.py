@@ -534,6 +534,14 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
     #: emitted when this item got its star action triggered.
     itemStarToggle = QtCore.Signal(ItemBase)
 
+    #: Signal()
+    #: emitted when the user presses Enter, F2, or Right to enter edit mode on the selected parameter.
+    editCurrentParameter = QtCore.Signal()
+
+    #: Signal()
+    #: emitted when the user presses Delete to clear the selected parameter's value.
+    clearCurrentParameter = QtCore.Signal()
+
     def __init__(
         self,
         model: QtCore.QAbstractItemModel,
@@ -585,6 +593,15 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
 
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenuRequested)
+
+        for key in ("Return", "Enter", "F2", "Right"):
+            sc = QtWidgets.QShortcut(QtGui.QKeySequence(key), self)
+            sc.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
+            sc.activated.connect(self.editCurrentParameter)
+
+        sc = QtWidgets.QShortcut(QtGui.QKeySequence("Backspace"), self)
+        sc.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
+        sc.activated.connect(self.clearCurrentParameter)
 
     @QtCore.Slot()
     def fillCollapsedDict(self, parentItem: Optional[ItemBase] = None) -> None:
@@ -748,6 +765,15 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                 self.trashItemAction.setIcon(self.trashIcon)
 
             self.contextMenu.exec_(self.mapToGlobal(pos))
+
+    def focusNextPrevChild(self, next: bool) -> bool:
+        current = self.currentIndex()
+        if current.isValid():
+            next_idx = self.indexBelow(current) if next else self.indexAbove(current)
+            if next_idx.isValid():
+                self.setCurrentIndex(next_idx)
+                return True
+        return super().focusNextPrevChild(next)
 
     @QtCore.Slot()
     def onStarActionTrigger(self) -> None:

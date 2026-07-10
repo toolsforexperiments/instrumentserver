@@ -43,7 +43,6 @@ class KeyboardShortcutManager:
         "save_items": ("Ctrl+Shift+S", "Save parameters to JSON file"),
         "fit_column": ("Ctrl+Shift+D", "Fits column width"),
         "sort_column": ("Ctrl+D", "Toggle sorting of selected column"),
-        "edit_value": ("Right", "Jump cursor to value field for selected parameter"),
     }
 
     def __init__(self) -> None:
