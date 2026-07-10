@@ -573,7 +573,7 @@ class InstrumentParameters(InstrumentDisplayBase):
 
         self.view.editCurrentParameter.connect(self._focusToParameterValue)
         self.view.clearCurrentParameter.connect(self._clearCurrentParameter)
-        
+
         self.shortcutManager.register("refresh_item", self._refreshCurrentItem, self)
         self.shortcutManager.register(
             "toggle_python", self._togglePythonCurrentItem, self
@@ -958,7 +958,7 @@ class InstrumentMethods(InstrumentDisplayBase):
 
         self.view.editCurrentParameter.connect(self._focusToMethodValue)
         self.view.clearCurrentParameter.connect(self._clearCurrentMethod)
-        
+
         self.shortcutManager.register(
             "toggle_python", self._togglePythonCurrentItem, self
         )
