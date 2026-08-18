@@ -1,156 +1,79 @@
 # How It Works
 
-Instrumentserver gives many programs access to the same laboratory hardware without
-giving each program its own hardware connection. One server process owns the
-instruments; clients send it requests and receive the results.
+Laboratory hardware needs a single authoritative owner. If every script, GUI, and
+Listener opened its own connection, they could disagree about the instrument's state or
+send it conflicting commands. Instrumentserver keeps the real instrument in one
+**Server** and gives each consumer a shared way to reach it.
 
-That division is the central idea behind the project. Everything else—Proxy
-Instruments, Blueprints, and Broadcasts—exists to make the shared instrument feel
-natural to use.
+## Following the diagram
 
-Before any of the detail, here is the whole thing in motion. Scroll on: the map
-stays with you while one request makes the round trip, and then one Broadcast goes
-out.
+The diagram follows one instrument, `generator`, from Server startup through a parameter
+call and the resulting **Broadcast**.
 
 ```{raw} html
 :file: ../_static/animations/request_flow.html
 ```
 
-## One owner for every instrument
+### The Server owns the instrument
 
-Opening the same instrument from several processes is risky. Some devices permit only
-one connection, while others accept several but do nothing to prevent commands from
-different programs from being interleaved. Either way, coordinating access becomes the
-responsibility of every measurement script, notebook, GUI, and monitor.
+A QCoDeS driver is a live software object that maintains a connection to an instrument
+and translates parameter operations into commands the hardware understands.
+Instrumentserver instantiates that driver once and keeps it alive in the Server, independently
+of any individual script or GUI. In the diagram, `generator` is this real driver.
 
-Instrumentserver puts that coordination in one place:
+The Server can create instruments from its configuration when it starts, as shown here,
+or a Client can ask it to create one later. The creation path only determines when the
+instrument becomes available. Once created, every Client reaches the same driver and the
+same hardware connection. Closing one Client does not close the instrument or transfer
+ownership to another Client.
 
-% TODO: Make this a proper and pretty diagram
-```text
-measurement script ──┐
-notebook ────────────┼── requests ──> Server ──> QCoDeS Station ──> instruments
-instrument GUI ──────┤                    │
-monitor ─────────────┘                    └── updates ──> subscribers
-```
+### The Client builds a Proxy Instrument
 
-The **Server** holds the
-[QCoDeS Station](https://microsoft.github.io/Qcodes/api/station.html) and creates the
-real instrument objects. It is the only process that opens connections to the hardware. A **Client** can run
-in the same process, elsewhere on the same computer, or on another computer; it uses
-the same network protocol in every case.
+The **Client** provides the initial connection to the Server and discovers which
+instruments are available. When it asks for `generator`, the Server returns a
+**Blueprint** rather than the real driver. The Blueprint describes the driver's public
+interface, including its parameters, methods, and submodules.
 
-```python
-from instrumentserver.client import Client
+The Client uses this description to construct a **Proxy Instrument** inside your script.
+The distinction between the Client and the Proxy is useful: the Client provides access
+to the Server as a whole, while each Proxy represents one particular instrument. Your
+code can work with the Proxy through the familiar QCoDeS interface without creating the
+real driver or connecting to the hardware itself.
 
-local = Client()
-remote = Client(host="192.168.1.42", port=5555)
-```
+The Blueprint is only the information needed to construct that local interface. The
+Proxy is not a copy of the instrument or its state. It forwards operations to the one
+real driver owned by the Server, which keeps every consumer working with the same
+instrument.
 
-The server can run with its own GUI or without one. Instrument controls opened from the
-server window still use an embedded client to make calls. The detached GUI is a separate
-client that connects by host and port. Instrument access therefore does not depend on a
-particular window being open.
+### A call reaches the hardware
 
-## A local stand-in for a remote instrument
+Calling `generator.frequency(5e9)` looks like an ordinary parameter operation in your
+script, but the Proxy does not set anything locally. It forwards the operation to the
+Server, which runs it on the real `generator` driver. The driver then translates the
+parameter operation into the command understood by the RF source.
 
-When a client asks for an instrument, it receives a **Proxy Instrument**, not the real
-driver object:
+From your script's perspective, the call remains a single operation. It completes when
+the Server has finished interacting with the instrument and returned the result to the
+Proxy. Parameter reads follow the same round trip, so they retrieve the Server's current
+instrument state rather than relying on a separate local copy.
 
-```python
-generator = local.find_or_create_instrument(
-    "generator",
-    "instrumentserver.testing.dummy_instruments.rf.Generator",
-)
+### A Broadcast reaches subscribers
 
-generator.frequency(5e9)  # set on the server
-frequency = generator.frequency()  # get from the server
-```
+The Proxy that made a call already receives its result directly, but other consumers may
+also need to know that a parameter changed. The Server therefore publishes a
+**Broadcast** that every listening subscriber can receive. One message can update many
+consumers without each of them querying the instrument again.
 
-The proxy looks like a QCoDeS instrument. It has parameters, methods, and submodules,
-but it does not communicate with the hardware itself. Calling a proxy parameter or
-method sends a request to the Server, where the corresponding operation runs on the
-real instrument. The result is then returned to the caller.
+Broadcasts are especially useful for consumers that maintain a view or record of
+instrument activity. The Server's GUI uses them to keep its displayed values current,
+while a **Listener** can save the same activity elsewhere. These subscribers observe what
+happened, but they do not take part in the original call or become owners of the
+instrument.
 
-Parameter calls do not use a previously fetched value as their answer. Each
-`generator.frequency()` call makes a new request, so two clients see the same
-server-side state when they read the parameter:
+A Broadcast is an announcement, not another copy of the instrument's state. The Server
+and its real driver remain authoritative, while subscribers use Broadcasts to keep their
+own displays and records in sync.
 
-```python
-# client A
-generator_a.frequency(7e9)
-
-# client B
-generator_b.frequency()
-# 7000000000.0
-```
-
-Like ordinary QCoDeS parameters, a Proxy Parameter may retain its last value in its
-local QCoDeS cache. That cache is useful as a record of the last call, but it is not the
-shared source of truth. Call the parameter to read the current value from the Server.
-
-## How the proxy learns the interface
-
-The client usually does not import the instrument driver, so it needs another way to
-discover that `generator` has a `frequency` parameter. The Server supplies a
-**Blueprint**: serializable metadata describing an instrument's parameters, public
-methods, submodules, documentation, and method signatures.
-
-The client builds the proxy from that description. It caches Blueprints to avoid
-repeating the same introspection request, while parameter gets and method calls continue
-to go to the Server. If an instrument changes its interface at runtime—for example, by
-adding a parameter—the proxy can refresh its Blueprint.
-
-This separation means the hardware driver normally needs to be installed only on the
-server computer. There is one important boundary: values returned over the network must
-be serializable. Built-in values and supported containers work directly. Reconstructing
-certain rich values, such as an enum or a supported custom object, may require the
-defining package on the client as well. NumPy arrays require NumPy, which is already an
-instrumentserver dependency.
-
-## What happens during a call
-
-Consider `generator.frequency(5e9)`. The complete trip is:
-
-1. The Proxy Parameter creates a request naming `generator.frequency` and carrying the
-   value `5e9`.
-2. The Client serializes the request and sends it to the Server.
-3. The Server dispatches the request to a worker thread and locates the real parameter
-   in its Station.
-4. The worker acquires the lock for `generator`, calls the parameter, and releases the
-   lock when the operation finishes.
-5. The Server sends the result back to the Client. It also publishes a parameter-update
-   notification for anything subscribed to generator updates.
-
-Requests for the same instrument are serialized by the instrument's lock. Requests for
-different instruments can run concurrently. A long operation on one instrument
-therefore does not have to block unrelated work on another instrument, while two clients
-cannot issue overlapping calls to the same driver.
-
-## Broadcasts keep views up to date
-
-Request and response traffic is one-to-one: a result goes back to the client that made
-the call. Live displays need a separate one-to-many path. The Server therefore publishes
-a **Broadcast** whenever a parameter is read or set through instrumentserver, and when a
-dynamic parameter is created or removed.
-
-GUIs and monitoring processes subscribe to these messages. A set produces a
-`parameter-update` Broadcast, so every open instrument view can display the new value
-without polling the parameter itself. A get produces a `parameter-call` Broadcast,
-which can also feed a monitor. Broadcasts travel on the port immediately above the
-request port: a server on port `5555` publishes on `5556`.
-
-Broadcasts are notifications, not a second store of instrument state. They may be
-missed if a subscriber is disconnected, and they do not detect a value changed directly
-at the hardware or by software outside instrumentserver. To observe values that change
-on their own, configure parameter polling; each poll performs a server-side get, which
-then produces a Broadcast.
-
-## The pieces in one sentence
-
-The Server owns the real QCoDeS instruments, Blueprints describe their interfaces,
-Proxy Instruments turn client-side calls into server requests, and Broadcasts fan
-parameter activity out to GUIs and monitors.
-
-The [User Guide](../user_guide/index.md) explains how to use each of those features. For
-the socket, threading, serialization, and locking details, continue to the
-[Technical Guide](../technical_guide/index.md).
+This overview leaves out the machinery beneath these paths. Continue to the
+[Technical Guide](../technical_guide/architecture.md) for the request lifecycle,
+networking, concurrency, and other implementation details.
