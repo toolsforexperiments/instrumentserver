@@ -1,0 +1,675 @@
+<!--
+  Scrollytelling flow diagram for getting_started/how_it_works.md.
+
+  Injected inline into the page by a ```{raw} html :file: ... ``` block, so it
+  shares the page's own scroll (a sticky map cannot work inside an iframe).
+
+  Self-contained on purpose: markup, style and behaviour in one file, no build
+  step and no external assets. Colours come from the pydata theme tokens
+  (--pst-color-*), so the diagram follows the site's light/dark switch.
+
+  The map is hand-laid SVG rather than generated, so it still renders (static,
+  fully labelled) with JavaScript off; the script only lights nodes and moves
+  comets as you scroll.
+
+  The six captions are "steps", never "stations": Station means the QCoDeS
+  Station on this site, and this page talks about that one.
+-->
+
+<div class="isflow" id="isflow">
+
+  <div class="isflow-stage">
+    <div class="isflow-hud">
+      <span class="isflow-hud-no" id="isflow-hud-no">Step 01</span>
+      <span class="isflow-hud-title" id="isflow-hud-title">The cast</span>
+    </div>
+
+    <svg class="isflow-map" viewBox="0 0 900 360" role="img"
+         aria-labelledby="isflow-map-title isflow-map-desc">
+      <title id="isflow-map-title">One Server, its instrument, and four consumers</title>
+      <desc id="isflow-map-desc">A map of a running instrumentserver setup. In the
+        middle, the Server holds the real generator instrument and is the only thing
+        connected to the hardware. On the left, your script and a colleague's session
+        each hold a Proxy Instrument and send requests to the Server. Below, the
+        Server's GUI and a Listener receive Broadcasts from the Server.</desc>
+
+      <!-- ---------------- edges (drawn first, under the boxes) ---------------- -->
+      <g class="isflow-edges">
+        <path id="isflow-edge-req" class="isflow-edge kind-req"
+              d="M240,54 C285,54 285,100 320,100" />
+        <path class="isflow-arrow kind-req" data-arrow="req-fwd"
+              d="M320,100 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <path class="isflow-arrow kind-req" data-arrow="req-back"
+              d="M240,54 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <text id="isflow-label-req" class="isflow-edge-label" x="256" y="24"
+              text-anchor="start">request</text>
+
+        <path id="isflow-edge-col" class="isflow-edge kind-req"
+              d="M240,208 C285,208 285,180 320,180" />
+        <path class="isflow-arrow kind-req" data-arrow="col-fwd"
+              d="M320,180 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-col" class="isflow-edge-label" x="256" y="234"
+              text-anchor="start">requests</text>
+
+        <path id="isflow-edge-hw" class="isflow-edge kind-hw" d="M545,155 L632,155" />
+        <path class="isflow-arrow kind-hw" data-arrow="hw-fwd"
+              d="M640,155 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-hw" class="isflow-edge-label" x="740" y="112"
+              text-anchor="middle">the only connection</text>
+
+        <path id="isflow-edge-gui" class="isflow-edge kind-cast"
+              d="M390,210 C390,250 280,244 280,278" />
+        <path class="isflow-arrow kind-cast" data-arrow="gui-fwd"
+              d="M280,286 l-5.5,-13 l5.5,2.5 l5.5,-2.5 z" />
+        <text id="isflow-label-gui" class="isflow-edge-label" x="306" y="250"
+              text-anchor="end">Broadcast</text>
+
+        <path id="isflow-edge-lst" class="isflow-edge kind-cast"
+              d="M500,210 C500,250 575,244 575,278" />
+        <path class="isflow-arrow kind-cast" data-arrow="lst-fwd"
+              d="M575,286 l-5.5,-13 l5.5,2.5 l5.5,-2.5 z" />
+        <text id="isflow-label-lst" class="isflow-edge-label" x="566" y="250"
+              text-anchor="start">Broadcast</text>
+
+        <circle class="isflow-comet kind-req" data-comet="req" r="5" />
+        <circle class="isflow-comet kind-hw" data-comet="hw" r="5" />
+        <circle class="isflow-comet kind-cast" data-comet="gui" r="5" />
+        <circle class="isflow-comet kind-cast" data-comet="lst" r="5" />
+      </g>
+
+      <!-- ---------------- nodes ---------------- -->
+      <g class="isflow-node kind-client" data-node="script">
+        <rect class="isflow-box" x="40" y="26" width="200" height="56" rx="10" />
+        <text class="isflow-t1" x="140" y="50" text-anchor="middle">your script</text>
+        <text class="isflow-t2" x="140" y="69" text-anchor="middle">Proxy Instrument</text>
+      </g>
+
+      <g class="isflow-node kind-client" data-node="colleague">
+        <rect class="isflow-box" x="40" y="180" width="200" height="56" rx="10" />
+        <text class="isflow-t1" x="140" y="204" text-anchor="middle">a colleague's session</text>
+        <text class="isflow-t2" x="140" y="223" text-anchor="middle">Proxy Instrument</text>
+      </g>
+
+      <g class="isflow-node kind-server" data-node="server">
+        <rect class="isflow-box" x="320" y="70" width="250" height="140" rx="12" />
+        <text class="isflow-t1" x="445" y="102" text-anchor="middle">Server</text>
+        <rect class="isflow-chip" x="345" y="122" width="200" height="66" rx="8" />
+        <text class="isflow-t1 small" x="445" y="152" text-anchor="middle">generator</text>
+        <text class="isflow-t2" x="445" y="172" text-anchor="middle">the real instrument</text>
+      </g>
+
+      <g class="isflow-node kind-hw" data-node="hardware">
+        <rect class="isflow-box" x="640" y="125" width="200" height="60" rx="10" />
+        <text class="isflow-t1" x="740" y="149" text-anchor="middle">the hardware</text>
+        <text class="isflow-t2" x="740" y="168" text-anchor="middle">an RF source on the bench</text>
+      </g>
+
+      <g class="isflow-node kind-watcher" data-node="gui">
+        <rect class="isflow-box" x="185" y="286" width="190" height="56" rx="10" />
+        <text class="isflow-t1" x="280" y="310" text-anchor="middle">the Server's GUI</text>
+        <text class="isflow-t2" x="280" y="329" text-anchor="middle">holds a copy</text>
+      </g>
+
+      <g class="isflow-node kind-watcher" data-node="listener">
+        <rect class="isflow-box" x="480" y="286" width="190" height="56" rx="10" />
+        <text class="isflow-t1" x="575" y="310" text-anchor="middle">a Listener</text>
+        <text class="isflow-t2" x="575" y="329" text-anchor="middle">holds a copy</text>
+      </g>
+    </svg>
+
+    <div class="isflow-key" aria-hidden="true">
+      <span class="isflow-key-row"><i class="sw kind-req"></i>request and result</span>
+      <span class="isflow-key-row"><i class="sw kind-cast"></i>Broadcast</span>
+      <span class="isflow-key-row"><i class="sw kind-hw"></i>hardware connection</span>
+    </div>
+  </div>
+
+  <ol class="isflow-steps" id="isflow-steps">
+    <li class="isflow-step" data-step="0">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 01</p>
+        <h3>The cast</h3>
+        <p>One <strong>Server</strong> owns the instrument. It is the only process
+          holding a connection to the hardware, and everyone else in the picture is a
+          consumer: your script, a colleague's session in the next room, the Server's
+          own GUI, a Listener feeding a dashboard.</p>
+        <p>They all reach the instrument the same way, whether they run on this machine
+          or across the network.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="1">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 02</p>
+        <h3>You make a request</h3>
+        <p>You call <code>generator.frequency(5e9)</code>. Your <code>generator</code>
+          is a <strong>Proxy Instrument</strong>, so nothing is set locally. The call is
+          packed into a request and sent to the Server.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="2">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 03</p>
+        <h3>The Server does the work</h3>
+        <p>The Server finds the real instrument, takes that instrument's lock, and runs
+          the set on the driver that owns the hardware connection.</p>
+        <p>While it holds the lock, nobody else's call to that instrument can interleave
+          with yours.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="3">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 04</p>
+        <h3>The answer comes back</h3>
+        <p>The result travels back to the client that asked, and only to that client.</p>
+        <p>Every get you make is this same round trip. That is why a Proxy is never
+          stale: it has no stored value to hand you, so it always goes and asks.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="4">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 05</p>
+        <h3>The Server announces it</h3>
+        <p>The Server also announces the change to nobody in particular. That
+          announcement is a <strong>Broadcast</strong>: published once, delivered to
+          every subscriber.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="5">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 06</p>
+        <h3>The watchers update</h3>
+        <p>The GUI redraws and the Listener records. They need the Broadcast because
+          they hold a copy of the value, and a copy can go stale.</p>
+        <p>Your colleague's session does not need it. It holds a Proxy, so the next time
+          it asks it gets the new value anyway.</p>
+      </div>
+    </li>
+  </ol>
+</div>
+
+<style>
+/* ==========================================================================
+   Scrollytelling flow diagram (getting_started/how_it_works.md)
+   Scoped to .isflow, except one theme fix noted below.
+   ========================================================================== */
+
+/* The theme's article container sets `overflow-x: auto`, which makes it a
+   scroll container and silently kills `position: sticky` for anything inside
+   it. `clip` prevents horizontal overflow just the same without creating a
+   scroll container. Selector matches the theme's own specificity so it wins on
+   source order; only ever loaded on pages carrying a flow diagram. */
+.bd-main .bd-content .bd-article-container { overflow-x: clip; }
+
+.isflow {
+  /* palette: theme tokens only, so light/dark follows the site toggle */
+  --isf-req: var(--pst-color-primary);
+  --isf-cast: var(--pst-color-accent);
+  --isf-hw: var(--pst-color-warning);
+  --isf-line: var(--pst-color-border);
+  --isf-ink: var(--pst-color-text-base);
+  --isf-muted: var(--pst-color-text-muted);
+  --isf-panel: var(--pst-color-background);
+  --isf-box: var(--pst-color-surface);
+
+  /* the map is 900x360, so this height also sets how wide it draws */
+  --isf-stage-h: clamp(200px, 34vh, 330px);
+
+  position: relative;
+  margin: 1.4rem 0 0.5rem;
+}
+
+/* -------------------------------- the map -------------------------------- */
+
+.isflow-stage {
+  position: sticky;
+  top: var(--pst-header-height, 4rem);
+  z-index: 2;
+  height: var(--isf-stage-h);
+  padding: 0.2rem 0 0.5rem;
+  background: var(--isf-panel);
+  border-bottom: 1px solid var(--pst-color-border-muted);
+}
+
+.isflow-map {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.isflow-hud {
+  position: absolute;
+  top: 0.1rem;
+  left: 0.1rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.isflow-hud-no {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--isf-req);
+  font-weight: 600;
+}
+.isflow-hud-title {
+  font-size: 0.95rem;
+  color: var(--isf-ink);
+  font-weight: 600;
+}
+
+.isflow-key {
+  position: absolute;
+  right: 0.1rem;
+  bottom: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  color: var(--isf-muted);
+  pointer-events: none;
+}
+.isflow-key-row { display: flex; align-items: center; gap: 0.4rem; }
+.isflow-key .sw {
+  width: 15px;
+  border-top: 2.5px solid var(--isf-line);
+  border-radius: 2px;
+}
+.isflow-key .sw.kind-req { border-color: var(--isf-req); }
+.isflow-key .sw.kind-cast { border-color: var(--isf-cast); }
+.isflow-key .sw.kind-hw { border-color: var(--isf-hw); }
+
+/* ------------------------------ svg: nodes ------------------------------- */
+
+.isflow-node .isflow-box {
+  fill: var(--isf-box);
+  stroke: var(--isf-line);
+  stroke-width: 1.4;
+  transition: stroke 0.35s, stroke-width 0.35s, filter 0.35s;
+}
+.isflow-node .isflow-chip {
+  fill: var(--isf-panel);
+  stroke: var(--isf-line);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+}
+.isflow-node .isflow-t1 {
+  fill: var(--isf-ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+.isflow-node .isflow-t1.small { font-size: 16px; }
+.isflow-node .isflow-t2 {
+  fill: var(--isf-muted);
+  font-size: 13px;
+}
+.isflow-node { transition: opacity 0.35s; }
+
+.isflow-node.is-dim { opacity: 0.3; }
+
+.isflow-node.is-lit .isflow-box { stroke-width: 2.6; }
+.isflow-node.kind-client.is-lit .isflow-box,
+.isflow-node.kind-server.is-lit .isflow-box {
+  stroke: var(--isf-req);
+  filter: drop-shadow(0 0 6px var(--isf-req));
+}
+.isflow-node.kind-hw.is-lit .isflow-box {
+  stroke: var(--isf-hw);
+  filter: drop-shadow(0 0 6px var(--isf-hw));
+}
+.isflow-node.kind-watcher.is-lit .isflow-box {
+  stroke: var(--isf-cast);
+  filter: drop-shadow(0 0 6px var(--isf-cast));
+}
+/* deliberately-not-involved state (the colleague at the last step) */
+.isflow-node.is-note { opacity: 0.65; }
+.isflow-node.is-note .isflow-box { stroke-dasharray: 5 4; }
+
+/* ------------------------------ svg: edges ------------------------------- */
+
+.isflow-edge {
+  fill: none;
+  stroke: var(--isf-line);
+  stroke-width: 1.6;
+  opacity: 0.65;
+  transition: stroke 0.35s, stroke-width 0.35s, opacity 0.35s;
+}
+.isflow-arrow {
+  fill: var(--isf-line);
+  opacity: 0.65;
+  transition: fill 0.35s, opacity 0.35s;
+}
+/* Labels are visible by default so the static (JavaScript off) map stays fully
+   annotated; once the script takes over they are revealed step by step. */
+.isflow-edge-label {
+  font-size: 13px;
+  fill: var(--isf-muted);
+  transition: opacity 0.3s;
+}
+.isflow.is-live .isflow-edge-label { opacity: 0; }
+
+.isflow-edge.is-lit { opacity: 1; stroke-width: 2.6; }
+.isflow-edge.is-lit.kind-req { stroke: var(--isf-req); }
+.isflow-edge.is-lit.kind-cast { stroke: var(--isf-cast); }
+.isflow-edge.is-lit.kind-hw { stroke: var(--isf-hw); }
+
+.isflow-arrow.is-lit { opacity: 1; }
+.isflow-arrow.is-lit.kind-req { fill: var(--isf-req); }
+.isflow-arrow.is-lit.kind-cast { fill: var(--isf-cast); }
+.isflow-arrow.is-lit.kind-hw { fill: var(--isf-hw); }
+
+.isflow.is-live .isflow-edge-label.is-lit { opacity: 1; fill: var(--isf-ink); }
+
+.isflow-edge.is-marching {
+  stroke-dasharray: 6 8;
+  animation: isflow-march 0.9s linear infinite;
+}
+@keyframes isflow-march { to { stroke-dashoffset: -28; } }
+
+.isflow-comet {
+  opacity: 0;
+  fill: var(--isf-panel);
+  stroke-width: 2.5;
+}
+.isflow-comet.kind-req { stroke: var(--isf-req); filter: drop-shadow(0 0 5px var(--isf-req)); }
+.isflow-comet.kind-cast { stroke: var(--isf-cast); filter: drop-shadow(0 0 5px var(--isf-cast)); }
+.isflow-comet.kind-hw { stroke: var(--isf-hw); filter: drop-shadow(0 0 5px var(--isf-hw)); }
+.isflow-comet.is-on { opacity: 1; }
+
+/* ------------------------------- the steps ------------------------------- */
+
+.isflow-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Height here is scroll distance per step: the card rides up through the
+   viewport while its step is the active one, and whatever exceeds the card's
+   own height is the gap to the next card. Keep it just above card height. */
+.isflow-step {
+  min-height: 28vh;
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+/* the first card sits right under the map on load, before anything is sticky */
+.isflow-step:first-child {
+  min-height: 0;
+  align-items: flex-start;
+  padding-top: 0.8rem;
+}
+.isflow-step:last-child { min-height: 20vh; }
+
+.isflow-card {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 1rem 1.2rem;
+  background: var(--isf-box);
+  border: 1px solid var(--pst-color-border-muted);
+  border-left: 3px solid var(--isf-req);
+  border-radius: 0.5rem;
+  transition: opacity 0.4s, transform 0.4s, box-shadow 0.4s;
+}
+/* Same idea as the labels: all cards read normally without JavaScript. */
+.isflow.is-live .isflow-card {
+  opacity: 0.45;
+  transform: translateY(6px);
+}
+.isflow.is-live .isflow-step.is-active .isflow-card {
+  opacity: 1;
+  transform: none;
+  box-shadow: 0 8px 24px -14px var(--pst-color-shadow);
+}
+
+.isflow-card .isflow-num {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--isf-req);
+}
+.isflow-card h3 {
+  margin: 0.1rem 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.isflow-card p { margin: 0 0 0.5rem; }
+.isflow-card p:last-child { margin-bottom: 0; }
+
+/* ------------------------------ small screens ---------------------------- */
+
+@media (max-width: 720px) {
+  .isflow { --isf-stage-h: clamp(160px, 28vh, 260px); }
+  .isflow-step { min-height: 46vh; }
+  .isflow-key { display: none; }
+  .isflow-card { padding: 0.9rem 1rem; }
+}
+
+/* --------------------------- reduced motion ------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .isflow-edge.is-marching { animation: none; }
+  .isflow-comet { display: none; }
+  .isflow *,
+  .isflow *::before,
+  .isflow *::after { transition-duration: 0.01ms !important; }
+}
+</style>
+
+<script>
+/* ==========================================================================
+   Scrollytelling flow diagram (getting_started/how_it_works.md)
+
+   The map above is complete static markup. This script only:
+     - marks the step you are reading (IntersectionObserver on a thin band),
+     - lights the nodes and edges that step is about,
+     - runs a comet along the edge the data is travelling.
+
+   With JavaScript off, or with prefers-reduced-motion, the page degrades to a
+   fully labelled diagram and six ordinary paragraphs.
+   ========================================================================== */
+(function () {
+  "use strict";
+
+  var root = document.getElementById("isflow");
+  if (!root || !("IntersectionObserver" in window)) return;
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* --- what each step shows -----------------------------------------------
+     lit    nodes in the spotlight
+     keep   nodes that stay at normal weight (present, but not the subject)
+     note   nodes deliberately marked as *not* taking part
+     edges  {id, dir, label}; dir -1 sends the comet backwards along the path
+     ----------------------------------------------------------------------- */
+  var STEPS = [
+    {
+      no: "Step 01", title: "The cast",
+      lit: [], keep: [], note: [], edges: []
+    },
+    {
+      no: "Step 02", title: "You make a request",
+      lit: ["script", "server"], keep: [], note: [],
+      edges: [{ id: "req", dir: 1, label: "request", arrows: ["req-fwd"] }]
+    },
+    {
+      no: "Step 03", title: "The Server does the work",
+      lit: ["server", "hardware"], keep: [], note: [],
+      edges: [{ id: "hw", dir: 1, label: "the only connection", arrows: ["hw-fwd"] }]
+    },
+    {
+      no: "Step 04", title: "The answer comes back",
+      lit: ["server", "script"], keep: [], note: ["colleague"],
+      edges: [{ id: "req", dir: -1, label: "result", arrows: ["req-back"] }]
+    },
+    {
+      no: "Step 05", title: "The Server announces it",
+      lit: ["server"], keep: [], note: [],
+      edges: [
+        { id: "gui", dir: 1, label: "Broadcast", arrows: ["gui-fwd"] },
+        { id: "lst", dir: 1, label: "Broadcast", arrows: ["lst-fwd"] }
+      ]
+    },
+    {
+      no: "Step 06", title: "The watchers update",
+      lit: ["gui", "listener"], keep: ["server"], note: ["colleague"],
+      edges: [
+        { id: "gui", dir: 1, label: "Broadcast", arrows: ["gui-fwd"] },
+        { id: "lst", dir: 1, label: "Broadcast", arrows: ["lst-fwd"] }
+      ]
+    }
+  ];
+
+  /* --- element lookup ------------------------------------------------------ */
+  var nodes = {};
+  Array.prototype.forEach.call(root.querySelectorAll("[data-node]"), function (g) {
+    nodes[g.getAttribute("data-node")] = g;
+  });
+  var arrows = {};
+  Array.prototype.forEach.call(root.querySelectorAll("[data-arrow]"), function (a) {
+    arrows[a.getAttribute("data-arrow")] = a;
+  });
+  var comets = {};
+  Array.prototype.forEach.call(root.querySelectorAll("[data-comet]"), function (c) {
+    comets[c.getAttribute("data-comet")] = c;
+  });
+
+  var EDGE_IDS = ["req", "col", "hw", "gui", "lst"];
+  var edges = {}, labels = {};
+  EDGE_IDS.forEach(function (id) {
+    edges[id] = document.getElementById("isflow-edge-" + id);
+    labels[id] = document.getElementById("isflow-label-" + id);
+  });
+
+  var hudNo = document.getElementById("isflow-hud-no");
+  var hudTitle = document.getElementById("isflow-hud-title");
+  var stepEls = Array.prototype.slice.call(root.querySelectorAll(".isflow-step"));
+
+  /* --- comets -------------------------------------------------------------- */
+  var frames = {};
+
+  function stopComets() {
+    EDGE_IDS.forEach(function (id) {
+      if (frames[id]) {
+        cancelAnimationFrame(frames[id]);
+        frames[id] = null;
+      }
+      var c = comets[id];
+      if (c) {
+        c.classList.remove("is-on");
+        c.style.opacity = "";
+      }
+    });
+  }
+
+  function startComet(id, dir) {
+    var path = edges[id], comet = comets[id];
+    if (reduced || !path || !comet || typeof path.getTotalLength !== "function") return;
+
+    var len = path.getTotalLength();
+    if (!len) return;
+    var duration = 1300;
+    var begin = null;
+    comet.classList.add("is-on");
+
+    function tick(now) {
+      if (begin === null) begin = now;
+      var p = ((now - begin) % duration) / duration;
+      var at = dir < 0 ? (1 - p) * len : p * len;
+      var pt = path.getPointAtLength(at);
+      comet.setAttribute("cx", pt.x);
+      comet.setAttribute("cy", pt.y);
+      /* fade in and out at the ends so the loop does not snap */
+      comet.style.opacity = Math.sin(Math.PI * p).toFixed(3);
+      frames[id] = requestAnimationFrame(tick);
+    }
+    frames[id] = requestAnimationFrame(tick);
+  }
+
+  /* --- step rendering ------------------------------------------------------ */
+  function applyStep(index) {
+    var st = STEPS[index];
+    if (!st) return;
+
+    hudNo.textContent = st.no;
+    hudTitle.textContent = st.title;
+
+    Object.keys(nodes).forEach(function (key) {
+      var g = nodes[key];
+      var isLit = st.lit.indexOf(key) > -1;
+      var isNote = st.note.indexOf(key) > -1;
+      var isKept = st.keep.indexOf(key) > -1;
+      g.classList.toggle("is-lit", isLit);
+      g.classList.toggle("is-note", isNote);
+      g.classList.toggle("is-dim", index > 0 && !isLit && !isNote && !isKept);
+    });
+
+    stopComets();
+    EDGE_IDS.forEach(function (id) {
+      edges[id].classList.remove("is-lit", "is-marching");
+      labels[id].classList.remove("is-lit");
+    });
+    Object.keys(arrows).forEach(function (key) {
+      arrows[key].classList.remove("is-lit");
+    });
+
+    st.edges.forEach(function (e) {
+      edges[e.id].classList.add("is-lit");
+      if (!reduced) edges[e.id].classList.add("is-marching");
+      labels[e.id].textContent = e.label;
+      labels[e.id].classList.add("is-lit");
+      (e.arrows || []).forEach(function (key) {
+        if (arrows[key]) arrows[key].classList.add("is-lit");
+      });
+      startComet(e.id, e.dir);
+    });
+  }
+
+  /* --- scroll wiring ------------------------------------------------------- */
+  var current = -1;
+
+  function setActive(index) {
+    if (index === current) return;
+    current = index;
+    stepEls.forEach(function (s, i) {
+      s.classList.toggle("is-active", i === index);
+    });
+    applyStep(index);
+  }
+
+  root.classList.add("is-live");
+  setActive(0);
+
+  /* A thin band just under the sticky map: the step crossing it is the one
+     being read. Its centre is where the active card sits mid-step, so it is
+     tuned to park the card right below the map rather than mid-viewport. */
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        setActive(parseInt(entry.target.getAttribute("data-step"), 10));
+      }
+    });
+  }, { rootMargin: "-55% 0px -41% 0px", threshold: 0 });
+
+  stepEls.forEach(function (step) { observer.observe(step); });
+
+  /* Pause the comets while the map is off screen. */
+  var stageObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        applyStep(current);
+      } else {
+        stopComets();
+      }
+    });
+  }, { threshold: 0 });
+  stageObserver.observe(root);
+})();
+</script>

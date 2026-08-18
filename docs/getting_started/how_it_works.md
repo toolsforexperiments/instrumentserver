@@ -8,6 +8,14 @@ That division is the central idea behind the project. Everything else—Proxy
 Instruments, Blueprints, and Broadcasts—exists to make the shared instrument feel
 natural to use.
 
+Before any of the detail, here is the whole thing in motion. Scroll on: the map
+stays with you while one request makes the round trip, and then one Broadcast goes
+out.
+
+```{raw} html
+:file: ../_static/animations/request_flow.html
+```
+
 ## One owner for every instrument
 
 Opening the same instrument from several processes is risky. Some devices permit only
