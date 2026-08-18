@@ -12,7 +12,7 @@
   fully labelled) with JavaScript off; the script only lights nodes and moves
   comets as you scroll.
 
-  The eight captions are "steps", never "stations". The conceptual map treats
+  The eleven captions are "steps", never "stations". The conceptual map treats
   the Server as the home of its instruments and leaves the internal QCoDeS
   Station object for the Technical Guide.
 -->
@@ -22,58 +22,52 @@
   <div class="isflow-stage">
     <div class="isflow-hud">
       <span class="isflow-hud-no" id="isflow-hud-no">Step 01</span>
-      <span class="isflow-hud-title" id="isflow-hud-title">The Server creates the instrument</span>
+      <span class="isflow-hud-title" id="isflow-hud-title">The Server loads its configuration</span>
     </div>
 
     <svg class="isflow-map" viewBox="0 0 960 430" role="img"
          aria-labelledby="isflow-map-title isflow-map-desc">
       <title id="isflow-map-title">How a configured instrument becomes a shared remote instrument</title>
       <desc id="isflow-map-desc">The Server reads a configuration file, creates the
-        real generator instrument, and connects it to an RF source. Your script connects
-        through a Client and builds a Proxy Instrument from a Blueprint. Calls travel
-        through the Client to the Server, results return to the requesting Client, and
-        Broadcasts update the Server GUI and a Listener. A colleague's Client reaches
-        the same server-side instrument.</desc>
+        generator QCoDeS driver, and connects it to an RF source. Your script connects
+        through a Client, requests a Blueprint, and builds a Proxy Instrument. Later
+        calls and their results travel directly between that Proxy and the Server, and
+        Broadcasts update the Server GUI and a Listener.</desc>
 
       <!-- ---------------- edges (drawn first, under the boxes) ---------------- -->
       <g class="isflow-edges">
         <path id="isflow-edge-connect" class="isflow-edge kind-req"
-              d="M260,66 C300,66 310,66 350,66" />
+              d="M260,117 C300,117 310,117 350,117" />
         <path class="isflow-arrow kind-req" data-arrow="connect-fwd"
-              d="M350,66 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
-        <text id="isflow-label-connect" class="isflow-edge-label" x="305" y="51"
+              d="M350,117 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <path class="isflow-arrow kind-req" data-arrow="connect-back"
+              d="M260,117 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <text id="isflow-label-connect" class="isflow-edge-label" x="305" y="101"
               text-anchor="middle">connects</text>
 
         <path id="isflow-edge-blueprint" class="isflow-edge kind-req"
-              d="M350,106 C310,106 300,106 260,106" />
+              d="M350,152 C310,152 300,152 260,152" />
         <path class="isflow-arrow kind-req" data-arrow="blueprint-back"
-              d="M260,106 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
-        <text id="isflow-label-blueprint" class="isflow-edge-label" x="305" y="95"
+              d="M260,152 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <path class="isflow-arrow kind-req" data-arrow="blueprint-fwd"
+              d="M350,152 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-blueprint" class="isflow-edge-label" x="305" y="146"
               text-anchor="middle">Blueprint</text>
 
         <path id="isflow-edge-req" class="isflow-edge kind-req"
-              d="M260,146 C300,146 310,158 350,158" />
+              d="M260,186 C300,186 310,198 350,198" />
         <path class="isflow-arrow kind-req" data-arrow="req-fwd"
-              d="M350,158 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+              d="M350,198 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
         <path class="isflow-arrow kind-req" data-arrow="req-back"
-              d="M260,146 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
-        <text id="isflow-label-req" class="isflow-edge-label" x="303" y="176"
+              d="M260,186 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <text id="isflow-label-req" class="isflow-edge-label" x="303" y="216"
               text-anchor="middle">request / result</text>
 
-        <path id="isflow-edge-col" class="isflow-edge kind-req"
-              d="M260,246 C300,246 310,226 350,226" />
-        <path class="isflow-arrow kind-req" data-arrow="col-fwd"
-              d="M350,226 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
-        <path class="isflow-arrow kind-req" data-arrow="col-back"
-              d="M260,246 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
-        <text id="isflow-label-col" class="isflow-edge-label" x="300" y="267"
-              text-anchor="middle">same Server</text>
-
         <path id="isflow-edge-hw" class="isflow-edge kind-hw"
-              d="M620,132 C665,132 680,142 730,142" />
+              d="M630,132 C670,132 700,142 740,142" />
         <path class="isflow-arrow kind-hw" data-arrow="hw-fwd"
-              d="M730,142 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
-        <text id="isflow-label-hw" class="isflow-edge-label" x="675" y="119"
+              d="M740,142 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-hw" class="isflow-edge-label" x="685" y="91"
               text-anchor="middle">connection</text>
 
         <path id="isflow-edge-gui" class="isflow-edge kind-cast"
@@ -93,34 +87,39 @@
         <circle class="isflow-comet kind-req" data-comet="connect" r="5" />
         <circle class="isflow-comet kind-req" data-comet="blueprint" r="5" />
         <circle class="isflow-comet kind-req" data-comet="req" r="5" />
-        <circle class="isflow-comet kind-req" data-comet="col" r="5" />
         <circle class="isflow-comet kind-hw" data-comet="hw" r="5" />
         <circle class="isflow-comet kind-cast" data-comet="gui" r="5" />
         <circle class="isflow-comet kind-cast" data-comet="lst" r="5" />
       </g>
 
       <!-- ---------------- nodes ---------------- -->
-      <g class="isflow-node kind-client" data-node="script">
-        <rect class="isflow-box isflow-shell" x="20" y="20" width="240" height="156" rx="12" />
+      <g class="isflow-node kind-client" data-node="script" transform="translate(0 40)">
+        <rect class="isflow-box isflow-shell" x="20" y="20" width="240" height="180" rx="12" />
         <text class="isflow-t1" x="140" y="46" text-anchor="middle">your script</text>
       </g>
 
-      <g class="isflow-node kind-client" data-node="client">
-        <rect class="isflow-box isflow-chip" x="40" y="58" width="88" height="44" rx="8" />
-        <text class="isflow-t1 small" x="84" y="86" text-anchor="middle">Client</text>
+      <!-- The standalone Client uses the returned Blueprint to construct the
+           Proxy Instrument below it. -->
+      <g class="isflow-edges" transform="translate(0 40)">
+        <path id="isflow-edge-build" class="isflow-edge kind-req"
+              d="M140,96 L140,114" />
+        <path class="isflow-arrow kind-req" data-arrow="build-fwd"
+              d="M140,122 l-5.5,-13 l5.5,2.5 l5.5,-2.5 z" />
+        <text id="isflow-label-build" class="isflow-edge-label" x="158" y="113"
+              text-anchor="start">constructs</text>
+        <circle class="isflow-comet kind-req" data-comet="build" r="5" />
       </g>
 
-      <g class="isflow-node kind-client" data-node="proxy">
-        <rect class="isflow-box isflow-chip" x="140" y="58" width="100" height="94" rx="8" />
-        <text class="isflow-t1 small" x="190" y="91" text-anchor="middle">generator</text>
-        <text class="isflow-t2" x="190" y="113" text-anchor="middle">Proxy</text>
-        <text class="isflow-t2" x="190" y="130" text-anchor="middle">Instrument</text>
+      <g class="isflow-node kind-client" data-node="client" transform="translate(0 40)">
+        <rect class="isflow-box isflow-chip" x="60" y="58" width="160" height="38" rx="8" />
+        <text class="isflow-t1 small" x="140" y="83" text-anchor="middle">Client</text>
       </g>
 
-      <g class="isflow-node kind-client" data-node="colleague">
-        <rect class="isflow-box" x="20" y="205" width="240" height="82" rx="10" />
-        <text class="isflow-t1" x="140" y="235" text-anchor="middle">a colleague's script</text>
-        <text class="isflow-t2" x="140" y="259" text-anchor="middle">its own Client + Proxy Instrument</text>
+      <g class="isflow-node kind-client" data-node="proxy" transform="translate(0 40)">
+        <rect class="isflow-box isflow-chip" x="60" y="122" width="160" height="62" rx="8" />
+        <text class="isflow-t1 small" x="140" y="144" text-anchor="middle">generator</text>
+        <text class="isflow-t2" x="140" y="161" text-anchor="middle">Proxy</text>
+        <text class="isflow-t2" x="140" y="176" text-anchor="middle">Instrument</text>
       </g>
 
       <g class="isflow-node kind-server" data-node="server">
@@ -132,31 +131,30 @@
            background but below the two boxes it connects. -->
       <g class="isflow-edges">
         <path id="isflow-edge-create" class="isflow-edge kind-req"
-              d="M480,112 L517,112" />
+              d="M470,132 L522,132" />
         <path class="isflow-arrow kind-req" data-arrow="create-fwd"
-              d="M525,112 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
-        <text id="isflow-label-create" class="isflow-edge-label" x="502.5" y="96"
+              d="M530,132 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-create" class="isflow-edge-label" x="500" y="75"
               text-anchor="middle">creates</text>
         <circle class="isflow-comet kind-req" data-comet="create" r="5" />
       </g>
 
       <g class="isflow-node kind-config" data-node="config">
-        <rect class="isflow-box isflow-chip" x="375" y="78" width="105" height="68" rx="8" />
-        <text class="isflow-t1 small" x="427.5" y="105" text-anchor="middle">configuration</text>
-        <text class="isflow-t1 small" x="427.5" y="125" text-anchor="middle">file</text>
+        <rect class="isflow-box isflow-chip" x="365" y="88" width="105" height="88" rx="8" />
+        <text class="isflow-t1 small" x="417.5" y="123" text-anchor="middle">configuration</text>
+        <text class="isflow-t1 small" x="417.5" y="143" text-anchor="middle">file</text>
       </g>
 
       <g class="isflow-node kind-server" data-node="instrument">
-        <rect class="isflow-box isflow-chip" x="525" y="78" width="95" height="108" rx="8" />
-        <text class="isflow-t1 small" x="572.5" y="113" text-anchor="middle">generator</text>
-        <text class="isflow-t2" x="572.5" y="138" text-anchor="middle">real</text>
-        <text class="isflow-t2" x="572.5" y="155" text-anchor="middle">instrument</text>
+        <rect class="isflow-box isflow-chip" x="530" y="88" width="100" height="88" rx="8" />
+        <text class="isflow-t1 small" x="580" y="123" text-anchor="middle">generator</text>
+        <text class="isflow-t2" x="580" y="148" text-anchor="middle">QCoDeS driver</text>
       </g>
 
       <g class="isflow-node kind-hw" data-node="hardware">
-        <rect class="isflow-box" x="730" y="105" width="200" height="74" rx="10" />
-        <text class="isflow-t1" x="830" y="135" text-anchor="middle">RF source</text>
-        <text class="isflow-t2" x="830" y="159" text-anchor="middle">laboratory hardware</text>
+        <rect class="isflow-box" x="740" y="105" width="190" height="74" rx="10" />
+        <text class="isflow-t1" x="835" y="135" text-anchor="middle">RF source</text>
+        <text class="isflow-t2" x="835" y="159" text-anchor="middle">laboratory hardware</text>
       </g>
 
       <g class="isflow-node kind-watcher" data-node="gui">
@@ -183,63 +181,89 @@
     <li class="isflow-step" data-step="0">
       <div class="isflow-card">
         <p class="isflow-num">Step 01</p>
-        <h3>The Server creates the instrument</h3>
+        <h3>The Server loads its configuration</h3>
         <p>At startup, the <strong>Server</strong> reads its configuration file and
-          creates a real instrument named <code>generator</code>. The Server holds the
-          only connection to the RF source on the bench.</p>
+          creates <code>generator</code>, the QCoDeS driver for the instrument.
+          (Instruments can also be started from a Client at runtime.)</p>
       </div>
     </li>
 
     <li class="isflow-step" data-step="1">
       <div class="isflow-card">
         <p class="isflow-num">Step 02</p>
-        <h3>A Client connects</h3>
-        <p>Your script creates a <strong>Client</strong> and connects it to the Server.
-          Another Client can connect from a colleague's process on the same computer or
-          across the network.</p>
+        <h3>The driver connects to the hardware</h3>
+        <p>The <code>generator</code> driver establishes the Server's connection to the
+          RF source on the bench. No other process connects to the hardware directly.</p>
       </div>
     </li>
 
     <li class="isflow-step" data-step="2">
       <div class="isflow-card">
         <p class="isflow-num">Step 03</p>
-        <h3>The Client builds a Proxy</h3>
-        <p>You ask for <code>generator</code>. The Server sends back a
-          <strong>Blueprint</strong> describing its interface, and the Client uses that
-          description to build a local <strong>Proxy Instrument</strong>.</p>
+        <h3>A Client connects</h3>
+        <p>Your script creates a <strong>Client</strong> and establishes a two-way
+          connection with the Server.</p>
       </div>
     </li>
 
     <li class="isflow-step" data-step="3">
       <div class="isflow-card">
         <p class="isflow-num">Step 04</p>
-        <h3>You call the Proxy</h3>
-        <p>You call <code>generator.frequency(5e9)</code>. The Proxy passes the call to
-          the Client, which sends a request to the Server. Nothing is set locally.</p>
+        <h3>The Client requests a Blueprint</h3>
+        <p>You ask for <code>generator</code>. The Client asks the Server for a
+          <strong>Blueprint</strong> describing that instrument's interface.</p>
       </div>
     </li>
 
     <li class="isflow-step" data-step="4">
       <div class="isflow-card">
         <p class="isflow-num">Step 05</p>
-        <h3>The Server runs the call</h3>
-        <p>The Server runs the set on the real <code>generator</code>, which communicates
-          with the RF source through the Server's hardware connection.</p>
+        <h3>The Server returns the Blueprint</h3>
+        <p>The Server replies to the Client with the <strong>Blueprint</strong> for
+          <code>generator</code>.</p>
       </div>
     </li>
 
     <li class="isflow-step" data-step="5">
       <div class="isflow-card">
         <p class="isflow-num">Step 06</p>
-        <h3>The Server returns the result</h3>
-        <p>The Server sends the result back to the Client that made the request, and
-          only to that Client. The Proxy call completes.</p>
+        <h3>The Client constructs the Proxy</h3>
+        <p>The Client uses the Blueprint to construct a local
+          <strong>Proxy Instrument</strong> named <code>generator</code>.</p>
       </div>
     </li>
 
     <li class="isflow-step" data-step="6">
       <div class="isflow-card">
         <p class="isflow-num">Step 07</p>
+        <h3>You call the Proxy</h3>
+        <p>You call <code>generator.frequency(5e9)</code>. The Proxy sends the request
+          directly to the Server; the standalone Client that constructed it is not
+          involved. Nothing is set locally.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="7">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 08</p>
+        <h3>The Server runs the call</h3>
+        <p>The Server runs the set on the real <code>generator</code>, which communicates
+          with the RF source through the Server's hardware connection.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="8">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 09</p>
+        <h3>The Server returns the result</h3>
+        <p>The Server sends the result back to the Proxy that made the request. The Proxy
+          call completes.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="9">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 10</p>
         <h3>The Server publishes a Broadcast</h3>
         <p>The Server separately publishes the parameter change as a
           <strong>Broadcast</strong>. It publishes the message once, and every subscriber
@@ -247,15 +271,15 @@
       </div>
     </li>
 
-    <li class="isflow-step" data-step="7">
+    <li class="isflow-step" data-step="10">
       <div class="isflow-card">
-        <p class="isflow-num">Step 08</p>
+        <p class="isflow-num">Step 11</p>
         <h3>Subscribers react</h3>
         <p>The Server's GUI updates its display, and the <strong>Listener</strong> records
-          the change. A colleague's plain Proxy does not receive the Broadcast, but its
-          next read asks the same Server and gets the updated value.</p>
+          the change.</p>
       </div>
     </li>
+
   </ol>
 </div>
 
@@ -294,12 +318,19 @@
 
 .isflow-stage {
   position: sticky;
-  top: var(--pst-header-height, 4rem);
+  top: calc(var(--pst-header-height, 4rem) + 1rem);
   z-index: 2;
   height: var(--isf-stage-h);
-  padding: 0.2rem 0 0.5rem;
+  padding: 2rem 0 0.5rem;
   background: var(--isf-panel);
   border-bottom: 1px solid var(--pst-color-border-muted);
+}
+.isflow-stage::before {
+  content: "";
+  position: absolute;
+  inset: -1rem 0 auto;
+  height: 1rem;
+  background: var(--isf-panel);
 }
 
 .isflow-map {
@@ -310,7 +341,7 @@
 
 .isflow-hud {
   position: absolute;
-  top: 0.1rem;
+  top: 0;
   left: 0.1rem;
   display: flex;
   flex-direction: column;
@@ -333,7 +364,7 @@
 .isflow-key {
   position: absolute;
   right: 0.1rem;
-  top: 0.2rem;
+  top: 0.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -419,6 +450,10 @@
 .isflow-edge-label {
   font-size: 13px;
   fill: var(--isf-muted);
+  stroke: var(--isf-panel);
+  stroke-width: 6px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
   transition: opacity 0.3s;
 }
 .isflow.is-live .isflow-edge-label { opacity: 0; }
@@ -456,24 +491,16 @@
 .isflow-steps {
   list-style: none;
   margin: 0;
-  padding: 0;
-}
-/* Height here is scroll distance per step: the card rides up through the
-   viewport while its step is the active one, and whatever exceeds the card's
-   own height is the gap to the next card. Keep it just above card height. */
-.isflow-step {
-  min-height: 28vh;
+  padding: 0.7rem 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.isflow-step {
+  min-height: 0;
+  display: block;
   margin: 0;
 }
-/* the first card sits right under the map on load, before anything is sticky */
-.isflow-step:first-child {
-  min-height: 0;
-  align-items: flex-start;
-  padding-top: 0.8rem;
-}
-.isflow-step:last-child { min-height: 20vh; }
 
 .isflow-card {
   width: 100%;
@@ -485,6 +512,14 @@
   border-left: 3px solid var(--isf-req);
   border-radius: 0.5rem;
   transition: opacity 0.4s, transform 0.4s, box-shadow 0.4s;
+}
+.isflow.is-live .isflow-card { cursor: pointer; }
+.isflow.is-live .isflow-card:hover {
+  border-color: var(--isf-req);
+}
+.isflow.is-live .isflow-card:focus-visible {
+  outline: 3px solid var(--isf-req);
+  outline-offset: 3px;
 }
 /* Same idea as the labels: all cards read normally without JavaScript. */
 .isflow.is-live .isflow-card {
@@ -517,7 +552,7 @@
 
 @media (max-width: 720px) {
   .isflow { --isf-stage-h: clamp(190px, 32vh, 290px); }
-  .isflow-step { min-height: 46vh; }
+  .isflow-steps { gap: 0.5rem; }
   .isflow-key { display: none; }
   .isflow-card { padding: 0.9rem 1rem; }
 }
@@ -543,7 +578,7 @@
      - runs a comet along the edge the data is travelling.
 
    With JavaScript off, or with prefers-reduced-motion, the page degrades to a
-   fully labelled diagram and eight ordinary paragraphs.
+   fully labelled diagram and eleven ordinary paragraphs.
    ========================================================================== */
 (function () {
   "use strict";
@@ -561,56 +596,82 @@
      ----------------------------------------------------------------------- */
   var STEPS = [
     {
-      no: "Step 01", title: "The Server creates the instrument",
-      lit: ["server", "config", "instrument", "hardware"],
+      no: "Step 01", title: "The Server loads its configuration",
+      lit: ["server", "config", "instrument"],
       keep: [], note: [],
       edges: [
-        { id: "create", dir: 1, label: "creates", arrows: ["create-fwd"] },
+        { id: "create", dir: 1, label: "creates", arrows: ["create-fwd"] }
+      ]
+    },
+    {
+      no: "Step 02", title: "The driver connects to the hardware",
+      lit: ["server", "instrument", "hardware"],
+      keep: [], note: [],
+      edges: [
         { id: "hw", dir: 1, label: "connection", arrows: ["hw-fwd"] }
       ]
     },
     {
-      no: "Step 02", title: "A Client connects",
-      lit: ["script", "client", "server", "colleague"],
+      no: "Step 03", title: "A Client connects",
+      lit: ["script", "client", "server"],
       keep: ["instrument", "hardware"], note: [],
       edges: [
-        { id: "connect", dir: 1, label: "connects", arrows: ["connect-fwd"] }
+        { id: "connect", dir: 1, label: "connects",
+          arrows: ["connect-fwd", "connect-back"], pingPong: true }
       ]
     },
     {
-      no: "Step 03", title: "The Client builds a Proxy",
-      lit: ["client", "proxy", "server", "instrument"],
-      keep: ["script", "hardware", "colleague"], note: [],
+      no: "Step 04", title: "The Client requests a Blueprint",
+      lit: ["script", "client", "server"],
+      keep: ["instrument", "hardware"], note: [],
       edges: [
-        { id: "blueprint", dir: -1, label: "Blueprint", arrows: ["blueprint-back"] }
+        { id: "blueprint", dir: -1, label: "request",
+          arrows: ["blueprint-fwd"] }
       ]
     },
     {
-      no: "Step 04", title: "You call the Proxy",
-      lit: ["client", "proxy", "server"],
+      no: "Step 05", title: "The Server returns the Blueprint",
+      lit: ["client", "server", "instrument"],
+      keep: ["script", "hardware"], note: [],
+      edges: [
+        { id: "blueprint", dir: 1, label: "Blueprint",
+          arrows: ["blueprint-back"] }
+      ]
+    },
+    {
+      no: "Step 06", title: "The Client constructs the Proxy",
+      lit: ["script", "client", "proxy"],
+      keep: ["server", "instrument", "hardware"], note: [],
+      edges: [
+        { id: "build", dir: 1, label: "constructs", arrows: ["build-fwd"] }
+      ]
+    },
+    {
+      no: "Step 07", title: "You call the Proxy",
+      lit: ["proxy", "server"],
       keep: ["script", "instrument", "hardware"], note: [],
       edges: [
         { id: "req", dir: 1, label: "frequency(5e9)", arrows: ["req-fwd"] }
       ]
     },
     {
-      no: "Step 05", title: "The Server runs the call",
+      no: "Step 08", title: "The Server runs the call",
       lit: ["server", "instrument", "hardware"],
-      keep: ["script", "client", "proxy"], note: [],
+      keep: ["script", "proxy"], note: [],
       edges: [
         { id: "hw", dir: 1, label: "set frequency", arrows: ["hw-fwd"] }
       ]
     },
     {
-      no: "Step 06", title: "The Server returns the result",
-      lit: ["server", "client", "proxy"],
-      keep: ["script", "instrument", "hardware"], note: ["colleague"],
+      no: "Step 09", title: "The Server returns the result",
+      lit: ["server", "proxy"],
+      keep: ["script", "instrument", "hardware"], note: [],
       edges: [
         { id: "req", dir: -1, label: "result", arrows: ["req-back"] }
       ]
     },
     {
-      no: "Step 07", title: "The Server publishes a Broadcast",
+      no: "Step 10", title: "The Server publishes a Broadcast",
       lit: ["server"], keep: ["instrument", "gui", "listener"], note: [],
       edges: [
         { id: "gui", dir: 1, label: "Broadcast", arrows: ["gui-fwd"] },
@@ -618,15 +679,12 @@
       ]
     },
     {
-      no: "Step 08", title: "Subscribers react",
+      no: "Step 11", title: "Subscribers react",
       lit: ["gui", "listener"],
-      keep: ["server", "instrument", "script", "client", "proxy", "colleague"],
-      note: [],
+      keep: ["server", "instrument", "script", "client", "proxy"], note: [],
       edges: [
         { id: "gui", dir: 1, label: "updates", arrows: ["gui-fwd"], animate: false },
-        { id: "lst", dir: 1, label: "records", arrows: ["lst-fwd"], animate: false },
-        { id: "col", dir: 1, label: "same value",
-          arrows: ["col-fwd", "col-back"], animate: false }
+        { id: "lst", dir: 1, label: "records", arrows: ["lst-fwd"], animate: false }
       ]
     }
   ];
@@ -645,7 +703,7 @@
     comets[c.getAttribute("data-comet")] = c;
   });
 
-  var EDGE_IDS = ["create", "connect", "blueprint", "req", "col", "hw", "gui", "lst"];
+  var EDGE_IDS = ["create", "build", "connect", "blueprint", "req", "hw", "gui", "lst"];
   var edges = {}, labels = {};
   EDGE_IDS.forEach(function (id) {
     edges[id] = document.getElementById("isflow-edge-" + id);
@@ -673,25 +731,28 @@
     });
   }
 
-  function startComet(id, dir) {
+  function startComet(id, dir, pingPong) {
     var path = edges[id], comet = comets[id];
     if (reduced || !path || !comet || typeof path.getTotalLength !== "function") return;
 
     var len = path.getTotalLength();
     if (!len) return;
-    var duration = 1300;
+    var duration = pingPong ? 1800 : 1300;
     var begin = null;
     comet.classList.add("is-on");
 
     function tick(now) {
       if (begin === null) begin = now;
       var p = ((now - begin) % duration) / duration;
-      var at = dir < 0 ? (1 - p) * len : p * len;
+      var travelled = pingPong
+        ? (p <= 0.5 ? p * 2 : (1 - p) * 2)
+        : p;
+      var at = dir < 0 ? (1 - travelled) * len : travelled * len;
       var pt = path.getPointAtLength(at);
       comet.setAttribute("cx", pt.x);
       comet.setAttribute("cy", pt.y);
       /* fade in and out at the ends so the loop does not snap */
-      comet.style.opacity = Math.sin(Math.PI * p).toFixed(3);
+      comet.style.opacity = pingPong ? "1" : Math.sin(Math.PI * p).toFixed(3);
       frames[id] = requestAnimationFrame(tick);
     }
     frames[id] = requestAnimationFrame(tick);
@@ -732,7 +793,7 @@
       (e.arrows || []).forEach(function (key) {
         if (arrows[key]) arrows[key].classList.add("is-lit");
       });
-      if (e.animate !== false) startComet(e.id, e.dir);
+      if (e.animate !== false) startComet(e.id, e.dir, e.pingPong === true);
     });
   }
 
@@ -744,11 +805,36 @@
     current = index;
     stepEls.forEach(function (s, i) {
       s.classList.toggle("is-active", i === index);
+      var card = s.querySelector(".isflow-card");
+      if (card) card.setAttribute("aria-pressed", i === index ? "true" : "false");
     });
     applyStep(index);
   }
 
   root.classList.add("is-live");
+
+  /* Cards are direct controls as well as scroll markers. Keep their activation
+     on the same setActive path used by the observer so both interactions stay
+     in sync. */
+  stepEls.forEach(function (step, index) {
+    var card = step.querySelector(".isflow-card");
+    if (!card) return;
+    var title = card.querySelector("h3");
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute(
+      "aria-label",
+      "Show " + STEPS[index].no + ": " + (title ? title.textContent : STEPS[index].title)
+    );
+    card.addEventListener("click", function () { setActive(index); });
+    card.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        setActive(index);
+      }
+    });
+  });
+
   setActive(0);
 
   /* A thin band just under the sticky map: the step crossing it is the one
