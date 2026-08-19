@@ -1,0 +1,6 @@
+# The exact config file shown in docs/getting_started/quickstart.md
+# (section: Starting with a config file). Keep the two in sync.
+instruments:
+  generator:
+    type: instrumentserver.testing.dummy_instruments.rf.Generator
+    initialize: True
