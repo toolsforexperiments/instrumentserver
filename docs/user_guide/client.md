@@ -1,42 +1,51 @@
-# Python Client
+# Python client
 
-The Client is the Python interface you use to work with instruments owned by a Server.
-It gives you Proxy Instruments with the same parameters and methods as their real QCoDeS
-drivers. If you haven't used instrumentserver before, start with the
-[Quickstart](../getting_started/quickstart.md). For the concepts behind the connection,
-see [How it works](../getting_started/how_it_works.md).
+The Python Client is the interface to instruments owned by a Server. It represents a
+remote instrument in the server as a local Proxy Instrument with the same parameters and methods as its real
+QCoDeS driver. The [Quickstart](../getting_started/quickstart.md) gives a shorter first
+look at instrumentserver. For a conceptual overview, see
+[How it works](../getting_started/how_it_works.md).
 
-Each section below is a standalone example. Keep the Server running while you try them.
+Each section is self-contained and assumes the same Server remains running.
 
-## Connect and get an instrument
+## Connections and instrument discovery
 
-Start the Server in a terminal:
+The examples use a local Server started with:
 
 ```{prompt} bash
 instrumentserver -p 5555 -a 127.0.0.1
 ```
 
-The Server GUI opens so you can watch instruments appear as you create them. Leave it
-running, then open Python in a second terminal or notebook.
+This opens the Server GUI, where instruments appear as the examples create them. The
+Client examples work in a terminal, a Jupyter notebook, or anywhere you can run python.
 
 :::{note}
 Port `5555` and address `127.0.0.1` are the defaults, so plain `instrumentserver` starts
-the same local Server. The `-p` option selects the request port. The `-a` option adds a
-listening address, and the Server always includes the loopback address. See
-[The Server](server.md) for addresses, ports, and remote connections.
+the same local Server. The `-p` option selects the request port, and `-a` adds a
+listening address. The Server always includes the loopback address.
+[The Server](server.md) covers addresses, ports, and remote connections.
 :::
 
-Create a long-lived Client for your measurement session and check which instruments the
-Server already owns:
+Clients can stay open for an entire measurement or be created only when needed, though
+we usually keep one for the duration of a measurement. In either case, closing the
+Client releases the network resources used by its connection to the Server.
+
+The Client is created with the Server's host and request port (if using defaults, you can just use `Client()`):
 
 ```pycon
 >>> from instrumentserver.client import Client
 >>> cli = Client(host="localhost", port=5555)
+```
+
+Once the Client exists, `list_instruments()` reports the instruments that the Server
+already owns:
+
+```pycon
 >>> cli.list_instruments()
 []
 ```
 
-Now create the dummy RF generator used throughout this page:
+`find_or_create_instrument` adds the dummy RF generator used throughout this page:
 
 ```pycon
 >>> generator = cli.find_or_create_instrument(
@@ -47,15 +56,14 @@ Now create the dummy RF generator used throughout this page:
 ['generator']
 ```
 
-`find_or_create_instrument` returns a Proxy Instrument ready to use. When the Server
-doesn't have the requested name, it imports the class and creates the real instrument.
-When the name already exists, it returns a Proxy for that instrument instead. The method
-mirrors QCoDeS'
-[`find_or_create_instrument`](https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.find_or_create_instrument),
-but instrumentserver's lookup is name-based: an existing name is returned without
-checking the class path supplied for creation.
+`find_or_create_instrument` returns a Proxy Instrument. If the Server doesn't have the
+requested name, it imports the class and creates the real instrument. If the name
+already exists, the Server returns a Proxy for that instrument. The method mirrors
+QCoDeS' [`find_or_create_instrument`](https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.find_or_create_instrument).
+Instrumentserver, however, matches only by name. For an existing name, it does not check
+the class path supplied for creation.
 
-The generator appears in the Server GUI as soon as it is created:
+The Server GUI shows the generator as soon as the Server creates it:
 
 ```{image} ../_static/getting_started/quickstart/server_generator_light.png
 :class: only-light
@@ -68,19 +76,18 @@ The generator appears in the Server GUI as soon as it is created:
 ```
 
 :::{note}
-If you know an instrument already exists and don't want to provide a creation class, use
-`cli.get_instrument("generator")`. It returns a Proxy for the existing instrument and
-does not create one.
+`cli.get_instrument("generator")` covers the case where an instrument already exists and
+no creation class is needed. It returns a Proxy without creating an instrument.
 :::
 
-Keep one Client connected for the lifetime of your measurement. Disconnect it when the
-measurement is finished:
+A Client remains connected until `disconnect()` closes its ZMQ connection:
 
 ```pycon
 >>> cli.disconnect()
 ```
 
-For a small script, a context manager can handle that cleanup for you:
+A context manager gives small scripts the same lifecycle. It disconnects the Client when
+the block exits:
 
 ```pycon
 >>> with Client(host="localhost", port=5555) as cli:
@@ -92,13 +99,13 @@ For a small script, a context manager can handle that cleanup for you:
 :::{note}
 Constructing `Client` opens its ZMQ connection but does not perform a handshake with the
 Server. The first request, such as `list_instruments()`, is what confirms that the Server
-can reply. See [Handle errors and timeouts](#handle-errors-and-timeouts) for what happens
-when it cannot.
+can reply. [Errors and timeouts](#errors-and-timeouts) describes what happens when it
+cannot.
 :::
 
-## Use a Proxy Instrument
+## Proxy instruments
 
-Connect and retrieve the generator created above:
+The same call creates or retrieves the generator for this self-contained example:
 
 ```pycon
 >>> from instrumentserver.client import Client
@@ -109,10 +116,10 @@ Connect and retrieve the generator created above:
 ... )
 ```
 
-A Proxy parameter is a real QCoDeS
+A Proxy Parameter is a QCoDeS
 [`Parameter`](https://microsoft.github.io/Qcodes/api/parameters/#qcodes.parameters.Parameter)
-whose get and set commands call the Server. Use the normal QCoDeS callable form to read
-and write it:
+with get and set commands that call the Server. The normal QCoDeS callable form reads
+and writes the parameter:
 
 ```pycon
 >>> generator.frequency()
@@ -122,7 +129,7 @@ and write it:
 5000000000.0
 ```
 
-The explicit QCoDeS methods are equivalent:
+The explicit QCoDeS methods make the same calls:
 
 ```pycon
 >>> generator.frequency.set(6e9)
@@ -130,8 +137,8 @@ The explicit QCoDeS methods are equivalent:
 6000000000.0
 ```
 
-Driver methods are proxied too. This dummy resonator has a method that changes its
-simulated resonance frequency:
+The Client also proxies driver methods. This dummy resonator has a method that changes
+its simulated resonance frequency:
 
 ```pycon
 >>> resonator = cli.find_or_create_instrument(
@@ -141,19 +148,19 @@ simulated resonance frequency:
 >>> resonator.modulate_frequency(delta=1e6)
 ```
 
-The method runs on the real `resonator` inside the Server, just like a method on a
-physical instrument driver would. When you're done with this session:
+The Server runs the method on the real `resonator`, not on the Proxy Instrument.
+`disconnect()` then closes the example's Client:
 
 ```pycon
 >>> cli.disconnect()
 ```
 
-## Save and restore parameter values
+## Parameter snapshots
 
 The Client can collect parameter values, apply a group of values, and save or restore
 experiment state. These methods work with any existing Server-owned instrument.
 
-Start from known generator values so the output is reproducible:
+This example starts from fixed generator values so the output is reproducible:
 
 ```pycon
 >>> from instrumentserver.client import Client
@@ -186,7 +193,7 @@ Start from known generator values so the output is reproducible:
 ... )
 ```
 
-Save the generator's current values to a JSON file:
+`paramsToFile` writes the generator's current values to a JSON file:
 
 ```pycon
 >>> cli.paramsToFile(
@@ -196,7 +203,7 @@ Save the generator's current values to a JSON file:
 ... )
 ```
 
-The file uses a nested shape that is easier to read and edit:
+The file groups parameter names under each instrument:
 
 ```json
 {
@@ -208,7 +215,7 @@ The file uses a nested shape that is easier to read and edit:
 }
 ```
 
-Change the values, then restore the saved state:
+After the values change, `paramsFromFile` restores the saved state:
 
 ```pycon
 >>> generator.frequency(7e9)
@@ -225,37 +232,39 @@ Change the values, then restore the saved state:
 ```
 
 Both file methods run in the Client process, so relative paths refer to the Client's
-working directory, not the Server's. Omit `instruments` to save every Server instrument,
-or to restore every matching entry in the file.
+working directory, not the Server's. Without `instruments`, `paramsToFile` saves every
+Server instrument and `paramsFromFile` restores every matching entry in the file.
 
 :::{warning}
-Boolean values are not currently restored by `setParameters` or `paramsFromFile`.
-During deserialization, `True` and `False` become `1.0` and `0.0`, which fail QCoDeS
-Boolean validation. Numeric values in the same operation still restore correctly. This
-is tracked in [issue #152](https://github.com/toolsforexperiments/instrumentserver/issues/152).
+`setParameters` and `paramsFromFile` cannot currently restore Boolean values.
+Deserialization converts `True` and `False` to `1.0` and `0.0`, which fail QCoDeS Boolean
+validation. Numeric values in the same operation still restore correctly. See
+[issue #152](https://github.com/toolsforexperiments/instrumentserver/issues/152).
 :::
 
 :::{note}
-Do not load the nested JSON yourself and pass it directly to `setParameters`. That method
-expects flat dotted keys and currently ignores the nested shape after logging a
-Server-side error. Use `paramsFromFile`, which flattens the saved JSON before sending it.
+`setParameters` does not accept the nested JSON shown above. It expects flat dotted keys
+and currently ignores the nested shape after logging a Server-side error.
+`paramsFromFile` flattens the saved JSON before sending it.
 :::
 
 :::{note}
-The Parameter Manager has a separate profile workflow. Its `toFile` and `fromFile`
-methods run on the Server, preserve units, and can create or remove hierarchical
-parameters. See [Parameter Manager](parameter_manager.md) when you need managed profiles
-rather than a snapshot of existing instruments.
+The [Parameter Manager](parameter_manager.md) has a separate profile workflow. Its
+`toFile` and `fromFile` methods run on the Server, preserve units, and can create or
+remove hierarchical parameters. Managed profiles use this workflow rather than a
+snapshot of existing instruments.
 :::
+
+`disconnect()` closes the Client used for the snapshot example:
 
 ```pycon
 >>> cli.disconnect()
 ```
 
-## Handle errors and timeouts
+## Errors and timeouts
 
-The Client raises Server-side errors by default. For example, the dummy generator only
-accepts frequencies up to 20 GHz:
+By default, the Client turns Server-side failures into local exceptions. The dummy
+generator, for example, accepts frequencies only up to 20 GHz:
 
 ```pycon
 >>> from instrumentserver.client import Client
@@ -275,11 +284,11 @@ True
 ```
 
 The Client currently raises a generic `Exception` containing the original Server-side
-message. Keep the default `raise_exceptions=True` so failed operations cannot silently
-look successful.
+message. With the default `raise_exceptions=True`, a failed operation cannot look like a
+successful call that returned `None`.
 
-Timeouts are different from Server-side errors. This example uses a Dummy Instrument
-whose method deliberately takes longer than the Client's deadline:
+A timeout is different from a Server-side error. This Dummy Instrument has a method that
+takes longer than the Client's deadline:
 
 ```pycon
 >>> import time
@@ -298,26 +307,25 @@ Server did not reply before timeout.
 True
 ```
 
-A timed-out request is not retried. The Client replaces its ZMQ socket so later requests
-can work, but this is not automatic reconnection of the failed operation.
+The Client does not retry a timed-out request. It replaces its ZMQ socket so later
+requests can work, but it does not reconnect or rerun the failed operation.
 
 :::{warning}
 A timeout means that no reply arrived before the deadline. It does not mean the Server
 cancelled the operation. The Server worker continues and may still change the hardware.
-Before retrying a non-idempotent operation, read the instrument state and decide whether
-the original call completed.
+For a non-idempotent operation, the instrument state is the only reliable indication of
+whether the original call completed.
 :::
 
-Calling `disconnect()` permanently closes that Client instance. Create a new Client if
-you need another session:
+After `disconnect()`, the Client cannot be reused. Another session requires a new Client:
 
 ```pycon
 >>> cli.disconnect()
 ```
 
 :::{note}
-`Client(raise_exceptions=False)` logs failures and usually returns `None`. That can be
-useful in long-running UI infrastructure with its own error reporting, but `None` is
-ambiguous for measurement code because it can also be a valid method result. Normal
-measurement code should keep the default and handle exceptions explicitly.
+`Client(raise_exceptions=False)` logs failures and usually returns `None`. This behavior
+fits long-running UI infrastructure with its own error reporting. In measurement code,
+`None` is ambiguous because it can also be a valid method result. The default
+`raise_exceptions=True` keeps those cases distinct.
 :::
