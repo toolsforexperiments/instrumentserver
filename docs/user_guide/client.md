@@ -262,9 +262,15 @@ object identity does not.
 4385419824
 ```
 
-User-defined value classes use the same mechanism. A class lists the state needed to
-reconstruct it in an `attributes` class attribute, and its constructor accepts those
-names as keyword arguments:
+### Making custom classes serializable
+
+Custom classes used in parameters and methods use an `attributes` class-attribute to list the values
+instrumentserver needs to reconstruct an instance. Once a class provides that list, its
+instances can cross the connection as parameter values, method arguments, or method
+return values.
+
+For example, a sweep range can preserve its Python type instead of arriving as a plain
+dictionary:
 
 ```python
 class SweepWindow:
@@ -275,8 +281,8 @@ class SweepWindow:
         self.stop = stop
 ```
 
-Instrumentserver serializes a `SweepWindow` as its listed attributes plus the class's
-import path. The receiving process imports the class and reconstructs it with
+Instrumentserver serializes a `SweepWindow` as its listed values plus the class's import
+path. The receiving process imports the class and reconstructs it with
 `SweepWindow(start=..., stop=...)`. This places three requirements on a custom value
 class:
 
@@ -285,9 +291,106 @@ class:
 - The listed attribute values are JSON-compatible data.
 
 A class defined only in a notebook or in `__main__` cannot be imported by the other
-process. Both environments also need a compatible version of the module. The
-`_class_type` marker used on the wire is added by instrumentserver and is not part of the
-user-defined class.
+process. Both environments also need a compatible version of the module.
+
+Dataclasses fit this model well because their generated constructors already accept
+fields by name. Request and result types can live together in a small module installed
+in both environments. Declaring `attributes` as a `ClassVar` keeps it out of the
+dataclass fields and constructor:
+
+```python
+# lab_models.py
+from dataclasses import dataclass, field
+from typing import ClassVar
+
+
+@dataclass
+class SweepRequest:
+    center_hz: float
+    span_hz: float
+    metadata: dict[str, str] = field(default_factory=dict)
+
+    attributes: ClassVar[tuple[str, ...]] = (
+        "center_hz",
+        "span_hz",
+        "metadata",
+    )
+
+
+@dataclass
+class SweepResult:
+    frequency_hz: list[float]
+    magnitude_db: list[float]
+
+    attributes: ClassVar[tuple[str, ...]] = (
+        "frequency_hz",
+        "magnitude_db",
+    )
+```
+
+A Server-owned analyzer could accept `SweepRequest` in a driver method and return
+`SweepResult`:
+
+```python
+# lab_drivers.py
+from qcodes import Instrument
+
+from lab_models import SweepRequest, SweepResult
+
+
+class Analyzer(Instrument):
+    def run_sweep(self, request: SweepRequest) -> SweepResult:
+        half_span = request.span_hz / 2
+        return SweepResult(
+            frequency_hz=[
+                request.center_hz - half_span,
+                request.center_hz,
+                request.center_hz + half_span,
+            ],
+            magnitude_db=[-50.0, -20.0, -49.0],
+        )
+```
+
+The user and the driver work with Python objects. The transport code in the Client and
+Server handles the serialized form between them:
+
+- Request: user code passes a `SweepRequest`; the Client serializes it to JSON; the
+  Server deserializes it back into a `SweepRequest`; the driver receives that object.
+- Result: the driver returns a `SweepResult`; the Server serializes it to JSON; the
+  Client deserializes it back into a `SweepResult`; user code receives that object.
+
+The call therefore looks like any other Proxy method call:
+
+```pycon
+>>> from lab_models import SweepRequest, SweepResult
+>>> analyzer = cli.find_or_create_instrument(
+...     "analyzer",
+...     "lab_drivers.Analyzer",
+... )
+>>> request = SweepRequest(
+...     center_hz=5e9,
+...     span_hz=20e6,
+...     metadata={"sample": "A"},
+... )
+>>> result = analyzer.run_sweep(request)
+>>> isinstance(result, SweepResult)
+True
+>>> result.frequency_hz
+[4990000000.0, 5000000000.0, 5010000000.0]
+>>> result.magnitude_db
+[-50.0, -20.0, -49.0]
+```
+
+The values listed in `attributes` must already be JSON-compatible. A list or dictionary
+containing scalar values works, but the serializer does not recursively apply the
+`attributes` protocol to a dataclass stored inside another custom object. A NumPy array
+stored as a dataclass field has the same limitation, even though NumPy arrays are
+supported when passed directly. Such fields need a JSON-compatible representation,
+such as a list, or their own handling before they cross the connection.
+
+Type annotations describe the dataclass but do not control deserialization.
+Instrumentserver passes the decoded values directly to the constructor. A class that
+requires exact field types can normalize them in `__post_init__()`.
 
 :::{note}
 Serialization preserves values, not every container's exact Python type. Tuples and
@@ -302,11 +405,6 @@ the integer `123`. Method and parameter APIs that require numeric-looking text n
 unambiguous encoding, such as a nonnumeric prefix.
 :::
 
-`disconnect()` closes the Client used by these examples:
-
-```pycon
->>> cli.disconnect()
-```
 
 ## Parameter snapshots
 
