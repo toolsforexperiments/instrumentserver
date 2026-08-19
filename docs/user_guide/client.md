@@ -105,7 +105,24 @@ cannot.
 
 ## Proxy instruments
 
-The same call creates or retrieves the generator for this self-contained example:
+A Proxy Instrument is the local Python object that represents one instrument owned by
+the Server. Measurement code works with the Proxy, while the Server keeps the real
+QCoDeS driver and its hardware connection. The two objects share a name and a public
+interface, but they have different jobs.
+
+| In the Client process | In the Server process |
+| --- | --- |
+| The Proxy Instrument reproduces the driver's parameters, methods, and submodules. | The real instrument contains the driver logic, state, and hardware connection. |
+| A Proxy turns each parameter or method call into a request. | The Server runs that request on the real instrument and returns the result. |
+
+The Client builds a Proxy from a Blueprint supplied by the Server. That Blueprint
+describes the part of the driver available remotely, including parameter units, method
+signatures, docstrings, and the hierarchy of submodules. The Client turns the
+description into a real local QCoDeS object with parameters and bound methods. Ordinary
+driver attributes and driver code stay in the Server.
+
+`find_or_create_instrument` creates or finds the real generator in the Server, then
+returns the local object that represents it:
 
 ```pycon
 >>> from instrumentserver.client import Client
@@ -116,13 +133,24 @@ The same call creates or retrieves the generator for this self-contained example
 ... )
 ```
 
-A Proxy Parameter is a QCoDeS
+Several Clients can hold Proxies for the same instrument. All of those Proxies refer to
+the one Server-owned driver, so a parameter read always asks the Server for its current
+value. A Proxy does not maintain a separate local value that can drift away from the
+hardware.
+
+Most interaction with a Proxy happens through its parameters and driver methods.
+`generator.frequency` is a local Proxy Parameter, while a proxied driver method is a
+local bound method. Both forward calls to the corresponding object in the Server.
+
+### Parameters and driver methods
+
+`generator.frequency` is a local QCoDeS
 [`Parameter`](https://microsoft.github.io/Qcodes/api/parameters/#qcodes.parameters.Parameter)
-with get and set commands that call the Server. The normal QCoDeS callable form reads
-and writes the parameter:
+whose get and set commands call the real parameter in the Server. The normal QCoDeS
+callable form therefore reads and writes the remote instrument:
 
 ```pycon
->>> generator.frequency()
+>>> print(generator.frequency())
 10000000000.0
 >>> generator.frequency(5e9)
 >>> generator.frequency()
@@ -137,8 +165,16 @@ The explicit QCoDeS methods make the same calls:
 6000000000.0
 ```
 
-The Client also proxies driver methods. This dummy resonator has a method that changes
-its simulated resonance frequency:
+The Blueprint also records whether a parameter supports get and set operations, along
+with its unit and docstring. Parameter validators remain on the Server. An invalid value
+is rejected by the real parameter and the Client receives the resulting error.
+
+Driver methods follow the same model. The Client creates a local method with the
+signature and docstring reported by the Server. Calling it sends the target path,
+positional arguments, and keyword arguments to the real driver. The return value comes
+back as the result of the local call.
+
+This dummy resonator has a method that changes its simulated resonance frequency:
 
 ```pycon
 >>> resonator = cli.find_or_create_instrument(
@@ -148,8 +184,125 @@ its simulated resonance frequency:
 >>> resonator.modulate_frequency(delta=1e6)
 ```
 
-The Server runs the method on the real `resonator`, not on the Proxy Instrument.
-`disconnect()` then closes the example's Client:
+`modulate_frequency` looks like a local bound method, but its body runs on the real
+`resonator` in the Server. The call completes only after the Server returns a response.
+
+### Submodules keep their structure
+
+Blueprints describe submodules recursively. A nested QCoDeS module or instrument
+channel becomes another Proxy Instrument, with its own parameters and methods at the
+same attribute path as the real driver.
+
+The dummy instrument below has three submodules named `A`, `B`, and `C`. Parameter access
+through `multi_channel.A` keeps the same shape on both sides of the connection:
+
+```pycon
+>>> multi_channel = cli.find_or_create_instrument(
+...     "multi_channel",
+...     (
+...         "instrumentserver.testing.dummy_instruments.generic."
+...         "DummyInstrumentWithSubmodule"
+...     ),
+... )
+```
+
+The nested parameter has the same callable interface as a parameter on the top-level
+instrument:
+
+```pycon
+>>> multi_channel.A.ch0()
+0
+>>> multi_channel.A.ch0(0.5)
+>>> multi_channel.A.ch0()
+0.5
+>>> multi_channel.A.dummy_function("calibrate", source="client")
+True
+```
+
+The Proxy can refresh its Blueprint when the Server-side interface changes. Calling
+`multi_channel.update()` rebuilds its parameters, methods, and submodules from the
+latest description.
+
+### Values that cross the connection
+
+Parameter values, method arguments, and method return values travel between processes,
+so the Client and Server cannot share the same in-memory Python object. Instrumentserver
+serializes each value for transport and reconstructs it at the other end. This happens
+in both directions and applies equally to Proxy Parameters and driver methods.
+
+The built-in serialization handles `None`, booleans, numbers, strings, nested lists and
+dictionaries, complex numbers, and NumPy arrays. It also supports richer value objects.
+QCoDeS' `FieldVector`, for example, can pass through a Proxy Parameter without losing
+its type:
+
+```pycon
+>>> from qcodes.math_utils.field_vector import FieldVector
+>>> magnet = cli.find_or_create_instrument(
+...     "magnet",
+...     "instrumentserver.testing.dummy_instruments.generic.FieldVectorIns",
+... )
+>>> target = FieldVector(x=0.01, y=0.02, z=0.03)
+>>> magnet.field(target)
+>>> returned = magnet.field()
+>>> print(isinstance(returned, FieldVector))
+True
+>>> returned.is_equal(target)
+True
+```
+
+`target` and `returned` are different Python objects. The Client serializes `target`,
+the Server reconstructs a `FieldVector` for the real parameter, and the return trip
+creates another `FieldVector` in the Client process. Values survive the round trip, but
+object identity does not.
+
+```pycon
+>>> id(target)
+4385419344
+>>> id(returned)
+4385419824
+```
+
+User-defined value classes use the same mechanism. A class lists the state needed to
+reconstruct it in an `attributes` class attribute, and its constructor accepts those
+names as keyword arguments:
+
+```python
+class SweepWindow:
+    attributes = ["start", "stop"]
+
+    def __init__(self, start: float, stop: float):
+        self.start = start
+        self.stop = stop
+```
+
+Instrumentserver serializes a `SweepWindow` as its listed attributes plus the class's
+import path. The receiving process imports the class and reconstructs it with
+`SweepWindow(start=..., stop=...)`. This places three requirements on a custom value
+class:
+
+- The class lives in an importable module available to both the Client and Server.
+- Every name in `attributes` is accepted by the constructor as a keyword argument.
+- The listed attribute values are JSON-compatible data.
+
+A class defined only in a notebook or in `__main__` cannot be imported by the other
+process. Both environments also need a compatible version of the module. The
+`_class_type` marker used on the wire is added by instrumentserver and is not part of the
+user-defined class.
+
+:::{note}
+Serialization preserves values, not every container's exact Python type. Tuples and
+sets arrive as lists. A top-level `Enum` return value keeps its enum type when the enum
+class is importable on the receiving side, while enums nested inside lists or
+dictionaries become their underlying values.
+:::
+
+:::{warning}
+The current decoder infers types from scalar text. A string such as `"123"` arrives as
+the integer `123`. Method and parameter APIs that require numeric-looking text need an
+unambiguous encoding, such as a nonnumeric prefix.
+:::
+
+`disconnect()` closes the Client used by these examples:
 
 ```pycon
 >>> cli.disconnect()
