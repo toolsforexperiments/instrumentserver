@@ -47,10 +47,13 @@ def loadConfig(
     yaml = ruamel.yaml.YAML()
     rawConfig = yaml.load(configPath)
 
-    # An empty (or all-comments) file loads as None; fail with a clear message
-    # instead of a confusing TypeError below.
+    # ruamel.yaml returns ``None`` for an empty (or comments-only) config
+    # file. The membership test on the next line would then raise an opaque
+    # ``TypeError: argument of type 'NoneType' is not iterable``, so we
+    # surface a descriptive error that matches the style of the missing-key
+    # message below.
     if rawConfig is None:
-        raise ValueError(
+        raise AttributeError(
             f"The config file '{configPath}' is empty. "
             "It needs at least an 'instruments:' section."
         )
