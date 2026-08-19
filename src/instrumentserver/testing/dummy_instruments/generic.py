@@ -140,6 +140,12 @@ class DummyInstrumentTimeout(Instrument):
             set_cmd=lambda p: setattr(self, "_param2", p),
         )
 
+    def ask_raw(self, cmd: str) -> str:
+        """Answer identification queries without touching timeout behavior."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
     def _get_param1(self):
         # for testing potentially redundant/duplicate get calls
         print(
