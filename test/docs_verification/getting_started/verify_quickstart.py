@@ -36,8 +36,7 @@ def section_start_bare() -> None:
             # server actually answers with a list of names (audit entry).
             instruments = cli.list_instruments()
             assert instruments == [], (
-                f"A bare server should start with no instruments, "
-                f"got {instruments!r}"
+                f"A bare server should start with no instruments, got {instruments!r}"
             )
     print("section_start_bare: OK")
 
