@@ -1,6 +1,10 @@
 # Configuration Files
 
-[//]: # (TODO: Make sure all of the comments are correct and up to date.)
+:::{admonition} 🗃️ Legacy page
+:class: caution
+This page predates the documentation refactor and has not been re-verified; parts of
+it may be out of date. It will be replaced by the new configuration reference.
+:::
 
 This page covers the configuration files used by InstrumentServer: the **server configuration** file and the **listener configuration** file.
 

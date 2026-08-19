@@ -1,0 +1,20 @@
+﻿instrumentserver.helpers
+========================
+
+.. automodule:: instrumentserver.helpers
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      flat_to_nested_dict
+      flatten_dict
+      getInstrumentMethods
+      getInstrumentParameters
+      is_flat_dict
+      nestedAttributeFromString
+      objectClassPath
+      stringToArgsAndKwargs
+      typeClassPath
+   

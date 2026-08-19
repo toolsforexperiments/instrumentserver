@@ -1,0 +1,848 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>instrumentserver.serialize &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/serialize';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/_modules/instrumentserver/serialize.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="auto">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.serialize</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for instrumentserver.serialize</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">instrumentserver.serialize</span>
+<span class="sd">^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+
+<span class="sd">Serializing and de-serializing instruments and parameters.</span>
+<span class="sd">The tools in here can be used to perform the following tasks:</span>
+
+<span class="sd">    * Store instrument and parameter information to json.</span>
+
+<span class="sd">    * Load instrument and parameter information from json.</span>
+
+<span class="sd">The main utility of the methods here is to have a relatively simple representation</span>
+<span class="sd">of the state of the system (by system we mean: either a qcodes station, or simply</span>
+<span class="sd">a collection of qcodes instruments and parameters).</span>
+<span class="sd">All of this information is also provided by the qcodes snaphot.</span>
+<span class="sd">This module is currently intended to supplement that with a format that is easier</span>
+<span class="sd">to read and contains only state information (such as values).</span>
+
+<span class="sd">The main methods here are :func:`toParamDict` and :func:`fromParamDict`, which allow</span>
+<span class="sd">extracting instrument parameters to JSON and load parameters from JSON.</span>
+
+<span class="sd">The main format for the JSON objects we work with follows this scheme::</span>
+
+<span class="sd">    paramDict = {</span>
+<span class="sd">        &quot;parameter_name&quot;: {</span>
+<span class="sd">            &quot;value&quot;: value,</span>
+<span class="sd">            &quot;unit&quot;: &quot;unit of this parameter&quot;,</span>
+<span class="sd">            [...]</span>
+<span class="sd">        },</span>
+<span class="sd">        &quot;instrument.instrument_parameter&quot;: {</span>
+<span class="sd">            &quot;value&quot;: value,</span>
+<span class="sd">            &quot;unit&quot;: &quot;the unit of this parameter&quot;,</span>
+<span class="sd">            [...]</span>
+<span class="sd">        },</span>
+<span class="sd">        &quot;another_instrument.a_submodule.some_parameter&quot;: {</span>
+<span class="sd">            &quot;value&quot;: value,</span>
+<span class="sd">            [...]</span>
+<span class="sd">        }</span>
+<span class="sd">    }</span>
+
+<span class="sd">Only &quot;value&quot; is required as key for each parameter, but arbitrary additional meta</span>
+<span class="sd">data can be added in principle.</span>
+<span class="sd">The naming of the parameters is the same way in which they would be addressed inside</span>
+<span class="sd">a qcodes station.</span>
+<span class="sd">I.e., if the parameter is called using::</span>
+
+<span class="sd">    station.[parent object(s)].parameter()</span>
+
+<span class="sd">Then the name in `paramDict` is &quot;[parent objects(s)].parameter&quot;.</span>
+
+<span class="sd">In case the only property of each parameter is `value`, then it is also possible</span>
+<span class="sd">to use a simplified format which looks like this::</span>
+
+<span class="sd">    paramDict = {</span>
+<span class="sd">        &quot;parameter_name&quot;: value,</span>
+<span class="sd">        &quot;instrument.instrument_parameter&quot;: value,</span>
+<span class="sd">        &quot;another_instrument.a_submodule.some_parameter&quot;: value,</span>
+<span class="sd">    }</span>
+
+<span class="sd">This format is sufficient to store/load parameter values, but not to create</span>
+<span class="sd">parameters that are not present yet.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: would be good to have a serialization format the also captures validators,</span>
+<span class="c1">#  for example. But that would mean we need to use either binary, or come up with</span>
+<span class="c1">#  something that allows recreation from text.</span>
+<span class="c1"># TODO: make a proper type from the paramdict?</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jsonschema</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Station</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.instrument</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstrumentBase</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">PARAMS_SCHEMA_PATH</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">SerializableType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Station</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">InstrumentBase</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">]]]</span>
+
+
+<div class="viewcode-block" id="toParamDict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.serialize.html#instrumentserver.serialize.toParamDict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">toParamDict</span><span class="p">(</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">SerializableType</span><span class="p">,</span>
+    <span class="n">get</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">includeMeta</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">excludeParameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">simpleFormat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a dictionary that holds parameter values, and optionally additional</span>
+<span class="sd">    information about them.</span>
+
+<span class="sd">    :param input: qcodes station or list of instruments/parameters.</span>
+<span class="sd">    :param get: Whether to call `get` on the parameters.</span>
+<span class="sd">        If not, use the values from the current snapshot.</span>
+<span class="sd">        Note: Parameters that are not included in the snapshot are never included.</span>
+<span class="sd">    :param includeMeta: List of parameter attributes to include besides value.</span>
+<span class="sd">        All keys occurring in snapshots are valid.</span>
+<span class="sd">    :param excludeParameters: List of parameters we don&#39;t include in the return.</span>
+<span class="sd">    :param simpleFormat: If ``True`` and no additional metadata is included,</span>
+<span class="sd">        then the output format will be simplified such that the the value for</span>
+<span class="sd">        each parameter key is simply `value`, rather than a dictionary of</span>
+<span class="sd">        multiple properties.</span>
+<span class="sd">    :returns: Dictionary. If not simple format, conforms to</span>
+<span class="sd">        instrumentserver/schemas/parameters.json</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">Station</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="s2">&quot;get_snapshot&quot;</span><span class="p">):</span>
+            <span class="n">snap</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">snap</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">snapshot</span><span class="p">()</span>
+        <span class="nb">input</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">snap</span><span class="p">[</span><span class="s2">&quot;instruments&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">snap</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+            <span class="o">+</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">snap</span><span class="p">[</span><span class="s2">&quot;components&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="p">)</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">InstrumentBase</span><span class="p">):</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">_singleInstrumentParametersToJson</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="p">,</span>
+                    <span class="n">get</span><span class="o">=</span><span class="n">get</span><span class="p">,</span>
+                    <span class="n">addPrefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="n">includeMeta</span><span class="o">=</span><span class="n">includeMeta</span><span class="p">,</span>
+                    <span class="n">simpleFormat</span><span class="o">=</span><span class="n">simpleFormat</span><span class="p">,</span>
+                    <span class="n">excludeParameters</span><span class="o">=</span><span class="n">excludeParameters</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">_singleParameterToJson</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="p">,</span> <span class="n">get</span><span class="o">=</span><span class="n">get</span><span class="p">,</span> <span class="n">simpleFormat</span><span class="o">=</span><span class="n">simpleFormat</span><span class="p">,</span> <span class="n">includeMeta</span><span class="o">=</span><span class="n">includeMeta</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid object: </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">. Can only process &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Station, Instrument, and Parameter.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="fromParamDict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.serialize.html#instrumentserver.serialize.fromParamDict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fromParamDict</span><span class="p">(</span><span class="n">paramDict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">target</span><span class="p">:</span> <span class="n">SerializableType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load parameter values from JSON.</span>
+
+<span class="sd">    :param paramDict: The parameter dictionary in a valid JSON format (may be</span>
+<span class="sd">        simple or regular format).</span>
+<span class="sd">    :param target: Object(s) holding the parameters to load.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">validateParamDict</span><span class="p">(</span><span class="n">paramDict</span><span class="p">)</span>
+    <span class="n">simple</span> <span class="o">=</span> <span class="n">isSimpleFormat</span><span class="p">(</span><span class="n">paramDict</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">paramDict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="n">paramAsList</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">_getObjectByName</span><span class="p">(</span><span class="n">paramAsList</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">src</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">] Cannot find &#39;</span><span class="si">{</span><span class="n">paramAsList</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;, ignore.&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">param</span> <span class="o">=</span> <span class="n">_getParamFromList</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">paramAsList</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">] not present in target, ignore.&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">simple</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">paramDict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">paramDict</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s2">&quot;set&quot;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">] set to: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">param</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">] does not support setting, ignore.&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># Tools</span>
+
+
+<div class="viewcode-block" id="isSimpleFormat">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.serialize.html#instrumentserver.serialize.isSimpleFormat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">isSimpleFormat</span><span class="p">(</span><span class="n">paramDict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the supplied paramDict is in the simplified format.</span>
+
+<span class="sd">    We identify the simple format by the fact that otherwise **all** item values</span>
+<span class="sd">    are a dictionary with a least the key `value` in it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">paramDict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;value&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="validateParamDict">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.serialize.html#instrumentserver.serialize.validateParamDict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validateParamDict</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">isSimpleFormat</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">PARAMS_SCHEMA_PATH</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">validate</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span></div>
+
+
+
+<div class="viewcode-block" id="toDataFrame">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.serialize.html#instrumentserver.serialize.toDataFrame">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">toDataFrame</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">SerializableType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;pd.DataFrame&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a pandas data frame from the parameters. Mainly useful for</span>
+<span class="sd">    printing overviews in notebooks.&quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">toParamDict</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">includeMeta</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="s2">&quot;vals&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span></div>
+
+
+
+<span class="c1"># private tool functions</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_singleParameterToJson</span><span class="p">(</span>
+    <span class="n">parameter</span><span class="p">:</span> <span class="n">Parameter</span><span class="p">,</span>
+    <span class="n">get</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">includeMeta</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">simpleFormat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a JSON representation of a parameter.&quot;&quot;&quot;</span>
+
+    <span class="n">ret</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="s2">&quot;get_snapshot&quot;</span><span class="p">):</span>
+        <span class="n">snap</span> <span class="o">=</span> <span class="n">parameter</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">get</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">snap</span> <span class="o">=</span> <span class="n">parameter</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">get</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">includeMeta</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">simpleFormat</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">snap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">includeMeta</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">snap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ret</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_singleInstrumentParametersToJson</span><span class="p">(</span>
+    <span class="n">instrument</span><span class="p">:</span> <span class="n">InstrumentBase</span><span class="p">,</span>
+    <span class="n">get</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">addPrefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">includeMeta</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">excludeParameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">simpleFormat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a dictionary that holds the parameters of an instrument.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="s2">&quot;IDN&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excludeParameters</span><span class="p">:</span>
+        <span class="n">excludeParameters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;IDN&quot;</span><span class="p">)</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="s2">&quot;get_snapshot&quot;</span><span class="p">):</span>
+        <span class="n">snap</span> <span class="o">=</span> <span class="n">instrument</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">get</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">snap</span> <span class="o">=</span> <span class="n">instrument</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">get</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">instrument</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excludeParameters</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">param</span><span class="o">.</span><span class="n">snapshot_exclude</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">includeMeta</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">simpleFormat</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">addPrefix</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">snap</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">addPrefix</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">snap</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">([</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">includeMeta</span><span class="p">):</span>
+                        <span class="n">ret</span><span class="p">[</span><span class="n">addPrefix</span> <span class="o">+</span> <span class="n">name</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;excluded: </span><span class="si">{</span><span class="n">addPrefix</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">submod</span> <span class="ow">in</span> <span class="n">instrument</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">_singleInstrumentParametersToJson</span><span class="p">(</span>
+                <span class="n">submod</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
+                <span class="n">get</span><span class="o">=</span><span class="n">get</span><span class="p">,</span>
+                <span class="n">addPrefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">addPrefix</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">simpleFormat</span><span class="o">=</span><span class="n">simpleFormat</span><span class="p">,</span>
+                <span class="n">includeMeta</span><span class="o">=</span><span class="n">includeMeta</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_getParamFromList</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">childrenList</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Parameter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the lowest attribute in the hierarchy:</span>
+<span class="sd">    returns the object described by parent.&lt;child_0&gt;.&lt;child_1&gt;.[...].&lt;child_N&gt;.</span>
+<span class="sd">    Works for any `N` &gt;= 0.</span>
+
+<span class="sd">    For 2 children, an equivalent code would be:</span>
+<span class="sd">    &gt;&gt;&gt; getattr(getattr(parent, childrenList[0]), childrenList[1])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">childrenList</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">parent</span>
+    <span class="n">nextObj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">childrenList</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">childrenList</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nextObj</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_getParamFromList</span><span class="p">(</span><span class="n">nextObj</span><span class="p">,</span> <span class="n">childrenList</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_getObjectByName</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">SerializableType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get an object from a container by specifying its name.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">Station</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">elt</span> <span class="ow">in</span> <span class="n">src</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">elt</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">elt</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Tools For Experiments.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

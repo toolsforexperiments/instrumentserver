@@ -1,0 +1,13 @@
+﻿instrumentserver.testing
+========================
+
+.. automodule:: instrumentserver.testing
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   dummy_instruments

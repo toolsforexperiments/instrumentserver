@@ -31,6 +31,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
@@ -41,14 +42,14 @@
     <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/instrumentserver.server.pollingWorker';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/api/generated/instrumentserver.server.pollingWorker.html" />
-    <link rel="author" title="About these documents" href="../../about.html" />
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="instrumentserver.client" href="instrumentserver.client.html" />
+    <link rel="next" title="instrumentserver.testing" href="instrumentserver.testing.html" />
     <link rel="prev" title="instrumentserver.server.core" href="instrumentserver.server.core.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -143,8 +144,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -157,8 +158,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -290,8 +291,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -304,8 +305,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -388,21 +389,44 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.application.html">instrumentserver.server.application</a></li>
-<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">instrumentserver.server.pollingWorker</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.apps.html">instrumentserver.apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.base.html">instrumentserver.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.client.html">instrumentserver.client</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.application.html">instrumentserver.client.application</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.core.html">instrumentserver.client.core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.proxy.html">instrumentserver.client.proxy</a></li>
 </ul>
 </details></li>
-<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.config.html">instrumentserver.config</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.gui.html">instrumentserver.gui</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.helpers.html">instrumentserver.helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.log.html">instrumentserver.log</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.monitoring.html">instrumentserver.monitoring</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.monitoring.listener.html">instrumentserver.monitoring.listener</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.params.html">instrumentserver.params</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.serialize.html">instrumentserver.serialize</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.application.html">instrumentserver.server.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">instrumentserver.server.pollingWorker</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.testing.html">instrumentserver.testing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.html">instrumentserver.testing.dummy_instruments</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.generic.html">instrumentserver.testing.dummy_instruments.generic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.rf.html">instrumentserver.testing.dummy_instruments.rf</a></li>
+</ul>
+</details></li>
 </ul>
 </details></li>
 </ul>
@@ -517,11 +541,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="instrumentserver.client.html"
+       href="instrumentserver.testing.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">instrumentserver.client</p>
+        <p class="prev-next-title">instrumentserver.testing</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -586,7 +610,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020-2026, Wolfgang Pfaff.
+      © Copyright 2020-2026, Tools For Experiments.
       <br/>
     
   </p>

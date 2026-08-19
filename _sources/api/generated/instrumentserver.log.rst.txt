@@ -1,0 +1,22 @@
+﻿instrumentserver.log
+====================
+
+.. automodule:: instrumentserver.log
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      log
+      logger
+      setupLogging
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      LogLevels
+      LogWidget
+      QLogHandler
+   

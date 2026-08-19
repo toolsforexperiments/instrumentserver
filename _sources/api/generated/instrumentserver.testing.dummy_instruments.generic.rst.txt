@@ -1,0 +1,18 @@
+instrumentserver.testing.dummy\_instruments.generic
+===================================================
+
+.. automodule:: instrumentserver.testing.dummy_instruments.generic
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DummyChannel
+      DummyInstrumentRandomNumber
+      DummyInstrumentTimeout
+      DummyInstrumentWithFlags
+      DummyInstrumentWithSubmodule
+      FieldVectorIns
+      StatusFlag
+   

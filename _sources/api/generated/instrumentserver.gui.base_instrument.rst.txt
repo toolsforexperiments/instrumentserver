@@ -1,0 +1,17 @@
+instrumentserver.gui.base\_instrument
+=====================================
+
+.. automodule:: instrumentserver.gui.base_instrument
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DelegateBase
+      InstrumentDisplayBase
+      InstrumentModelBase
+      InstrumentSortFilterProxyModel
+      InstrumentTreeViewBase
+      ItemBase
+   

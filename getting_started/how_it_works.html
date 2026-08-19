@@ -1,0 +1,1518 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How It Works &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'getting_started/how_it_works';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/getting_started/how_it_works.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Instrumentserver Overview" href="overview.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="auto">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">How It Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Instrumentserver Overview</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Getting Started</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">How It Works</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="how-it-works">
+<h1>How It Works<a class="headerlink" href="#how-it-works" title="Link to this heading">#</a></h1>
+<p>Laboratory hardware needs a single authoritative owner. If every script, GUI, and
+Listener opened its own connection, they could disagree about the instrument’s state or
+send it conflicting commands. Instrumentserver keeps the real instrument in one
+<strong>Server</strong> and gives each consumer a shared way to reach it.</p>
+<section id="following-the-diagram">
+<h2>Following the diagram<a class="headerlink" href="#following-the-diagram" title="Link to this heading">#</a></h2>
+<p>The diagram follows one instrument, <code class="docutils literal notranslate"><span class="pre">generator</span></code>, from Server startup through a parameter
+call and the resulting <strong>Broadcast</strong>.</p>
+<!--
+  Scrollytelling flow diagram for getting_started/how_it_works.md.
+
+  Injected inline into the page by a ```{raw} html :file: ... ``` block, so it
+  shares the page's own scroll (a sticky map cannot work inside an iframe).
+
+  Self-contained on purpose: markup, style and behaviour in one file, no build
+  step and no external assets. Colours come from the pydata theme tokens
+  (--pst-color-*), so the diagram follows the site's light/dark switch.
+
+  The map is hand-laid SVG rather than generated, so it still renders (static,
+  fully labelled) with JavaScript off; the script only lights nodes and moves
+  comets as you scroll.
+
+  The eleven captions are "steps", never "stations". The conceptual map treats
+  the Server as the home of its instruments and leaves the internal QCoDeS
+  Station object for the Technical Guide.
+-->
+
+<div class="isflow" id="isflow">
+
+  <div class="isflow-stage">
+    <div class="isflow-hud">
+      <span class="isflow-hud-no" id="isflow-hud-no">Step 01</span>
+      <span class="isflow-hud-title" id="isflow-hud-title">The Server loads its configuration</span>
+    </div>
+
+    <svg class="isflow-map" viewBox="0 0 960 430" role="img"
+         aria-labelledby="isflow-map-title isflow-map-desc">
+      <title id="isflow-map-title">How a configured instrument becomes a shared remote instrument</title>
+      <desc id="isflow-map-desc">The Server reads a configuration file, creates the
+        generator QCoDeS driver, and connects it to an RF source. Your script connects
+        through a Client, requests a Blueprint, and builds a Proxy Instrument. Later
+        calls and their results travel directly between that Proxy and the Server, and
+        Broadcasts update the Server GUI and a Listener.</desc>
+
+      <!-- ---------------- edges (drawn first, under the boxes) ---------------- -->
+      <g class="isflow-edges">
+        <path id="isflow-edge-connect" class="isflow-edge kind-req"
+              d="M260,117 C300,117 310,117 350,117" />
+        <path class="isflow-arrow kind-req" data-arrow="connect-fwd"
+              d="M350,117 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <path class="isflow-arrow kind-req" data-arrow="connect-back"
+              d="M260,117 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <text id="isflow-label-connect" class="isflow-edge-label" x="305" y="101"
+              text-anchor="middle">connects</text>
+
+        <path id="isflow-edge-blueprint" class="isflow-edge kind-req"
+              d="M350,152 C310,152 300,152 260,152" />
+        <path class="isflow-arrow kind-req" data-arrow="blueprint-back"
+              d="M260,152 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <path class="isflow-arrow kind-req" data-arrow="blueprint-fwd"
+              d="M350,152 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-blueprint" class="isflow-edge-label" x="305" y="146"
+              text-anchor="middle">Blueprint</text>
+
+        <path id="isflow-edge-req" class="isflow-edge kind-req"
+              d="M260,186 C300,186 310,198 350,198" />
+        <path class="isflow-arrow kind-req" data-arrow="req-fwd"
+              d="M350,198 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <path class="isflow-arrow kind-req" data-arrow="req-back"
+              d="M260,186 l13,-5.5 l-2.5,5.5 l2.5,5.5 z" />
+        <text id="isflow-label-req" class="isflow-edge-label" x="303" y="216"
+              text-anchor="middle">request / result</text>
+
+        <path id="isflow-edge-hw" class="isflow-edge kind-hw"
+              d="M630,132 C670,132 700,142 740,142" />
+        <path class="isflow-arrow kind-hw" data-arrow="hw-fwd"
+              d="M740,142 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-hw" class="isflow-edge-label" x="685" y="91"
+              text-anchor="middle">connection</text>
+
+        <path id="isflow-edge-gui" class="isflow-edge kind-cast"
+              d="M438,280 C438,315 410,315 410,342" />
+        <path class="isflow-arrow kind-cast" data-arrow="gui-fwd"
+              d="M410,350 l-5.5,-13 l5.5,2.5 l5.5,-2.5 z" />
+        <text id="isflow-label-gui" class="isflow-edge-label" x="402" y="321"
+              text-anchor="end">Broadcast</text>
+
+        <path id="isflow-edge-lst" class="isflow-edge kind-cast"
+              d="M565,280 C565,315 730,315 730,342" />
+        <path class="isflow-arrow kind-cast" data-arrow="lst-fwd"
+              d="M730,350 l-5.5,-13 l5.5,2.5 l5.5,-2.5 z" />
+        <text id="isflow-label-lst" class="isflow-edge-label" x="648" y="321"
+              text-anchor="middle">Broadcast</text>
+
+        <circle class="isflow-comet kind-req" data-comet="connect" r="5" />
+        <circle class="isflow-comet kind-req" data-comet="blueprint" r="5" />
+        <circle class="isflow-comet kind-req" data-comet="req" r="5" />
+        <circle class="isflow-comet kind-hw" data-comet="hw" r="5" />
+        <circle class="isflow-comet kind-cast" data-comet="gui" r="5" />
+        <circle class="isflow-comet kind-cast" data-comet="lst" r="5" />
+      </g>
+
+      <!-- ---------------- nodes ---------------- -->
+      <g class="isflow-node kind-client" data-node="script" transform="translate(0 40)">
+        <rect class="isflow-box isflow-shell" x="20" y="20" width="240" height="180" rx="12" />
+        <text class="isflow-t1" x="140" y="46" text-anchor="middle">your script</text>
+      </g>
+
+      <!-- The standalone Client uses the returned Blueprint to construct the
+           Proxy Instrument below it. -->
+      <g class="isflow-edges" transform="translate(0 40)">
+        <path id="isflow-edge-build" class="isflow-edge kind-req"
+              d="M140,96 L140,114" />
+        <path class="isflow-arrow kind-req" data-arrow="build-fwd"
+              d="M140,122 l-5.5,-13 l5.5,2.5 l5.5,-2.5 z" />
+        <text id="isflow-label-build" class="isflow-edge-label" x="158" y="113"
+              text-anchor="start">constructs</text>
+        <circle class="isflow-comet kind-req" data-comet="build" r="5" />
+      </g>
+
+      <g class="isflow-node kind-client" data-node="client" transform="translate(0 40)">
+        <rect class="isflow-box isflow-chip" x="60" y="58" width="160" height="38" rx="8" />
+        <text class="isflow-t1 small" x="140" y="83" text-anchor="middle">Client</text>
+      </g>
+
+      <g class="isflow-node kind-client" data-node="proxy" transform="translate(0 40)">
+        <rect class="isflow-box isflow-chip" x="60" y="122" width="160" height="62" rx="8" />
+        <text class="isflow-t1 small" x="140" y="144" text-anchor="middle">generator</text>
+        <text class="isflow-t2" x="140" y="161" text-anchor="middle">Proxy</text>
+        <text class="isflow-t2" x="140" y="176" text-anchor="middle">Instrument</text>
+      </g>
+
+      <g class="isflow-node kind-server" data-node="server">
+        <rect class="isflow-box isflow-shell" x="350" y="20" width="290" height="260" rx="12" />
+        <text class="isflow-t1" x="495" y="49" text-anchor="middle">Server</text>
+      </g>
+
+      <!-- This edge belongs inside the Server, so it sits above the Server's
+           background but below the two boxes it connects. -->
+      <g class="isflow-edges">
+        <path id="isflow-edge-create" class="isflow-edge kind-req"
+              d="M470,132 L522,132" />
+        <path class="isflow-arrow kind-req" data-arrow="create-fwd"
+              d="M530,132 l-13,-5.5 l2.5,5.5 l-2.5,5.5 z" />
+        <text id="isflow-label-create" class="isflow-edge-label" x="500" y="75"
+              text-anchor="middle">creates</text>
+        <circle class="isflow-comet kind-req" data-comet="create" r="5" />
+      </g>
+
+      <g class="isflow-node kind-config" data-node="config">
+        <rect class="isflow-box isflow-chip" x="365" y="88" width="105" height="88" rx="8" />
+        <text class="isflow-t1 small" x="417.5" y="123" text-anchor="middle">configuration</text>
+        <text class="isflow-t1 small" x="417.5" y="143" text-anchor="middle">file</text>
+      </g>
+
+      <g class="isflow-node kind-server" data-node="instrument">
+        <rect class="isflow-box isflow-chip" x="530" y="88" width="100" height="88" rx="8" />
+        <text class="isflow-t1 small" x="580" y="123" text-anchor="middle">generator</text>
+        <text class="isflow-t2" x="580" y="148" text-anchor="middle">QCoDeS driver</text>
+      </g>
+
+      <g class="isflow-node kind-hw" data-node="hardware">
+        <rect class="isflow-box" x="740" y="105" width="190" height="74" rx="10" />
+        <text class="isflow-t1" x="835" y="135" text-anchor="middle">RF source</text>
+        <text class="isflow-t2" x="835" y="159" text-anchor="middle">laboratory hardware</text>
+      </g>
+
+      <g class="isflow-node kind-watcher" data-node="gui">
+        <rect class="isflow-box" x="310" y="350" width="200" height="64" rx="10" />
+        <text class="isflow-t1" x="410" y="377" text-anchor="middle">the Server's GUI</text>
+        <text class="isflow-t2" x="410" y="399" text-anchor="middle">updates the display</text>
+      </g>
+
+      <g class="isflow-node kind-watcher" data-node="listener">
+        <rect class="isflow-box" x="630" y="350" width="200" height="64" rx="10" />
+        <text class="isflow-t1" x="730" y="377" text-anchor="middle">a Listener</text>
+        <text class="isflow-t2" x="730" y="399" text-anchor="middle">records the change</text>
+      </g>
+    </svg>
+
+    <div class="isflow-key" aria-hidden="true">
+      <span class="isflow-key-row"><i class="sw kind-req"></i>Client and Server messages</span>
+      <span class="isflow-key-row"><i class="sw kind-cast"></i>Broadcast</span>
+      <span class="isflow-key-row"><i class="sw kind-hw"></i>hardware connection</span>
+    </div>
+  </div>
+
+  <ol class="isflow-steps" id="isflow-steps">
+    <li class="isflow-step" data-step="0">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 01</p>
+        <h3>The Server loads its configuration</h3>
+        <p>At startup, the <strong>Server</strong> reads its configuration file and
+          creates <code>generator</code>, the QCoDeS driver for the instrument.
+          (Instruments can also be started from a Client at runtime.)</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="1">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 02</p>
+        <h3>The driver connects to the hardware</h3>
+        <p>The <code>generator</code> driver establishes the Server's connection to the
+          RF source on the bench. No other process connects to the hardware directly.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="2">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 03</p>
+        <h3>A Client connects</h3>
+        <p>Your script creates a <strong>Client</strong> and establishes a two-way
+          connection with the Server.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="3">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 04</p>
+        <h3>The Client requests a Blueprint</h3>
+        <p>You ask for <code>generator</code>. The Client asks the Server for a
+          <strong>Blueprint</strong> describing that instrument's interface.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="4">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 05</p>
+        <h3>The Server returns the Blueprint</h3>
+        <p>The Server replies to the Client with the <strong>Blueprint</strong> for
+          <code>generator</code>.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="5">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 06</p>
+        <h3>The Client constructs the Proxy</h3>
+        <p>The Client uses the Blueprint to construct a local
+          <strong>Proxy Instrument</strong> named <code>generator</code>.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="6">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 07</p>
+        <h3>You call the Proxy</h3>
+        <p>You call <code>generator.frequency(5e9)</code>. The Proxy sends the request
+          directly to the Server; the standalone Client that constructed it is not
+          involved. Nothing is set locally.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="7">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 08</p>
+        <h3>The Server runs the call</h3>
+        <p>The Server runs the set on the real <code>generator</code>, which communicates
+          with the RF source through the Server's hardware connection.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="8">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 09</p>
+        <h3>The Server returns the result</h3>
+        <p>The Server sends the result back to the Proxy that made the request. The Proxy
+          call completes.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="9">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 10</p>
+        <h3>The Server publishes a Broadcast</h3>
+        <p>The Server separately publishes the parameter change as a
+          <strong>Broadcast</strong>. It publishes the message once, and every subscriber
+          that is listening can receive it.</p>
+      </div>
+    </li>
+
+    <li class="isflow-step" data-step="10">
+      <div class="isflow-card">
+        <p class="isflow-num">Step 11</p>
+        <h3>Subscribers react</h3>
+        <p>The Server's GUI updates its display, and the <strong>Listener</strong> records
+          the change.</p>
+      </div>
+    </li>
+
+  </ol>
+</div>
+
+<style>
+/* ==========================================================================
+   Scrollytelling flow diagram (getting_started/how_it_works.md)
+   Scoped to .isflow, except one theme fix noted below.
+   ========================================================================== */
+
+/* The theme's article container sets `overflow-x: auto`, which makes it a
+   scroll container and silently kills `position: sticky` for anything inside
+   it. `clip` prevents horizontal overflow just the same without creating a
+   scroll container. Selector matches the theme's own specificity so it wins on
+   source order; only ever loaded on pages carrying a flow diagram. */
+.bd-main .bd-content .bd-article-container { overflow-x: clip; }
+
+.isflow {
+  /* palette: theme tokens only, so light/dark follows the site toggle */
+  --isf-req: var(--pst-color-primary);
+  --isf-cast: var(--pst-color-accent);
+  --isf-hw: var(--pst-color-warning);
+  --isf-line: var(--pst-color-border);
+  --isf-ink: var(--pst-color-text-base);
+  --isf-muted: var(--pst-color-text-muted);
+  --isf-panel: var(--pst-color-background);
+  --isf-box: var(--pst-color-surface);
+
+  /* the map is 960x430, so this height also sets how wide it draws */
+  --isf-stage-h: clamp(240px, 38vh, 370px);
+
+  position: relative;
+  margin: 1.4rem 0 0.5rem;
+}
+
+/* -------------------------------- the map -------------------------------- */
+
+.isflow-stage {
+  position: sticky;
+  top: calc(var(--pst-header-height, 4rem) + 1rem);
+  z-index: 2;
+  height: var(--isf-stage-h);
+  padding: 2rem 0 0.5rem;
+  background: var(--isf-panel);
+  border-bottom: 1px solid var(--pst-color-border-muted);
+}
+.isflow-stage::before {
+  content: "";
+  position: absolute;
+  inset: -1rem 0 auto;
+  height: 1rem;
+  background: var(--isf-panel);
+}
+
+.isflow-map {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.isflow-hud {
+  position: absolute;
+  top: 0;
+  left: 0.1rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.isflow-hud-no {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--isf-req);
+  font-weight: 600;
+}
+.isflow-hud-title {
+  font-size: 0.95rem;
+  color: var(--isf-ink);
+  font-weight: 600;
+}
+
+.isflow-key {
+  position: absolute;
+  right: 0.1rem;
+  top: 0.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  color: var(--isf-muted);
+  pointer-events: none;
+}
+.isflow-key-row { display: flex; align-items: center; gap: 0.4rem; }
+.isflow-key .sw {
+  width: 15px;
+  border-top: 2.5px solid var(--isf-line);
+  border-radius: 2px;
+}
+.isflow-key .sw.kind-req { border-color: var(--isf-req); }
+.isflow-key .sw.kind-cast { border-color: var(--isf-cast); }
+.isflow-key .sw.kind-hw { border-color: var(--isf-hw); }
+
+/* ------------------------------ svg: nodes ------------------------------- */
+
+.isflow-node .isflow-box {
+  fill: var(--isf-box);
+  stroke: var(--isf-line);
+  stroke-width: 1.4;
+  transition: stroke 0.35s, stroke-width 0.35s, filter 0.35s;
+}
+.isflow-node .isflow-chip {
+  fill: var(--isf-panel);
+  stroke: var(--isf-line);
+  stroke-width: 1.2;
+}
+.isflow-node.kind-config .isflow-chip {
+  stroke-dasharray: 4 3;
+}
+.isflow-node .isflow-t1 {
+  fill: var(--isf-ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+.isflow-node .isflow-t1.small { font-size: 16px; }
+.isflow-node .isflow-t2 {
+  fill: var(--isf-muted);
+  font-size: 13px;
+}
+.isflow-node { transition: opacity 0.35s; }
+
+.isflow-node.is-dim { opacity: 0.3; }
+
+.isflow-node.is-lit .isflow-box { stroke-width: 2.6; }
+.isflow-node.kind-client.is-lit .isflow-box,
+.isflow-node.kind-server.is-lit .isflow-box,
+.isflow-node.kind-config.is-lit .isflow-box {
+  stroke: var(--isf-req);
+  filter: drop-shadow(0 0 6px var(--isf-req));
+}
+.isflow-node.kind-hw.is-lit .isflow-box {
+  stroke: var(--isf-hw);
+  filter: drop-shadow(0 0 6px var(--isf-hw));
+}
+.isflow-node.kind-watcher.is-lit .isflow-box {
+  stroke: var(--isf-cast);
+  filter: drop-shadow(0 0 6px var(--isf-cast));
+}
+/* deliberately-not-involved state */
+.isflow-node.is-note { opacity: 0.65; }
+.isflow-node.is-note .isflow-box { stroke-dasharray: 5 4; }
+
+/* ------------------------------ svg: edges ------------------------------- */
+
+.isflow-edge {
+  fill: none;
+  stroke: var(--isf-line);
+  stroke-width: 1.6;
+  opacity: 0.65;
+  transition: stroke 0.35s, stroke-width 0.35s, opacity 0.35s;
+}
+.isflow-arrow {
+  fill: var(--isf-line);
+  opacity: 0.65;
+  transition: fill 0.35s, opacity 0.35s;
+}
+/* Labels are visible by default so the static (JavaScript off) map stays fully
+   annotated; once the script takes over they are revealed step by step. */
+.isflow-edge-label {
+  font-size: 13px;
+  fill: var(--isf-muted);
+  stroke: var(--isf-panel);
+  stroke-width: 6px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  transition: opacity 0.3s;
+}
+.isflow.is-live .isflow-edge-label { opacity: 0; }
+
+.isflow-edge.is-lit { opacity: 1; stroke-width: 2.6; }
+.isflow-edge.is-lit.kind-req { stroke: var(--isf-req); }
+.isflow-edge.is-lit.kind-cast { stroke: var(--isf-cast); }
+.isflow-edge.is-lit.kind-hw { stroke: var(--isf-hw); }
+
+.isflow-arrow.is-lit { opacity: 1; }
+.isflow-arrow.is-lit.kind-req { fill: var(--isf-req); }
+.isflow-arrow.is-lit.kind-cast { fill: var(--isf-cast); }
+.isflow-arrow.is-lit.kind-hw { fill: var(--isf-hw); }
+
+.isflow.is-live .isflow-edge-label.is-lit { opacity: 1; fill: var(--isf-ink); }
+
+.isflow-edge.is-marching {
+  stroke-dasharray: 6 8;
+  animation: isflow-march 0.9s linear infinite;
+}
+@keyframes isflow-march { to { stroke-dashoffset: -28; } }
+
+.isflow-comet {
+  opacity: 0;
+  fill: var(--isf-panel);
+  stroke-width: 2.5;
+}
+.isflow-comet.kind-req { stroke: var(--isf-req); filter: drop-shadow(0 0 5px var(--isf-req)); }
+.isflow-comet.kind-cast { stroke: var(--isf-cast); filter: drop-shadow(0 0 5px var(--isf-cast)); }
+.isflow-comet.kind-hw { stroke: var(--isf-hw); filter: drop-shadow(0 0 5px var(--isf-hw)); }
+.isflow-comet.is-on { opacity: 1; }
+
+/* ------------------------------- the steps ------------------------------- */
+
+.isflow-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0.7rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.isflow-step {
+  min-height: 0;
+  display: block;
+  margin: 0;
+}
+
+.isflow-card {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 1rem 1.2rem;
+  background: var(--isf-box);
+  border: 1px solid var(--pst-color-border-muted);
+  border-left: 3px solid var(--isf-req);
+  border-radius: 0.5rem;
+  transition: opacity 0.4s, transform 0.4s, box-shadow 0.4s;
+}
+.isflow.is-live .isflow-card { cursor: pointer; }
+.isflow.is-live .isflow-card:hover {
+  border-color: var(--isf-req);
+}
+.isflow.is-live .isflow-card:focus-visible {
+  outline: 3px solid var(--isf-req);
+  outline-offset: 3px;
+}
+/* Same idea as the labels: all cards read normally without JavaScript. */
+.isflow.is-live .isflow-card {
+  opacity: 0.45;
+  transform: translateY(6px);
+}
+.isflow.is-live .isflow-step.is-active .isflow-card {
+  opacity: 1;
+  transform: none;
+  box-shadow: 0 8px 24px -14px var(--pst-color-shadow);
+}
+
+.isflow-card .isflow-num {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--isf-req);
+}
+.isflow-card h3 {
+  margin: 0.1rem 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.isflow-card p { margin: 0 0 0.5rem; }
+.isflow-card p:last-child { margin-bottom: 0; }
+
+/* ------------------------------ small screens ---------------------------- */
+
+@media (max-width: 720px) {
+  .isflow { --isf-stage-h: clamp(190px, 32vh, 290px); }
+  .isflow-steps { gap: 0.5rem; }
+  .isflow-key { display: none; }
+  .isflow-card { padding: 0.9rem 1rem; }
+}
+
+/* --------------------------- reduced motion ------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .isflow-edge.is-marching { animation: none; }
+  .isflow-comet { display: none; }
+  .isflow *,
+  .isflow *::before,
+  .isflow *::after { transition-duration: 0.01ms !important; }
+}
+</style>
+
+<script>
+/* ==========================================================================
+   Scrollytelling flow diagram (getting_started/how_it_works.md)
+
+   The map above is complete static markup. This script only:
+     - marks the step you are reading (IntersectionObserver on a thin band),
+     - lights the nodes and edges that step is about,
+     - runs a comet along the edge the data is travelling.
+
+   With JavaScript off, or with prefers-reduced-motion, the page degrades to a
+   fully labelled diagram and eleven ordinary paragraphs.
+   ========================================================================== */
+(function () {
+  "use strict";
+
+  var root = document.getElementById("isflow");
+  if (!root || !("IntersectionObserver" in window)) return;
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* --- what each step shows -----------------------------------------------
+     lit    nodes in the spotlight
+     keep   nodes that stay at normal weight (present, but not the subject)
+     note   nodes deliberately marked as *not* taking part
+     edges  {id, dir, label}; dir -1 sends the comet backwards along the path
+     ----------------------------------------------------------------------- */
+  var STEPS = [
+    {
+      no: "Step 01", title: "The Server loads its configuration",
+      lit: ["server", "config", "instrument"],
+      keep: [], note: [],
+      edges: [
+        { id: "create", dir: 1, label: "creates", arrows: ["create-fwd"] }
+      ]
+    },
+    {
+      no: "Step 02", title: "The driver connects to the hardware",
+      lit: ["server", "instrument", "hardware"],
+      keep: [], note: [],
+      edges: [
+        { id: "hw", dir: 1, label: "connection", arrows: ["hw-fwd"] }
+      ]
+    },
+    {
+      no: "Step 03", title: "A Client connects",
+      lit: ["script", "client", "server"],
+      keep: ["instrument", "hardware"], note: [],
+      edges: [
+        { id: "connect", dir: 1, label: "connects",
+          arrows: ["connect-fwd", "connect-back"], pingPong: true }
+      ]
+    },
+    {
+      no: "Step 04", title: "The Client requests a Blueprint",
+      lit: ["script", "client", "server"],
+      keep: ["instrument", "hardware"], note: [],
+      edges: [
+        { id: "blueprint", dir: -1, label: "request",
+          arrows: ["blueprint-fwd"] }
+      ]
+    },
+    {
+      no: "Step 05", title: "The Server returns the Blueprint",
+      lit: ["client", "server", "instrument"],
+      keep: ["script", "hardware"], note: [],
+      edges: [
+        { id: "blueprint", dir: 1, label: "Blueprint",
+          arrows: ["blueprint-back"] }
+      ]
+    },
+    {
+      no: "Step 06", title: "The Client constructs the Proxy",
+      lit: ["script", "client", "proxy"],
+      keep: ["server", "instrument", "hardware"], note: [],
+      edges: [
+        { id: "build", dir: 1, label: "constructs", arrows: ["build-fwd"] }
+      ]
+    },
+    {
+      no: "Step 07", title: "You call the Proxy",
+      lit: ["proxy", "server"],
+      keep: ["script", "instrument", "hardware"], note: [],
+      edges: [
+        { id: "req", dir: 1, label: "frequency(5e9)", arrows: ["req-fwd"] }
+      ]
+    },
+    {
+      no: "Step 08", title: "The Server runs the call",
+      lit: ["server", "instrument", "hardware"],
+      keep: ["script", "proxy"], note: [],
+      edges: [
+        { id: "hw", dir: 1, label: "set frequency", arrows: ["hw-fwd"] }
+      ]
+    },
+    {
+      no: "Step 09", title: "The Server returns the result",
+      lit: ["server", "proxy"],
+      keep: ["script", "instrument", "hardware"], note: [],
+      edges: [
+        { id: "req", dir: -1, label: "result", arrows: ["req-back"] }
+      ]
+    },
+    {
+      no: "Step 10", title: "The Server publishes a Broadcast",
+      lit: ["server"], keep: ["instrument", "gui", "listener"], note: [],
+      edges: [
+        { id: "gui", dir: 1, label: "Broadcast", arrows: ["gui-fwd"] },
+        { id: "lst", dir: 1, label: "Broadcast", arrows: ["lst-fwd"] }
+      ]
+    },
+    {
+      no: "Step 11", title: "Subscribers react",
+      lit: ["gui", "listener"],
+      keep: ["server", "instrument", "script", "client", "proxy"], note: [],
+      edges: [
+        { id: "gui", dir: 1, label: "updates", arrows: ["gui-fwd"], animate: false },
+        { id: "lst", dir: 1, label: "records", arrows: ["lst-fwd"], animate: false }
+      ]
+    }
+  ];
+
+  /* --- element lookup ------------------------------------------------------ */
+  var nodes = {};
+  Array.prototype.forEach.call(root.querySelectorAll("[data-node]"), function (g) {
+    nodes[g.getAttribute("data-node")] = g;
+  });
+  var arrows = {};
+  Array.prototype.forEach.call(root.querySelectorAll("[data-arrow]"), function (a) {
+    arrows[a.getAttribute("data-arrow")] = a;
+  });
+  var comets = {};
+  Array.prototype.forEach.call(root.querySelectorAll("[data-comet]"), function (c) {
+    comets[c.getAttribute("data-comet")] = c;
+  });
+
+  var EDGE_IDS = ["create", "build", "connect", "blueprint", "req", "hw", "gui", "lst"];
+  var edges = {}, labels = {};
+  EDGE_IDS.forEach(function (id) {
+    edges[id] = document.getElementById("isflow-edge-" + id);
+    labels[id] = document.getElementById("isflow-label-" + id);
+  });
+
+  var hudNo = document.getElementById("isflow-hud-no");
+  var hudTitle = document.getElementById("isflow-hud-title");
+  var stepEls = Array.prototype.slice.call(root.querySelectorAll(".isflow-step"));
+
+  /* --- comets -------------------------------------------------------------- */
+  var frames = {};
+
+  function stopComets() {
+    EDGE_IDS.forEach(function (id) {
+      if (frames[id]) {
+        cancelAnimationFrame(frames[id]);
+        frames[id] = null;
+      }
+      var c = comets[id];
+      if (c) {
+        c.classList.remove("is-on");
+        c.style.opacity = "";
+      }
+    });
+  }
+
+  function startComet(id, dir, pingPong) {
+    var path = edges[id], comet = comets[id];
+    if (reduced || !path || !comet || typeof path.getTotalLength !== "function") return;
+
+    var len = path.getTotalLength();
+    if (!len) return;
+    var duration = pingPong ? 1800 : 1300;
+    var begin = null;
+    comet.classList.add("is-on");
+
+    function tick(now) {
+      if (begin === null) begin = now;
+      var p = ((now - begin) % duration) / duration;
+      var travelled = pingPong
+        ? (p <= 0.5 ? p * 2 : (1 - p) * 2)
+        : p;
+      var at = dir < 0 ? (1 - travelled) * len : travelled * len;
+      var pt = path.getPointAtLength(at);
+      comet.setAttribute("cx", pt.x);
+      comet.setAttribute("cy", pt.y);
+      /* fade in and out at the ends so the loop does not snap */
+      comet.style.opacity = pingPong ? "1" : Math.sin(Math.PI * p).toFixed(3);
+      frames[id] = requestAnimationFrame(tick);
+    }
+    frames[id] = requestAnimationFrame(tick);
+  }
+
+  /* --- step rendering ------------------------------------------------------ */
+  function applyStep(index) {
+    var st = STEPS[index];
+    if (!st) return;
+
+    hudNo.textContent = st.no;
+    hudTitle.textContent = st.title;
+
+    Object.keys(nodes).forEach(function (key) {
+      var g = nodes[key];
+      var isLit = st.lit.indexOf(key) > -1;
+      var isNote = st.note.indexOf(key) > -1;
+      var isKept = st.keep.indexOf(key) > -1;
+      g.classList.toggle("is-lit", isLit);
+      g.classList.toggle("is-note", isNote);
+      g.classList.toggle("is-dim", !isLit && !isNote && !isKept);
+    });
+
+    stopComets();
+    EDGE_IDS.forEach(function (id) {
+      edges[id].classList.remove("is-lit", "is-marching");
+      labels[id].classList.remove("is-lit");
+    });
+    Object.keys(arrows).forEach(function (key) {
+      arrows[key].classList.remove("is-lit");
+    });
+
+    st.edges.forEach(function (e) {
+      edges[e.id].classList.add("is-lit");
+      if (!reduced && e.animate !== false) edges[e.id].classList.add("is-marching");
+      labels[e.id].textContent = e.label;
+      labels[e.id].classList.add("is-lit");
+      (e.arrows || []).forEach(function (key) {
+        if (arrows[key]) arrows[key].classList.add("is-lit");
+      });
+      if (e.animate !== false) startComet(e.id, e.dir, e.pingPong === true);
+    });
+  }
+
+  /* --- scroll wiring ------------------------------------------------------- */
+  var current = -1;
+
+  function setActive(index) {
+    if (index === current) return;
+    current = index;
+    stepEls.forEach(function (s, i) {
+      s.classList.toggle("is-active", i === index);
+      var card = s.querySelector(".isflow-card");
+      if (card) card.setAttribute("aria-pressed", i === index ? "true" : "false");
+    });
+    applyStep(index);
+  }
+
+  root.classList.add("is-live");
+
+  /* Cards are direct controls as well as scroll markers. Keep their activation
+     on the same setActive path used by the observer so both interactions stay
+     in sync. */
+  stepEls.forEach(function (step, index) {
+    var card = step.querySelector(".isflow-card");
+    if (!card) return;
+    var title = card.querySelector("h3");
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute(
+      "aria-label",
+      "Show " + STEPS[index].no + ": " + (title ? title.textContent : STEPS[index].title)
+    );
+    card.addEventListener("click", function () { setActive(index); });
+    card.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        setActive(index);
+      }
+    });
+  });
+
+  setActive(0);
+
+  /* A thin band just under the sticky map: the step crossing it is the one
+     being read. Its centre is where the active card sits mid-step, so it is
+     tuned to park the card right below the map rather than mid-viewport. */
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        setActive(parseInt(entry.target.getAttribute("data-step"), 10));
+      }
+    });
+  }, { rootMargin: "-55% 0px -41% 0px", threshold: 0 });
+
+  stepEls.forEach(function (step) { observer.observe(step); });
+
+  /* Pause the comets while the map is off screen. */
+  var stageObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        applyStep(current);
+      } else {
+        stopComets();
+      }
+    });
+  }, { threshold: 0 });
+  stageObserver.observe(root);
+})();
+</script>
+<section id="the-server-owns-the-instrument">
+<h3>The Server owns the instrument<a class="headerlink" href="#the-server-owns-the-instrument" title="Link to this heading">#</a></h3>
+<p>A QCoDeS driver is a live software object that maintains a connection to an instrument
+and translates parameter operations into commands the hardware understands.
+Instrumentserver instantiates that driver once and keeps it alive in the Server, independently
+of any individual script or GUI. In the diagram, <code class="docutils literal notranslate"><span class="pre">generator</span></code> is this real driver.</p>
+<p>The Server can create instruments from its configuration when it starts, as shown here,
+or a Client can ask it to create one later. The creation path only determines when the
+instrument becomes available. Once created, every Client reaches the same driver and the
+same hardware connection. Closing one Client does not close the instrument or transfer
+ownership to another Client.</p>
+</section>
+<section id="the-client-builds-a-proxy-instrument">
+<h3>The Client builds a Proxy Instrument<a class="headerlink" href="#the-client-builds-a-proxy-instrument" title="Link to this heading">#</a></h3>
+<p>The <strong>Client</strong> provides the initial connection to the Server and discovers which
+instruments are available. When it asks for <code class="docutils literal notranslate"><span class="pre">generator</span></code>, the Server returns a
+<strong>Blueprint</strong> rather than the real driver. The Blueprint describes the driver’s public
+interface, including its parameters, methods, and submodules.</p>
+<p>The Client uses this description to construct a <strong>Proxy Instrument</strong> inside your script.
+The distinction between the Client and the Proxy is useful: the Client provides access
+to the Server as a whole, while each Proxy represents one particular instrument. Your
+code can work with the Proxy through the familiar QCoDeS interface without creating the
+real driver or connecting to the hardware itself.</p>
+<p>The Blueprint is only the information needed to construct that local interface. The
+Proxy is not a copy of the instrument or its state. It forwards operations to the one
+real driver owned by the Server, which keeps every consumer working with the same
+instrument.</p>
+</section>
+<section id="a-call-reaches-the-hardware">
+<h3>A call reaches the hardware<a class="headerlink" href="#a-call-reaches-the-hardware" title="Link to this heading">#</a></h3>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">generator.frequency(5e9)</span></code> looks like an ordinary parameter operation in your
+script, but the Proxy does not set anything locally. It forwards the operation to the
+Server, which runs it on the real <code class="docutils literal notranslate"><span class="pre">generator</span></code> driver. The driver then translates the
+parameter operation into the command understood by the RF source.</p>
+<p>From your script’s perspective, the call remains a single operation. It completes when
+the Server has finished interacting with the instrument and returned the result to the
+Proxy. Parameter reads follow the same round trip, so they retrieve the Server’s current
+instrument state rather than relying on a separate local copy.</p>
+</section>
+<section id="a-broadcast-reaches-subscribers">
+<h3>A Broadcast reaches subscribers<a class="headerlink" href="#a-broadcast-reaches-subscribers" title="Link to this heading">#</a></h3>
+<p>The Proxy that made a call already receives its result directly, but other consumers may
+also need to know that a parameter changed. The Server therefore publishes a
+<strong>Broadcast</strong> that every listening subscriber can receive. One message can update many
+consumers without each of them querying the instrument again.</p>
+<p>Broadcasts are especially useful for consumers that maintain a view or record of
+instrument activity. The Server’s GUI uses them to keep its displayed values current,
+while a <strong>Listener</strong> can save the same activity elsewhere. These subscribers observe what
+happened, but they do not take part in the original call or become owners of the
+instrument.</p>
+<p>A Broadcast is an announcement, not another copy of the instrument’s state. The Server
+and its real driver remain authoritative, while subscribers use Broadcasts to keep their
+own displays and records in sync.</p>
+<p>This overview leaves out the machinery beneath these paths. Continue to the
+<a class="reference internal" href="../technical_guide/architecture.html"><span class="std std-doc">Technical Guide</span></a> for the request lifecycle,
+networking, concurrency, and other implementation details.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="quickstart.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Quickstart</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="overview.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Instrumentserver Overview</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#following-the-diagram">Following the diagram</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-server-owns-the-instrument">The Server owns the instrument</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-client-builds-a-proxy-instrument">The Client builds a Proxy Instrument</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-call-reaches-the-hardware">A call reaches the hardware</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-broadcast-reaches-subscribers">A Broadcast reaches subscribers</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/getting_started/how_it_works.md.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Tools For Experiments.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

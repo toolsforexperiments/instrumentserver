@@ -1,0 +1,17 @@
+instrumentserver.gui.misc
+=========================
+
+.. automodule:: instrumentserver.gui.misc
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AlertLabel
+      AlertLabelGreen
+      BaseDialog
+      DetachableTabWidget
+      DetachedTab
+      SeparableTabBar
+   

@@ -1,0 +1,22 @@
+instrumentserver.gui.parameters
+===============================
+
+.. automodule:: instrumentserver.gui.parameters
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      float_formater
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AnyInput
+      AnyInputForMethod
+      NumberInput
+      ParameterWidget
+      SetButton
+   

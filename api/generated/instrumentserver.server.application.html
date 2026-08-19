@@ -31,6 +31,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
@@ -41,11 +42,11 @@
     <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/instrumentserver.server.application';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/api/generated/instrumentserver.server.application.html" />
-    <link rel="author" title="About these documents" href="../../about.html" />
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="instrumentserver.server.core" href="instrumentserver.server.core.html" />
@@ -143,8 +144,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -157,8 +158,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -290,8 +291,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -304,8 +305,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -388,21 +389,44 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">instrumentserver.server.application</a></li>
-<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.apps.html">instrumentserver.apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.base.html">instrumentserver.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.client.html">instrumentserver.client</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.application.html">instrumentserver.client.application</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.core.html">instrumentserver.client.core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.proxy.html">instrumentserver.client.proxy</a></li>
 </ul>
 </details></li>
-<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.config.html">instrumentserver.config</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.gui.html">instrumentserver.gui</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.helpers.html">instrumentserver.helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.log.html">instrumentserver.log</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.monitoring.html">instrumentserver.monitoring</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.monitoring.listener.html">instrumentserver.monitoring.listener</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.params.html">instrumentserver.params</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.serialize.html">instrumentserver.serialize</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">instrumentserver.server.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.testing.html">instrumentserver.testing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.html">instrumentserver.testing.dummy_instruments</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.generic.html">instrumentserver.testing.dummy_instruments.generic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.rf.html">instrumentserver.testing.dummy_instruments.rf</a></li>
+</ul>
+</details></li>
 </ul>
 </details></li>
 </ul>
@@ -530,7 +554,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.server.application.CreateInstrumentDialog">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">CreateInstrumentDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">insType</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargsStr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;PyQt5.QtCore.Qt.WindowFlags</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#CreateInstrumentDialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.CreateInstrumentDialog" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDialog</span></code></p>
+<dd><p>Bases: <a class="reference internal" href="instrumentserver.gui.misc.html#instrumentserver.gui.misc.BaseDialog" title="instrumentserver.gui.misc.BaseDialog"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDialog</span></code></a></p>
 <p>Dialog asking the user for instrument type, instrument name and any args and kwargs for its creation.
 You can pass any of the 3 fields to it to have those filled before the dialog appears.</p>
 <dl class="field-list simple">
@@ -545,24 +569,8 @@ You can pass any of the 3 fields to it to have those filled before the dialog ap
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.server.application.CreateInstrumentDialog.createInstrument">
 <span class="sig-name descname"><span class="pre">createInstrument</span></span><a class="headerlink" href="#instrumentserver.server.application.CreateInstrumentDialog.createInstrument" title="Link to this definition">#</a></dt>
-<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
-<p>types is normally a sequence of individual types.  Each type is either a
-type object or a string that is the name of a C++ type.  Alternatively
-each type could itself be a sequence of types each describing a different
-overloaded signal.
-name is the optional C++ name of the signal.  If it is not specified then
-the name of the class attribute that is bound to the signal is used.
-revision is the optional revision of the signal that is exported to QML.
-If it is not specified then 0 is used.
-arguments is the optional sequence of the names of the signal’s arguments.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pyqtSignal(<a href="#id1"><span class="problematic" id="id2">*</span></a>types, name</p>
-</dd>
-<dt class="field-even">Type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str = …, revision</p>
-</dd>
-</dl>
+<dd><p>Signal(str, str, tuple) – emitted when the dialog is accepted. Arguments are
+the instrument type path, the instrument name, and the constructor args.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -589,7 +597,7 @@ arguments is the optional sequence of the names of the signal’s arguments.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.server.application.DetachedServerGui.instrumentTabsOpen">
-<span class="sig-name descname"><span class="pre">instrumentTabsOpen</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">GenericInstrument</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui.instrumentTabsOpen" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">instrumentTabsOpen</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.GenericInstrument" title="instrumentserver.gui.instruments.GenericInstrument"><span class="pre">GenericInstrument</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.server.application.DetachedServerGui.instrumentTabsOpen" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -608,7 +616,7 @@ the objects that are currently registered in the station.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.server.application.EmbeddedClient">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">EmbeddedClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QObject</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'localhost'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5555</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_exceptions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#EmbeddedClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.EmbeddedClient" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">EmbeddedClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QObject</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'localhost'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5555</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connect</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_exceptions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#EmbeddedClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.EmbeddedClient" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="instrumentserver.client.proxy.html#instrumentserver.client.proxy.QtClient" title="instrumentserver.client.proxy.QtClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">QtClient</span></code></a></p>
 <p>A simple client we can use to communicate with the server object
 inside the server application.</p>
@@ -704,24 +712,11 @@ creates it</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.basedInstrumentRequested">
 <span class="sig-name descname"><span class="pre">basedInstrumentRequested</span></span><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.basedInstrumentRequested" title="Link to this definition">#</a></dt>
-<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
-<p>types is normally a sequence of individual types.  Each type is either a
-type object or a string that is the name of a C++ type.  Alternatively
-each type could itself be a sequence of types each describing a different
-overloaded signal.
-name is the optional C++ name of the signal.  If it is not specified then
-the name of the class attribute that is bound to the signal is used.
-revision is the optional revision of the signal that is exported to QML.
-If it is not specified then 0 is used.
-arguments is the optional sequence of the names of the signal’s arguments.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pyqtSignal(<a href="#id3"><span class="problematic" id="id4">*</span></a>types, name</p>
-</dd>
-<dt class="field-even">Type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str = …, revision</p>
-</dd>
-</dl>
+<dd><p>Signal(str, str, str) – emitted when the create instrument based on this instrument is triggered.
+Arguments are in order:
+the name of the instrument in the config,
+the type of the instrument,
+the name in the line edit indicating what the actual name in the station should be.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -732,24 +727,11 @@ arguments is the optional sequence of the names of the signal’s arguments.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.server.application.PossibleInstrumentsDisplay.createButtonPressed">
 <span class="sig-name descname"><span class="pre">createButtonPressed</span></span><a class="headerlink" href="#instrumentserver.server.application.PossibleInstrumentsDisplay.createButtonPressed" title="Link to this definition">#</a></dt>
-<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
-<p>types is normally a sequence of individual types.  Each type is either a
-type object or a string that is the name of a C++ type.  Alternatively
-each type could itself be a sequence of types each describing a different
-overloaded signal.
-name is the optional C++ name of the signal.  If it is not specified then
-the name of the class attribute that is bound to the signal is used.
-revision is the optional revision of the signal that is exported to QML.
-If it is not specified then 0 is used.
-arguments is the optional sequence of the names of the signal’s arguments.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pyqtSignal(<a href="#id5"><span class="problematic" id="id6">*</span></a>types, name</p>
-</dd>
-<dt class="field-even">Type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str = …, revision</p>
-</dd>
-</dl>
+<dd><p>Signal(str, str, str) – emitted when the one of the create buttons of the items gets pressed.
+Arguments are in order:
+the name of the instrument in the config,
+the type of the instrument,
+the name in the line edit indicating what the actual name in the station should be.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -772,7 +754,7 @@ arguments is the optional sequence of the names of the signal’s arguments.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">ServerGui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">startServer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guiConfig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">serverKwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.server.application.</span></span><span class="sig-name descname"><span class="pre">ServerGui</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">startServer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guiConfig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">serverKwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QMainWindow</span></code></p>
 <p>Main window of the qcodes station server.</p>
 <dl class="py method">
@@ -814,7 +796,7 @@ If the tab already exists switches to that one.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.instrumentTabsOpen">
-<span class="sig-name descname"><span class="pre">instrumentTabsOpen</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">GenericInstrument</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.server.application.ServerGui.instrumentTabsOpen" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">instrumentTabsOpen</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.GenericInstrument" title="instrumentserver.gui.instruments.GenericInstrument"><span class="pre">GenericInstrument</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.server.application.ServerGui.instrumentTabsOpen" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -826,7 +808,7 @@ to parameters registered in the station (incl those in instruments).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.log">
-<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LogLevels</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">LogLevels.info</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.log" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.log.html#instrumentserver.log.LogLevels" title="instrumentserver.log.LogLevels"><span class="pre">LogLevels</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">LogLevels.info</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/server/application.html#ServerGui.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.server.application.ServerGui.log" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -862,24 +844,7 @@ those in instruments) to the server’s param json file.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.server.application.ServerGui.serverPortSet">
 <span class="sig-name descname"><span class="pre">serverPortSet</span></span><a class="headerlink" href="#instrumentserver.server.application.ServerGui.serverPortSet" title="Link to this definition">#</a></dt>
-<dd><p>int = …, arguments: Sequence = …) -&gt; PYQT_SIGNAL</p>
-<p>types is normally a sequence of individual types.  Each type is either a
-type object or a string that is the name of a C++ type.  Alternatively
-each type could itself be a sequence of types each describing a different
-overloaded signal.
-name is the optional C++ name of the signal.  If it is not specified then
-the name of the class attribute that is bound to the signal is used.
-revision is the optional revision of the signal that is exported to QML.
-If it is not specified then 0 is used.
-arguments is the optional sequence of the names of the signal’s arguments.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pyqtSignal(<a href="#id7"><span class="problematic" id="id8">*</span></a>types, name</p>
-</dd>
-<dt class="field-even">Type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str = …, revision</p>
-</dd>
-</dl>
+<dd><p>Signal(int) – declared but currently never emitted or connected.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1169,7 +1134,7 @@ Argument is the name of the selected instrument</p>
 
   <p class="copyright">
     
-      © Copyright 2020-2026, Wolfgang Pfaff.
+      © Copyright 2020-2026, Tools For Experiments.
       <br/>
     
   </p>

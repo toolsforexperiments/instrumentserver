@@ -1,0 +1,14 @@
+instrumentserver.testing.dummy\_instruments
+===========================================
+
+.. automodule:: instrumentserver.testing.dummy_instruments
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   generic
+   rf

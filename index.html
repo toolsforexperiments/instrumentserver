@@ -32,6 +32,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
@@ -42,14 +43,14 @@
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/index.html" />
-    <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="First Steps" href="first_steps/index.html" />
+    <link rel="next" title="Getting Started" href="getting_started/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -143,8 +144,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -157,8 +158,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -288,8 +289,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -302,8 +303,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -403,80 +404,60 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="instrumentserver">
 <h1>InstrumentServer<a class="headerlink" href="#instrumentserver" title="Link to this heading">#</a></h1>
-<p><strong>Distributed instrument control system for QCoDeS instruments via ZMQ</strong></p>
-<p><a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver">GitHub Repository</a> | <a class="reference internal" href="about.html"><span class="std std-doc">About</span></a></p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The documentation site is currently under construction. This site is still very early so not all information here is up to date. Expect more changes incoming 🏗️👷</p>
+<p>Distributed control of QCoDeS instruments over ZMQ: one server owns the hardware, many
+clients talk to it through proxies. Part of the
+<a class="reference external" href="https://toolsforexperiments.github.io/">Tools for Experiments</a> suite.</p>
+<p><a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver">GitHub Repository</a> | <a class="reference external" href="https://toolsforexperiments.github.io/about_us/organization.html">About Us</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We are rewriting this site page by page. Pages marked 🚧 are planned but not yet
+written, and show what they will cover.</p>
 </div>
-<section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
-<p>InstrumentServer is a distributed system for remote access to QCoDeS instruments. It enables multi-client instrument control through a ZMQ-based server-client architecture with real-time parameter broadcasting and concurrent request handling.</p>
-<p>For more information on how the server works please see our <a class="reference internal" href="first_steps/overview.html"><span class="std std-doc">overview page</span></a></p>
-<section id="key-features">
-<h3>Key Features<a class="headerlink" href="#key-features" title="Link to this heading">#</a></h3>
-<p><strong>Multi-Client Access</strong></p>
-<ul class="simple">
-<li><p>Multiple clients can simultaneously control the same server</p></li>
-<li><p>Thread-safe per-instrument locking prevents race conditions</p></li>
-<li><p>Concurrent access to different instruments</p></li>
-</ul>
-<p><strong>Real-Time Monitoring</strong></p>
-<ul class="simple">
-<li><p>Broadcast parameter changes to all listening clients</p></li>
-<li><p>Asynchronous parameter updates via ZMQ PUB socket</p></li>
-<li><p>Real-time GUI updates across the network</p></li>
-</ul>
-<p><strong>QCoDeS Integration</strong></p>
-<ul class="simple">
-<li><p>Native QCoDeS Station support</p></li>
-<li><p>Full instrument metadata and blueprint system</p></li>
-<li><p>Seamless proxy objects for remote instruments</p></li>
-</ul>
-<p><strong>Robust Architecture</strong></p>
-<ul class="simple">
-<li><p>ZMQ ROUTER/DEALER pattern for reliable messaging</p></li>
-<li><p>ThreadPoolExecutor for concurrent request handling</p></li>
-<li><p>Automatic connection recovery with retry logic</p></li>
-</ul>
-</section>
-</section>
-<section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">#</a></h2>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
+<div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Getting Started</div>
+<p class="sd-card-text">Installation, your first server and client connection, and a conceptual overview
+of how it all works.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="getting_started/index.html"><span class="doc">Getting Started</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+User Guide</div>
+<p class="sd-card-text">How to use each feature: the Python client, the Server, the Parameter Manager,
+Client Stations, monitoring, and configuration.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="user_guide/index.html"><span class="doc">User Guide</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Technical Guide</div>
+<p class="sd-card-text">How instrumentserver works inside: architecture, Blueprints and proxies, Broadcasts,
+and custom widgets.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="technical_guide/index.html"><span class="doc">Technical Guide</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+API Reference</div>
+<p class="sd-card-text">Reference documentation for all public modules, generated from the source code.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api/index.html"><span class="doc">API Reference</span></a></div>
+</div>
+</div>
+</div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/index.html">First Steps</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/overview.html">Instrumentserver Overview</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="user_guide/index.html">User Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="user_guide/configuration.html">Configuration Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="user_guide/instrumentmonitoring.html">Instrument Monitoring</a></li>
-</ul>
-</li>
-</ul>
 </div>
-</section>
-<section id="code-examples">
-<h2>Code Examples<a class="headerlink" href="#code-examples" title="Link to this heading">#</a></h2>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Code Examples</a></li>
-</ul>
-</div>
-</section>
-<section id="api-reference">
-<h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">#</a></h2>
-<p>The API documentation is automatically generated from the source code.</p>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
-</ul>
-</div>
-</section>
 </section>
 
 
@@ -490,11 +471,11 @@
                   
 <div class="prev-next-area">
     <a class="right-next"
-       href="first_steps/index.html"
+       href="getting_started/index.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">First Steps</p>
+        <p class="prev-next-title">Getting Started</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -528,7 +509,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020-2026, Wolfgang Pfaff.
+      © Copyright 2020-2026, Tools For Experiments.
       <br/>
     
   </p>

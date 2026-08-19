@@ -1,0 +1,20 @@
+﻿instrumentserver.params
+=======================
+
+.. automodule:: instrumentserver.params
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      paramTypeFromName
+      paramTypeFromVals
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ParameterManager
+      ParameterTypes
+   

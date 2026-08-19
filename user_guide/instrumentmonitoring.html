@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
@@ -41,14 +42,14 @@
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/instrumentmonitoring';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/user_guide/instrumentmonitoring.html" />
-    <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Code Examples" href="../examples/index.html" />
+    <link rel="next" title="Virtual Instruments" href="advanced/virtual_instruments.html" />
     <link rel="prev" title="Configuration Files" href="configuration.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -143,8 +144,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -157,8 +158,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -290,8 +291,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -304,8 +305,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -388,8 +389,16 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server.html">The Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gui_features.html">GUI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameter_manager.html">Parameter Manager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client_station.html">Client Station</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monitoring.html">Monitoring</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Files</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Instrument Monitoring</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/virtual_instruments.html">Virtual Instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/chaining_servers.html">Chaining Servers</a></li>
 </ul>
 </div>
 </nav></div>
@@ -452,6 +461,11 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="instrument-monitoring">
 <h1>Instrument Monitoring<a class="headerlink" href="#instrument-monitoring" title="Link to this heading">#</a></h1>
+<div class="caution admonition">
+<p class="admonition-title">🗃️ Legacy page</p>
+<p>This page predates the documentation refactor and has not been re-verified; parts of
+it may be out of date. It will be replaced by the new monitoring guide.</p>
+</div>
 <p>The following is a guide to set up a dashboard for the monitoring of instruments. It contains capabilities for data storage, data visualization, and real-time alerts. More information on the tool is provided in the next section.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -502,7 +516,7 @@ Install docker and start the docker engine. Follow the <a class="reference inter
 <section id="step-3-the-listener">
 <h3>Step 3: The Listener<a class="headerlink" href="#step-3-the-listener" title="Link to this heading">#</a></h3>
 <p>On the same PC that Grafana and Influx were started on:</p>
-<p>Keep track of the address and port that the instrumentserver is broadcasting to in the previous section. Use this information, the information you used to set up InfluxDB, plus the parameters you want to monitor to fill out the config file.</p>
+<p>Keep track of the address and port that the instrumentserver is broadcasting to in the previous section. Use this information, the information you used to set up InfluxDB, plus the parameters you want to monitor to fill out the <a class="reference internal" href="#listener-config-file"><span class="std std-ref">config file</span></a>.</p>
 <p>You can then <a class="reference internal" href="#starting-the-listener"><span class="std std-ref">start the listener</span></a>.</p>
 </section>
 <section id="step-4-grafana-customization">
@@ -581,8 +595,8 @@ Install docker and start the docker engine. Follow the <a class="reference inter
 <section id="the-listener">
 <h2>The Listener<a class="headerlink" href="#the-listener" title="Link to this heading">#</a></h2>
 <p>To use the dashboard, we will also need to run an instance of the listener on whichever computer you wish to host the dashboard on. (The computer with the listener and the computer with the instrumentserver must be on the same network). The listener can be used for writing data either in a CSV file or the InfluxDB database.</p>
-<section id="id1">
-<h3>Config File<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<section id="listener-config-file">
+<span id="id1"></span><h3>Config File<a class="headerlink" href="#listener-config-file" title="Link to this heading">#</a></h3>
 <p>Below is an example listener configuration file that can be used for the dashboard.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># addresses to listen for broadcasts at</span>
 <span class="nt">addresses</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;tcp://128.174.123.123:6000&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;tcp://128.174.456.456:6000&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;tcp://128.174.789.789:6000&quot;</span><span class="p p-Indicator">]</span>
@@ -886,11 +900,11 @@ Under the grafana section, under “image”, replace the default image “grafa
       </div>
     </a>
     <a class="right-next"
-       href="../examples/index.html"
+       href="advanced/virtual_instruments.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Code Examples</p>
+        <p class="prev-next-title">Virtual Instruments</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -927,7 +941,7 @@ Under the grafana section, under “image”, replace the default image “grafa
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-listener">The Listener</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Config File</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#listener-config-file">Config File</a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#necessary-parameters-for-using-influxdb">Necessary Parameters for using InfluxDB</a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#necessary-parameters-for-using-csv">Necessary Parameters for using CSV</a></li>
 </ul>
@@ -983,7 +997,7 @@ Under the grafana section, under “image”, replace the default image “grafa
 
   <p class="copyright">
     
-      © Copyright 2020-2026, Wolfgang Pfaff.
+      © Copyright 2020-2026, Tools For Experiments.
       <br/>
     
   </p>

@@ -1,0 +1,14 @@
+instrumentserver.testing.dummy\_instruments.rf
+==============================================
+
+.. automodule:: instrumentserver.testing.dummy_instruments.rf
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FluxControl
+      Generator
+      ResonatorResponse
+   

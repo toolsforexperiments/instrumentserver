@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
@@ -41,15 +42,15 @@
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/configuration';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/user_guide/configuration.html" />
-    <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Instrument Monitoring" href="instrumentmonitoring.html" />
-    <link rel="prev" title="User Guide" href="index.html" />
+    <link rel="prev" title="Monitoring" href="monitoring.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -143,8 +144,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -157,8 +158,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -290,8 +291,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -304,8 +305,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -388,8 +389,16 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server.html">The Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gui_features.html">GUI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameter_manager.html">Parameter Manager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client_station.html">Client Station</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monitoring.html">Monitoring</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Configuration Files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="instrumentmonitoring.html">Instrument Monitoring</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/virtual_instruments.html">Virtual Instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/chaining_servers.html">Chaining Servers</a></li>
 </ul>
 </div>
 </nav></div>
@@ -452,6 +461,11 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="configuration-files">
 <h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Link to this heading">#</a></h1>
+<div class="caution admonition">
+<p class="admonition-title">🗃️ Legacy page</p>
+<p>This page predates the documentation refactor and has not been re-verified; parts of
+it may be out of date. It will be replaced by the new configuration reference.</p>
+</div>
 <p>This page covers the configuration files used by InstrumentServer: the <strong>server configuration</strong> file and the <strong>listener configuration</strong> file.</p>
 <section id="server-configuration">
 <h2>Server Configuration<a class="headerlink" href="#server-configuration" title="Link to this heading">#</a></h2>
@@ -881,12 +895,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="index.html"
+       href="monitoring.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">User Guide</p>
+        <p class="prev-next-title">Monitoring</p>
       </div>
     </a>
     <a class="right-next"
@@ -977,7 +991,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020-2026, Wolfgang Pfaff.
+      © Copyright 2020-2026, Tools For Experiments.
       <br/>
     
   </p>

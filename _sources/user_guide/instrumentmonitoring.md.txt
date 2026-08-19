@@ -1,5 +1,11 @@
 # Instrument Monitoring
 
+:::{admonition} 🗃️ Legacy page
+:class: caution
+This page predates the documentation refactor and has not been re-verified; parts of
+it may be out of date. It will be replaced by the new monitoring guide.
+:::
+
 The following is a guide to set up a dashboard for the monitoring of instruments. It contains capabilities for data storage, data visualization, and real-time alerts. More information on the tool is provided in the next section.
 
 :::{note}
@@ -75,7 +81,7 @@ Install docker and start the docker engine. Follow the [docker section](#docker)
 
  On the same PC that Grafana and Influx were started on:
  
- Keep track of the address and port that the instrumentserver is broadcasting to in the previous section. Use this information, the information you used to set up InfluxDB, plus the parameters you want to monitor to fill out the [config file](#config-file-1).
+ Keep track of the address and port that the instrumentserver is broadcasting to in the previous section. Use this information, the information you used to set up InfluxDB, plus the parameters you want to monitor to fill out the {ref}`config file <listener-config-file>`.
 
 You can then [start the listener](#starting-the-listener).
 
@@ -170,6 +176,7 @@ The following portion assumes the user has:
 
 To use the dashboard, we will also need to run an instance of the listener on whichever computer you wish to host the dashboard on. (The computer with the listener and the computer with the instrumentserver must be on the same network). The listener can be used for writing data either in a CSV file or the InfluxDB database.
 
+(listener-config-file)=
 ### Config File
 
 Below is an example listener configuration file that can be used for the dashboard.

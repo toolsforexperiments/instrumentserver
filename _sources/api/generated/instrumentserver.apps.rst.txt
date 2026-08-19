@@ -1,0 +1,17 @@
+﻿instrumentserver.apps
+=====================
+
+.. automodule:: instrumentserver.apps
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      clientStationScript
+      detachedServerScript
+      parameterManagerScript
+      server
+      serverScript
+      serverWithGui
+   

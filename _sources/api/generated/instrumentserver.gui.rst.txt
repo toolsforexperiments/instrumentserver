@@ -1,0 +1,26 @@
+﻿instrumentserver.gui
+====================
+
+.. automodule:: instrumentserver.gui
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      getStyleSheet
+      keepSmallHorizontally
+      widgetDialog
+      widgetMainWindow
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   base_instrument
+   instruments
+   misc
+   parameters
+   shortcuts

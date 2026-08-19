@@ -1,0 +1,994 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>instrumentserver.params &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/instrumentserver.params';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/api/generated/instrumentserver.params.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="instrumentserver.serialize" href="instrumentserver.serialize.html" />
+    <link rel="prev" title="instrumentserver.monitoring.listener" href="instrumentserver.monitoring.listener.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="auto">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.apps.html">instrumentserver.apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.base.html">instrumentserver.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.client.html">instrumentserver.client</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.application.html">instrumentserver.client.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.core.html">instrumentserver.client.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.proxy.html">instrumentserver.client.proxy</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.config.html">instrumentserver.config</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.gui.html">instrumentserver.gui</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.helpers.html">instrumentserver.helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.log.html">instrumentserver.log</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.monitoring.html">instrumentserver.monitoring</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.monitoring.listener.html">instrumentserver.monitoring.listener</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">instrumentserver.params</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.serialize.html">instrumentserver.serialize</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.application.html">instrumentserver.server.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.testing.html">instrumentserver.testing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.html">instrumentserver.testing.dummy_instruments</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.generic.html">instrumentserver.testing.dummy_instruments.generic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.rf.html">instrumentserver.testing.dummy_instruments.rf</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.params</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-instrumentserver.params">
+<span id="instrumentserver-params"></span><h1>instrumentserver.params<a class="headerlink" href="#module-instrumentserver.params" title="Link to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.params.paramTypeFromName" title="instrumentserver.params.paramTypeFromName"><code class="xref py py-obj docutils literal notranslate"><span class="pre">paramTypeFromName</span></code></a>(name)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.params.paramTypeFromVals" title="instrumentserver.params.paramTypeFromVals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">paramTypeFromVals</span></code></a>(vals)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.params.ParameterManager" title="instrumentserver.params.ParameterManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParameterManager</span></code></a>(name)</p></td>
+<td><p>A virtual instrument that acts as a manager for a collection of arbitrary parameters and groups of parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.params.ParameterTypes" title="instrumentserver.params.ParameterTypes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParameterTypes</span></code></a>(*values)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">ParameterManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.InstrumentBase" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">InstrumentBase</span></code></a></p>
+<p>A virtual instrument that acts as a manager for a collection of
+arbitrary parameters and groups of parameters.</p>
+<p>Allows extra-easy on-the-fly addition/removal of new parameters.</p>
+<p>For the parameter manager to recognize other profiles in disk,
+the profile filename needs to start with ‘parameter_manager-’
+and end with ‘.json’ with the name of the profile in the middle.
+For example, ‘parameter_manager-qubit1.json’ represents the profile qubit1</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_parameter">
+<span class="sig-name descname"><span class="pre">add_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Add a parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Name of the parameter.
+If the name contains <cite>.`s, then an element before a dot is interpreted
+as a submodule. Multiple dots represent nested submodules. I.e., when
+we supply ``foo.bar.foo2`</cite> we have a top-level submodule <code class="docutils literal notranslate"><span class="pre">foo</span></code>,
+containing a submodule <code class="docutils literal notranslate"><span class="pre">bar</span></code>, containing the parameter <code class="docutils literal notranslate"><span class="pre">foo2</span></code>.
+Submodules are generated on demand.</p></li>
+<li><p><strong>kw</strong> – Any keyword arguments will be passed on to
+qcodes.Instrument.add_parameter, except:
+- <code class="docutils literal notranslate"><span class="pre">set_cmd</span></code> is always set to <code class="docutils literal notranslate"><span class="pre">None</span></code>
+- <code class="docutils literal notranslate"><span class="pre">parameter_class</span></code> is <code class="docutils literal notranslate"><span class="pre">qcodes.Parameter</span></code>
+- <code class="docutils literal notranslate"><span class="pre">vals</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">qcodes.utils.validators.Anything()</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.cleanProfileName">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cleanProfileName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.cleanProfileName"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.cleanProfileName" title="Link to this definition">#</a></dt>
+<dd><p>When passed the full file name of a parameter_manager profile, return only the middle
+string representing the profile’s name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.createFromParamDict">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">createFromParamDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterManager" title="instrumentserver.params.ParameterManager"><span class="pre">ParameterManager</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.createFromParamDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.createFromParamDict" title="Link to this definition">#</a></dt>
+<dd><p>Create a new ParameterManager instance from a paramDict.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paramDict</strong> – The paramDict object.</p></li>
+<li><p><strong>name</strong> – Name of the instrument in the paramDict (each entry in the
+paramDict starts with &lt;instrumentName&gt;.[…]).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>New ParameterManager instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.does_profile_exist">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">does_profile_exist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.does_profile_exist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.does_profile_exist" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.fromFile">
+<span class="sig-name descname"><span class="pre">fromFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filePath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deleteMissing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.fromFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.fromFile" title="Link to this definition">#</a></dt>
+<dd><p>Load parameters from a parameter json file
+(see <a class="reference internal" href="instrumentserver.serialize.html#module-instrumentserver.serialize" title="instrumentserver.serialize"><code class="xref py py-mod docutils literal notranslate"><span class="pre">serialize</span></code></a>).</p>
+<p>If the filepath starts with ‘parameter_manager-’ and ends with ‘.json’,
+selectedProfile is changed to the filename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filePath</strong> – Path to the json file. If <code class="docutils literal notranslate"><span class="pre">None</span></code> it looks in the instrument current location
+directory for a file called “parametermanager_parameters.json”.</p></li>
+<li><p><strong>deleteMissing</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, delete parameters currently in the
+ParameterManager that are not listed in the file.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.fromParamDict">
+<span class="sig-name descname"><span class="pre">fromParamDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deleteMissing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.fromParamDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.fromParamDict" title="Link to this definition">#</a></dt>
+<dd><p>Load parameters from a parameter dictionary (see <a class="reference internal" href="instrumentserver.serialize.html#module-instrumentserver.serialize" title="instrumentserver.serialize"><code class="xref py py-mod docutils literal notranslate"><span class="pre">serialize</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>paramDict</strong> – Parameter dictionary.</p></li>
+<li><p><strong>deleteMissing</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, delete parameters currently in the
+ParameterManager that are not listed in the file.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.fullProfileName">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fullProfileName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.fullProfileName"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.fullProfileName" title="Link to this definition">#</a></dt>
+<dd><p>Adds ‘parameter_manager-’ to the beginning of <cite>name</cite> and adds ‘.json’ at the end.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.get" title="Link to this definition">#</a></dt>
+<dd><p>Shortcut for getting a parameter from its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>param_name</strong> – The name of a parameter of this instrument.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The current value of the parameter.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is deprecated. Call get directly on the parameter.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.getWorkingDirectory">
+<span class="sig-name descname"><span class="pre">getWorkingDirectory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.getWorkingDirectory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.getWorkingDirectory" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.has_param">
+<span class="sig-name descname"><span class="pre">has_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.has_param"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.has_param" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.list">
+<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.list" title="Link to this definition">#</a></dt>
+<dd><p>Return a list of all parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.list_profiles">
+<span class="sig-name descname"><span class="pre">list_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.list_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.list_profiles" title="Link to this definition">#</a></dt>
+<dd><p>Returns a list of all profiles.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.parameter">
+<span class="sig-name descname"><span class="pre">parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://microsoft.github.io/Qcodes/api/parameters/index.html#qcodes.parameters.ParameterBase" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><span class="pre">ParameterBase</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.parameter" title="Link to this definition">#</a></dt>
+<dd><p>Get a parameter object from the manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – the full name</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the parameter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.refresh_profiles">
+<span class="sig-name descname"><span class="pre">refresh_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.refresh_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.refresh_profiles" title="Link to this definition">#</a></dt>
+<dd><p>Goes into the working directory and updates the list of profiles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of profiles in the working directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_all_parameters">
+<span class="sig-name descname"><span class="pre">remove_all_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_all_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_all_parameters" title="Link to this definition">#</a></dt>
+<dd><p>Remove all parameters from the instrument.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_empty_submodules">
+<span class="sig-name descname"><span class="pre">remove_empty_submodules</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_empty_submodules"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_empty_submodules" title="Link to this definition">#</a></dt>
+<dd><p>Delete all empty submodules in the instrument.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_parameter">
+<span class="sig-name descname"><span class="pre">remove_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cleanup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Remove a Parameter from this instrument.</p>
+<p>Unlike modifying the parameters dict directly, this method will
+make sure that the parameter is properly unbound from the instrument
+if the parameter is added as a real attribute to the instrument.
+If a property of the same name exists it will not be modified.
+If name is an attribute but not a parameter, it will not be modified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – The name of the parameter to remove.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If the parameter does not exist on the instrument.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.selectedProfile">
+<span class="sig-name descname"><span class="pre">selectedProfile</span></span><a class="headerlink" href="#instrumentserver.params.ParameterManager.selectedProfile" title="Link to this definition">#</a></dt>
+<dd><p>default location and name of the parameters save file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.set" title="Link to this definition">#</a></dt>
+<dd><p>Shortcut for setting a parameter from its name and new value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> – The name of a parameter of this instrument.</p></li>
+<li><p><strong>value</strong> – The new value to set.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is deprecated. Call set directly on the parameter.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.switch_to_profile">
+<span class="sig-name descname"><span class="pre">switch_to_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.switch_to_profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.switch_to_profile" title="Link to this definition">#</a></dt>
+<dd><p>Switches the server to the passed profile.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.toFile">
+<span class="sig-name descname"><span class="pre">toFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filePath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.toFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.toFile" title="Link to this definition">#</a></dt>
+<dd><p>Save parameters from the instrument into a json file.
+If the file being saved is a profile file (starts with ‘parameter_manager-’ and ends with ‘.json’),
+the selectedProfile is changed to the filename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filePath</strong> – Path to the json file.
+If <code class="docutils literal notranslate"><span class="pre">None</span></code> it looks in the instrument current working
+directory for a file called “parameter_manager-&lt;name_of_this_instrument&gt;.json”.</p></li>
+<li><p><strong>name</strong> – If the filePath passed is a directory, The name of the file that it will
+create follows the convention of “parameter_manager-&lt;name&gt;.json”. If none it will name it
+the name of the instrument.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.toParamDict">
+<span class="sig-name descname"><span class="pre">toParamDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simpleFormat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">includeMeta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['unit']</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.toParamDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.toParamDict" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.to_tree">
+<span class="sig-name descname"><span class="pre">to_tree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.to_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.to_tree" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.workingDirectory">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">workingDirectory</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span><a class="headerlink" href="#instrumentserver.params.ParameterManager.workingDirectory" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">ParameterTypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterTypes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterTypes" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes.any">
+<span class="sig-name descname"><span class="pre">any</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#instrumentserver.params.ParameterTypes.any" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes.bool">
+<span class="sig-name descname"><span class="pre">bool</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></span><a class="headerlink" href="#instrumentserver.params.ParameterTypes.bool" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes.complex">
+<span class="sig-name descname"><span class="pre">complex</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></span><a class="headerlink" href="#instrumentserver.params.ParameterTypes.complex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes.integer">
+<span class="sig-name descname"><span class="pre">integer</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#instrumentserver.params.ParameterTypes.integer" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes.numeric">
+<span class="sig-name descname"><span class="pre">numeric</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#instrumentserver.params.ParameterTypes.numeric" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterTypes.string">
+<span class="sig-name descname"><span class="pre">string</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#instrumentserver.params.ParameterTypes.string" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.params.paramTypeFromName">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">paramTypeFromName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterTypes" title="instrumentserver.params.ParameterTypes"><span class="pre">ParameterTypes</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#paramTypeFromName"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.paramTypeFromName" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.params.paramTypeFromVals">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">paramTypeFromVals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://microsoft.github.io/Qcodes/api/validators/index.html#qcodes.validators.Validator" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><span class="pre">Validator</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterTypes" title="instrumentserver.params.ParameterTypes"><span class="pre">ParameterTypes</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#paramTypeFromVals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.paramTypeFromVals" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="instrumentserver.monitoring.listener.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">instrumentserver.monitoring.listener</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="instrumentserver.serialize.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">instrumentserver.serialize</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager"><code class="docutils literal notranslate"><span class="pre">ParameterManager</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.add_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.add_parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.cleanProfileName"><code class="docutils literal notranslate"><span class="pre">ParameterManager.cleanProfileName()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.createFromParamDict"><code class="docutils literal notranslate"><span class="pre">ParameterManager.createFromParamDict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.does_profile_exist"><code class="docutils literal notranslate"><span class="pre">ParameterManager.does_profile_exist()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.fromFile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.fromFile()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.fromParamDict"><code class="docutils literal notranslate"><span class="pre">ParameterManager.fromParamDict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.fullProfileName"><code class="docutils literal notranslate"><span class="pre">ParameterManager.fullProfileName()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.get"><code class="docutils literal notranslate"><span class="pre">ParameterManager.get()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.getWorkingDirectory"><code class="docutils literal notranslate"><span class="pre">ParameterManager.getWorkingDirectory()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.has_param"><code class="docutils literal notranslate"><span class="pre">ParameterManager.has_param()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.list"><code class="docutils literal notranslate"><span class="pre">ParameterManager.list()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.list_profiles"><code class="docutils literal notranslate"><span class="pre">ParameterManager.list_profiles()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.refresh_profiles"><code class="docutils literal notranslate"><span class="pre">ParameterManager.refresh_profiles()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_all_parameters"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_all_parameters()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_empty_submodules"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_empty_submodules()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.selectedProfile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.selectedProfile</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.set"><code class="docutils literal notranslate"><span class="pre">ParameterManager.set()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.switch_to_profile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.switch_to_profile()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.toFile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.toFile()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.toParamDict"><code class="docutils literal notranslate"><span class="pre">ParameterManager.toParamDict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.to_tree"><code class="docutils literal notranslate"><span class="pre">ParameterManager.to_tree()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.workingDirectory"><code class="docutils literal notranslate"><span class="pre">ParameterManager.workingDirectory</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes"><code class="docutils literal notranslate"><span class="pre">ParameterTypes</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes.any"><code class="docutils literal notranslate"><span class="pre">ParameterTypes.any</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes.bool"><code class="docutils literal notranslate"><span class="pre">ParameterTypes.bool</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes.complex"><code class="docutils literal notranslate"><span class="pre">ParameterTypes.complex</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes.integer"><code class="docutils literal notranslate"><span class="pre">ParameterTypes.integer</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes.numeric"><code class="docutils literal notranslate"><span class="pre">ParameterTypes.numeric</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterTypes.string"><code class="docutils literal notranslate"><span class="pre">ParameterTypes.string</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.paramTypeFromName"><code class="docutils literal notranslate"><span class="pre">paramTypeFromName()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.paramTypeFromVals"><code class="docutils literal notranslate"><span class="pre">paramTypeFromVals()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/api/generated/instrumentserver.params.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Tools For Experiments.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

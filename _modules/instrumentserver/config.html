@@ -1,0 +1,710 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>instrumentserver.config &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/config';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/_modules/instrumentserver/config.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="auto">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.config</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for instrumentserver.config</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">If any instrument in the config does not have values for SERVERFIELDS or GUIFIELD, the values inside of it are added</span>
+<span class="sd">to the config as defaults. If you are adding any extra fields to the config make sure to add the default values on those</span>
+<span class="sd">variables since we parse the config using those.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">IO</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">ruamel.yaml</span>
+
+<span class="c1"># Centralised point of extra fields for the server with its default as value</span>
+<span class="n">SERVERFIELDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;initialize&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+<span class="c1"># Extra fields for the GUI.</span>
+<span class="n">GUIFIELD</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;instrumentserver.gui.instruments.GenericInstrument&quot;</span><span class="p">,</span> <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+
+
+<div class="viewcode-block" id="loadConfig">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.config.html#instrumentserver.config.loadConfig">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">loadConfig</span><span class="p">(</span>
+    <span class="n">configPath</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loads the config for the instrumentserver. From 1 config file it splits the respective fields into 3 different</span>
+<span class="sd">    objects: a serverConfig (the configurations for the server), a stationConfig(the qcodes station config file clean</span>
+<span class="sd">    of any extra config fields), and a GUI config file (any config that the GUI of the server needs).</span>
+
+<span class="sd">    The qcodes station only accepts the path of an actual file for its config. So after loading the YAML file,</span>
+<span class="sd">    the added fields are removed from the loaded dictionary. After that it is converted to a byte stream and written</span>
+<span class="sd">    into a temporary file. what is returned here is the path to that temporary file, after the station loads the</span>
+<span class="sd">    file, it gets deleted automatically</span>
+
+<span class="sd">    The config also supports a &#39;gui_defaults&#39; section for class-based GUI configuration that applies to all</span>
+<span class="sd">    instances of a given instrument class. These defaults are merged with instance-specific configs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">configPath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">configPath</span><span class="p">)</span>
+    <span class="n">serverConfig</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Config for the server</span>
+    <span class="n">guiConfig</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Individual gui config of each instrument</span>
+    <span class="n">fullConfig</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># serverConfig + guiConfig + any unfilled fields. Used for creating instruments from the gui</span>
+    <span class="n">shortcutConfig</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Preferences for keyboard shortcuts</span>
+    <span class="n">pollingRates</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Polling rates for each parameter</span>
+    <span class="n">ipAddresses</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Dictionary of IP Addresses to send broadcasts to:</span>
+    <span class="c1"># externalBroadcast: where to externally send parameter change broadcasts to, formatted like &quot;tcp://address:port&quot;</span>
+    <span class="c1"># listeningAddress: additional address to listen to messages received by the server, formatted like &quot;address&quot;</span>
+
+    <span class="n">yaml</span> <span class="o">=</span> <span class="n">ruamel</span><span class="o">.</span><span class="n">yaml</span><span class="o">.</span><span class="n">YAML</span><span class="p">()</span>
+    <span class="n">rawConfig</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">configPath</span><span class="p">)</span>
+
+    <span class="c1"># ruamel.yaml returns ``None`` for an empty (or comments-only) config</span>
+    <span class="c1"># file. The membership test on the next line would then raise an opaque</span>
+    <span class="c1"># ``TypeError: argument of type &#39;NoneType&#39; is not iterable``, so we</span>
+    <span class="c1"># surface a descriptive error that matches the style of the missing-key</span>
+    <span class="c1"># message below.</span>
+    <span class="k">if</span> <span class="n">rawConfig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The config file &#39;</span><span class="si">{</span><span class="n">configPath</span><span class="si">}</span><span class="s2">&#39; is empty. &quot;</span>
+            <span class="s2">&quot;It needs at least an &#39;instruments:&#39; section.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;instruments&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rawConfig</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+            <span class="s2">&quot;All configurations must be inside the &#39;instruments&#39; field. &quot;</span>
+            <span class="s2">&quot;Try adding &#39;instruments:&#39; at the top of the config file and &quot;</span>
+            <span class="s2">&quot;indenting everything underneath.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Parse gui_defaults section (class-based GUI configuration)</span>
+    <span class="n">gui_defaults</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s2">&quot;gui_defaults&quot;</span> <span class="ow">in</span> <span class="n">rawConfig</span><span class="p">:</span>
+        <span class="n">gui_defaults</span> <span class="o">=</span> <span class="n">rawConfig</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;gui_defaults&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Removing any extra fields</span>
+    <span class="k">for</span> <span class="n">instrumentName</span><span class="p">,</span> <span class="n">configDict</span> <span class="ow">in</span> <span class="n">rawConfig</span><span class="p">[</span><span class="s2">&quot;instruments&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">serverConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">default</span> <span class="ow">in</span> <span class="n">SERVERFIELDS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">configDict</span><span class="p">:</span>
+                <span class="n">fieldSetting</span> <span class="o">=</span> <span class="n">configDict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">fieldSetting</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s1">&quot; field cannot be None&#39;</span><span class="p">)</span>
+                <span class="n">serverConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">fieldSetting</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">serverConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span>
+
+        <span class="c1"># we don&#39;t go through the entire gui because generic is a special setting</span>
+        <span class="c1"># and we only have 2 different options for now</span>
+        <span class="k">if</span> <span class="s2">&quot;gui&quot;</span> <span class="ow">in</span> <span class="n">configDict</span><span class="p">:</span>
+            <span class="n">guiDict</span> <span class="o">=</span> <span class="n">configDict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;gui&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">guiDict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;&quot;gui&quot; field cannot be None&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="n">guiDict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">guiDict</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;generic&quot;</span> <span class="ow">or</span> <span class="n">guiDict</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Generic&quot;</span><span class="p">:</span>
+                    <span class="n">guiDict</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">GUIFIELD</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+            <span class="c1"># If the user does not specify a gui, the default one will be used</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">guiDict</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">GUIFIELD</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+
+            <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]</span> <span class="o">=</span> <span class="n">guiDict</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]</span> <span class="o">=</span> <span class="n">GUIFIELD</span>
+
+        <span class="k">if</span> <span class="s2">&quot;pollingRate&quot;</span> <span class="ow">in</span> <span class="n">configDict</span><span class="p">:</span>
+            <span class="n">ratesDict</span> <span class="o">=</span> <span class="n">configDict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;pollingRate&quot;</span><span class="p">)</span>
+            <span class="c1"># This catches the case when the pollingRate is in the config but it is empty.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ratesDict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">pollingRates</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="n">instrumentName</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">param</span><span class="p">:</span> <span class="n">rate</span>
+                        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">rate</span> <span class="ow">in</span> <span class="n">ratesDict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="n">fullConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;gui&quot;</span><span class="p">:</span> <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">],</span>
+            <span class="o">**</span><span class="n">configDict</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">serverConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">],</span>
+        <span class="p">}</span>
+
+    <span class="c1"># Merge gui_defaults into guiConfig for each instrument</span>
+    <span class="k">if</span> <span class="n">gui_defaults</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">instrumentName</span> <span class="ow">in</span> <span class="n">guiConfig</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># Get instrument class name from the type field</span>
+            <span class="n">instrument_type</span> <span class="o">=</span> <span class="n">fullConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">class_name</span> <span class="o">=</span> <span class="n">instrument_type</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">instrument_type</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="c1"># Initialize kwargs if not present</span>
+            <span class="k">if</span> <span class="s2">&quot;kwargs&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]:</span>
+                <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="s2">&quot;kwargs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># Merge patterns in order: __default__ → class → instance</span>
+            <span class="c1"># For each GUI config key (parameters-hide, methods-hide, etc.)</span>
+            <span class="k">for</span> <span class="n">config_key</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">&quot;parameters-hide&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;methods-hide&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;parameters-star&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;parameters-trash&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;methods-star&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;methods-trash&quot;</span><span class="p">,</span>
+            <span class="p">]:</span>
+                <span class="n">merged_patterns</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="c1"># 1. Add patterns from __default__</span>
+                <span class="k">if</span> <span class="s2">&quot;__default__&quot;</span> <span class="ow">in</span> <span class="n">gui_defaults</span><span class="p">:</span>
+                    <span class="n">default_config</span> <span class="o">=</span> <span class="n">gui_defaults</span><span class="p">[</span><span class="s2">&quot;__default__&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">config_key</span> <span class="ow">in</span> <span class="n">default_config</span><span class="p">:</span>
+                        <span class="n">merged_patterns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">default_config</span><span class="p">[</span><span class="n">config_key</span><span class="p">])</span>
+
+                <span class="c1"># 2. Add patterns from class-specific defaults</span>
+                <span class="k">if</span> <span class="n">class_name</span> <span class="ow">and</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">gui_defaults</span><span class="p">:</span>
+                    <span class="n">class_config</span> <span class="o">=</span> <span class="n">gui_defaults</span><span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">config_key</span> <span class="ow">in</span> <span class="n">class_config</span><span class="p">:</span>
+                        <span class="n">merged_patterns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">class_config</span><span class="p">[</span><span class="n">config_key</span><span class="p">])</span>
+
+                <span class="c1"># 3. Add patterns from instance-specific config</span>
+                <span class="k">if</span> <span class="n">config_key</span> <span class="ow">in</span> <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="s2">&quot;kwargs&quot;</span><span class="p">]:</span>
+                    <span class="n">merged_patterns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                        <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="s2">&quot;kwargs&quot;</span><span class="p">][</span><span class="n">config_key</span><span class="p">]</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Store merged patterns if any exist</span>
+                <span class="k">if</span> <span class="n">merged_patterns</span><span class="p">:</span>
+                    <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="s2">&quot;kwargs&quot;</span><span class="p">][</span><span class="n">config_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged_patterns</span>
+
+            <span class="c1"># Update fullConfig with merged GUI config</span>
+            <span class="n">fullConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">][</span><span class="s2">&quot;gui&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">]</span>
+
+    <span class="c1"># Gets all shortcuts different to REGISTRY defaults from the config file</span>
+    <span class="k">if</span> <span class="s2">&quot;shortcuts&quot;</span> <span class="ow">in</span> <span class="n">rawConfig</span><span class="p">:</span>
+        <span class="n">shortcutConfig</span> <span class="o">=</span> <span class="n">rawConfig</span><span class="p">[</span><span class="s2">&quot;shortcuts&quot;</span><span class="p">]</span>
+        <span class="n">rawConfig</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;shortcuts&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Gets all of the broadcasting and listening addresses from the config file</span>
+    <span class="k">if</span> <span class="s2">&quot;networking&quot;</span> <span class="ow">in</span> <span class="n">rawConfig</span><span class="p">:</span>
+        <span class="n">addressDict</span> <span class="o">=</span> <span class="n">rawConfig</span><span class="p">[</span><span class="s2">&quot;networking&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">addressDict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">addressDict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">ipAddresses</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">address</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">address</span><span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
+        <span class="n">rawConfig</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;networking&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Creating the file like object</span>
+    <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">ioBytesFile</span><span class="p">:</span>
+        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">rawConfig</span><span class="p">,</span> <span class="n">ioBytesFile</span><span class="p">)</span>
+        <span class="n">stationConfig</span> <span class="o">=</span> <span class="n">ioBytesFile</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+    <span class="c1"># Storing the file like object in a temporary file to pass to the station config</span>
+    <span class="n">tempFile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">tempFile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">stationConfig</span><span class="p">)</span>
+    <span class="n">tempFile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">tempFilePath</span> <span class="o">=</span> <span class="n">tempFile</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="c1"># You need to return the tempFile itself so that the garbage collector doesn&#39;t touch it</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">tempFilePath</span><span class="p">,</span>
+        <span class="n">serverConfig</span><span class="p">,</span>
+        <span class="n">fullConfig</span><span class="p">,</span>
+        <span class="n">shortcutConfig</span><span class="p">,</span>
+        <span class="n">tempFile</span><span class="p">,</span>
+        <span class="n">pollingRates</span><span class="p">,</span>
+        <span class="n">ipAddresses</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Tools For Experiments.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

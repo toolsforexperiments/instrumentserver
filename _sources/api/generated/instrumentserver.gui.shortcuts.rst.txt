@@ -1,0 +1,13 @@
+instrumentserver.gui.shortcuts
+==============================
+
+.. automodule:: instrumentserver.gui.shortcuts
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      KeyboardShortcutManager
+      ShortcutEditorWidget
+   

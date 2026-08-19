@@ -1,0 +1,27 @@
+instrumentserver.gui.instruments
+================================
+
+.. automodule:: instrumentserver.gui.instruments
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AddParameterWidget
+      GenericInstrument
+      InstrumentMethods
+      InstrumentParameters
+      ItemParameters
+      MethodDisplay
+      MethodsDelegate
+      MethodsModel
+      MethodsTreeView
+      ModelParameters
+      ParameterDelegate
+      ParameterDeleteDelegate
+      ParameterManagerGui
+      ParameterManagerTreeView
+      ParametersTreeView
+      ProfilesManager
+   

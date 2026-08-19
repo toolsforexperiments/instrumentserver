@@ -1,0 +1,12 @@
+﻿instrumentserver.config
+=======================
+
+.. automodule:: instrumentserver.config
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      loadConfig
+   

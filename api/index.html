@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
@@ -41,15 +42,15 @@
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/index';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/api/index.html" />
-    <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="instrumentserver.server" href="generated/instrumentserver.server.html" />
-    <link rel="prev" title="Code Examples" href="../examples/index.html" />
+    <link rel="next" title="instrumentserver.apps" href="generated/instrumentserver.apps.html" />
+    <link rel="prev" title="Custom Widgets" href="../technical_guide/custom_widgets.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -143,8 +144,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -157,8 +158,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -290,8 +291,8 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../first_steps/index.html">
-    First Steps
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
   </a>
 </li>
 
@@ -304,8 +305,8 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
-    Code Examples
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
   </a>
 </li>
 
@@ -388,21 +389,44 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1 has-children"><a class="reference internal" href="generated/instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.server.application.html">instrumentserver.server.application</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.server.core.html">instrumentserver.server.core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.apps.html">instrumentserver.apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.base.html">instrumentserver.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="generated/instrumentserver.client.html">instrumentserver.client</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.client.application.html">instrumentserver.client.application</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.client.core.html">instrumentserver.client.core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.client.proxy.html">instrumentserver.client.proxy</a></li>
 </ul>
 </details></li>
-<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.config.html">instrumentserver.config</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="generated/instrumentserver.gui.html">instrumentserver.gui</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.helpers.html">instrumentserver.helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.log.html">instrumentserver.log</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="generated/instrumentserver.monitoring.html">instrumentserver.monitoring</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.monitoring.listener.html">instrumentserver.monitoring.listener</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.params.html">instrumentserver.params</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/instrumentserver.serialize.html">instrumentserver.serialize</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="generated/instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.server.application.html">instrumentserver.server.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.server.core.html">instrumentserver.server.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="generated/instrumentserver.testing.html">instrumentserver.testing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="generated/instrumentserver.testing.dummy_instruments.html">instrumentserver.testing.dummy_instruments</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="generated/instrumentserver.testing.dummy_instruments.generic.html">instrumentserver.testing.dummy_instruments.generic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/instrumentserver.testing.dummy_instruments.rf.html">instrumentserver.testing.dummy_instruments.rf</a></li>
+</ul>
+</details></li>
 </ul>
 </details></li>
 </ul>
@@ -464,62 +488,55 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">#</a></h1>
-<p>Complete API documentation for InstrumentServer, automatically generated from source code docstrings.</p>
-<section id="main-modules">
-<h2>Main Modules<a class="headerlink" href="#main-modules" title="Link to this heading">#</a></h2>
+<p>This section is generated straight from the source code docstrings, so it always
+reflects what the package actually ships. It’s the place to look up exact signatures,
+classes, and module contents. For narrative documentation, start with the
+<a class="reference internal" href="../user_guide/index.html"><span class="std std-doc">User Guide</span></a> for how to use the package, or the
+<a class="reference internal" href="../technical_guide/index.html"><span class="std std-doc">Technical Guide</span></a> for how it works inside.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.server.html#module-instrumentserver.server" title="instrumentserver.server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.server</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.apps.html#module-instrumentserver.apps" title="instrumentserver.apps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.apps</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.client.html#module-instrumentserver.client" title="instrumentserver.client"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.client</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.base.html#module-instrumentserver.base" title="instrumentserver.base"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.base</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.blueprints.html#module-instrumentserver.blueprints" title="instrumentserver.blueprints"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.blueprints</span></code></a></p></td>
 <td><p>Blueprints Module</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.monitoring.html#module-instrumentserver.monitoring" title="instrumentserver.monitoring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.monitoring</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.client.html#module-instrumentserver.client" title="instrumentserver.client"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.client</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.config.html#module-instrumentserver.config" title="instrumentserver.config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.config</span></code></a></p></td>
+<td><p>If any instrument in the config does not have values for SERVERFIELDS or GUIFIELD, the values inside of it are added to the config as defaults.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.gui.html#module-instrumentserver.gui" title="instrumentserver.gui"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.gui</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.helpers.html#module-instrumentserver.helpers" title="instrumentserver.helpers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.helpers</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.log.html#module-instrumentserver.log" title="instrumentserver.log"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.log</span></code></a></p></td>
+<td><p>instrumentserver.log : Logging tools and defaults for instrumentserver.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.monitoring.html#module-instrumentserver.monitoring" title="instrumentserver.monitoring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.monitoring</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.params.html#module-instrumentserver.params" title="instrumentserver.params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.params</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.serialize.html#module-instrumentserver.serialize" title="instrumentserver.serialize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.serialize</span></code></a></p></td>
+<td><p>instrumentserver.serialize</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/instrumentserver.server.html#module-instrumentserver.server" title="instrumentserver.server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.server</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/instrumentserver.testing.html#module-instrumentserver.testing" title="instrumentserver.testing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instrumentserver.testing</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-</section>
-<section id="quick-navigation">
-<h2>Quick Navigation<a class="headerlink" href="#quick-navigation" title="Link to this heading">#</a></h2>
-<section id="server-api">
-<h3>Server API<a class="headerlink" href="#server-api" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.server.core.StationServer</span></code> - Main server class</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.server.application</span></code> - Server GUI components</p></li>
-</ul>
-</section>
-<section id="client-api">
-<h3>Client API<a class="headerlink" href="#client-api" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.client.proxy.Client</span></code> - High-level client API</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.client.proxy.ProxyParameter</span></code> - Remote parameter interface</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.client.proxy.ProxyInstrumentModule</span></code> - Remote instrument interface</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.client.core.BaseClient</span></code> - Low-level ZMQ client</p></li>
-</ul>
-</section>
-<section id="messaging">
-<h3>Messaging<a class="headerlink" href="#messaging" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.blueprints.ServerInstruction</span></code> - Client requests</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.blueprints.ServerResponse</span></code> - Server responses</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.blueprints.ParameterBluePrint</span></code> - Parameter metadata</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.blueprints.InstrumentModuleBluePrint</span></code> - Instrument metadata</p></li>
-</ul>
-</section>
-<section id="monitoring">
-<h3>Monitoring<a class="headerlink" href="#monitoring" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.monitoring.monitor.ParameterListener</span></code> - Real-time parameter updates</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">instrumentserver.monitoring.monitor.ParameterLogger</span></code> - Parameter logging</p></li>
-</ul>
-</section>
-</section>
 </section>
 
 
@@ -533,20 +550,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../examples/index.html"
+       href="../technical_guide/custom_widgets.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Code Examples</p>
+        <p class="prev-next-title">Custom Widgets</p>
       </div>
     </a>
     <a class="right-next"
-       href="generated/instrumentserver.server.html"
+       href="generated/instrumentserver.apps.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">instrumentserver.server</p>
+        <p class="prev-next-title">instrumentserver.apps</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -560,25 +577,6 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-modules">Main Modules</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-navigation">Quick Navigation</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#server-api">Server API</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#client-api">Client API</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#messaging">Messaging</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#monitoring">Monitoring</a></li>
-</ul>
-</li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 
@@ -614,7 +612,7 @@
 
   <p class="copyright">
     
-      © Copyright 2020-2026, Wolfgang Pfaff.
+      © Copyright 2020-2026, Tools For Experiments.
       <br/>
     
   </p>
