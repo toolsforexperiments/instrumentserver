@@ -1,9 +1,17 @@
+import json
+
 import numpy as np
+import pytest
 import qcodes as qc
 from qcodes.math_utils.field_vector import FieldVector
 
+from instrumentserver.base import decode, encode
 from instrumentserver.blueprints import (
+    CallSpec,
+    Operation,
     ParameterBroadcastBluePrint,
+    ServerInstruction,
+    ServerResponse,
     bluePrintFromInstrumentModule,
     bluePrintFromMethod,
     bluePrintFromParameter,
@@ -15,6 +23,9 @@ from instrumentserver.blueprints import (
 from instrumentserver.testing.dummy_instruments.generic import (
     DummyInstrumentTimeout,
     DummyInstrumentWithSubmodule,
+    FieldVectorIns,
+    SweepRequest,
+    SweepResult,
 )
 from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
 
@@ -46,6 +57,25 @@ class MyClass:
     def customFunction(self, x: int, y: int) -> int:
         print("I am in my function")
         return x * y
+
+
+class NestedPayload:
+    attributes = ("request",)
+
+    def __init__(self, request):
+        self.request = request
+
+
+class ArrayPayload:
+    attributes = ("values",)
+
+    def __init__(self, values):
+        self.values = values
+
+
+class ConstructorRejectsFields:
+    def __init__(self):
+        pass
 
 
 def test_basic_param_dictionary():
@@ -89,6 +119,85 @@ def test_timeout_dummy_responds_to_idn():
         }
     finally:
         instrument.close()
+
+
+def test_field_vector_dummy_responds_to_idn_without_error_log(caplog):
+    instrument = FieldVectorIns("field_vector_idn")
+    try:
+        assert instrument.get_idn() == {
+            "vendor": "dummy",
+            "model": "field_vector_idn",
+            "serial": "0",
+            "firmware": "0",
+        }
+        assert "NotImplementedError" not in caplog.text
+    finally:
+        instrument.close()
+
+
+def test_custom_dataclass_request_and_result_codec():
+    request = SweepRequest(5e9, 20e6, {"sample": "A"})
+    instruction = ServerInstruction(
+        operation=Operation.call,
+        call_spec=CallSpec(target="analyzer.run_sweep", args=(request,)),
+    )
+    decoded_instruction = decode(encode(instruction))
+    decoded_request = decoded_instruction.call_spec.args[0]
+    assert isinstance(decoded_request, SweepRequest)
+    assert decoded_request == request
+    assert decoded_request is not request
+
+    result = SweepResult([4.99e9, 5e9, 5.01e9], [-50.0, -20.0, -49.0])
+    decoded_response = decode(encode(ServerResponse(message=result)))
+    assert isinstance(decoded_response.message, SweepResult)
+    assert decoded_response.message == result
+    assert decoded_response.message is not result
+
+
+def test_custom_serialization_requirements_and_non_recursive_fields():
+    request = SweepRequest(5e9, 20e6)
+    nested = ServerInstruction(
+        operation=Operation.call,
+        call_spec=CallSpec(target="echo", args=(NestedPayload(request),)),
+    )
+    with pytest.raises(TypeError, match="SweepRequest"):
+        encode(nested)
+
+    array = ServerInstruction(
+        operation=Operation.call,
+        call_spec=CallSpec(target="echo", args=(ArrayPayload(np.array([1])),)),
+    )
+    with pytest.raises(TypeError, match="ndarray"):
+        encode(array)
+
+    with pytest.raises(ModuleNotFoundError):
+        decode(
+            json.dumps(
+                {
+                    "value": 1,
+                    "_class_type": "missing_package.models.Value",
+                }
+            )
+        )
+
+    constructor_path = (
+        f"{ConstructorRejectsFields.__module__}.{ConstructorRejectsFields.__name__}"
+    )
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        decode(json.dumps({"value": 1, "_class_type": constructor_path}))
+
+
+@pytest.mark.parametrize(
+    ("encoded", "expected"),
+    [
+        ("123", 123),
+        ("1.5", 1.5),
+        ("True", True),
+        ("plain text", "plain text"),
+    ],
+)
+def test_scalar_text_coercion(encoded, expected):
+    assert deserialize_obj(encoded) == expected
 
 
 def test_basic_broadcast_parameter_dictionary():

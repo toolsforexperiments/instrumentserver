@@ -1,8 +1,8 @@
 # Python client
 
 The Python Client is the interface to instruments owned by a Server. It represents a
-remote instrument in the server as a local Proxy Instrument with the same parameters and methods as its real
-QCoDeS driver. The [Quickstart](../getting_started/quickstart.md) gives a shorter first
+remote instrument as a local Proxy Instrument with the same parameters and methods as
+its real QCoDeS driver. The [Quickstart](../getting_started/quickstart.md) gives a shorter first
 look at instrumentserver. For a conceptual overview, see
 [How it works](../getting_started/how_it_works.md).
 
@@ -220,8 +220,9 @@ True
 ```
 
 The Proxy can refresh its Blueprint when the Server-side interface changes. Calling
-`multi_channel.update()` rebuilds its parameters, methods, and submodules from the
-latest description.
+`multi_channel.update()` fetches a fresh Blueprint, synchronizes parameters and
+submodules, and adds newly reported methods. It does not remove method objects already
+installed on the Proxy if the Server stops reporting them.
 
 ### Values that cross the connection
 
@@ -264,10 +265,10 @@ object identity does not.
 
 ### Making custom classes serializable
 
-Custom classes used in parameters and methods use an `attributes` class-attribute to list the values
-instrumentserver needs to reconstruct an instance. Once a class provides that list, its
-instances can cross the connection as parameter values, method arguments, or method
-return values.
+Custom classes used in parameters and methods use an `attributes` class attribute to
+list the values instrumentserver needs to reconstruct an instance. Once a class provides
+that list, its instances can cross the connection as parameter values, method arguments,
+or method return values.
 
 For example, a sweep range can preserve its Python type instead of arriving as a plain
 dictionary:
@@ -572,8 +573,9 @@ Server did not reply before timeout.
 True
 ```
 
-The Client does not retry a timed-out request. It replaces its ZMQ socket so later
-requests can work, but it does not reconnect or rerun the failed operation.
+The Client does not retry a timed-out request. It discards the old ZMQ socket and
+connects a replacement so later requests can work. The replacement connection does not
+rerun the timed-out operation.
 
 :::{warning}
 A timeout means that no reply arrived before the deadline. It does not mean the Server

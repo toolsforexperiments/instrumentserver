@@ -41,7 +41,7 @@ def test_closing_instruments(dummy_instrument):
     assert "dummy" not in cli.list_instruments()
 
 
-def test_sending_and_receiving_arbitrary_objects(cli):
+def test_sending_and_receiving_arbitrary_objects(cli, start_server):
     magnet = cli.find_or_create_instrument(
         name="magnet",
         instrument_class="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns",
@@ -61,8 +61,12 @@ def test_sending_and_receiving_arbitrary_objects(cli):
     # Setting parameter directly.
     new_field_vector = FieldVector(11, 22, 33)
     magnet.field(new_field_vector)
-    assert isinstance(magnet.field(), FieldVector)
-    assert magnet.field().is_equal(new_field_vector)
+    server_vector = start_server.station.components["magnet"].field_vector
+    returned_vector = magnet.field()
+    assert isinstance(returned_vector, FieldVector)
+    assert server_vector is not new_field_vector
+    assert returned_vector is not server_vector
+    assert returned_vector.is_equal(new_field_vector)
 
     new_field_vector = FieldVector(101, 102, 103)
     magnet.set_field(new_field_vector)
