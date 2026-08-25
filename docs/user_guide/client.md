@@ -405,6 +405,20 @@ the integer `123`. Method and parameter APIs that require numeric-looking text n
 unambiguous encoding, such as a nonnumeric prefix.
 :::
 
+### Following the full lifecycle
+
+The diagram ties the pieces in this section together. It follows a Proxy Instrument
+from its Blueprint through a `FieldVector` parameter set and get, including each point
+where instrumentserver serializes or deserializes a value.
+
+```{raw} html
+:file: ../_static/animations/proxy_lifecycle.html
+```
+
+The serialization lanes leave out their internal fields. The
+[Blueprints and Proxies](../technical_guide/blueprints_and_proxies.md) page covers the
+wire format and reconstruction machinery.
+
 
 ## Parameter snapshots
 

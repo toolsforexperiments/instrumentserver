@@ -13,6 +13,7 @@ from instrumentserver.blueprints import (
     iterable_to_serialized_dict,
 )
 from instrumentserver.testing.dummy_instruments.generic import (
+    DummyInstrumentTimeout,
     DummyInstrumentWithSubmodule,
 )
 from instrumentserver.testing.dummy_instruments.rf import ResonatorResponse
@@ -75,6 +76,19 @@ def test_basic_instrument_dictionary():
     dummy_bp_dict = bluePrintToDict(dummy_bp)
     reconstructed_dummy_bp = deserialize_obj(dummy_bp_dict)
     assert dummy_bp == reconstructed_dummy_bp
+
+
+def test_timeout_dummy_responds_to_idn():
+    instrument = DummyInstrumentTimeout("timeout_dummy")
+    try:
+        assert instrument.get_idn() == {
+            "vendor": "dummy",
+            "model": "timeout_dummy",
+            "serial": "0",
+            "firmware": "0",
+        }
+    finally:
+        instrument.close()
 
 
 def test_basic_broadcast_parameter_dictionary():
