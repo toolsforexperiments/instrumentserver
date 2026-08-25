@@ -119,4 +119,6 @@ docs = [
     "nbsphinx",
     "sphinx-design",
     "linkify-it-py",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-prompt>=1.10.2",
 ]

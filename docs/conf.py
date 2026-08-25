@@ -28,6 +28,8 @@ extensions = [
     'nbsphinx',               # Jupyter notebook support
     'sphinx.ext.intersphinx', # Link to other project docs
     'sphinx_design',          # Tabs, cards, grids
+    'sphinx-prompt',          # Copy-safe shell and interpreter prompts
+    'sphinx_copybutton',      # Copy buttons on code blocks
 ]
 
 # MyST Parser configuration
@@ -66,6 +68,14 @@ myst_linkify_fuzzy_links = True
 nbsphinx_execute = 'never'  # Don't execute notebooks during build (safer)
 nbsphinx_allow_errors = True  # Continue building if notebook has errors
 nbsphinx_kernel_name = 'python3'
+
+# Match scikit-learn's copy behavior: remove Python REPL prompts and the inline
+# styles used to draw unselectable sphinx-prompt prefixes. Keep copy buttons off
+# notebook prompts and line-number gutters.
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
+copybutton_exclude = "style"
+copybutton_selector = ":not(.prompt) > div.highlight pre"
 
 # Intersphinx configuration (link to other docs)
 intersphinx_mapping = {

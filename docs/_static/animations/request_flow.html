@@ -811,6 +811,15 @@
     applyStep(index);
   }
 
+  function selectStep(index) {
+    var step = stepEls[index];
+    if (!step) return;
+    setActive(index);
+    var rect = step.getBoundingClientRect();
+    var target = window.scrollY + rect.top + rect.height / 2 - window.innerHeight * 0.57;
+    window.scrollTo({ top: Math.max(0, target), behavior: reduced ? "auto" : "smooth" });
+  }
+
   root.classList.add("is-live");
 
   /* Cards are direct controls as well as scroll markers. Keep their activation
@@ -826,11 +835,11 @@
       "aria-label",
       "Show " + STEPS[index].no + ": " + (title ? title.textContent : STEPS[index].title)
     );
-    card.addEventListener("click", function () { setActive(index); });
+    card.addEventListener("click", function () { selectStep(index); });
     card.addEventListener("keydown", function (event) {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        setActive(index);
+        selectStep(index);
       }
     });
   });

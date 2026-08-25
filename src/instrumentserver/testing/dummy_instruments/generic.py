@@ -2,8 +2,10 @@
 # No need to mypy check dummy testing instruments.
 
 import time
+from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import List
+from types import MethodType
+from typing import ClassVar, List
 
 import numpy as np
 from qcodes import Instrument, validators
@@ -23,6 +25,34 @@ class StatusFlag(IntFlag):
     ESB = 1 << 5
 
 
+@dataclass
+class SweepRequest:
+    """Serializable request used by Client transport tests and examples."""
+
+    center_hz: float
+    span_hz: float
+    metadata: dict[str, str] = field(default_factory=dict)
+
+    attributes: ClassVar[tuple[str, ...]] = (
+        "center_hz",
+        "span_hz",
+        "metadata",
+    )
+
+
+@dataclass
+class SweepResult:
+    """Serializable result used by Client transport tests and examples."""
+
+    frequency_hz: list[float]
+    magnitude_db: list[float]
+
+    attributes: ClassVar[tuple[str, ...]] = (
+        "frequency_hz",
+        "magnitude_db",
+    )
+
+
 class DummyChannel(Instrument):
     def __init__(self, name: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -37,6 +67,12 @@ class DummyChannel(Instrument):
             vals=validators.Numbers(-1, 1),
             initial_value=1,
         )
+
+    def ask_raw(self, cmd: str) -> str:
+        """Return a minimal response to identification queries."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
 
     def dummy_function(self, *args, **kwargs):
         """Dummy function for specific channels used for testing"""
@@ -117,6 +153,95 @@ class DummyInstrumentWithSubmodule(Instrument):
         return self.address, self.first_arg, self.second_arg
 
 
+def _dynamic_method(self, value, *, scale=1):
+    """Return a value multiplied by a keyword-only scale."""
+    return value * scale
+
+
+class MutableInterfaceInstrument(Instrument):
+    """Dummy whose parameters, methods, and submodules can change at runtime."""
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        self.add_parameter("stable", set_cmd=None, initial_value=1)
+
+    def ask_raw(self, cmd: str) -> str:
+        """Return a minimal response to identification queries."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
+    def add_dynamic_interface(self):
+        """Add one parameter, method, and submodule for Proxy update tests."""
+        if "dynamic_parameter" not in self.parameters:
+            self.add_parameter("dynamic_parameter", set_cmd=None, initial_value=2)
+        if "dynamic_module" not in self.submodules:
+            self.add_submodule(
+                "dynamic_module", DummyChannel(f"{self.name}_dynamic_module")
+            )
+        if not hasattr(self, "dynamic_method"):
+            self.dynamic_method = MethodType(_dynamic_method, self)
+
+    def remove_dynamic_interface(self):
+        """Remove the runtime interface added by :meth:`add_dynamic_interface`."""
+        if "dynamic_parameter" in self.parameters:
+            self.remove_parameter("dynamic_parameter")
+        dynamic_module = self.submodules.pop("dynamic_module", None)
+        if dynamic_module is not None:
+            dynamic_module.close()
+        if hasattr(self, "dynamic_method"):
+            del self.dynamic_method
+
+
+class SerializationInstrument(Instrument):
+    """Dummy that returns representative values across the Client transport."""
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+    def ask_raw(self, cmd: str) -> str:
+        """Return a minimal response to identification queries."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
+    def echo(self, value):
+        """Return ``value`` unchanged."""
+        return value
+
+    def run_sweep(self, request):
+        """Return a three-point sweep for a :class:`SweepRequest`."""
+        half_span = request.span_hz / 2
+        return SweepResult(
+            frequency_hz=[
+                request.center_hz - half_span,
+                request.center_hz,
+                request.center_hz + half_span,
+            ],
+            magnitude_db=[-50.0, -20.0, -49.0],
+        )
+
+    def get_status(self):
+        """Return an importable top-level enum member."""
+        return StatusFlag.EAV
+
+    def get_nested_status(self):
+        """Return an enum nested in a list."""
+        return [StatusFlag.EAV]
+
+    def get_tuple(self):
+        """Return a tuple so transport container conversion can be tested."""
+        return (1, 2)
+
+    def get_set(self):
+        """Return a set so transport container conversion can be tested."""
+        return {1, 2}
+
+    def get_numeric_text(self):
+        """Return numeric-looking text so decoder coercion can be tested."""
+        return "123"
+
+
 class DummyInstrumentTimeout(Instrument):
     """A dummy instrument to test timeout situations."""
 
@@ -139,6 +264,12 @@ class DummyInstrumentTimeout(Instrument):
             get_cmd=lambda: self._param2,
             set_cmd=lambda p: setattr(self, "_param2", p),
         )
+
+    def ask_raw(self, cmd: str) -> str:
+        """Answer identification queries without touching timeout behavior."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
 
     def _get_param1(self):
         # for testing potentially redundant/duplicate get calls
@@ -236,6 +367,12 @@ class FieldVectorIns(Instrument):
             get_cmd=self.get_complex_list,
             set_cmd=self.set_complex_list,
         )
+
+    def ask_raw(self, cmd: str) -> str:
+        """Return a minimal response to identification queries."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
 
     def get_starting_parameter(self):
         return self.starting_parameter

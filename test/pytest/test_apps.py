@@ -113,6 +113,8 @@ def test_server_script_gui_default_no_config():
     mock_lc.assert_not_called()
 
     kwargs = mock_gui.call_args.kwargs
+    assert kwargs["port"] == 5555
+    assert kwargs["addresses"] is None
     assert kwargs["serverConfig"] is None
     assert kwargs["stationConfig"] is None
 

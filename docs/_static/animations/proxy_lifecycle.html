@@ -1,0 +1,410 @@
+<div class="proxylife" id="proxylife">
+  <div class="proxylife-stage">
+    <div class="proxylife-hud" aria-hidden="true">
+      <span class="proxylife-hud-phase" id="proxylife-hud-phase">Action 1 · Create the Proxy Instrument</span>
+      <span class="proxylife-hud-no" id="proxylife-hud-no">Step 01</span>
+      <span class="proxylife-hud-title" id="proxylife-hud-title">Ask for a Proxy Instrument</span>
+    </div>
+    <svg class="proxylife-map" viewBox="0 0 960 430" role="img" aria-labelledby="proxylife-title proxylife-desc">
+      <title id="proxylife-title">Proxy Instrument lifecycle</title>
+      <desc id="proxylife-desc">A Client requests a Blueprint for a Server-owned QCoDeS instrument and uses it to build a local Proxy Instrument. The real driver begins with a zero-valued FieldVector. A later FieldVector set replaces it, and a get reconstructs the current value in the script.</desc>
+
+      <g class="proxylife-region">
+        <rect class="proxylife-region-box" x="18" y="40" width="420" height="370" rx="14" />
+        <text class="proxylife-region-title" x="38" y="69">Your script or notebook</text>
+      </g>
+      <g class="proxylife-region">
+        <rect class="proxylife-region-box" x="522" y="40" width="420" height="370" rx="14" />
+        <text class="proxylife-region-title" x="922" y="69" text-anchor="end">InstrumentServer</text>
+      </g>
+      <g class="proxylife-wire-lane">
+        <rect x="454" y="44" width="52" height="362" rx="10" />
+        <text x="480" y="220" text-anchor="middle" transform="rotate(-90 480 220)">ZMQ · serialized messages</text>
+      </g>
+
+      <g class="proxylife-routes" aria-hidden="true">
+        <path id="proxylife-edge-client-server" class="proxylife-edge kind-blueprint" d="M352,118 C410,90 465,90 538,118" />
+        <path id="proxylife-edge-blueprint-client" class="proxylife-edge kind-blueprint" d="M195,124 L220,118" />
+        <path id="proxylife-edge-client-proxy" class="proxylife-edge kind-blueprint" d="M287,146 C287,169 272,181 248,194" />
+        <path id="proxylife-edge-target-proxy" class="proxylife-edge kind-value" d="M139,349 C139,315 154,286 181,261" />
+        <path id="proxylife-edge-returned-proxy" class="proxylife-edge kind-value" d="M345,349 C345,315 314,284 275,260" />
+        <path id="proxylife-edge-proxy-server" class="proxylife-edge kind-call" d="M310,226 C386,226 451,226 538,136" />
+        <path id="proxylife-edge-server-driver" class="proxylife-edge kind-call" d="M662,146 C682,172 701,191 724,211" />
+        <path id="proxylife-edge-server-blueprint" class="proxylife-edge kind-blueprint" d="M600,146 L600,210" />
+        <path id="proxylife-edge-server-value" class="proxylife-edge proxylife-event-edge kind-value" d="M620,146 C655,205 655,265 630,306" />
+
+        <path class="proxylife-arrow kind-blueprint" data-arrow="client-server-fwd" d="M538,118 l-13,-6 l3,6 l-3,6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="client-server-back" d="M352,118 l13,-6 l-3,6 l3,6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="blueprint-client-fwd" d="M220,118 l-14,-3 l6,5 l-3,6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="client-proxy-fwd" d="M248,194 l5,-14 l2,7 l7,1 z" />
+        <path class="proxylife-arrow kind-value" data-arrow="target-proxy-fwd" d="M181,261 l-13,6 l7,1 l1,7 z" />
+        <path class="proxylife-arrow kind-value" data-arrow="returned-proxy-back" d="M345,349 l-10,-11 l2,7 l-7,2 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="proxy-server-fwd" d="M538,136 l-14,1 l7,3 l1,7 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="proxy-server-back" d="M310,226 l14,-1 l-7,-3 l-1,-7 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="server-driver-fwd" d="M724,211 l-13,-5 l5,6 l-3,6 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="server-driver-back" d="M662,146 l13,5 l-5,-6 l3,-6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="server-blueprint-fwd" d="M600,210 l-6,-13 l6,3 l6,-3 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="server-blueprint-back" d="M600,146 l-6,13 l6,-3 l6,3 z" />
+        <path class="proxylife-arrow kind-value" data-arrow="server-value-fwd" d="M630,306 l-6,-13 l6,3 l6,-3 z" />
+
+        <text id="proxylife-label-client-server" class="proxylife-edge-label" x="446" y="78" text-anchor="middle">Blueprint request</text>
+        <text id="proxylife-label-client-proxy" class="proxylife-edge-label" x="308" y="174">builds</text>
+        <text id="proxylife-label-target-proxy" class="proxylife-edge-label" x="84" y="298">set value</text>
+        <text id="proxylife-label-returned-proxy" class="proxylife-edge-label" x="318" y="298">returned value</text>
+        <text id="proxylife-label-proxy-server" class="proxylife-edge-label" x="430" y="211" text-anchor="middle">serialized request</text>
+        <text id="proxylife-label-server-driver" class="proxylife-edge-label" x="702" y="167" text-anchor="middle">parameter call</text>
+        <text id="proxylife-label-server-blueprint" class="proxylife-edge-label" x="610" y="181">creates</text>
+
+        <circle class="proxylife-comet kind-blueprint" data-comet="client-server-1" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="client-server-2" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="blueprint-client-1" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="client-proxy-1" r="5" />
+        <circle class="proxylife-comet kind-value" data-comet="target-proxy-1" r="5" />
+        <circle class="proxylife-comet kind-value" data-comet="returned-proxy-1" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="proxy-server-1" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="proxy-server-2" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="server-driver-1" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="server-driver-2" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="server-blueprint-1" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="server-blueprint-2" r="5" />
+        <circle class="proxylife-comet kind-value" data-comet="server-value-1" r="5" />
+      </g>
+
+      <g class="proxylife-node kind-local" data-node="client">
+        <rect class="proxylife-box" x="220" y="88" width="132" height="58" rx="9" />
+        <text class="proxylife-t1" x="286" y="113" text-anchor="middle">cli</text>
+        <text class="proxylife-t2" x="286" y="133" text-anchor="middle">Client</text>
+      </g>
+      <g class="proxylife-node kind-proxy" data-node="proxy">
+        <rect class="proxylife-box" x="116" y="194" width="194" height="68" rx="9" />
+        <text class="proxylife-t1" x="213" y="220" text-anchor="middle">magnet</text>
+        <text class="proxylife-t2" x="213" y="241" text-anchor="middle">Proxy Instrument · field</text>
+      </g>
+      <g class="proxylife-node kind-server" data-node="server">
+        <rect class="proxylife-box" x="538" y="88" width="124" height="58" rx="9" />
+        <text class="proxylife-t1" x="600" y="113" text-anchor="middle">Server</text>
+        <text class="proxylife-t2" x="600" y="133" text-anchor="middle">dispatches calls</text>
+      </g>
+      <g class="proxylife-node kind-driver" data-node="driver">
+        <rect class="proxylife-box" x="724" y="190" width="190" height="150" rx="10" />
+        <text class="proxylife-t1" x="819" y="217" text-anchor="middle">magnet</text>
+        <text class="proxylife-t2" x="819" y="238" text-anchor="middle">real QCoDeS driver</text>
+      </g>
+      <g class="proxylife-node kind-value" data-node="target">
+        <rect class="proxylife-box" x="43" y="349" width="192" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="139" y="371" text-anchor="middle">target · FieldVector</text>
+        <text class="proxylife-t2" x="139" y="390" text-anchor="middle">x=.01 · y=.02 · z=.03</text>
+      </g>
+      <g class="proxylife-node kind-value" data-node="returned">
+        <rect class="proxylife-box" x="245" y="349" width="174" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="332" y="371" text-anchor="middle">returned · FieldVector</text>
+        <text class="proxylife-t2" x="332" y="390" text-anchor="middle">x=.01 · y=.02 · z=.03</text>
+      </g>
+      <g class="proxylife-node kind-value" data-node="initial-value">
+        <rect class="proxylife-box" x="732" y="250" width="164" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="814" y="272" text-anchor="middle">FieldVector</text>
+        <text class="proxylife-t2" x="814" y="291" text-anchor="middle">x=0 · y=0 · z=0</text>
+      </g>
+      <g class="proxylife-node kind-value proxylife-server-value" data-node="server-value">
+        <rect class="proxylife-box" x="548" y="306" width="164" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="630" y="328" text-anchor="middle">FieldVector</text>
+        <text class="proxylife-t2" x="630" y="347" text-anchor="middle">x=.01 · y=.02 · z=.03</text>
+      </g>
+
+      <g class="proxylife-transient kind-blueprint" data-transient="blueprint-server">
+        <rect class="proxylife-token-box" x="522" y="210" width="156" height="73" rx="9" />
+        <text class="proxylife-t1 small" x="600" y="233" text-anchor="middle">magnet Blueprint</text>
+        <text class="proxylife-t2" x="600" y="254" text-anchor="middle">parameters · methods</text>
+        <text class="proxylife-t2" x="600" y="272" text-anchor="middle">submodules</text>
+      </g>
+      <g class="proxylife-transient kind-blueprint" data-transient="blueprint-client">
+        <rect class="proxylife-token-box" x="31" y="88" width="164" height="73" rx="9" />
+        <text class="proxylife-t1 small" x="113" y="111" text-anchor="middle">magnet Blueprint</text>
+        <text class="proxylife-t2" x="113" y="132" text-anchor="middle">parameters · methods</text>
+        <text class="proxylife-t2" x="113" y="150" text-anchor="middle">submodules</text>
+      </g>
+      <g class="proxylife-transient proxylife-summary" data-transient="summary">
+        <rect class="proxylife-summary-box" x="548" y="365" width="366" height="35" rx="8" />
+        <text x="731" y="388" text-anchor="middle">same value · newly reconstructed object</text>
+      </g>
+    </svg>
+    <div class="proxylife-key" aria-hidden="true">
+      <span><i class="sw kind-blueprint"></i>Blueprint</span>
+      <span><i class="sw kind-call"></i>remote call</span>
+      <span><i class="sw kind-value"></i>Python value</span>
+    </div>
+  </div>
+
+  <ol class="proxylife-steps" id="proxylife-steps">
+    <li class="proxylife-phase-break">
+      <span>Action 1</span>
+      <strong>Create the Proxy Instrument</strong>
+    </li>
+    <li class="proxylife-step" data-step="0"><div class="proxylife-card"><p class="proxylife-num">Step 01</p><h3>Ask for a Proxy Instrument</h3><p><code>magnet = cli.get_instrument("magnet")</code> asks the Client for a local representation of the Server-owned instrument. The Client sends a Blueprint request; it does not copy the real driver.</p></div></li>
+    <li class="proxylife-step" data-step="1"><div class="proxylife-card"><p class="proxylife-num">Step 02</p><h3>The Server creates a Blueprint</h3><p>The Server creates a Blueprint from the real <code>magnet</code> driver. It describes the remote interface: parameters, methods, and submodules.</p></div></li>
+    <li class="proxylife-step" data-step="2"><div class="proxylife-card"><p class="proxylife-num">Step 03</p><h3>The Blueprint returns</h3><p>The Blueprint crosses the ZMQ connection as a serialized message. The Client reconstructs it as a new Python object in your script or notebook.</p></div></li>
+    <li class="proxylife-step" data-step="3"><div class="proxylife-card"><p class="proxylife-num">Step 04</p><h3>The Client builds the Proxy</h3><p>The Client uses the Blueprint to create <code>magnet</code>, a local Proxy Instrument with a Proxy Parameter named <code>field</code>. The Proxy remains available for later calls.</p></div></li>
+    <li class="proxylife-phase-break">
+      <span>Action 2</span>
+      <strong>Set the value</strong>
+    </li>
+    <li class="proxylife-step" data-step="4"><div class="proxylife-card"><p class="proxylife-num">Step 05</p><h3>Create the target value</h3><p><code>target = FieldVector(x=0.01, y=0.02, z=0.03)</code> creates the first FieldVector in your script. It has not crossed the connection yet.</p></div></li>
+    <li class="proxylife-step" data-step="5"><div class="proxylife-card"><p class="proxylife-num">Step 06</p><h3>Set through the Proxy</h3><p><code>magnet.field(target)</code> passes the value into the Proxy Parameter. The request is serialized, sent to the Server, and reconstructed there as a second FieldVector.</p></div></li>
+    <li class="proxylife-step" data-step="6"><div class="proxylife-card"><p class="proxylife-num">Step 07</p><h3>The real driver stores the value</h3><p>The Server calls the real <code>magnet.field(...)</code> parameter with its reconstructed FieldVector. The new object replaces the driver's previous <code>FieldVector(x=0, y=0, z=0)</code> as its current field value.</p></div></li>
+    <li class="proxylife-step" data-step="7"><div class="proxylife-card"><p class="proxylife-num">Step 08</p><h3>The set call completes</h3><p>After the driver finishes the set, the Server returns a successful response to the Proxy. Only then does <code>magnet.field(target)</code> return to your code.</p></div></li>
+    <li class="proxylife-phase-break">
+      <span>Action 3</span>
+      <strong>Read the value</strong>
+    </li>
+    <li class="proxylife-step" data-step="8"><div class="proxylife-card"><p class="proxylife-num">Step 09</p><h3>Read through the Proxy</h3><p><code>returned = magnet.field()</code> sends a get request to the Server. The Proxy does not answer from local state.</p></div></li>
+    <li class="proxylife-step" data-step="9"><div class="proxylife-card"><p class="proxylife-num">Step 10</p><h3>The Server reads the real driver</h3><p>The Server calls the real <code>magnet.field()</code> parameter. The driver returns its current FieldVector to the Server.</p></div></li>
+    <li class="proxylife-step" data-step="10"><div class="proxylife-card"><p class="proxylife-num">Step 11</p><h3>Your code receives a new object</h3><p>The result crosses back as a serialized message and becomes <code>returned</code>. It has the same coordinates as the driver's current value, but it is a newly reconstructed Python object. The original target remains a third, distinct object in your script.</p></div></li>
+  </ol>
+</div>
+
+<style>
+.bd-main .bd-content .bd-article-container { overflow-x: clip; }
+.proxylife {
+  --plf-blueprint: var(--pst-color-primary, #3b82f6); --plf-call: var(--pst-color-accent, #8b5cf6);
+  --plf-value: var(--pst-color-warning, #d97706); --plf-line: var(--pst-color-border, #9ca3af);
+  --plf-ink: var(--pst-color-text-base, #111827); --plf-muted: var(--pst-color-text-muted, #4b5563);
+  --plf-panel: var(--pst-color-background, #fff); --plf-box: var(--pst-color-surface, #f8fafc);
+  --plf-stage-h: clamp(255px, 43vh, 400px); position: relative; margin: 1.4rem 0 0.5rem;
+}
+.proxylife-stage { position: sticky; top: calc(var(--pst-header-height, 4rem) + 1rem); z-index: 2; height: var(--plf-stage-h); padding: 2rem 0 0.5rem; background: var(--plf-panel); border-bottom: 1px solid var(--pst-color-border-muted, #d1d5db); }
+.proxylife-stage::before { content: ""; position: absolute; inset: -1rem 0 auto; height: 1rem; background: var(--plf-panel); }
+.proxylife-map { width: 100%; height: 100%; overflow: visible; }
+.proxylife-hud { position: absolute; top: 0; left: .1rem; display: flex; flex-direction: column; line-height: 1.2; pointer-events: none; }
+.proxylife-hud-no { color: var(--plf-blueprint); font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.proxylife-hud-phase { color: var(--plf-muted); font-size: .66rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.proxylife-hud-title { color: var(--plf-ink); font-size: .95rem; font-weight: 600; }
+.proxylife-key { position: absolute; top: .1rem; right: .1rem; display: flex; gap: .8rem; color: var(--plf-muted); font-size: .7rem; pointer-events: none; }
+.proxylife-key span { display: flex; align-items: center; gap: .35rem; }
+.proxylife-key .sw { width: 14px; border-top: 2.5px solid var(--plf-line); }
+.proxylife-key .sw.kind-blueprint { border-color: var(--plf-blueprint); }
+.proxylife-key .sw.kind-call { border-color: var(--plf-call); }
+.proxylife-key .sw.kind-value { border-color: var(--plf-value); }
+.proxylife-region-box { fill: var(--plf-box); fill-opacity: .42; stroke: var(--plf-line); stroke-width: 1.2; }
+.proxylife-region-title { fill: var(--plf-muted); font-size: 15px; font-weight: 650; }
+.proxylife-wire-lane rect { fill: var(--plf-box); stroke: var(--plf-line); stroke-dasharray: 4 5; opacity: .8; }
+.proxylife-wire-lane text { fill: var(--plf-muted); font-size: 11px; font-weight: 600; letter-spacing: .03em; }
+
+.proxylife-node { opacity: 1; transition: opacity .35s; }
+.proxylife-node.is-unintroduced { opacity: 0; }
+.proxylife-node.is-muted { opacity: .55; }
+.proxylife-node.is-active { opacity: 1; }
+.proxylife-box { fill: var(--plf-panel); stroke: var(--plf-line); stroke-width: 1.4; transition: stroke .35s, stroke-width .35s, filter .35s; }
+.proxylife-t1 { fill: var(--plf-ink); font-size: 16px; font-weight: 650; }
+.proxylife-t1.small { font-size: 13px; }
+.proxylife-t2 { fill: var(--plf-muted); font-size: 12px; }
+.proxylife-node.is-active .proxylife-box { stroke-width: 2.7; }
+.proxylife-node.kind-local.is-active .proxylife-box, .proxylife-node.kind-proxy.is-active .proxylife-box { stroke: var(--plf-blueprint); filter: drop-shadow(0 0 5px var(--plf-blueprint)); }
+.proxylife-node.kind-server.is-active .proxylife-box, .proxylife-node.kind-driver.is-active .proxylife-box { stroke: var(--plf-call); filter: drop-shadow(0 0 5px var(--plf-call)); }
+.proxylife-node.kind-value.is-active .proxylife-box { stroke: var(--plf-value); filter: drop-shadow(0 0 5px var(--plf-value)); }
+.proxylife-server-value { transition: opacity .35s, transform .5s ease; }
+.proxylife-server-value.is-stored { transform: translate(184px, -56px); }
+
+.proxylife-edge { fill: none; stroke: var(--plf-line); stroke-width: 1.5; opacity: .2; transition: stroke .3s, stroke-width .3s, opacity .3s; }
+.proxylife-edge.proxylife-event-edge { opacity: 0; }
+.proxylife-edge.is-hidden { opacity: 0; }
+.proxylife-edge.is-active { opacity: 1; stroke-width: 2.7; }
+.proxylife-edge.is-active.kind-blueprint { stroke: var(--plf-blueprint); }
+.proxylife-edge.is-active.kind-call { stroke: var(--plf-call); }
+.proxylife-edge.is-active.kind-value { stroke: var(--plf-value); }
+.proxylife-edge.is-marching { stroke-dasharray: 7 9; animation: proxylife-march .9s linear infinite; }
+@keyframes proxylife-march { to { stroke-dashoffset: -32; } }
+.proxylife-arrow { opacity: 0; fill: var(--plf-line); transition: opacity .3s; }
+.proxylife-arrow.is-active { opacity: 1; }
+.proxylife-arrow.is-active.kind-blueprint { fill: var(--plf-blueprint); }
+.proxylife-arrow.is-active.kind-call { fill: var(--plf-call); }
+.proxylife-arrow.is-active.kind-value { fill: var(--plf-value); }
+.proxylife-edge-label { opacity: 0; fill: var(--plf-ink); stroke: var(--plf-panel); stroke-width: 6px; stroke-linejoin: round; paint-order: stroke fill; font-size: 12px; transition: opacity .3s; }
+.proxylife-edge-label.is-active { opacity: 1; }
+.proxylife-comet { opacity: 0; fill: var(--plf-panel); stroke-width: 2.5; }
+.proxylife-comet.kind-blueprint { stroke: var(--plf-blueprint); filter: drop-shadow(0 0 4px var(--plf-blueprint)); }
+.proxylife-comet.kind-call { stroke: var(--plf-call); filter: drop-shadow(0 0 4px var(--plf-call)); }
+.proxylife-comet.kind-value { stroke: var(--plf-value); filter: drop-shadow(0 0 4px var(--plf-value)); }
+.proxylife-comet.is-active { opacity: 1; }
+.proxylife-transient { opacity: 0; transition: opacity .3s; }
+.proxylife-transient.is-active { opacity: 1; }
+.proxylife-token-box { fill: var(--plf-panel); stroke: var(--plf-blueprint); stroke-width: 2; }
+.proxylife-summary-box { fill: var(--plf-panel); stroke: var(--plf-value); stroke-width: 1.8; }
+.proxylife-summary text { fill: var(--plf-ink); font-size: 13px; font-weight: 650; }
+
+.proxylife-steps { display: flex; flex-direction: column; gap: .65rem; margin: 0; padding: .7rem 0; list-style: none; }
+.proxylife-step { min-height: 0; margin: 0; }
+.proxylife-phase-break { display: flex; align-items: baseline; gap: .55rem; max-width: 42rem; width: 100%; margin: 1.5rem auto .15rem; padding: .55rem 0; border-bottom: 2px solid var(--plf-blueprint); color: var(--plf-ink); }
+.proxylife-phase-break:first-child { margin-top: .4rem; }
+.proxylife-phase-break span { color: var(--plf-blueprint); font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.proxylife-phase-break strong { font-size: 1rem; font-weight: 650; }
+.proxylife-card { width: 100%; max-width: 42rem; margin: 0 auto; padding: 1rem 1.2rem; background: var(--plf-box); border: 1px solid var(--pst-color-border-muted, #d1d5db); border-left: 3px solid var(--plf-blueprint); border-radius: .5rem; transition: opacity .4s, transform .4s, box-shadow .4s; }
+.proxylife.is-live .proxylife-card { cursor: pointer; opacity: .45; transform: translateY(6px); }
+.proxylife.is-live .proxylife-card:hover { border-color: var(--plf-blueprint); }
+.proxylife.is-live .proxylife-card:focus-visible { outline: 3px solid var(--plf-blueprint); outline-offset: 3px; }
+.proxylife.is-live .proxylife-step.is-active .proxylife-card { opacity: 1; transform: none; box-shadow: 0 8px 24px -14px var(--pst-color-shadow, #111827); }
+.proxylife-card .proxylife-num { margin: 0; color: var(--plf-blueprint); font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.proxylife-card h3 { margin: .1rem 0 .5rem; font-size: 1.2rem; font-weight: 600; }
+.proxylife-card p { margin: 0 0 .5rem; }
+.proxylife-card p:last-child { margin-bottom: 0; }
+@media (max-width: 720px) { .proxylife { --plf-stage-h: clamp(205px, 35vh, 310px); } .proxylife-key { display: none; } .proxylife-card { padding: .9rem 1rem; } }
+@media (prefers-reduced-motion: reduce) { .proxylife-edge.is-marching { animation: none; } .proxylife-comet { display: none; } .proxylife *, .proxylife *::before, .proxylife *::after { transition-duration: .01ms !important; } }
+</style>
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("proxylife");
+  if (!root || !("IntersectionObserver" in window)) return;
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var STEPS = [
+    { no: "Step 01", title: "Ask for a Proxy Instrument", active: ["client", "server"], routes: [
+      { id: "client-server", dir: 1, label: "Blueprint request", arrow: "client-server-fwd" }
+    ]},
+    { no: "Step 02", title: "The Server creates a Blueprint", active: ["server", "driver"], transient: ["blueprint-server"], routes: [
+      { id: "server-driver", dir: -1, label: "real driver interface", arrow: "server-driver-back" },
+      { id: "server-blueprint", dir: 1, label: "creates Blueprint", arrow: "server-blueprint-fwd", delay: 450 }
+    ]},
+    { no: "Step 03", title: "The Blueprint returns", active: ["server", "client"], transient: ["blueprint-server", "blueprint-client"], routes: [
+      { id: "server-blueprint", dir: -1, label: "serializes Blueprint", arrow: "server-blueprint-back" },
+      { id: "client-server", dir: -1, label: "serialized Blueprint", arrow: "client-server-back", delay: 400 }
+    ]},
+    { no: "Step 04", title: "The Client builds the Proxy", active: ["client", "proxy"], transient: ["blueprint-client"], routes: [
+      { id: "blueprint-client", dir: 1, label: "uses Blueprint", arrow: "blueprint-client-fwd" },
+      { id: "client-proxy", dir: 1, label: "builds", arrow: "client-proxy-fwd", delay: 400 }
+    ]},
+    { no: "Step 05", title: "Create the target value", active: ["target"], routes: [] },
+    { no: "Step 06", title: "Set through the Proxy", active: ["target", "proxy", "server", "server-value"], routes: [
+      { id: "target-proxy", dir: 1, label: "set value", arrow: "target-proxy-fwd" },
+      { id: "proxy-server", dir: 1, label: "serialized set request", arrow: "proxy-server-fwd", delay: 300 },
+      { id: "server-value", dir: 1, label: "reconstructs value", arrow: "server-value-fwd", delay: 650 }
+    ]},
+    { no: "Step 07", title: "The real driver stores the value", active: ["server", "driver", "server-value"], routes: [
+      { id: "server-driver", dir: 1, label: "sets field", arrow: "server-driver-fwd" }
+    ]},
+    { no: "Step 08", title: "The set call completes", active: ["server", "proxy", "driver"], routes: [
+      { id: "server-driver", dir: -1, label: "driver returns", arrow: "server-driver-back" },
+      { id: "proxy-server", dir: -1, label: "successful response", arrow: "proxy-server-back", delay: 450 }
+    ]},
+    { no: "Step 09", title: "Read through the Proxy", active: ["proxy", "server"], hidden: ["target"], hiddenRoutes: ["target-proxy"], routes: [
+      { id: "proxy-server", dir: 1, label: "serialized get request", arrow: "proxy-server-fwd" }
+    ]},
+    { no: "Step 10", title: "The Server reads the real driver", active: ["server", "driver", "server-value"], hidden: ["target"], hiddenRoutes: ["target-proxy"], routes: [
+      { id: "server-driver", dir: 1, label: "gets field", arrow: "server-driver-fwd" },
+      { id: "server-driver", dir: -1, label: "gets field", arrow: "server-driver-back", delay: 650 }
+    ]},
+    { no: "Step 11", title: "Your code receives a new object", active: ["server", "proxy", "server-value", "returned"], hidden: ["target"], hiddenRoutes: ["target-proxy"], transient: ["summary"], routes: [
+      { id: "proxy-server", dir: -1, label: "serialized result", arrow: "proxy-server-back" },
+      { id: "returned-proxy", dir: -1, label: "returned value", arrow: "returned-proxy-back", delay: 450 }
+    ]}
+  ];
+  var introducedAt = { client: 0, server: 0, driver: 0, "initial-value": 0, proxy: 3, target: 4, "server-value": 5, returned: 10 };
+  var removedAt = { "initial-value": 6 };
+  var edgeIds = ["client-server", "blueprint-client", "client-proxy", "target-proxy", "returned-proxy", "proxy-server", "server-driver", "server-blueprint", "server-value"];
+  var nodes = {}, transients = {}, arrows = {}, edges = {}, labels = {}, comets = {}, frames = {}, timers = [];
+  Array.prototype.forEach.call(root.querySelectorAll("[data-node]"), function (el) { nodes[el.getAttribute("data-node")] = el; });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-transient]"), function (el) { transients[el.getAttribute("data-transient")] = el; });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-arrow]"), function (el) { arrows[el.getAttribute("data-arrow")] = el; });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-comet]"), function (el) { comets[el.getAttribute("data-comet")] = el; });
+  edgeIds.forEach(function (id) {
+    edges[id] = document.getElementById("proxylife-edge-" + id);
+    labels[id] = document.getElementById("proxylife-label-" + id);
+  });
+  var hudNo = document.getElementById("proxylife-hud-no");
+  var hudPhase = document.getElementById("proxylife-hud-phase");
+  var hudTitle = document.getElementById("proxylife-hud-title");
+  var stepEls = Array.prototype.slice.call(root.querySelectorAll(".proxylife-step"));
+
+  function stopMotion() {
+    Object.keys(frames).forEach(function (key) { if (frames[key]) cancelAnimationFrame(frames[key]); frames[key] = null; });
+    timers.forEach(function (timer) { clearTimeout(timer); }); timers = [];
+    Object.keys(comets).forEach(function (key) { comets[key].classList.remove("is-active"); comets[key].style.opacity = ""; });
+  }
+  function startComet(cometKey, edgeId, dir, delay) {
+    if (reduced || !edges[edgeId] || !comets[cometKey]) return;
+    var launch = function () {
+      var path = edges[edgeId], comet = comets[cometKey], len = path.getTotalLength(), duration = 1350, begin = null;
+      comet.classList.add("is-active");
+      function tick(now) {
+        if (begin === null) begin = now;
+        var progress = ((now - begin) % duration) / duration;
+        var at = dir < 0 ? (1 - progress) * len : progress * len;
+        var point = path.getPointAtLength(at);
+        comet.setAttribute("cx", point.x); comet.setAttribute("cy", point.y);
+        comet.style.opacity = Math.sin(Math.PI * progress).toFixed(3);
+        frames[cometKey] = requestAnimationFrame(tick);
+      }
+      frames[cometKey] = requestAnimationFrame(tick);
+    };
+    if (delay) timers.push(setTimeout(launch, delay)); else launch();
+  }
+  function applyStep(index) {
+    var step = STEPS[index]; if (!step) return;
+    var phase = index < 4 ? "Action 1 · Create the Proxy Instrument" :
+      (index < 8 ? "Action 2 · Set the value" : "Action 3 · Read the value");
+    hudPhase.textContent = phase; hudNo.textContent = step.no; hudTitle.textContent = step.title;
+    Object.keys(nodes).forEach(function (key) {
+      var introduced = index >= introducedAt[key];
+      var removed = removedAt[key] !== undefined && index >= removedAt[key];
+      var hidden = (step.hidden || []).indexOf(key) > -1;
+      var visible = introduced && !removed && !hidden;
+      var active = step.active.indexOf(key) > -1;
+      nodes[key].classList.toggle("is-unintroduced", !visible);
+      nodes[key].classList.toggle("is-muted", visible && !active);
+      nodes[key].classList.toggle("is-active", visible && active);
+    });
+    nodes["server-value"].classList.toggle("is-stored", index >= 6);
+    Object.keys(transients).forEach(function (key) { transients[key].classList.toggle("is-active", (step.transient || []).indexOf(key) > -1); });
+    stopMotion();
+    edgeIds.forEach(function (id) {
+      edges[id].classList.remove("is-active", "is-marching", "is-hidden");
+      if (labels[id]) labels[id].classList.remove("is-active");
+    });
+    (step.hiddenRoutes || []).forEach(function (id) { if (edges[id]) edges[id].classList.add("is-hidden"); });
+    Object.keys(arrows).forEach(function (key) { arrows[key].classList.remove("is-active"); });
+    var cometUse = {};
+    step.routes.forEach(function (route) {
+      edges[route.id].classList.add("is-active"); if (!reduced) edges[route.id].classList.add("is-marching");
+      if (labels[route.id]) {
+        labels[route.id].textContent = route.label;
+        labels[route.id].classList.add("is-active");
+      }
+      if (arrows[route.arrow]) arrows[route.arrow].classList.add("is-active");
+      cometUse[route.id] = (cometUse[route.id] || 0) + 1;
+      startComet(route.id + "-" + cometUse[route.id], route.id, route.dir, route.delay || 0);
+    });
+  }
+  var current = -1;
+  function setActive(index) {
+    if (index === current) return; current = index;
+    stepEls.forEach(function (step, stepIndex) {
+      step.classList.toggle("is-active", stepIndex === index);
+      var card = step.querySelector(".proxylife-card"); if (card) card.setAttribute("aria-pressed", stepIndex === index ? "true" : "false");
+    });
+    applyStep(index);
+  }
+  function selectStep(index) {
+    var step = stepEls[index];
+    if (!step) return;
+    setActive(index);
+    var rect = step.getBoundingClientRect();
+    var target = window.scrollY + rect.top + rect.height / 2 - window.innerHeight * 0.57;
+    window.scrollTo({ top: Math.max(0, target), behavior: reduced ? "auto" : "smooth" });
+  }
+  root.classList.add("is-live");
+  stepEls.forEach(function (step, index) {
+    var card = step.querySelector(".proxylife-card"); if (!card) return;
+    var title = card.querySelector("h3"); card.setAttribute("role", "button"); card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", "Show " + STEPS[index].no + ": " + (title ? title.textContent : STEPS[index].title));
+    card.addEventListener("click", function () { selectStep(index); });
+    card.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectStep(index); } });
+  });
+  setActive(0);
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) { if (entry.isIntersecting) setActive(parseInt(entry.target.getAttribute("data-step"), 10)); });
+  }, { rootMargin: "-55% 0px -41% 0px", threshold: 0 });
+  stepEls.forEach(function (step) { observer.observe(step); });
+  var stageObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) { if (entry.isIntersecting) applyStep(current); else stopMotion(); });
+  }, { threshold: 0 });
+  stageObserver.observe(root.querySelector(".proxylife-stage"));
+})();
+</script>

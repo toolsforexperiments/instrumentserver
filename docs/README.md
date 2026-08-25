@@ -69,7 +69,7 @@ docs/
 │   │   └── gui_components.md
 │   └── client/                 # Client development guide
 │       ├── index.md
-│       ├── basic_usage.md
+│       ├── client.md
 │       ├── parameters_and_methods.md
 │       └── advanced_patterns.md
 │
@@ -92,6 +92,7 @@ The documentation uses the **pydata-sphinx-theme**, which provides:
 - Light/dark mode support
 - Mobile-friendly navigation
 - Integrated search
+- Copy buttons on code examples
 
 ## Contributing to Documentation
 
