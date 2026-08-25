@@ -14,5 +14,9 @@ instrumentserver.testing.dummy\_instruments.generic
       DummyInstrumentWithFlags
       DummyInstrumentWithSubmodule
       FieldVectorIns
+      MutableInterfaceInstrument
+      SerializationInstrument
       StatusFlag
+      SweepRequest
+      SweepResult
    

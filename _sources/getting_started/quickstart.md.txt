@@ -177,7 +177,7 @@ This single entry only scratches the surface of what the config file controls; t
 You've seen the whole loop: a Server owning instruments, clients reaching them through
 Proxy Instruments, and every change broadcast to anyone watching. From here:
 
-- [Basic usage](../user_guide/basic_usage.md): the Python client in depth, the
+- [Python Client](../user_guide/client.md): the Python client in depth, the
   interface you'll use the most.
 - [The server](../user_guide/server.md): launch options, headless operation, and the
   Detached GUI.

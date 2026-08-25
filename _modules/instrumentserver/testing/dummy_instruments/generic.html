@@ -30,6 +30,7 @@
 <link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
@@ -41,6 +42,8 @@
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=87473038"></script>
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/instrumentserver/testing/dummy_instruments/generic';</script>
@@ -431,8 +434,10 @@
 <span class="c1"># No need to mypy check dummy testing instruments.</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntFlag</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MethodType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instrument</span><span class="p">,</span> <span class="n">validators</span>
@@ -455,6 +460,40 @@
 
 
 
+<div class="viewcode-block" id="SweepRequest">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepRequest">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SweepRequest</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serializable request used by Client transport tests and examples.&quot;&quot;&quot;</span>
+
+    <span class="n">center_hz</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">span_hz</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="n">attributes</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;center_hz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;span_hz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SweepResult">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepResult">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SweepResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serializable result used by Client transport tests and examples.&quot;&quot;&quot;</span>
+
+    <span class="n">frequency_hz</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">magnitude_db</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+
+    <span class="n">attributes</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;frequency_hz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;magnitude_db&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="DummyChannel">
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyChannel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DummyChannel</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
@@ -471,6 +510,15 @@
             <span class="n">vals</span><span class="o">=</span><span class="n">validators</span><span class="o">.</span><span class="n">Numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">initial_value</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="p">)</span>
+
+<div class="viewcode-block" id="DummyChannel.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyChannel.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a minimal response to identification queries.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
 
 <div class="viewcode-block" id="DummyChannel.dummy_function">
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyChannel.dummy_function">[docs]</a>
@@ -570,6 +618,134 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_dynamic_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a value multiplied by a keyword-only scale.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="o">*</span> <span class="n">scale</span>
+
+
+<div class="viewcode-block" id="MutableInterfaceInstrument">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MutableInterfaceInstrument</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy whose parameters, methods, and submodules can change at runtime.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s2">&quot;stable&quot;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MutableInterfaceInstrument.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a minimal response to identification queries.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MutableInterfaceInstrument.add_dynamic_interface">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_dynamic_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add one parameter, method, and submodule for Proxy update tests.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;dynamic_parameter&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s2">&quot;dynamic_parameter&quot;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;dynamic_module&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_submodule</span><span class="p">(</span>
+                <span class="s2">&quot;dynamic_module&quot;</span><span class="p">,</span> <span class="n">DummyChannel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_dynamic_module&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;dynamic_method&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_method</span> <span class="o">=</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">_dynamic_method</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MutableInterfaceInstrument.remove_dynamic_interface">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.remove_dynamic_interface">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_dynamic_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the runtime interface added by :meth:`add_dynamic_interface`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;dynamic_parameter&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_parameter</span><span class="p">(</span><span class="s2">&quot;dynamic_parameter&quot;</span><span class="p">)</span>
+        <span class="n">dynamic_module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">submodules</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;dynamic_module&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dynamic_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dynamic_module</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;dynamic_method&quot;</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_method</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SerializationInstrument">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SerializationInstrument</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy that returns representative values across the Client transport.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SerializationInstrument.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a minimal response to identification queries.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.echo">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.echo">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">echo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``value`` unchanged.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.run_sweep">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.run_sweep">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_sweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a three-point sweep for a :class:`SweepRequest`.&quot;&quot;&quot;</span>
+        <span class="n">half_span</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">span_hz</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">SweepResult</span><span class="p">(</span>
+            <span class="n">frequency_hz</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">center_hz</span> <span class="o">-</span> <span class="n">half_span</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">center_hz</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">center_hz</span> <span class="o">+</span> <span class="n">half_span</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">magnitude_db</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">50.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">20.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">49.0</span><span class="p">],</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.get_status">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an importable top-level enum member.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">StatusFlag</span><span class="o">.</span><span class="n">EAV</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.get_nested_status">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_nested_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_nested_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an enum nested in a list.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">StatusFlag</span><span class="o">.</span><span class="n">EAV</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.get_tuple">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_tuple">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a tuple so transport container conversion can be tested.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.get_set">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_set">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_set</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a set so transport container conversion can be tested.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="SerializationInstrument.get_numeric_text">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_numeric_text">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_numeric_text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return numeric-looking text so decoder coercion can be tested.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;123&quot;</span></div>
+</div>
+
+
+
 <div class="viewcode-block" id="DummyInstrumentTimeout">
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DummyInstrumentTimeout</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
@@ -594,6 +770,15 @@
             <span class="n">get_cmd</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_param2</span><span class="p">,</span>
             <span class="n">set_cmd</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_param2&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">),</span>
         <span class="p">)</span>
+
+<div class="viewcode-block" id="DummyInstrumentTimeout.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Answer identification queries without touching timeout behavior.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_param1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># for testing potentially redundant/duplicate get calls</span>
@@ -709,6 +894,15 @@
             <span class="n">get_cmd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_complex_list</span><span class="p">,</span>
             <span class="n">set_cmd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">set_complex_list</span><span class="p">,</span>
         <span class="p">)</span>
+
+<div class="viewcode-block" id="FieldVectorIns.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a minimal response to identification queries.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
 
 <div class="viewcode-block" id="FieldVectorIns.get_starting_parameter">
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.get_starting_parameter">[docs]</a>

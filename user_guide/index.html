@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
@@ -42,6 +43,8 @@
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=87473038"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/index';</script>
@@ -49,7 +52,7 @@
     <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/user_guide/index.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Basic Usage" href="basic_usage.html" />
+    <link rel="next" title="Python client" href="client.html" />
     <link rel="prev" title="Instrumentserver Overview" href="../getting_started/overview.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -389,7 +392,7 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Python client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="server.html">The Server</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gui_features.html">GUI Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="parameter_manager.html">Parameter Manager</a></li>
@@ -461,7 +464,20 @@
 <p>This user guide is organized by different topics, each having their own guides. Use the left menu to navigate through them.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Python client</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="client.html#connections-and-instrument-discovery">Connections and instrument discovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html#proxy-instruments">Proxy instruments</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="client.html#parameters-and-driver-methods">Parameters and driver methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client.html#submodules-keep-their-structure">Submodules keep their structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client.html#values-that-cross-the-connection">Values that cross the connection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client.html#making-custom-classes-serializable">Making custom classes serializable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client.html#following-the-full-lifecycle">Following the full lifecycle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="client.html#parameter-snapshots">Parameter snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html#errors-and-timeouts">Errors and timeouts</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="server.html">The Server</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gui_features.html">GUI Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="parameter_manager.html">Parameter Manager</a></li>
@@ -555,11 +571,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="basic_usage.html"
+       href="client.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Basic Usage</p>
+        <p class="prev-next-title">Python client</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

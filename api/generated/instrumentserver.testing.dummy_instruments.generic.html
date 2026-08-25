@@ -31,6 +31,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
@@ -42,6 +43,8 @@
     <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=87473038"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/instrumentserver.testing.dummy_instruments.generic';</script>
@@ -518,8 +521,20 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns" title="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FieldVectorIns</span></code></a>(*args, **kwargs)</p></td>
 <td><p>class used to develop json serialization and guis</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument" title="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MutableInterfaceInstrument</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Dummy whose parameters, methods, and submodules can change at runtime.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument" title="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SerializationInstrument</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Dummy that returns representative values across the Client transport.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag" title="instrumentserver.testing.dummy_instruments.generic.StatusFlag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StatusFlag</span></code></a>(*values)</p></td>
 <td><p>An <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code> mirroring drivers like the Yokogawa GS200 status byte.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest" title="instrumentserver.testing.dummy_instruments.generic.SweepRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SweepRequest</span></code></a>(center_hz, span_hz, metadata, ...)</p></td>
+<td><p>Serializable request used by Client transport tests and examples.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult" title="instrumentserver.testing.dummy_instruments.generic.SweepResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SweepResult</span></code></a>(frequency_hz, magnitude_db)</p></td>
+<td><p>Serializable result used by Client transport tests and examples.</p></td>
 </tr>
 </tbody>
 </table>
@@ -527,7 +542,13 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyChannel">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">DummyChannel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyChannel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyChannel.ask_raw">
+<span class="sig-name descname"><span class="pre">ask_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyChannel.ask_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel.ask_raw" title="Link to this definition">#</a></dt>
+<dd><p>Return a minimal response to identification queries.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyChannel.dummy_function">
 <span class="sig-name descname"><span class="pre">dummy_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyChannel.dummy_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel.dummy_function" title="Link to this definition">#</a></dt>
@@ -539,7 +560,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">DummyInstrumentRandomNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyInstrumentRandomNumber"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
 <p>A dummy instrument with a few parameters that have random numbers generated on demand</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber.generate_data">
@@ -569,8 +590,14 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">DummyInstrumentTimeout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyInstrumentTimeout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
 <p>A dummy instrument to test timeout situations.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.ask_raw">
+<span class="sig-name descname"><span class="pre">ask_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyInstrumentTimeout.ask_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.ask_raw" title="Link to this definition">#</a></dt>
+<dd><p>Answer identification queries without touching timeout behavior.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.get_random">
 <span class="sig-name descname"><span class="pre">get_random</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyInstrumentTimeout.get_random"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.get_random" title="Link to this definition">#</a></dt>
@@ -586,7 +613,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">DummyInstrumentWithFlags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyInstrumentWithFlags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
 <p>Dummy instrument whose parameters return <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code> values.</p>
 <p>Mirrors the Yokogawa GS200 status/event register parameters, which store
 <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code> instances as their value. Used to test that station snapshots
@@ -606,7 +633,7 @@ containing flag values serialize (and round-trip) correctly.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">DummyInstrumentWithSubmodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyInstrumentWithSubmodule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
 <p>A dummy instrument with submodules.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule.ask_raw">
@@ -649,8 +676,14 @@ space.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">FieldVectorIns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#FieldVectorIns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
 <p>class used to develop json serialization and guis</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.ask_raw">
+<span class="sig-name descname"><span class="pre">ask_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#FieldVectorIns.ask_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.ask_raw" title="Link to this definition">#</a></dt>
+<dd><p>Return a minimal response to identification queries.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.generic_function">
 <span class="sig-name descname"><span class="pre">generic_function</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#FieldVectorIns.generic_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.generic_function" title="Link to this definition">#</a></dt>
@@ -688,13 +721,93 @@ space.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.set_field">
-<span class="sig-name descname"><span class="pre">set_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field_vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://microsoft.github.io/Qcodes/api/math_utils/index.html#qcodes.math_utils.FieldVector" title="(in QCoDeS v0.59.0.dev720+main.gebe1e3f5d)"><span class="pre">FieldVector</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#FieldVectorIns.set_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.set_field" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">set_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field_vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://microsoft.github.io/Qcodes/api/math_utils/index.html#qcodes.math_utils.FieldVector" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><span class="pre">FieldVector</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#FieldVectorIns.set_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.set_field" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.set_starting_parameter">
 <span class="sig-name descname"><span class="pre">set_starting_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#FieldVectorIns.set_starting_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.set_starting_parameter" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">MutableInterfaceInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#MutableInterfaceInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<p>Dummy whose parameters, methods, and submodules can change at runtime.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface">
+<span class="sig-name descname"><span class="pre">add_dynamic_interface</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#MutableInterfaceInstrument.add_dynamic_interface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface" title="Link to this definition">#</a></dt>
+<dd><p>Add one parameter, method, and submodule for Proxy update tests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.ask_raw">
+<span class="sig-name descname"><span class="pre">ask_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#MutableInterfaceInstrument.ask_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.ask_raw" title="Link to this definition">#</a></dt>
+<dd><p>Return a minimal response to identification queries.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.remove_dynamic_interface">
+<span class="sig-name descname"><span class="pre">remove_dynamic_interface</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#MutableInterfaceInstrument.remove_dynamic_interface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.remove_dynamic_interface" title="Link to this definition">#</a></dt>
+<dd><p>Remove the runtime interface added by <a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface" title="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_dynamic_interface()</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">SerializationInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.60.0.dev25+main.g4dafdc9c7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<p>Dummy that returns representative values across the Client transport.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.ask_raw">
+<span class="sig-name descname"><span class="pre">ask_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.ask_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.ask_raw" title="Link to this definition">#</a></dt>
+<dd><p>Return a minimal response to identification queries.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.echo">
+<span class="sig-name descname"><span class="pre">echo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.echo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.echo" title="Link to this definition">#</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">value</span></code> unchanged.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_nested_status">
+<span class="sig-name descname"><span class="pre">get_nested_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.get_nested_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_nested_status" title="Link to this definition">#</a></dt>
+<dd><p>Return an enum nested in a list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_numeric_text">
+<span class="sig-name descname"><span class="pre">get_numeric_text</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.get_numeric_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_numeric_text" title="Link to this definition">#</a></dt>
+<dd><p>Return numeric-looking text so decoder coercion can be tested.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_set">
+<span class="sig-name descname"><span class="pre">get_set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.get_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_set" title="Link to this definition">#</a></dt>
+<dd><p>Return a set so transport container conversion can be tested.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_status">
+<span class="sig-name descname"><span class="pre">get_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.get_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_status" title="Link to this definition">#</a></dt>
+<dd><p>Return an importable top-level enum member.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_tuple">
+<span class="sig-name descname"><span class="pre">get_tuple</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.get_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_tuple" title="Link to this definition">#</a></dt>
+<dd><p>Return a tuple so transport container conversion can be tested.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.run_sweep">
+<span class="sig-name descname"><span class="pre">run_sweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SerializationInstrument.run_sweep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.run_sweep" title="Link to this definition">#</a></dt>
+<dd><p>Return a three-point sweep for a <a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest" title="instrumentserver.testing.dummy_instruments.generic.SweepRequest"><code class="xref py py-class docutils literal notranslate"><span class="pre">SweepRequest</span></code></a>.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -719,6 +832,55 @@ recursion bug this instrument is used to test.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.StatusFlag.MAV">
 <span class="sig-name descname"><span class="pre">MAV</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag.MAV" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepRequest">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">SweepRequest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">span_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SweepRequest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Serializable request used by Client transport tests and examples.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepRequest.attributes">
+<span class="sig-name descname"><span class="pre">attributes</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('center_hz',</span> <span class="pre">'span_hz',</span> <span class="pre">'metadata')</span></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.attributes" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepRequest.center_hz">
+<span class="sig-name descname"><span class="pre">center_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.center_hz" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepRequest.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.metadata" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepRequest.span_hz">
+<span class="sig-name descname"><span class="pre">span_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.span_hz" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">SweepResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude_db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#SweepResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Serializable result used by Client transport tests and examples.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepResult.attributes">
+<span class="sig-name descname"><span class="pre">attributes</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('frequency_hz',</span> <span class="pre">'magnitude_db')</span></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult.attributes" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepResult.frequency_hz">
+<span class="sig-name descname"><span class="pre">frequency_hz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult.frequency_hz" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.SweepResult.magnitude_db">
+<span class="sig-name descname"><span class="pre">magnitude_db</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult.magnitude_db" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -773,6 +935,7 @@ recursion bug this instrument is used to test.</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel"><code class="docutils literal notranslate"><span class="pre">DummyChannel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel.ask_raw"><code class="docutils literal notranslate"><span class="pre">DummyChannel.ask_raw()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel.dummy_function"><code class="docutils literal notranslate"><span class="pre">DummyChannel.dummy_function()</span></code></a></li>
 </ul>
 </li>
@@ -782,6 +945,7 @@ recursion bug this instrument is used to test.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout"><code class="docutils literal notranslate"><span class="pre">DummyInstrumentTimeout</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.ask_raw"><code class="docutils literal notranslate"><span class="pre">DummyInstrumentTimeout.ask_raw()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.get_random"><code class="docutils literal notranslate"><span class="pre">DummyInstrumentTimeout.get_random()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.get_random_timeout"><code class="docutils literal notranslate"><span class="pre">DummyInstrumentTimeout.get_random_timeout()</span></code></a></li>
 </ul>
@@ -799,6 +963,7 @@ recursion bug this instrument is used to test.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns"><code class="docutils literal notranslate"><span class="pre">FieldVectorIns</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.ask_raw"><code class="docutils literal notranslate"><span class="pre">FieldVectorIns.ask_raw()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.generic_function"><code class="docutils literal notranslate"><span class="pre">FieldVectorIns.generic_function()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.get_complex"><code class="docutils literal notranslate"><span class="pre">FieldVectorIns.get_complex()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.get_complex_list"><code class="docutils literal notranslate"><span class="pre">FieldVectorIns.get_complex_list()</span></code></a></li>
@@ -810,10 +975,40 @@ recursion bug this instrument is used to test.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.set_starting_parameter"><code class="docutils literal notranslate"><span class="pre">FieldVectorIns.set_starting_parameter()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument"><code class="docutils literal notranslate"><span class="pre">MutableInterfaceInstrument</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface"><code class="docutils literal notranslate"><span class="pre">MutableInterfaceInstrument.add_dynamic_interface()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.ask_raw"><code class="docutils literal notranslate"><span class="pre">MutableInterfaceInstrument.ask_raw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.remove_dynamic_interface"><code class="docutils literal notranslate"><span class="pre">MutableInterfaceInstrument.remove_dynamic_interface()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.ask_raw"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.ask_raw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.echo"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.echo()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_nested_status"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.get_nested_status()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_numeric_text"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.get_numeric_text()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_set"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.get_set()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_status"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.get_status()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_tuple"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.get_tuple()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.run_sweep"><code class="docutils literal notranslate"><span class="pre">SerializationInstrument.run_sweep()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag"><code class="docutils literal notranslate"><span class="pre">StatusFlag</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag.EAV"><code class="docutils literal notranslate"><span class="pre">StatusFlag.EAV</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag.ESB"><code class="docutils literal notranslate"><span class="pre">StatusFlag.ESB</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag.MAV"><code class="docutils literal notranslate"><span class="pre">StatusFlag.MAV</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest"><code class="docutils literal notranslate"><span class="pre">SweepRequest</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.attributes"><code class="docutils literal notranslate"><span class="pre">SweepRequest.attributes</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.center_hz"><code class="docutils literal notranslate"><span class="pre">SweepRequest.center_hz</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.metadata"><code class="docutils literal notranslate"><span class="pre">SweepRequest.metadata</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest.span_hz"><code class="docutils literal notranslate"><span class="pre">SweepRequest.span_hz</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult"><code class="docutils literal notranslate"><span class="pre">SweepResult</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult.attributes"><code class="docutils literal notranslate"><span class="pre">SweepResult.attributes</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult.frequency_hz"><code class="docutils literal notranslate"><span class="pre">SweepResult.frequency_hz</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult.magnitude_db"><code class="docutils literal notranslate"><span class="pre">SweepResult.magnitude_db</span></code></a></li>
 </ul>
 </li>
 </ul>

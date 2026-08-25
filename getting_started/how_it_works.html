@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
@@ -42,6 +43,8 @@
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=87473038"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'getting_started/how_it_works';</script>
@@ -1276,6 +1279,15 @@ call and the resulting <strong>Broadcast</strong>.</p>
     applyStep(index);
   }
 
+  function selectStep(index) {
+    var step = stepEls[index];
+    if (!step) return;
+    setActive(index);
+    var rect = step.getBoundingClientRect();
+    var target = window.scrollY + rect.top + rect.height / 2 - window.innerHeight * 0.57;
+    window.scrollTo({ top: Math.max(0, target), behavior: reduced ? "auto" : "smooth" });
+  }
+
   root.classList.add("is-live");
 
   /* Cards are direct controls as well as scroll markers. Keep their activation
@@ -1291,11 +1303,11 @@ call and the resulting <strong>Broadcast</strong>.</p>
       "aria-label",
       "Show " + STEPS[index].no + ": " + (title ? title.textContent : STEPS[index].title)
     );
-    card.addEventListener("click", function () { setActive(index); });
+    card.addEventListener("click", function () { selectStep(index); });
     card.addEventListener("keydown", function (event) {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        setActive(index);
+        selectStep(index);
       }
     });
   });

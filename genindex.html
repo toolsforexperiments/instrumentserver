@@ -30,6 +30,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
@@ -41,6 +42,8 @@
     <script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=87473038"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
@@ -432,6 +435,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint.action">action (instrumentserver.blueprints.ParameterBroadcastBluePrint attribute)</a>
 </li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.add_dynamic_interface">add_dynamic_interface() (instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument method)</a>
+</li>
       <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.add_parameter">add_parameter() (instrumentserver.client.proxy.ProxyInstrumentModule method)</a>
 
       <ul>
@@ -468,14 +473,14 @@
       </ul></li>
       <li><a href="api/generated/instrumentserver.gui.misc.html#instrumentserver.gui.misc.DetachableTabWidget.addUnclosableTab">addUnclosableTab() (instrumentserver.gui.misc.DetachableTabWidget method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.gui.misc.html#instrumentserver.gui.misc.AlertLabel">AlertLabel (class in instrumentserver.gui.misc)</a>
 </li>
       <li><a href="api/generated/instrumentserver.gui.misc.html#instrumentserver.gui.misc.AlertLabelGreen">AlertLabelGreen (class in instrumentserver.gui.misc)</a>
 </li>
       <li><a href="api/generated/instrumentserver.params.html#instrumentserver.params.ParameterTypes.any">any (instrumentserver.params.ParameterTypes attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.AnyInput">AnyInput (class in instrumentserver.gui.parameters)</a>
 </li>
       <li><a href="api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.AnyInputForMethod">AnyInputForMethod (class in instrumentserver.gui.parameters)</a>
@@ -496,9 +501,19 @@
         <li><a href="api/generated/instrumentserver.server.application.html#instrumentserver.server.application.EmbeddedClient.ask">(instrumentserver.server.application.EmbeddedClient method)</a>
 </li>
       </ul></li>
-      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule.ask_raw">ask_raw() (instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule method)</a>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyChannel.ask_raw">ask_raw() (instrumentserver.testing.dummy_instruments.generic.DummyChannel method)</a>
 
       <ul>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.ask_raw">(instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout method)</a>
+</li>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule.ask_raw">(instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule method)</a>
+</li>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.ask_raw">(instrumentserver.testing.dummy_instruments.generic.FieldVectorIns method)</a>
+</li>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.ask_raw">(instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument method)</a>
+</li>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.ask_raw">(instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
+</li>
         <li><a href="api/generated/instrumentserver.testing.dummy_instruments.rf.html#instrumentserver.testing.dummy_instruments.rf.FluxControl.ask_raw">(instrumentserver.testing.dummy_instruments.rf.FluxControl method)</a>
 </li>
         <li><a href="api/generated/instrumentserver.testing.dummy_instruments.rf.html#instrumentserver.testing.dummy_instruments.rf.Generator.ask_raw">(instrumentserver.testing.dummy_instruments.rf.Generator method)</a>
@@ -508,6 +523,12 @@
       </ul></li>
       <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyMixin.askServer">askServer() (instrumentserver.client.proxy.ProxyMixin method)</a>
 </li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepRequest.attributes">attributes (instrumentserver.testing.dummy_instruments.generic.SweepRequest attribute)</a>
+
+      <ul>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepResult.attributes">(instrumentserver.testing.dummy_instruments.generic.SweepResult attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterSerializeSpec.attrs">attrs (instrumentserver.blueprints.ParameterSerializeSpec attribute)</a>
 </li>
   </ul></td>
@@ -561,6 +582,8 @@
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerInstruction.call_spec">call_spec (instrumentserver.blueprints.ServerInstruction attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.CallSpec">CallSpec (class in instrumentserver.blueprints)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepRequest.center_hz">center_hz (instrumentserver.testing.dummy_instruments.generic.SweepRequest attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.monitoring.listener.html#instrumentserver.monitoring.listener.checkCSVConfig">checkCSVConfig() (in module instrumentserver.monitoring.listener)</a>
 </li>
@@ -754,14 +777,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.StatusFlag.EAV">EAV (instrumentserver.testing.dummy_instruments.generic.StatusFlag attribute)</a>
 </li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.echo">echo() (instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
+</li>
       <li><a href="api/generated/instrumentserver.server.application.html#instrumentserver.server.application.EmbeddedClient">EmbeddedClient (class in instrumentserver.server.application)</a>
 </li>
       <li><a href="api/generated/instrumentserver.log.html#instrumentserver.log.QLogHandler.emit">emit() (instrumentserver.log.QLogHandler method)</a>
 </li>
-      <li><a href="api/generated/instrumentserver.base.html#instrumentserver.base.encode">encode() (in module instrumentserver.base)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/generated/instrumentserver.base.html#instrumentserver.base.encode">encode() (in module instrumentserver.base)</a>
+</li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerResponse.error">error (instrumentserver.blueprints.ServerResponse attribute)</a>
 
       <ul>
@@ -809,6 +834,8 @@
       <li><a href="api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.float_formater">float_formater() (in module instrumentserver.gui.parameters)</a>
 </li>
       <li><a href="api/generated/instrumentserver.testing.dummy_instruments.rf.html#instrumentserver.testing.dummy_instruments.rf.FluxControl">FluxControl (class in instrumentserver.testing.dummy_instruments.rf)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepResult.frequency_hz">frequency_hz (instrumentserver.testing.dummy_instruments.generic.SweepResult attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.monitoring.listener.html#instrumentserver.monitoring.listener.CSVConfig.from_dict">from_dict() (instrumentserver.monitoring.listener.CSVConfig class method)</a>
 
@@ -868,6 +895,10 @@
         <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.get_instrument">(instrumentserver.client.proxy.ClientStation method)</a>
 </li>
       </ul></li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_nested_status">get_nested_status() (instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_numeric_text">get_numeric_text() (instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
+</li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.Operation.get_param_dict">get_param_dict (instrumentserver.blueprints.Operation attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ClientStation.get_parameters">get_parameters() (instrumentserver.client.proxy.ClientStation method)</a>
@@ -878,6 +909,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout.get_random_timeout">get_random_timeout() (instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout method)</a>
 </li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_set">get_set() (instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
+</li>
       <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.Client.get_snapshot">get_snapshot() (instrumentserver.client.proxy.Client method)</a>
 
       <ul>
@@ -887,8 +920,14 @@
       <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns.get_starting_parameter">get_starting_parameter() (instrumentserver.testing.dummy_instruments.generic.FieldVectorIns method)</a>
 </li>
       <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags.get_status">get_status() (instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags method)</a>
+
+      <ul>
+        <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_status">(instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
 </li>
+      </ul></li>
       <li><a href="api/generated/instrumentserver.monitoring.listener.html#instrumentserver.monitoring.listener.get_timezone_info">get_timezone_info() (in module instrumentserver.monitoring.listener)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.get_tuple">get_tuple() (instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
 </li>
       <li><a href="api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.ParameterWidget.getAndEmitValueFromWidget">getAndEmitValueFromWidget() (instrumentserver.gui.parameters.ParameterWidget method)</a>
 </li>
@@ -1292,6 +1331,8 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepResult.magnitude_db">magnitude_db (instrumentserver.testing.dummy_instruments.generic.SweepResult attribute)</a>
+</li>
       <li><a href="api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.ParameterDeleteDelegate.makeRemoveWidget">makeRemoveWidget() (instrumentserver.gui.instruments.ParameterDeleteDelegate method)</a>
 </li>
       <li><a href="api/generated/instrumentserver.gui.base_instrument.html#instrumentserver.gui.base_instrument.InstrumentDisplayBase.makeToolbar">makeToolbar() (instrumentserver.gui.base_instrument.InstrumentDisplayBase method)</a>
@@ -1307,6 +1348,8 @@
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerResponse.message">message (instrumentserver.blueprints.ServerResponse attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.server.core.html#instrumentserver.server.core.StationServer.messageReceived">messageReceived (instrumentserver.server.core.StationServer attribute)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepRequest.metadata">metadata (instrumentserver.testing.dummy_instruments.generic.SweepRequest attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.MethodBluePrint">MethodBluePrint (class in instrumentserver.blueprints)</a>
 </li>
@@ -1408,6 +1451,8 @@
 </li>
       </ul></li>
       <li><a href="api/generated/instrumentserver.gui.misc.html#instrumentserver.gui.misc.SeparableTabBar.mouseReleaseEvent">mouseReleaseEvent() (instrumentserver.gui.misc.SeparableTabBar method)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument">MutableInterfaceInstrument (class in instrumentserver.testing.dummy_instruments.generic)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1693,6 +1738,8 @@
 </li>
       <li><a href="api/generated/instrumentserver.params.html#instrumentserver.params.ParameterManager.remove_all_parameters">remove_all_parameters() (instrumentserver.params.ParameterManager method)</a>
 </li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument.remove_dynamic_interface">remove_dynamic_interface() (instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument method)</a>
+</li>
       <li><a href="api/generated/instrumentserver.params.html#instrumentserver.params.ParameterManager.remove_empty_submodules">remove_empty_submodules() (instrumentserver.params.ParameterManager method)</a>
 </li>
       <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.ProxyInstrumentModule.remove_parameter">remove_parameter() (instrumentserver.client.proxy.ProxyInstrumentModule method)</a>
@@ -1735,6 +1782,8 @@
         <li><a href="api/generated/instrumentserver.server.pollingWorker.html#instrumentserver.server.pollingWorker.PollingWorker.run">(instrumentserver.server.pollingWorker.PollingWorker method)</a>
 </li>
       </ul></li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument.run_sweep">run_sweep() (instrumentserver.testing.dummy_instruments.generic.SerializationInstrument method)</a>
+</li>
       <li><a href="api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.MethodDisplay.runFailed">runFailed (instrumentserver.gui.instruments.MethodDisplay attribute)</a>
 </li>
       <li><a href="api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.MethodDisplay.runFun">runFun() (instrumentserver.gui.instruments.MethodDisplay method)</a>
@@ -1772,6 +1821,8 @@
       <li><a href="api/generated/instrumentserver.gui.misc.html#instrumentserver.gui.misc.SeparableTabBar">SeparableTabBar (class in instrumentserver.gui.misc)</a>
 </li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ServerInstruction.serialization_opts">serialization_opts (instrumentserver.blueprints.ServerInstruction attribute)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument">SerializationInstrument (class in instrumentserver.testing.dummy_instruments.generic)</a>
 </li>
       <li><a href="api/generated/instrumentserver.apps.html#instrumentserver.apps.server">server() (in module instrumentserver.apps)</a>
 </li>
@@ -1821,10 +1872,10 @@
 </li>
       <li><a href="api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.SetButton">SetButton (class in instrumentserver.gui.parameters)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.AddParameterWidget.setError">setError() (instrumentserver.gui.instruments.AddParameterWidget method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/generated/instrumentserver.server.application.html#instrumentserver.server.application.ServerStatus.setListeningAddress">setListeningAddress() (instrumentserver.server.application.ServerStatus method)</a>
 </li>
       <li><a href="api/generated/instrumentserver.server.application.html#instrumentserver.server.application.StationObjectInfo.setObject">setObject() (instrumentserver.server.application.StationObjectInfo method)</a>
@@ -1863,6 +1914,8 @@
 </li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.MethodBluePrint.signature_str_and_params_from_obj">signature_str_and_params_from_obj() (instrumentserver.blueprints.MethodBluePrint class method)</a>
 </li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepRequest.span_hz">span_hz (instrumentserver.testing.dummy_instruments.generic.SweepRequest attribute)</a>
+</li>
       <li><a href="api/generated/instrumentserver.server.application.html#instrumentserver.server.application.EmbeddedClient.start">start() (instrumentserver.server.application.EmbeddedClient method)</a>
 </li>
       <li><a href="api/generated/instrumentserver.monitoring.listener.html#instrumentserver.monitoring.listener.startListener">startListener() (in module instrumentserver.monitoring.listener)</a>
@@ -1900,6 +1953,10 @@
       <li><a href="api/generated/instrumentserver.client.proxy.html#instrumentserver.client.proxy.SubClient">SubClient (class in instrumentserver.client.proxy)</a>
 </li>
       <li><a href="api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.InstrumentModuleBluePrint.submodules">submodules (instrumentserver.blueprints.InstrumentModuleBluePrint attribute)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepRequest">SweepRequest (class in instrumentserver.testing.dummy_instruments.generic)</a>
+</li>
+      <li><a href="api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.SweepResult">SweepResult (class in instrumentserver.testing.dummy_instruments.generic)</a>
 </li>
       <li><a href="api/generated/instrumentserver.params.html#instrumentserver.params.ParameterManager.switch_to_profile">switch_to_profile() (instrumentserver.params.ParameterManager method)</a>
 </li>

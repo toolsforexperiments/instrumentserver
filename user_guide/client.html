@@ -1,0 +1,1534 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Python client &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=87473038"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/client';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/user_guide/client.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The Server" href="server.html" />
+    <link rel="prev" title="User Guide" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="auto">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Python client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server.html">The Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gui_features.html">GUI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameter_manager.html">Parameter Manager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client_station.html">Client Station</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monitoring.html">Monitoring</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentmonitoring.html">Instrument Monitoring</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/virtual_instruments.html">Virtual Instruments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/chaining_servers.html">Chaining Servers</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Python client</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="python-client">
+<h1>Python client<a class="headerlink" href="#python-client" title="Link to this heading">#</a></h1>
+<p>The Python Client is the interface to instruments owned by a Server. It represents a
+remote instrument as a local Proxy Instrument with the same parameters and methods as
+its real QCoDeS driver. The <a class="reference internal" href="../getting_started/quickstart.html"><span class="std std-doc">Quickstart</span></a> gives a shorter first
+look at instrumentserver. For a conceptual overview, see
+<a class="reference internal" href="../getting_started/how_it_works.html"><span class="std std-doc">How it works</span></a>.</p>
+<p>Each section is self-contained and assumes the same Server remains running.</p>
+<section id="connections-and-instrument-discovery">
+<h2>Connections and instrument discovery<a class="headerlink" href="#connections-and-instrument-discovery" title="Link to this heading">#</a></h2>
+<p>The examples use a local Server started with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">instrumentserver<span class="w"> </span>-p<span class="w"> </span><span class="m">5555</span><span class="w"> </span>-a<span class="w"> </span><span class="m">127</span>.0.0.1</span>
+</pre></div></div><p>This opens the Server GUI, where instruments appear as the examples create them. The
+Client examples work in a terminal, a Jupyter notebook, or anywhere you can run python.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Port <code class="docutils literal notranslate"><span class="pre">5555</span></code> and address <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code> are the defaults, so plain <code class="docutils literal notranslate"><span class="pre">instrumentserver</span></code> starts
+the same local Server. The <code class="docutils literal notranslate"><span class="pre">-p</span></code> option selects the request port, and <code class="docutils literal notranslate"><span class="pre">-a</span></code> adds a
+listening address. The Server always includes the loopback address.
+<a class="reference internal" href="server.html"><span class="std std-doc">The Server</span></a> covers addresses, ports, and remote connections.</p>
+</div>
+<p>Clients can stay open for an entire measurement or be created only when needed, though
+we usually keep one for the duration of a measurement. In either case, closing the
+Client releases the network resources used by its connection to the Server.</p>
+<p>The Client is created with the Server’s host and request port (if using defaults, you can just use <code class="docutils literal notranslate"><span class="pre">Client()</span></code>):</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5555</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once the Client exists, <code class="docutils literal notranslate"><span class="pre">list_instruments()</span></code> reports the instruments that the Server
+already owns:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">list_instruments</span><span class="p">()</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">find_or_create_instrument</span></code> adds the dummy RF generator used throughout this page:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.rf.Generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">list_instruments</span><span class="p">()</span>
+<span class="go">[&#39;generator&#39;]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">find_or_create_instrument</span></code> returns a Proxy Instrument. If the Server doesn’t have the
+requested name, it imports the class and creates the real instrument. If the name
+already exists, the Server returns a Proxy for that instrument. The method mirrors
+QCoDeS’ <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.find_or_create_instrument"><code class="docutils literal notranslate"><span class="pre">find_or_create_instrument</span></code></a>.
+Instrumentserver, however, matches only by name. For an existing name, it does not check
+the class path supplied for creation.</p>
+<p>The Server GUI shows the generator as soon as the Server creates it:</p>
+<img alt="The Server GUI showing the newly created generator" class="only-light" src="../_images/server_generator_light.png" />
+<img alt="The Server GUI showing the newly created generator" class="only-dark" src="../_images/server_generator_dark.png" />
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">cli.get_instrument(&quot;generator&quot;)</span></code> covers the case where an instrument already exists and
+no creation class is needed. It returns a Proxy without creating an instrument.</p>
+</div>
+<p>A Client remains connected until <code class="docutils literal notranslate"><span class="pre">disconnect()</span></code> closes its ZMQ connection:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>A context manager gives small scripts the same lifecycle. It disconnects the Client when
+the block exits:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5555</span><span class="p">)</span> <span class="k">as</span> <span class="n">cli</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">generator</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">get_instrument</span><span class="p">(</span><span class="s2">&quot;generator&quot;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">())</span>
+<span class="go">10000000000.0</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Constructing <code class="docutils literal notranslate"><span class="pre">Client</span></code> opens its ZMQ connection but does not perform a handshake with the
+Server. The first request, such as <code class="docutils literal notranslate"><span class="pre">list_instruments()</span></code>, is what confirms that the Server
+can reply. <a class="reference internal" href="#errors-and-timeouts"><span class="std std-ref">Errors and timeouts</span></a> describes what happens when it
+cannot.</p>
+</div>
+</section>
+<section id="proxy-instruments">
+<h2>Proxy instruments<a class="headerlink" href="#proxy-instruments" title="Link to this heading">#</a></h2>
+<p>A Proxy Instrument is the local Python object that represents one instrument owned by
+the Server. Measurement code works with the Proxy, while the Server keeps the real
+QCoDeS driver and its hardware connection. The two objects share a name and a public
+interface, but they have different jobs.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>In the Client process</p></th>
+<th class="head"><p>In the Server process</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>The Proxy Instrument reproduces the driver’s parameters, methods, and submodules.</p></td>
+<td><p>The real instrument contains the driver logic, state, and hardware connection.</p></td>
+</tr>
+<tr class="row-odd"><td><p>A Proxy turns each parameter or method call into a request.</p></td>
+<td><p>The Server runs that request on the real instrument and returns the result.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The Client builds a Proxy from a Blueprint supplied by the Server. That Blueprint
+describes the part of the driver available remotely, including parameter units, method
+signatures, docstrings, and the hierarchy of submodules. The Client turns the
+description into a real local QCoDeS object with parameters and bound methods. Ordinary
+driver attributes and driver code stay in the Server.</p>
+<p><code class="docutils literal notranslate"><span class="pre">find_or_create_instrument</span></code> creates or finds the real generator in the Server, then
+returns the local object that represents it:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.rf.Generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Several Clients can hold Proxies for the same instrument. All of those Proxies refer to
+the one Server-owned driver, so a parameter read always asks the Server for its current
+value. A Proxy does not maintain a separate local value that can drift away from the
+hardware.</p>
+<p>Most interaction with a Proxy happens through its parameters and driver methods.
+<code class="docutils literal notranslate"><span class="pre">generator.frequency</span></code> is a local Proxy Parameter, while a proxied driver method is a
+local bound method. Both forward calls to the corresponding object in the Server.</p>
+<section id="parameters-and-driver-methods">
+<h3>Parameters and driver methods<a class="headerlink" href="#parameters-and-driver-methods" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">generator.frequency</span></code> is a local QCoDeS
+<a class="reference external" href="https://microsoft.github.io/Qcodes/api/parameters/#qcodes.parameters.Parameter"><code class="docutils literal notranslate"><span class="pre">Parameter</span></code></a>
+whose get and set commands call the real parameter in the Server. The normal QCoDeS
+callable form therefore reads and writes the remote instrument:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">())</span>
+<span class="go">10000000000.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="mf">5e9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+<span class="go">5000000000.0</span>
+</pre></div>
+</div>
+<p>The explicit QCoDeS methods make the same calls:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mf">6e9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go">6000000000.0</span>
+</pre></div>
+</div>
+<p>The Blueprint also records whether a parameter supports get and set operations, along
+with its unit and docstring. Parameter validators remain on the Server. An invalid value
+is rejected by the real parameter and the Client receives the resulting error.</p>
+<p>Driver methods follow the same model. The Client creates a local method with the
+signature and docstring reported by the Server. Calling it sends the target path,
+positional arguments, and keyword arguments to the real driver. The return value comes
+back as the result of the local call.</p>
+<p>This dummy resonator has a method that changes its simulated resonance frequency:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resonator</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;resonator&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.rf.ResonatorResponse&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resonator</span><span class="o">.</span><span class="n">modulate_frequency</span><span class="p">(</span><span class="n">delta</span><span class="o">=</span><span class="mf">1e6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">modulate_frequency</span></code> looks like a local bound method, but its body runs on the real
+<code class="docutils literal notranslate"><span class="pre">resonator</span></code> in the Server. The call completes only after the Server returns a response.</p>
+</section>
+<section id="submodules-keep-their-structure">
+<h3>Submodules keep their structure<a class="headerlink" href="#submodules-keep-their-structure" title="Link to this heading">#</a></h3>
+<p>Blueprints describe submodules recursively. A nested QCoDeS module or instrument
+channel becomes another Proxy Instrument, with its own parameters and methods at the
+same attribute path as the real driver.</p>
+<p>The dummy instrument below has three submodules named <code class="docutils literal notranslate"><span class="pre">A</span></code>, <code class="docutils literal notranslate"><span class="pre">B</span></code>, and <code class="docutils literal notranslate"><span class="pre">C</span></code>. Parameter access
+through <code class="docutils literal notranslate"><span class="pre">multi_channel.A</span></code> keeps the same shape on both sides of the connection:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">multi_channel</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;multi_channel&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span>
+<span class="gp">... </span>        <span class="s2">&quot;instrumentserver.testing.dummy_instruments.generic.&quot;</span>
+<span class="gp">... </span>        <span class="s2">&quot;DummyInstrumentWithSubmodule&quot;</span>
+<span class="gp">... </span>    <span class="p">),</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The nested parameter has the same callable interface as a parameter on the top-level
+instrument:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">multi_channel</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">ch0</span><span class="p">()</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">multi_channel</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">ch0</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">multi_channel</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">ch0</span><span class="p">()</span>
+<span class="go">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">multi_channel</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">dummy_function</span><span class="p">(</span><span class="s2">&quot;calibrate&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;client&quot;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>The Proxy can refresh its Blueprint when the Server-side interface changes. Calling
+<code class="docutils literal notranslate"><span class="pre">multi_channel.update()</span></code> fetches a fresh Blueprint, synchronizes parameters and
+submodules, and adds newly reported methods. It does not remove method objects already
+installed on the Proxy if the Server stops reporting them.</p>
+</section>
+<section id="values-that-cross-the-connection">
+<h3>Values that cross the connection<a class="headerlink" href="#values-that-cross-the-connection" title="Link to this heading">#</a></h3>
+<p>Parameter values, method arguments, and method return values travel between processes,
+so the Client and Server cannot share the same in-memory Python object. Instrumentserver
+serializes each value for transport and reconstructs it at the other end. This happens
+in both directions and applies equally to Proxy Parameters and driver methods.</p>
+<p>The built-in serialization handles <code class="docutils literal notranslate"><span class="pre">None</span></code>, booleans, numbers, strings, nested lists and
+dictionaries, complex numbers, and NumPy arrays. It also supports richer value objects.
+QCoDeS’ <code class="docutils literal notranslate"><span class="pre">FieldVector</span></code>, for example, can pass through a Proxy Parameter without losing
+its type:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.math_utils.field_vector</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldVector</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">magnet</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;magnet&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.generic.FieldVectorIns&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">target</span> <span class="o">=</span> <span class="n">FieldVector</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">magnet</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">returned</span> <span class="o">=</span> <span class="n">magnet</span><span class="o">.</span><span class="n">field</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">returned</span><span class="p">,</span> <span class="n">FieldVector</span><span class="p">))</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">returned</span><span class="o">.</span><span class="n">is_equal</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">returned</span></code> are different Python objects. The Client serializes <code class="docutils literal notranslate"><span class="pre">target</span></code>,
+the Server reconstructs a <code class="docutils literal notranslate"><span class="pre">FieldVector</span></code> for the real parameter, and the return trip
+creates another <code class="docutils literal notranslate"><span class="pre">FieldVector</span></code> in the Client process. Values survive the round trip, but
+object identity does not.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">id</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<span class="go">4385419344</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">id</span><span class="p">(</span><span class="n">returned</span><span class="p">)</span>
+<span class="go">4385419824</span>
+</pre></div>
+</div>
+</section>
+<section id="making-custom-classes-serializable">
+<h3>Making custom classes serializable<a class="headerlink" href="#making-custom-classes-serializable" title="Link to this heading">#</a></h3>
+<p>Custom classes used in parameters and methods use an <code class="docutils literal notranslate"><span class="pre">attributes</span></code> class attribute to
+list the values instrumentserver needs to reconstruct an instance. Once a class provides
+that list, its instances can cross the connection as parameter values, method arguments,
+or method return values.</p>
+<p>For example, a sweep range can preserve its Python type instead of arriving as a plain
+dictionary:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SweepWindow</span><span class="p">:</span>
+    <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="s2">&quot;stop&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span> <span class="o">=</span> <span class="n">stop</span>
+</pre></div>
+</div>
+<p>Instrumentserver serializes a <code class="docutils literal notranslate"><span class="pre">SweepWindow</span></code> as its listed values plus the class’s import
+path. The receiving process imports the class and reconstructs it with
+<code class="docutils literal notranslate"><span class="pre">SweepWindow(start=...,</span> <span class="pre">stop=...)</span></code>. This places three requirements on a custom value
+class:</p>
+<ul class="simple">
+<li><p>The class lives in an importable module available to both the Client and Server.</p></li>
+<li><p>Every name in <code class="docutils literal notranslate"><span class="pre">attributes</span></code> is accepted by the constructor as a keyword argument.</p></li>
+<li><p>The listed attribute values are JSON-compatible data.</p></li>
+</ul>
+<p>A class defined only in a notebook or in <code class="docutils literal notranslate"><span class="pre">__main__</span></code> cannot be imported by the other
+process. Both environments also need a compatible version of the module.</p>
+<p>Dataclasses fit this model well because their generated constructors already accept
+fields by name. Request and result types can live together in a small module installed
+in both environments. Declaring <code class="docutils literal notranslate"><span class="pre">attributes</span></code> as a <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> keeps it out of the
+dataclass fields and constructor:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># lab_models.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SweepRequest</span><span class="p">:</span>
+    <span class="n">center_hz</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">span_hz</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="n">attributes</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;center_hz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;span_hz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SweepResult</span><span class="p">:</span>
+    <span class="n">frequency_hz</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">magnitude_db</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+
+    <span class="n">attributes</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;frequency_hz&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;magnitude_db&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>A Server-owned analyzer could accept <code class="docutils literal notranslate"><span class="pre">SweepRequest</span></code> in a driver method and return
+<code class="docutils literal notranslate"><span class="pre">SweepResult</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># lab_drivers.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instrument</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lab_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SweepRequest</span><span class="p">,</span> <span class="n">SweepResult</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Analyzer</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_sweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">SweepRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SweepResult</span><span class="p">:</span>
+        <span class="n">half_span</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">span_hz</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">SweepResult</span><span class="p">(</span>
+            <span class="n">frequency_hz</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">center_hz</span> <span class="o">-</span> <span class="n">half_span</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">center_hz</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">center_hz</span> <span class="o">+</span> <span class="n">half_span</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">magnitude_db</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">50.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">20.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">49.0</span><span class="p">],</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>The user and the driver work with Python objects. The transport code in the Client and
+Server handles the serialized form between them:</p>
+<ul class="simple">
+<li><p>Request: user code passes a <code class="docutils literal notranslate"><span class="pre">SweepRequest</span></code>; the Client serializes it to JSON; the
+Server deserializes it back into a <code class="docutils literal notranslate"><span class="pre">SweepRequest</span></code>; the driver receives that object.</p></li>
+<li><p>Result: the driver returns a <code class="docutils literal notranslate"><span class="pre">SweepResult</span></code>; the Server serializes it to JSON; the
+Client deserializes it back into a <code class="docutils literal notranslate"><span class="pre">SweepResult</span></code>; user code receives that object.</p></li>
+</ul>
+<p>The call therefore looks like any other Proxy method call:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">lab_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SweepRequest</span><span class="p">,</span> <span class="n">SweepResult</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">analyzer</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;analyzer&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;lab_drivers.Analyzer&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">request</span> <span class="o">=</span> <span class="n">SweepRequest</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">center_hz</span><span class="o">=</span><span class="mf">5e9</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">span_hz</span><span class="o">=</span><span class="mf">20e6</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="s2">&quot;A&quot;</span><span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">run_sweep</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">SweepResult</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">frequency_hz</span>
+<span class="go">[4990000000.0, 5000000000.0, 5010000000.0]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">magnitude_db</span>
+<span class="go">[-50.0, -20.0, -49.0]</span>
+</pre></div>
+</div>
+<p>The values listed in <code class="docutils literal notranslate"><span class="pre">attributes</span></code> must already be JSON-compatible. A list or dictionary
+containing scalar values works, but the serializer does not recursively apply the
+<code class="docutils literal notranslate"><span class="pre">attributes</span></code> protocol to a dataclass stored inside another custom object. A NumPy array
+stored as a dataclass field has the same limitation, even though NumPy arrays are
+supported when passed directly. Such fields need a JSON-compatible representation,
+such as a list, or their own handling before they cross the connection.</p>
+<p>Type annotations describe the dataclass but do not control deserialization.
+Instrumentserver passes the decoded values directly to the constructor. A class that
+requires exact field types can normalize them in <code class="docutils literal notranslate"><span class="pre">__post_init__()</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Serialization preserves values, not every container’s exact Python type. Tuples and
+sets arrive as lists. A top-level <code class="docutils literal notranslate"><span class="pre">Enum</span></code> return value keeps its enum type when the enum
+class is importable on the receiving side, while enums nested inside lists or
+dictionaries become their underlying values.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The current decoder infers types from scalar text. A string such as <code class="docutils literal notranslate"><span class="pre">&quot;123&quot;</span></code> arrives as
+the integer <code class="docutils literal notranslate"><span class="pre">123</span></code>. Method and parameter APIs that require numeric-looking text need an
+unambiguous encoding, such as a nonnumeric prefix.</p>
+</div>
+</section>
+<section id="following-the-full-lifecycle">
+<h3>Following the full lifecycle<a class="headerlink" href="#following-the-full-lifecycle" title="Link to this heading">#</a></h3>
+<p>The diagram ties the pieces in this section together. It follows a Proxy Instrument
+from its Blueprint through a <code class="docutils literal notranslate"><span class="pre">FieldVector</span></code> parameter set and get, including each point
+where instrumentserver serializes or deserializes a value.</p>
+<div class="proxylife" id="proxylife">
+  <div class="proxylife-stage">
+    <div class="proxylife-hud" aria-hidden="true">
+      <span class="proxylife-hud-phase" id="proxylife-hud-phase">Action 1 · Create the Proxy Instrument</span>
+      <span class="proxylife-hud-no" id="proxylife-hud-no">Step 01</span>
+      <span class="proxylife-hud-title" id="proxylife-hud-title">Ask for a Proxy Instrument</span>
+    </div>
+    <svg class="proxylife-map" viewBox="0 0 960 430" role="img" aria-labelledby="proxylife-title proxylife-desc">
+      <title id="proxylife-title">Proxy Instrument lifecycle</title>
+      <desc id="proxylife-desc">A Client requests a Blueprint for a Server-owned QCoDeS instrument and uses it to build a local Proxy Instrument. The real driver begins with a zero-valued FieldVector. A later FieldVector set replaces it, and a get reconstructs the current value in the script.</desc>
+
+      <g class="proxylife-region">
+        <rect class="proxylife-region-box" x="18" y="40" width="420" height="370" rx="14" />
+        <text class="proxylife-region-title" x="38" y="69">Your script or notebook</text>
+      </g>
+      <g class="proxylife-region">
+        <rect class="proxylife-region-box" x="522" y="40" width="420" height="370" rx="14" />
+        <text class="proxylife-region-title" x="922" y="69" text-anchor="end">InstrumentServer</text>
+      </g>
+      <g class="proxylife-wire-lane">
+        <rect x="454" y="44" width="52" height="362" rx="10" />
+        <text x="480" y="220" text-anchor="middle" transform="rotate(-90 480 220)">ZMQ · serialized messages</text>
+      </g>
+
+      <g class="proxylife-routes" aria-hidden="true">
+        <path id="proxylife-edge-client-server" class="proxylife-edge kind-blueprint" d="M352,118 C410,90 465,90 538,118" />
+        <path id="proxylife-edge-blueprint-client" class="proxylife-edge kind-blueprint" d="M195,124 L220,118" />
+        <path id="proxylife-edge-client-proxy" class="proxylife-edge kind-blueprint" d="M287,146 C287,169 272,181 248,194" />
+        <path id="proxylife-edge-target-proxy" class="proxylife-edge kind-value" d="M139,349 C139,315 154,286 181,261" />
+        <path id="proxylife-edge-returned-proxy" class="proxylife-edge kind-value" d="M345,349 C345,315 314,284 275,260" />
+        <path id="proxylife-edge-proxy-server" class="proxylife-edge kind-call" d="M310,226 C386,226 451,226 538,136" />
+        <path id="proxylife-edge-server-driver" class="proxylife-edge kind-call" d="M662,146 C682,172 701,191 724,211" />
+        <path id="proxylife-edge-server-blueprint" class="proxylife-edge kind-blueprint" d="M600,146 L600,210" />
+        <path id="proxylife-edge-server-value" class="proxylife-edge proxylife-event-edge kind-value" d="M620,146 C655,205 655,265 630,306" />
+
+        <path class="proxylife-arrow kind-blueprint" data-arrow="client-server-fwd" d="M538,118 l-13,-6 l3,6 l-3,6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="client-server-back" d="M352,118 l13,-6 l-3,6 l3,6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="blueprint-client-fwd" d="M220,118 l-14,-3 l6,5 l-3,6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="client-proxy-fwd" d="M248,194 l5,-14 l2,7 l7,1 z" />
+        <path class="proxylife-arrow kind-value" data-arrow="target-proxy-fwd" d="M181,261 l-13,6 l7,1 l1,7 z" />
+        <path class="proxylife-arrow kind-value" data-arrow="returned-proxy-back" d="M345,349 l-10,-11 l2,7 l-7,2 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="proxy-server-fwd" d="M538,136 l-14,1 l7,3 l1,7 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="proxy-server-back" d="M310,226 l14,-1 l-7,-3 l-1,-7 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="server-driver-fwd" d="M724,211 l-13,-5 l5,6 l-3,6 z" />
+        <path class="proxylife-arrow kind-call" data-arrow="server-driver-back" d="M662,146 l13,5 l-5,-6 l3,-6 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="server-blueprint-fwd" d="M600,210 l-6,-13 l6,3 l6,-3 z" />
+        <path class="proxylife-arrow kind-blueprint" data-arrow="server-blueprint-back" d="M600,146 l-6,13 l6,-3 l6,3 z" />
+        <path class="proxylife-arrow kind-value" data-arrow="server-value-fwd" d="M630,306 l-6,-13 l6,3 l6,-3 z" />
+
+        <text id="proxylife-label-client-server" class="proxylife-edge-label" x="446" y="78" text-anchor="middle">Blueprint request</text>
+        <text id="proxylife-label-client-proxy" class="proxylife-edge-label" x="308" y="174">builds</text>
+        <text id="proxylife-label-target-proxy" class="proxylife-edge-label" x="84" y="298">set value</text>
+        <text id="proxylife-label-returned-proxy" class="proxylife-edge-label" x="318" y="298">returned value</text>
+        <text id="proxylife-label-proxy-server" class="proxylife-edge-label" x="430" y="211" text-anchor="middle">serialized request</text>
+        <text id="proxylife-label-server-driver" class="proxylife-edge-label" x="702" y="167" text-anchor="middle">parameter call</text>
+        <text id="proxylife-label-server-blueprint" class="proxylife-edge-label" x="610" y="181">creates</text>
+
+        <circle class="proxylife-comet kind-blueprint" data-comet="client-server-1" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="client-server-2" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="blueprint-client-1" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="client-proxy-1" r="5" />
+        <circle class="proxylife-comet kind-value" data-comet="target-proxy-1" r="5" />
+        <circle class="proxylife-comet kind-value" data-comet="returned-proxy-1" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="proxy-server-1" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="proxy-server-2" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="server-driver-1" r="5" />
+        <circle class="proxylife-comet kind-call" data-comet="server-driver-2" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="server-blueprint-1" r="5" />
+        <circle class="proxylife-comet kind-blueprint" data-comet="server-blueprint-2" r="5" />
+        <circle class="proxylife-comet kind-value" data-comet="server-value-1" r="5" />
+      </g>
+
+      <g class="proxylife-node kind-local" data-node="client">
+        <rect class="proxylife-box" x="220" y="88" width="132" height="58" rx="9" />
+        <text class="proxylife-t1" x="286" y="113" text-anchor="middle">cli</text>
+        <text class="proxylife-t2" x="286" y="133" text-anchor="middle">Client</text>
+      </g>
+      <g class="proxylife-node kind-proxy" data-node="proxy">
+        <rect class="proxylife-box" x="116" y="194" width="194" height="68" rx="9" />
+        <text class="proxylife-t1" x="213" y="220" text-anchor="middle">magnet</text>
+        <text class="proxylife-t2" x="213" y="241" text-anchor="middle">Proxy Instrument · field</text>
+      </g>
+      <g class="proxylife-node kind-server" data-node="server">
+        <rect class="proxylife-box" x="538" y="88" width="124" height="58" rx="9" />
+        <text class="proxylife-t1" x="600" y="113" text-anchor="middle">Server</text>
+        <text class="proxylife-t2" x="600" y="133" text-anchor="middle">dispatches calls</text>
+      </g>
+      <g class="proxylife-node kind-driver" data-node="driver">
+        <rect class="proxylife-box" x="724" y="190" width="190" height="150" rx="10" />
+        <text class="proxylife-t1" x="819" y="217" text-anchor="middle">magnet</text>
+        <text class="proxylife-t2" x="819" y="238" text-anchor="middle">real QCoDeS driver</text>
+      </g>
+      <g class="proxylife-node kind-value" data-node="target">
+        <rect class="proxylife-box" x="43" y="349" width="192" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="139" y="371" text-anchor="middle">target · FieldVector</text>
+        <text class="proxylife-t2" x="139" y="390" text-anchor="middle">x=.01 · y=.02 · z=.03</text>
+      </g>
+      <g class="proxylife-node kind-value" data-node="returned">
+        <rect class="proxylife-box" x="245" y="349" width="174" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="332" y="371" text-anchor="middle">returned · FieldVector</text>
+        <text class="proxylife-t2" x="332" y="390" text-anchor="middle">x=.01 · y=.02 · z=.03</text>
+      </g>
+      <g class="proxylife-node kind-value" data-node="initial-value">
+        <rect class="proxylife-box" x="732" y="250" width="164" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="814" y="272" text-anchor="middle">FieldVector</text>
+        <text class="proxylife-t2" x="814" y="291" text-anchor="middle">x=0 · y=0 · z=0</text>
+      </g>
+      <g class="proxylife-node kind-value proxylife-server-value" data-node="server-value">
+        <rect class="proxylife-box" x="548" y="306" width="164" height="52" rx="9" />
+        <text class="proxylife-t1 small" x="630" y="328" text-anchor="middle">FieldVector</text>
+        <text class="proxylife-t2" x="630" y="347" text-anchor="middle">x=.01 · y=.02 · z=.03</text>
+      </g>
+
+      <g class="proxylife-transient kind-blueprint" data-transient="blueprint-server">
+        <rect class="proxylife-token-box" x="522" y="210" width="156" height="73" rx="9" />
+        <text class="proxylife-t1 small" x="600" y="233" text-anchor="middle">magnet Blueprint</text>
+        <text class="proxylife-t2" x="600" y="254" text-anchor="middle">parameters · methods</text>
+        <text class="proxylife-t2" x="600" y="272" text-anchor="middle">submodules</text>
+      </g>
+      <g class="proxylife-transient kind-blueprint" data-transient="blueprint-client">
+        <rect class="proxylife-token-box" x="31" y="88" width="164" height="73" rx="9" />
+        <text class="proxylife-t1 small" x="113" y="111" text-anchor="middle">magnet Blueprint</text>
+        <text class="proxylife-t2" x="113" y="132" text-anchor="middle">parameters · methods</text>
+        <text class="proxylife-t2" x="113" y="150" text-anchor="middle">submodules</text>
+      </g>
+      <g class="proxylife-transient proxylife-summary" data-transient="summary">
+        <rect class="proxylife-summary-box" x="548" y="365" width="366" height="35" rx="8" />
+        <text x="731" y="388" text-anchor="middle">same value · newly reconstructed object</text>
+      </g>
+    </svg>
+    <div class="proxylife-key" aria-hidden="true">
+      <span><i class="sw kind-blueprint"></i>Blueprint</span>
+      <span><i class="sw kind-call"></i>remote call</span>
+      <span><i class="sw kind-value"></i>Python value</span>
+    </div>
+  </div>
+
+  <ol class="proxylife-steps" id="proxylife-steps">
+    <li class="proxylife-phase-break">
+      <span>Action 1</span>
+      <strong>Create the Proxy Instrument</strong>
+    </li>
+    <li class="proxylife-step" data-step="0"><div class="proxylife-card"><p class="proxylife-num">Step 01</p><h3>Ask for a Proxy Instrument</h3><p><code>magnet = cli.get_instrument("magnet")</code> asks the Client for a local representation of the Server-owned instrument. The Client sends a Blueprint request; it does not copy the real driver.</p></div></li>
+    <li class="proxylife-step" data-step="1"><div class="proxylife-card"><p class="proxylife-num">Step 02</p><h3>The Server creates a Blueprint</h3><p>The Server creates a Blueprint from the real <code>magnet</code> driver. It describes the remote interface: parameters, methods, and submodules.</p></div></li>
+    <li class="proxylife-step" data-step="2"><div class="proxylife-card"><p class="proxylife-num">Step 03</p><h3>The Blueprint returns</h3><p>The Blueprint crosses the ZMQ connection as a serialized message. The Client reconstructs it as a new Python object in your script or notebook.</p></div></li>
+    <li class="proxylife-step" data-step="3"><div class="proxylife-card"><p class="proxylife-num">Step 04</p><h3>The Client builds the Proxy</h3><p>The Client uses the Blueprint to create <code>magnet</code>, a local Proxy Instrument with a Proxy Parameter named <code>field</code>. The Proxy remains available for later calls.</p></div></li>
+    <li class="proxylife-phase-break">
+      <span>Action 2</span>
+      <strong>Set the value</strong>
+    </li>
+    <li class="proxylife-step" data-step="4"><div class="proxylife-card"><p class="proxylife-num">Step 05</p><h3>Create the target value</h3><p><code>target = FieldVector(x=0.01, y=0.02, z=0.03)</code> creates the first FieldVector in your script. It has not crossed the connection yet.</p></div></li>
+    <li class="proxylife-step" data-step="5"><div class="proxylife-card"><p class="proxylife-num">Step 06</p><h3>Set through the Proxy</h3><p><code>magnet.field(target)</code> passes the value into the Proxy Parameter. The request is serialized, sent to the Server, and reconstructed there as a second FieldVector.</p></div></li>
+    <li class="proxylife-step" data-step="6"><div class="proxylife-card"><p class="proxylife-num">Step 07</p><h3>The real driver stores the value</h3><p>The Server calls the real <code>magnet.field(...)</code> parameter with its reconstructed FieldVector. The new object replaces the driver's previous <code>FieldVector(x=0, y=0, z=0)</code> as its current field value.</p></div></li>
+    <li class="proxylife-step" data-step="7"><div class="proxylife-card"><p class="proxylife-num">Step 08</p><h3>The set call completes</h3><p>After the driver finishes the set, the Server returns a successful response to the Proxy. Only then does <code>magnet.field(target)</code> return to your code.</p></div></li>
+    <li class="proxylife-phase-break">
+      <span>Action 3</span>
+      <strong>Read the value</strong>
+    </li>
+    <li class="proxylife-step" data-step="8"><div class="proxylife-card"><p class="proxylife-num">Step 09</p><h3>Read through the Proxy</h3><p><code>returned = magnet.field()</code> sends a get request to the Server. The Proxy does not answer from local state.</p></div></li>
+    <li class="proxylife-step" data-step="9"><div class="proxylife-card"><p class="proxylife-num">Step 10</p><h3>The Server reads the real driver</h3><p>The Server calls the real <code>magnet.field()</code> parameter. The driver returns its current FieldVector to the Server.</p></div></li>
+    <li class="proxylife-step" data-step="10"><div class="proxylife-card"><p class="proxylife-num">Step 11</p><h3>Your code receives a new object</h3><p>The result crosses back as a serialized message and becomes <code>returned</code>. It has the same coordinates as the driver's current value, but it is a newly reconstructed Python object. The original target remains a third, distinct object in your script.</p></div></li>
+  </ol>
+</div>
+
+<style>
+.bd-main .bd-content .bd-article-container { overflow-x: clip; }
+.proxylife {
+  --plf-blueprint: var(--pst-color-primary, #3b82f6); --plf-call: var(--pst-color-accent, #8b5cf6);
+  --plf-value: var(--pst-color-warning, #d97706); --plf-line: var(--pst-color-border, #9ca3af);
+  --plf-ink: var(--pst-color-text-base, #111827); --plf-muted: var(--pst-color-text-muted, #4b5563);
+  --plf-panel: var(--pst-color-background, #fff); --plf-box: var(--pst-color-surface, #f8fafc);
+  --plf-stage-h: clamp(255px, 43vh, 400px); position: relative; margin: 1.4rem 0 0.5rem;
+}
+.proxylife-stage { position: sticky; top: calc(var(--pst-header-height, 4rem) + 1rem); z-index: 2; height: var(--plf-stage-h); padding: 2rem 0 0.5rem; background: var(--plf-panel); border-bottom: 1px solid var(--pst-color-border-muted, #d1d5db); }
+.proxylife-stage::before { content: ""; position: absolute; inset: -1rem 0 auto; height: 1rem; background: var(--plf-panel); }
+.proxylife-map { width: 100%; height: 100%; overflow: visible; }
+.proxylife-hud { position: absolute; top: 0; left: .1rem; display: flex; flex-direction: column; line-height: 1.2; pointer-events: none; }
+.proxylife-hud-no { color: var(--plf-blueprint); font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.proxylife-hud-phase { color: var(--plf-muted); font-size: .66rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.proxylife-hud-title { color: var(--plf-ink); font-size: .95rem; font-weight: 600; }
+.proxylife-key { position: absolute; top: .1rem; right: .1rem; display: flex; gap: .8rem; color: var(--plf-muted); font-size: .7rem; pointer-events: none; }
+.proxylife-key span { display: flex; align-items: center; gap: .35rem; }
+.proxylife-key .sw { width: 14px; border-top: 2.5px solid var(--plf-line); }
+.proxylife-key .sw.kind-blueprint { border-color: var(--plf-blueprint); }
+.proxylife-key .sw.kind-call { border-color: var(--plf-call); }
+.proxylife-key .sw.kind-value { border-color: var(--plf-value); }
+.proxylife-region-box { fill: var(--plf-box); fill-opacity: .42; stroke: var(--plf-line); stroke-width: 1.2; }
+.proxylife-region-title { fill: var(--plf-muted); font-size: 15px; font-weight: 650; }
+.proxylife-wire-lane rect { fill: var(--plf-box); stroke: var(--plf-line); stroke-dasharray: 4 5; opacity: .8; }
+.proxylife-wire-lane text { fill: var(--plf-muted); font-size: 11px; font-weight: 600; letter-spacing: .03em; }
+
+.proxylife-node { opacity: 1; transition: opacity .35s; }
+.proxylife-node.is-unintroduced { opacity: 0; }
+.proxylife-node.is-muted { opacity: .55; }
+.proxylife-node.is-active { opacity: 1; }
+.proxylife-box { fill: var(--plf-panel); stroke: var(--plf-line); stroke-width: 1.4; transition: stroke .35s, stroke-width .35s, filter .35s; }
+.proxylife-t1 { fill: var(--plf-ink); font-size: 16px; font-weight: 650; }
+.proxylife-t1.small { font-size: 13px; }
+.proxylife-t2 { fill: var(--plf-muted); font-size: 12px; }
+.proxylife-node.is-active .proxylife-box { stroke-width: 2.7; }
+.proxylife-node.kind-local.is-active .proxylife-box, .proxylife-node.kind-proxy.is-active .proxylife-box { stroke: var(--plf-blueprint); filter: drop-shadow(0 0 5px var(--plf-blueprint)); }
+.proxylife-node.kind-server.is-active .proxylife-box, .proxylife-node.kind-driver.is-active .proxylife-box { stroke: var(--plf-call); filter: drop-shadow(0 0 5px var(--plf-call)); }
+.proxylife-node.kind-value.is-active .proxylife-box { stroke: var(--plf-value); filter: drop-shadow(0 0 5px var(--plf-value)); }
+.proxylife-server-value { transition: opacity .35s, transform .5s ease; }
+.proxylife-server-value.is-stored { transform: translate(184px, -56px); }
+
+.proxylife-edge { fill: none; stroke: var(--plf-line); stroke-width: 1.5; opacity: .2; transition: stroke .3s, stroke-width .3s, opacity .3s; }
+.proxylife-edge.proxylife-event-edge { opacity: 0; }
+.proxylife-edge.is-hidden { opacity: 0; }
+.proxylife-edge.is-active { opacity: 1; stroke-width: 2.7; }
+.proxylife-edge.is-active.kind-blueprint { stroke: var(--plf-blueprint); }
+.proxylife-edge.is-active.kind-call { stroke: var(--plf-call); }
+.proxylife-edge.is-active.kind-value { stroke: var(--plf-value); }
+.proxylife-edge.is-marching { stroke-dasharray: 7 9; animation: proxylife-march .9s linear infinite; }
+@keyframes proxylife-march { to { stroke-dashoffset: -32; } }
+.proxylife-arrow { opacity: 0; fill: var(--plf-line); transition: opacity .3s; }
+.proxylife-arrow.is-active { opacity: 1; }
+.proxylife-arrow.is-active.kind-blueprint { fill: var(--plf-blueprint); }
+.proxylife-arrow.is-active.kind-call { fill: var(--plf-call); }
+.proxylife-arrow.is-active.kind-value { fill: var(--plf-value); }
+.proxylife-edge-label { opacity: 0; fill: var(--plf-ink); stroke: var(--plf-panel); stroke-width: 6px; stroke-linejoin: round; paint-order: stroke fill; font-size: 12px; transition: opacity .3s; }
+.proxylife-edge-label.is-active { opacity: 1; }
+.proxylife-comet { opacity: 0; fill: var(--plf-panel); stroke-width: 2.5; }
+.proxylife-comet.kind-blueprint { stroke: var(--plf-blueprint); filter: drop-shadow(0 0 4px var(--plf-blueprint)); }
+.proxylife-comet.kind-call { stroke: var(--plf-call); filter: drop-shadow(0 0 4px var(--plf-call)); }
+.proxylife-comet.kind-value { stroke: var(--plf-value); filter: drop-shadow(0 0 4px var(--plf-value)); }
+.proxylife-comet.is-active { opacity: 1; }
+.proxylife-transient { opacity: 0; transition: opacity .3s; }
+.proxylife-transient.is-active { opacity: 1; }
+.proxylife-token-box { fill: var(--plf-panel); stroke: var(--plf-blueprint); stroke-width: 2; }
+.proxylife-summary-box { fill: var(--plf-panel); stroke: var(--plf-value); stroke-width: 1.8; }
+.proxylife-summary text { fill: var(--plf-ink); font-size: 13px; font-weight: 650; }
+
+.proxylife-steps { display: flex; flex-direction: column; gap: .65rem; margin: 0; padding: .7rem 0; list-style: none; }
+.proxylife-step { min-height: 0; margin: 0; }
+.proxylife-phase-break { display: flex; align-items: baseline; gap: .55rem; max-width: 42rem; width: 100%; margin: 1.5rem auto .15rem; padding: .55rem 0; border-bottom: 2px solid var(--plf-blueprint); color: var(--plf-ink); }
+.proxylife-phase-break:first-child { margin-top: .4rem; }
+.proxylife-phase-break span { color: var(--plf-blueprint); font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.proxylife-phase-break strong { font-size: 1rem; font-weight: 650; }
+.proxylife-card { width: 100%; max-width: 42rem; margin: 0 auto; padding: 1rem 1.2rem; background: var(--plf-box); border: 1px solid var(--pst-color-border-muted, #d1d5db); border-left: 3px solid var(--plf-blueprint); border-radius: .5rem; transition: opacity .4s, transform .4s, box-shadow .4s; }
+.proxylife.is-live .proxylife-card { cursor: pointer; opacity: .45; transform: translateY(6px); }
+.proxylife.is-live .proxylife-card:hover { border-color: var(--plf-blueprint); }
+.proxylife.is-live .proxylife-card:focus-visible { outline: 3px solid var(--plf-blueprint); outline-offset: 3px; }
+.proxylife.is-live .proxylife-step.is-active .proxylife-card { opacity: 1; transform: none; box-shadow: 0 8px 24px -14px var(--pst-color-shadow, #111827); }
+.proxylife-card .proxylife-num { margin: 0; color: var(--plf-blueprint); font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.proxylife-card h3 { margin: .1rem 0 .5rem; font-size: 1.2rem; font-weight: 600; }
+.proxylife-card p { margin: 0 0 .5rem; }
+.proxylife-card p:last-child { margin-bottom: 0; }
+@media (max-width: 720px) { .proxylife { --plf-stage-h: clamp(205px, 35vh, 310px); } .proxylife-key { display: none; } .proxylife-card { padding: .9rem 1rem; } }
+@media (prefers-reduced-motion: reduce) { .proxylife-edge.is-marching { animation: none; } .proxylife-comet { display: none; } .proxylife *, .proxylife *::before, .proxylife *::after { transition-duration: .01ms !important; } }
+</style>
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("proxylife");
+  if (!root || !("IntersectionObserver" in window)) return;
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var STEPS = [
+    { no: "Step 01", title: "Ask for a Proxy Instrument", active: ["client", "server"], routes: [
+      { id: "client-server", dir: 1, label: "Blueprint request", arrow: "client-server-fwd" }
+    ]},
+    { no: "Step 02", title: "The Server creates a Blueprint", active: ["server", "driver"], transient: ["blueprint-server"], routes: [
+      { id: "server-driver", dir: -1, label: "real driver interface", arrow: "server-driver-back" },
+      { id: "server-blueprint", dir: 1, label: "creates Blueprint", arrow: "server-blueprint-fwd", delay: 450 }
+    ]},
+    { no: "Step 03", title: "The Blueprint returns", active: ["server", "client"], transient: ["blueprint-server", "blueprint-client"], routes: [
+      { id: "server-blueprint", dir: -1, label: "serializes Blueprint", arrow: "server-blueprint-back" },
+      { id: "client-server", dir: -1, label: "serialized Blueprint", arrow: "client-server-back", delay: 400 }
+    ]},
+    { no: "Step 04", title: "The Client builds the Proxy", active: ["client", "proxy"], transient: ["blueprint-client"], routes: [
+      { id: "blueprint-client", dir: 1, label: "uses Blueprint", arrow: "blueprint-client-fwd" },
+      { id: "client-proxy", dir: 1, label: "builds", arrow: "client-proxy-fwd", delay: 400 }
+    ]},
+    { no: "Step 05", title: "Create the target value", active: ["target"], routes: [] },
+    { no: "Step 06", title: "Set through the Proxy", active: ["target", "proxy", "server", "server-value"], routes: [
+      { id: "target-proxy", dir: 1, label: "set value", arrow: "target-proxy-fwd" },
+      { id: "proxy-server", dir: 1, label: "serialized set request", arrow: "proxy-server-fwd", delay: 300 },
+      { id: "server-value", dir: 1, label: "reconstructs value", arrow: "server-value-fwd", delay: 650 }
+    ]},
+    { no: "Step 07", title: "The real driver stores the value", active: ["server", "driver", "server-value"], routes: [
+      { id: "server-driver", dir: 1, label: "sets field", arrow: "server-driver-fwd" }
+    ]},
+    { no: "Step 08", title: "The set call completes", active: ["server", "proxy", "driver"], routes: [
+      { id: "server-driver", dir: -1, label: "driver returns", arrow: "server-driver-back" },
+      { id: "proxy-server", dir: -1, label: "successful response", arrow: "proxy-server-back", delay: 450 }
+    ]},
+    { no: "Step 09", title: "Read through the Proxy", active: ["proxy", "server"], hidden: ["target"], hiddenRoutes: ["target-proxy"], routes: [
+      { id: "proxy-server", dir: 1, label: "serialized get request", arrow: "proxy-server-fwd" }
+    ]},
+    { no: "Step 10", title: "The Server reads the real driver", active: ["server", "driver", "server-value"], hidden: ["target"], hiddenRoutes: ["target-proxy"], routes: [
+      { id: "server-driver", dir: 1, label: "gets field", arrow: "server-driver-fwd" },
+      { id: "server-driver", dir: -1, label: "gets field", arrow: "server-driver-back", delay: 650 }
+    ]},
+    { no: "Step 11", title: "Your code receives a new object", active: ["server", "proxy", "server-value", "returned"], hidden: ["target"], hiddenRoutes: ["target-proxy"], transient: ["summary"], routes: [
+      { id: "proxy-server", dir: -1, label: "serialized result", arrow: "proxy-server-back" },
+      { id: "returned-proxy", dir: -1, label: "returned value", arrow: "returned-proxy-back", delay: 450 }
+    ]}
+  ];
+  var introducedAt = { client: 0, server: 0, driver: 0, "initial-value": 0, proxy: 3, target: 4, "server-value": 5, returned: 10 };
+  var removedAt = { "initial-value": 6 };
+  var edgeIds = ["client-server", "blueprint-client", "client-proxy", "target-proxy", "returned-proxy", "proxy-server", "server-driver", "server-blueprint", "server-value"];
+  var nodes = {}, transients = {}, arrows = {}, edges = {}, labels = {}, comets = {}, frames = {}, timers = [];
+  Array.prototype.forEach.call(root.querySelectorAll("[data-node]"), function (el) { nodes[el.getAttribute("data-node")] = el; });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-transient]"), function (el) { transients[el.getAttribute("data-transient")] = el; });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-arrow]"), function (el) { arrows[el.getAttribute("data-arrow")] = el; });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-comet]"), function (el) { comets[el.getAttribute("data-comet")] = el; });
+  edgeIds.forEach(function (id) {
+    edges[id] = document.getElementById("proxylife-edge-" + id);
+    labels[id] = document.getElementById("proxylife-label-" + id);
+  });
+  var hudNo = document.getElementById("proxylife-hud-no");
+  var hudPhase = document.getElementById("proxylife-hud-phase");
+  var hudTitle = document.getElementById("proxylife-hud-title");
+  var stepEls = Array.prototype.slice.call(root.querySelectorAll(".proxylife-step"));
+
+  function stopMotion() {
+    Object.keys(frames).forEach(function (key) { if (frames[key]) cancelAnimationFrame(frames[key]); frames[key] = null; });
+    timers.forEach(function (timer) { clearTimeout(timer); }); timers = [];
+    Object.keys(comets).forEach(function (key) { comets[key].classList.remove("is-active"); comets[key].style.opacity = ""; });
+  }
+  function startComet(cometKey, edgeId, dir, delay) {
+    if (reduced || !edges[edgeId] || !comets[cometKey]) return;
+    var launch = function () {
+      var path = edges[edgeId], comet = comets[cometKey], len = path.getTotalLength(), duration = 1350, begin = null;
+      comet.classList.add("is-active");
+      function tick(now) {
+        if (begin === null) begin = now;
+        var progress = ((now - begin) % duration) / duration;
+        var at = dir < 0 ? (1 - progress) * len : progress * len;
+        var point = path.getPointAtLength(at);
+        comet.setAttribute("cx", point.x); comet.setAttribute("cy", point.y);
+        comet.style.opacity = Math.sin(Math.PI * progress).toFixed(3);
+        frames[cometKey] = requestAnimationFrame(tick);
+      }
+      frames[cometKey] = requestAnimationFrame(tick);
+    };
+    if (delay) timers.push(setTimeout(launch, delay)); else launch();
+  }
+  function applyStep(index) {
+    var step = STEPS[index]; if (!step) return;
+    var phase = index < 4 ? "Action 1 · Create the Proxy Instrument" :
+      (index < 8 ? "Action 2 · Set the value" : "Action 3 · Read the value");
+    hudPhase.textContent = phase; hudNo.textContent = step.no; hudTitle.textContent = step.title;
+    Object.keys(nodes).forEach(function (key) {
+      var introduced = index >= introducedAt[key];
+      var removed = removedAt[key] !== undefined && index >= removedAt[key];
+      var hidden = (step.hidden || []).indexOf(key) > -1;
+      var visible = introduced && !removed && !hidden;
+      var active = step.active.indexOf(key) > -1;
+      nodes[key].classList.toggle("is-unintroduced", !visible);
+      nodes[key].classList.toggle("is-muted", visible && !active);
+      nodes[key].classList.toggle("is-active", visible && active);
+    });
+    nodes["server-value"].classList.toggle("is-stored", index >= 6);
+    Object.keys(transients).forEach(function (key) { transients[key].classList.toggle("is-active", (step.transient || []).indexOf(key) > -1); });
+    stopMotion();
+    edgeIds.forEach(function (id) {
+      edges[id].classList.remove("is-active", "is-marching", "is-hidden");
+      if (labels[id]) labels[id].classList.remove("is-active");
+    });
+    (step.hiddenRoutes || []).forEach(function (id) { if (edges[id]) edges[id].classList.add("is-hidden"); });
+    Object.keys(arrows).forEach(function (key) { arrows[key].classList.remove("is-active"); });
+    var cometUse = {};
+    step.routes.forEach(function (route) {
+      edges[route.id].classList.add("is-active"); if (!reduced) edges[route.id].classList.add("is-marching");
+      if (labels[route.id]) {
+        labels[route.id].textContent = route.label;
+        labels[route.id].classList.add("is-active");
+      }
+      if (arrows[route.arrow]) arrows[route.arrow].classList.add("is-active");
+      cometUse[route.id] = (cometUse[route.id] || 0) + 1;
+      startComet(route.id + "-" + cometUse[route.id], route.id, route.dir, route.delay || 0);
+    });
+  }
+  var current = -1;
+  function setActive(index) {
+    if (index === current) return; current = index;
+    stepEls.forEach(function (step, stepIndex) {
+      step.classList.toggle("is-active", stepIndex === index);
+      var card = step.querySelector(".proxylife-card"); if (card) card.setAttribute("aria-pressed", stepIndex === index ? "true" : "false");
+    });
+    applyStep(index);
+  }
+  function selectStep(index) {
+    var step = stepEls[index];
+    if (!step) return;
+    setActive(index);
+    var rect = step.getBoundingClientRect();
+    var target = window.scrollY + rect.top + rect.height / 2 - window.innerHeight * 0.57;
+    window.scrollTo({ top: Math.max(0, target), behavior: reduced ? "auto" : "smooth" });
+  }
+  root.classList.add("is-live");
+  stepEls.forEach(function (step, index) {
+    var card = step.querySelector(".proxylife-card"); if (!card) return;
+    var title = card.querySelector("h3"); card.setAttribute("role", "button"); card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", "Show " + STEPS[index].no + ": " + (title ? title.textContent : STEPS[index].title));
+    card.addEventListener("click", function () { selectStep(index); });
+    card.addEventListener("keydown", function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectStep(index); } });
+  });
+  setActive(0);
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) { if (entry.isIntersecting) setActive(parseInt(entry.target.getAttribute("data-step"), 10)); });
+  }, { rootMargin: "-55% 0px -41% 0px", threshold: 0 });
+  stepEls.forEach(function (step) { observer.observe(step); });
+  var stageObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) { if (entry.isIntersecting) applyStep(current); else stopMotion(); });
+  }, { threshold: 0 });
+  stageObserver.observe(root.querySelector(".proxylife-stage"));
+})();
+</script>
+<p>The serialization lanes leave out their internal fields. The
+<a class="reference internal" href="../technical_guide/blueprints_and_proxies.html"><span class="std std-doc">Blueprints and Proxies</span></a> page covers the
+wire format and reconstruction machinery.</p>
+</section>
+</section>
+<section id="parameter-snapshots">
+<h2>Parameter snapshots<a class="headerlink" href="#parameter-snapshots" title="Link to this heading">#</a></h2>
+<p>The Client can collect parameter values, apply a group of values, and save or restore
+experiment state. These methods work with any existing Server-owned instrument.</p>
+<p>This example starts from fixed generator values so the output is reproducible:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.rf.Generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="mf">5e9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="o">-</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">rf_on</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">getParamDict</span></code> returns a flat dictionary. Each key is the dotted path to a parameter:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">values</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">getParamDict</span><span class="p">(</span><span class="s2">&quot;generator&quot;</span><span class="p">,</span> <span class="n">get</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">values</span>
+<span class="go">{&#39;generator.frequency&#39;: 5000000000.0, &#39;generator.power&#39;: -42, &#39;generator.rf_on&#39;: True}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">setParameters</span></code> accepts that same flat shape:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">setParameters</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;generator.frequency&quot;</span><span class="p">:</span> <span class="mf">6e9</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;generator.power&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">}</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">paramsToFile</span></code> writes the generator’s current values to a JSON file:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">paramsToFile</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;generator-parameters.json&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">instruments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;generator&quot;</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">get</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The file groups parameter names under each instrument:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;generator&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">6000000000.0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;power&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-30</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;rf_on&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After the values change, <code class="docutils literal notranslate"><span class="pre">paramsFromFile</span></code> restores the saved state:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="mf">7e9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">rf_on</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">paramsFromFile</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;generator-parameters.json&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">instruments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;generator&quot;</span><span class="p">],</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">()</span>
+<span class="go">6000000000.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span><span class="o">.</span><span class="n">power</span><span class="p">()</span>
+<span class="go">-30</span>
+</pre></div>
+</div>
+<p>Both file methods run in the Client process, so relative paths refer to the Client’s
+working directory, not the Server’s. Without <code class="docutils literal notranslate"><span class="pre">instruments</span></code>, <code class="docutils literal notranslate"><span class="pre">paramsToFile</span></code> saves every
+Server instrument and <code class="docutils literal notranslate"><span class="pre">paramsFromFile</span></code> restores every matching entry in the file.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">setParameters</span></code> and <code class="docutils literal notranslate"><span class="pre">paramsFromFile</span></code> cannot currently restore Boolean values.
+Deserialization converts <code class="docutils literal notranslate"><span class="pre">True</span></code> and <code class="docutils literal notranslate"><span class="pre">False</span></code> to <code class="docutils literal notranslate"><span class="pre">1.0</span></code> and <code class="docutils literal notranslate"><span class="pre">0.0</span></code>, which fail QCoDeS Boolean
+validation. Numeric values in the same operation still restore correctly. See
+<a class="reference external" href="https://github.com/toolsforexperiments/instrumentserver/issues/152">issue #152</a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">setParameters</span></code> does not accept the nested JSON shown above. It expects flat dotted keys
+and currently ignores the nested shape after logging a Server-side error.
+<code class="docutils literal notranslate"><span class="pre">paramsFromFile</span></code> flattens the saved JSON before sending it.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="parameter_manager.html"><span class="std std-doc">Parameter Manager</span></a> has a separate profile workflow. Its
+<code class="docutils literal notranslate"><span class="pre">toFile</span></code> and <code class="docutils literal notranslate"><span class="pre">fromFile</span></code> methods run on the Server, preserve units, and can create or
+remove hierarchical parameters. Managed profiles use this workflow rather than a
+snapshot of existing instruments.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">disconnect()</span></code> closes the Client used for the snapshot example:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="errors-and-timeouts">
+<h2>Errors and timeouts<a class="headerlink" href="#errors-and-timeouts" title="Link to this heading">#</a></h2>
+<p>By default, the Client turns Server-side failures into local exceptions. The dummy
+generator, for example, accepts frequencies only up to 20 GHz:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generator</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.rf.Generator&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">generator</span><span class="o">.</span><span class="n">frequency</span><span class="p">(</span><span class="mf">100e9</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">rejected</span> <span class="o">=</span> <span class="n">exc</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">rejected</span><span class="p">)</span> <span class="ow">is</span> <span class="ne">Exception</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s2">&quot;generator_frequency&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">rejected</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>The Client currently raises a generic <code class="docutils literal notranslate"><span class="pre">Exception</span></code> containing the original Server-side
+message. With the default <code class="docutils literal notranslate"><span class="pre">raise_exceptions=True</span></code>, a failed operation cannot look like a
+successful call that returned <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>A timeout is different from a Server-side error. This Dummy Instrument has a method that
+takes longer than the Client’s deadline:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">slow</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;slow&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expected_random</span> <span class="o">=</span> <span class="n">slow</span><span class="o">.</span><span class="n">get_random</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">slow</span><span class="o">.</span><span class="n">get_random_timeout</span><span class="p">(</span><span class="n">wait_time</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+<span class="go">Server did not reply before timeout.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">slow</span><span class="o">.</span><span class="n">get_random</span><span class="p">()</span> <span class="o">==</span> <span class="n">expected_random</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>The Client does not retry a timed-out request. It discards the old ZMQ socket and
+connects a replacement so later requests can work. The replacement connection does not
+rerun the timed-out operation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>A timeout means that no reply arrived before the deadline. It does not mean the Server
+cancelled the operation. The Server worker continues and may still change the hardware.
+For a non-idempotent operation, the instrument state is the only reliable indication of
+whether the original call completed.</p>
+</div>
+<p>After <code class="docutils literal notranslate"><span class="pre">disconnect()</span></code>, the Client cannot be reused. Another session requires a new Client:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">Client(raise_exceptions=False)</span></code> logs failures and usually returns <code class="docutils literal notranslate"><span class="pre">None</span></code>. This behavior
+fits long-running UI infrastructure with its own error reporting. In measurement code,
+<code class="docutils literal notranslate"><span class="pre">None</span></code> is ambiguous because it can also be a valid method result. The default
+<code class="docutils literal notranslate"><span class="pre">raise_exceptions=True</span></code> keeps those cases distinct.</p>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">User Guide</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="server.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">The Server</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#connections-and-instrument-discovery">Connections and instrument discovery</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proxy-instruments">Proxy instruments</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters-and-driver-methods">Parameters and driver methods</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules-keep-their-structure">Submodules keep their structure</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#values-that-cross-the-connection">Values that cross the connection</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#making-custom-classes-serializable">Making custom classes serializable</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#following-the-full-lifecycle">Following the full lifecycle</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parameter-snapshots">Parameter snapshots</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#errors-and-timeouts">Errors and timeouts</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/user_guide/client.md.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Tools For Experiments.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
