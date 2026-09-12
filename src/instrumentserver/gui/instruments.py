@@ -624,6 +624,9 @@ class InstrumentParameters(InstrumentDisplayBase):
             lambda w: (
                 w.paramWidget.input.clear()
                 if isinstance(w.paramWidget, AnyInput)
+                # read-only parameters are shown in a QLabel; clearing it would blank the display
+                else None
+                if isinstance(w.paramWidget, QtWidgets.QLabel)
                 else w.paramWidget.clear()
                 if hasattr(w.paramWidget, "clear")
                 else None

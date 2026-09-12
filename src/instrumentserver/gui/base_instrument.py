@@ -535,11 +535,12 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
     itemStarToggle = QtCore.Signal(ItemBase)
 
     #: Signal()
-    #: emitted when the user presses Enter, F2, or Right to enter edit mode on the selected parameter.
+    #: emitted when the user presses Return, Enter, F2, or Right on a parameter row to enter edit mode.
+    #: On a row with children (an instrument or submodule node) those keys expand/collapse the node instead.
     editCurrentParameter = QtCore.Signal()
 
     #: Signal()
-    #: emitted when the user presses Delete to clear the selected parameter's value.
+    #: emitted when the user presses Backspace to clear the selected parameter's value.
     clearCurrentParameter = QtCore.Signal()
 
     def __init__(
@@ -594,10 +595,14 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenuRequested)
 
-        for key in ("Return", "Enter", "F2", "Right"):
+        for key in ("Return", "Enter", "F2"):
             sc = QtWidgets.QShortcut(QtGui.QKeySequence(key), self)
             sc.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
-            sc.activated.connect(self.editCurrentParameter)
+            sc.activated.connect(self.onEditKeyPressed)
+
+        sc = QtWidgets.QShortcut(QtGui.QKeySequence("Right"), self)
+        sc.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
+        sc.activated.connect(self.onRightKeyPressed)
 
         sc = QtWidgets.QShortcut(QtGui.QKeySequence("Backspace"), self)
         sc.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
@@ -765,6 +770,46 @@ class InstrumentTreeViewBase(QtWidgets.QTreeView):
                 self.trashItemAction.setIcon(self.trashIcon)
 
             self.contextMenu.exec_(self.mapToGlobal(pos))
+
+    def _currentNodeIndex(self) -> Optional[QtCore.QModelIndex]:
+        """
+        Returns the column-0 index of the current row if that row has children (i.e. it is an
+        instrument/submodule node rather than a parameter), otherwise None.
+        """
+        current = self.currentIndex()
+        if not current.isValid():
+            return None
+        idx0 = current.sibling(current.row(), 0)
+        if self.model().hasChildren(idx0):  # type: ignore[union-attr]
+            return idx0
+        return None
+
+    @QtCore.Slot()
+    def onEditKeyPressed(self) -> None:
+        """
+        Return/Enter/F2: on a node with children toggle expanded/collapsed, otherwise ask to edit the
+        current parameter's value.
+        """
+        node = self._currentNodeIndex()
+        if node is not None:
+            self.setExpanded(node, not self.isExpanded(node))
+        else:
+            self.editCurrentParameter.emit()
+
+    @QtCore.Slot()
+    def onRightKeyPressed(self) -> None:
+        """
+        Right: on a node with children behave like a normal tree (expand if collapsed, otherwise move to the
+        first child), otherwise ask to edit the current parameter's value.
+        """
+        node = self._currentNodeIndex()
+        if node is not None:
+            if not self.isExpanded(node):
+                self.expand(node)
+            else:
+                self.setCurrentIndex(self.model().index(0, 0, node))  # type: ignore[union-attr]
+        else:
+            self.editCurrentParameter.emit()
 
     def focusNextPrevChild(self, next: bool) -> bool:
         current = self.currentIndex()
