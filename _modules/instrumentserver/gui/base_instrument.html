@@ -1029,6 +1029,15 @@
     <span class="c1">#: emitted when this item got its star action triggered.</span>
     <span class="n">itemStarToggle</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="n">ItemBase</span><span class="p">)</span>
 
+    <span class="c1">#: Signal()</span>
+    <span class="c1">#: emitted when the user presses Return, Enter, F2, or Right on a parameter row to enter edit mode.</span>
+    <span class="c1">#: On a row with children (an instrument or submodule node) those keys expand/collapse the node instead.</span>
+    <span class="n">editCurrentParameter</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
+    <span class="c1">#: Signal()</span>
+    <span class="c1">#: emitted when the user presses Backspace to clear the selected parameter&#39;s value.</span>
+    <span class="n">clearCurrentParameter</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QAbstractItemModel</span><span class="p">,</span>
@@ -1080,6 +1089,19 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">setContextMenuPolicy</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ContextMenuPolicy</span><span class="o">.</span><span class="n">CustomContextMenu</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">customContextMenuRequested</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onContextMenuRequested</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Return&quot;</span><span class="p">,</span> <span class="s2">&quot;Enter&quot;</span><span class="p">,</span> <span class="s2">&quot;F2&quot;</span><span class="p">):</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QShortcut</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QKeySequence</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">setContext</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ShortcutContext</span><span class="o">.</span><span class="n">WidgetShortcut</span><span class="p">)</span>
+            <span class="n">sc</span><span class="o">.</span><span class="n">activated</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onEditKeyPressed</span><span class="p">)</span>
+
+        <span class="n">sc</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QShortcut</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QKeySequence</span><span class="p">(</span><span class="s2">&quot;Right&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">setContext</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ShortcutContext</span><span class="o">.</span><span class="n">WidgetShortcut</span><span class="p">)</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">activated</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">onRightKeyPressed</span><span class="p">)</span>
+
+        <span class="n">sc</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QShortcut</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QKeySequence</span><span class="p">(</span><span class="s2">&quot;Backspace&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">setContext</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">ShortcutContext</span><span class="o">.</span><span class="n">WidgetShortcut</span><span class="p">)</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">activated</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clearCurrentParameter</span><span class="p">)</span>
 
 <div class="viewcode-block" id="InstrumentTreeViewBase.fillCollapsedDict">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.base_instrument.html#instrumentserver.gui.base_instrument.InstrumentTreeViewBase.fillCollapsedDict">[docs]</a>
@@ -1257,6 +1279,64 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">trashItemAction</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trashIcon</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">exec_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapToGlobal</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_currentNodeIndex</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QModelIndex</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the column-0 index of the current row if that row has children (i.e. it is an</span>
+<span class="sd">        instrument/submodule node rather than a parameter), otherwise None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentIndex</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">idx0</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">sibling</span><span class="p">(</span><span class="n">current</span><span class="o">.</span><span class="n">row</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">hasChildren</span><span class="p">(</span><span class="n">idx0</span><span class="p">):</span>  <span class="c1"># type: ignore[union-attr]</span>
+            <span class="k">return</span> <span class="n">idx0</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="InstrumentTreeViewBase.onEditKeyPressed">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.base_instrument.html#instrumentserver.gui.base_instrument.InstrumentTreeViewBase.onEditKeyPressed">[docs]</a>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">onEditKeyPressed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return/Enter/F2: on a node with children toggle expanded/collapsed, otherwise ask to edit the</span>
+<span class="sd">        current parameter&#39;s value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_currentNodeIndex</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setExpanded</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">isExpanded</span><span class="p">(</span><span class="n">node</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">editCurrentParameter</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="InstrumentTreeViewBase.onRightKeyPressed">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.base_instrument.html#instrumentserver.gui.base_instrument.InstrumentTreeViewBase.onRightKeyPressed">[docs]</a>
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">onRightKeyPressed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Right: on a node with children behave like a normal tree (expand if collapsed, otherwise move to the</span>
+<span class="sd">        first child), otherwise ask to edit the current parameter&#39;s value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_currentNodeIndex</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">isExpanded</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">node</span><span class="p">))</span>  <span class="c1"># type: ignore[union-attr]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">editCurrentParameter</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="InstrumentTreeViewBase.focusNextPrevChild">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.base_instrument.html#instrumentserver.gui.base_instrument.InstrumentTreeViewBase.focusNextPrevChild">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">focusNextPrevChild</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">next</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">currentIndex</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">current</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexBelow</span><span class="p">(</span><span class="n">current</span><span class="p">)</span> <span class="k">if</span> <span class="nb">next</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">indexAbove</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">next_idx</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">next_idx</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">focusNextPrevChild</span><span class="p">(</span><span class="nb">next</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="InstrumentTreeViewBase.onStarActionTrigger">

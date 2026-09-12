@@ -24,4 +24,5 @@ instrumentserver.gui.instruments
       ParameterManagerTreeView
       ParametersTreeView
       ProfilesManager
+      ValueCellNavigationFilter
    

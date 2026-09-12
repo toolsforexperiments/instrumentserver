@@ -655,6 +655,10 @@
     <span class="c1">#: emitted when the widget runs a function and is successful. Emits the return value as a string.</span>
     <span class="n">runSuccessful</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
 
+    <span class="c1">#: Signal() --</span>
+    <span class="c1">#: emitted when the user commits via Return/Enter, regardless of success or failure</span>
+    <span class="n">valueCommitted</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">fun</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
@@ -707,7 +711,9 @@
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">runFailed</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fullName</span><span class="si">}</span><span class="s2">&#39; Raised the following execution: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fullName</span><span class="si">}</span><span class="s2">&#39; Raised the following execution: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valueCommitted</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="MethodDisplay.getTooltipFromFun">
@@ -750,6 +756,7 @@
         <span class="c1"># Stores as key the name of the item and as value the widget that the delegate creates.</span>
         <span class="c1"># used to keep a reference to the widget.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ValueCellNavigationFilter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="ParameterDelegate.createEditor">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.ParameterDelegate.createEditor">[docs]</a>
@@ -763,10 +770,24 @@
 <span class="sd">        This is the function that is supposed to create the widget. It should return it.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getItem</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">showDelegate</span><span class="p">:</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># type: ignore[return-value]</span>
+
         <span class="n">element</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">element</span>  <span class="c1"># type: ignore[attr-defined]</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="n">ParameterWidget</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">widget</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">valueCommitted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span><span class="o">.</span><span class="n">setFocus</span><span class="p">)</span>  <span class="c1"># type: ignore[union-attr]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">AnyInput</span><span class="p">):</span>
+                <span class="n">input_widget</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">input</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_widget</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">paramWidget</span>
+            <span class="n">input_widget</span><span class="o">.</span><span class="n">installEventFilter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="o">.</span><span class="n">registerWidget</span><span class="p">(</span><span class="n">input_widget</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+
         <span class="c1"># Try to fetch and display current value immediately</span>
         <span class="c1"># ---- Chao: removed because the constructor of ParameterWidget object already calls parameter get ----</span>
         <span class="c1"># if element.gettable:</span>
@@ -777,6 +798,85 @@
         <span class="c1">#         logger.warning(f&quot;Failed to get value for parameter {element.name}: {e}&quot;)</span>
         <span class="k">return</span> <span class="n">ret</span></div>
 </div>
+
+
+
+<div class="viewcode-block" id="ValueCellNavigationFilter">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.ValueCellNavigationFilter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValueCellNavigationFilter</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event filter installed on value input widgets to handle Escape, Tab, and Shift+Tab.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">treeView</span><span class="p">:</span> <span class="n">InstrumentTreeViewBase</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">treeView</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span> <span class="o">=</span> <span class="n">treeView</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_widgetIndex</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPersistentModelIndex</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="ValueCellNavigationFilter.registerWidget">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.ValueCellNavigationFilter.registerWidget">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">registerWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">widget</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QModelIndex</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_widgetIndex</span><span class="p">[</span><span class="n">widget</span><span class="p">]</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QPersistentModelIndex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ValueCellNavigationFilter.eventFilter">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.ValueCellNavigationFilter.eventFilter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eventFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># type: ignore[override]</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QEvent</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">FocusIn</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widgetIndex</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_widgetIndex</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QModelIndex</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QEvent</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">KeyPress</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QKeyEvent</span><span class="p">)</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QKeySequence</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">())</span><span class="o">.</span><span class="n">toString</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Esc&quot;</span><span class="p">:</span>
+                <span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_findHostWidget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">ParameterWidget</span><span class="p">):</span>
+                    <span class="n">host</span><span class="o">.</span><span class="n">setWidgetFromParameter</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">MethodDisplay</span><span class="p">):</span>
+                    <span class="n">host</span><span class="o">.</span><span class="n">anyInput</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">setFocus</span><span class="p">()</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Tab&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_commitAndMove</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;Backtab&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_commitAndMove</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">eventFilter</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_findHostWidget</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ParameterWidget</span><span class="p">,</span> <span class="n">MethodDisplay</span><span class="p">]]:</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span>
+        <span class="k">while</span> <span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">ParameterWidget</span><span class="p">,</span> <span class="n">MethodDisplay</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="n">parent</span>
+            <span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_commitAndMove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_findHostWidget</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">ParameterWidget</span><span class="p">):</span>
+            <span class="n">host</span><span class="o">.</span><span class="n">setButton</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">MethodDisplay</span><span class="p">):</span>
+            <span class="n">host</span><span class="o">.</span><span class="n">runFun</span><span class="p">()</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">currentIndex</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">current</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+            <span class="n">next_idx</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">indexBelow</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">direction</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">indexAbove</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">next_idx</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">setCurrentIndex</span><span class="p">(</span><span class="n">next_idx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_treeView</span><span class="o">.</span><span class="n">setFocus</span><span class="p">()</span></div>
 
 
 
@@ -906,6 +1006,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="n">ParameterDelegate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span><span class="o">.</span><span class="n">navFilter</span> <span class="o">=</span> <span class="n">ValueCellNavigationFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">setItemDelegateForColumn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setAllDelegatesPersistent</span><span class="p">()</span>
@@ -972,11 +1073,14 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">connectSignals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">connectSignals</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">itemNewValue</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">onItemNewValue</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">editCurrentParameter</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_focusToParameterValue</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">clearCurrentParameter</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clearCurrentParameter</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">shortcutManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;refresh_item&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refreshCurrentItem</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shortcutManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
             <span class="s2">&quot;toggle_python&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_togglePythonCurrentItem</span><span class="p">,</span> <span class="bp">self</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shortcutManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;edit_value&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_focusToParameterValue</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
+        <span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_withCurrentParameter</span><span class="p">(</span>
@@ -1008,7 +1112,24 @@
             <span class="k">lambda</span> <span class="n">w</span><span class="p">:</span> <span class="p">(</span>
                 <span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">setFocus</span><span class="p">()</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">AnyInput</span><span class="p">)</span>
+                <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">)</span>
                 <span class="k">else</span> <span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">setFocus</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clearCurrentParameter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_withCurrentParameter</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">w</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">AnyInput</span><span class="p">)</span>
+                <span class="c1"># read-only parameters are shown in a QLabel; clearing it would blank the display</span>
+                <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">)</span>
+                <span class="k">else</span> <span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="s2">&quot;clear&quot;</span><span class="p">)</span>
+                <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
         <span class="p">)</span></div>
 
@@ -1035,11 +1156,24 @@
         <span class="n">index</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QModelIndex</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">:</span>
         <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getItem</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">showDelegate</span><span class="p">:</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># type: ignore[return-value]</span>
+
         <span class="n">element</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">element</span>  <span class="c1"># type: ignore[attr-defined]</span>
         <span class="n">rw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">makeRemoveWidget</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">widget</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="n">ParameterWidget</span><span class="p">(</span><span class="n">parameter</span><span class="o">=</span><span class="n">element</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">widget</span><span class="p">,</span> <span class="n">additionalWidgets</span><span class="o">=</span><span class="p">[</span><span class="n">rw</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">valueCommitted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span><span class="o">.</span><span class="n">setFocus</span><span class="p">)</span>  <span class="c1"># type: ignore[union-attr]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">AnyInput</span><span class="p">):</span>
+                <span class="n">input_widget</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">input</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_widget</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">paramWidget</span>
+            <span class="n">input_widget</span><span class="o">.</span><span class="n">installEventFilter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="o">.</span><span class="n">registerWidget</span><span class="p">(</span><span class="n">input_widget</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">ret</span></div>
 
@@ -1075,6 +1209,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="n">ParameterDeleteDelegate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span><span class="o">.</span><span class="n">navFilter</span> <span class="o">=</span> <span class="n">ValueCellNavigationFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">setItemDelegateForColumn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setAllDelegatesPersistent</span><span class="p">()</span>
@@ -1320,6 +1455,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MethodDisplay&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ValueCellNavigationFilter</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="MethodsDelegate.createEditor">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.MethodsDelegate.createEditor">[docs]</a>
@@ -1330,6 +1466,10 @@
         <span class="n">index</span><span class="p">:</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QModelIndex</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">:</span>
         <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getItem</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">showDelegate</span><span class="p">:</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># type: ignore[return-value]</span>
+
         <span class="n">element</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">element</span>  <span class="c1"># type: ignore[attr-defined]</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="n">MethodDisplay</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">widget</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
 
@@ -1339,6 +1479,12 @@
         <span class="n">parent</span><span class="o">.</span><span class="n">clearAlertsAction</span><span class="o">.</span><span class="n">triggered</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">alertLabel</span><span class="o">.</span><span class="n">clearAlert</span><span class="p">)</span>  <span class="c1"># type: ignore[union-attr]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">valueCommitted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">()</span><span class="o">.</span><span class="n">setFocus</span><span class="p">)</span>  <span class="c1"># type: ignore[union-attr]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">anyInput</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">installEventFilter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">navFilter</span><span class="o">.</span><span class="n">registerWidget</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">anyInput</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">ret</span></div>
 </div>
 
@@ -1361,6 +1507,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">contextMenu</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clearAlertsAction</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="n">MethodsDelegate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span><span class="o">.</span><span class="n">navFilter</span> <span class="o">=</span> <span class="n">ValueCellNavigationFilter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setItemDelegateForColumn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delegate</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setAllDelegatesPersistent</span><span class="p">()</span></div>
 
@@ -1396,10 +1543,13 @@
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.instruments.html#instrumentserver.gui.instruments.InstrumentMethods.connectSignals">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">connectSignals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">connectSignals</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">editCurrentParameter</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_focusToMethodValue</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">clearCurrentParameter</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_clearCurrentMethod</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">shortcutManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
             <span class="s2">&quot;toggle_python&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_togglePythonCurrentItem</span><span class="p">,</span> <span class="bp">self</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shortcutManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;edit_value&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_focusToMethodValue</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shortcutManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;run_method&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runCurrentMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
 
 
@@ -1417,6 +1567,10 @@
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_focusToMethodValue</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_withCurrentMethod</span><span class="p">(</span><span class="k">lambda</span> <span class="n">w</span><span class="p">:</span> <span class="n">w</span><span class="o">.</span><span class="n">anyInput</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">setFocus</span><span class="p">())</span>
+
+    <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clearCurrentMethod</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_withCurrentMethod</span><span class="p">(</span><span class="k">lambda</span> <span class="n">w</span><span class="p">:</span> <span class="n">w</span><span class="o">.</span><span class="n">anyInput</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">clear</span><span class="p">())</span>
 
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_runCurrentMethod</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>

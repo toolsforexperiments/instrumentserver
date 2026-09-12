@@ -1138,8 +1138,8 @@
         <span class="p">)</span>
 
         <span class="c1"># A test client, just a simple helper object.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">EmbeddedClient</span><span class="p">(</span><span class="n">raise_exceptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5000</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">recv_timeout_ms</span> <span class="o">=</span> <span class="mi">10_000</span>
+        <span class="c1"># timeout is in seconds; it configures the socket&#39;s receive timeout when connecting.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">EmbeddedClient</span><span class="p">(</span><span class="n">raise_exceptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
         <span class="c1"># Central widget is simply a tab container.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tabs</span> <span class="o">=</span> <span class="n">DetachableTabWidget</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>

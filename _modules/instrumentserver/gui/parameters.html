@@ -489,6 +489,10 @@
     <span class="c1">#: Signal(Any) --</span>
     <span class="n">_valueFromWidget</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
 
+    <span class="c1">#: Signal() --</span>
+    <span class="c1">#: emitted when the user commits a value via Return/Enter</span>
+    <span class="n">valueCommitted</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">parameter</span><span class="p">:</span> <span class="n">Parameter</span><span class="p">,</span>
@@ -623,7 +627,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the setButton when the input is selected and enter is pressed.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setButton</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">deselect</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setButton</span><span class="o">.</span><span class="n">setFocus</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valueCommitted</span><span class="o">.</span><span class="n">emit</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ParameterWidget.setParameter">
