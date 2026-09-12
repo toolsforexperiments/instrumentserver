@@ -203,6 +203,10 @@ class MethodDisplay(QtWidgets.QWidget):
     #: emitted when the widget runs a function and is successful. Emits the return value as a string.
     runSuccessful = QtCore.Signal(str)
 
+    #: Signal() --
+    #: emitted when the user commits via Return/Enter, regardless of success or failure
+    valueCommitted = QtCore.Signal()
+
     def __init__(
         self,
         fun: Callable,
@@ -254,6 +258,8 @@ class MethodDisplay(QtWidgets.QWidget):
         except Exception as e:
             self.runFailed.emit(str(e))
             logger.warning(f"'{self.fullName}' Raised the following execution: {e}")
+        finally:
+            self.valueCommitted.emit()
 
     @classmethod
     def getTooltipFromFun(cls, fun: Callable) -> str:
@@ -286,6 +292,7 @@ class ParameterDelegate(DelegateBase):
         # Stores as key the name of the item and as value the widget that the delegate creates.
         # used to keep a reference to the widget.
         self.parameters: Dict[str, QtWidgets.QWidget] = {}
+        self.navFilter: Optional["ValueCellNavigationFilter"] = None
 
     def createEditor(  # type: ignore[override]
         self,
@@ -297,10 +304,24 @@ class ParameterDelegate(DelegateBase):
         This is the function that is supposed to create the widget. It should return it.
         """
         item = self.getItem(index)
+
+        if not item.showDelegate:  # type: ignore[attr-defined]
+            return None  # type: ignore[return-value]
+
         element = item.element  # type: ignore[attr-defined]
 
         ret = ParameterWidget(element, widget)
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
+
+        if self.navFilter is not None:
+            if isinstance(ret.paramWidget, AnyInput):
+                input_widget = ret.paramWidget.input
+            else:
+                input_widget = ret.paramWidget
+            input_widget.installEventFilter(self.navFilter)
+            self.navFilter.registerWidget(input_widget, index)
+
         # Try to fetch and display current value immediately
         # ---- Chao: removed because the constructor of ParameterWidget object already calls parameter get ----
         # if element.gettable:
@@ -310,6 +331,76 @@ class ParameterDelegate(DelegateBase):
         #     except Exception as e:
         #         logger.warning(f"Failed to get value for parameter {element.name}: {e}")
         return ret
+
+
+class ValueCellNavigationFilter(QtCore.QObject):
+    """Event filter installed on value input widgets to handle Escape, Tab, and Shift+Tab."""
+
+    def __init__(self, treeView: InstrumentTreeViewBase) -> None:
+        super().__init__(treeView)
+        self._treeView = treeView
+        self._widgetIndex: Dict[QtCore.QObject, QtCore.QPersistentModelIndex] = {}
+
+    def registerWidget(self, widget: QtCore.QObject, index: QtCore.QModelIndex) -> None:
+        self._widgetIndex[widget] = QtCore.QPersistentModelIndex(index)
+
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent) -> bool:  # type: ignore[override]
+        if event.type() == QtCore.QEvent.Type.FocusIn:
+            if obj in self._widgetIndex:
+                idx = self._widgetIndex[obj]
+                if idx.isValid():
+                    self._treeView.setCurrentIndex(QtCore.QModelIndex(idx))
+            return False
+
+        if event.type() == QtCore.QEvent.Type.KeyPress:
+            assert isinstance(event, QtGui.QKeyEvent)
+            key = QtGui.QKeySequence(event.key()).toString()
+
+            if key == "Esc":
+                host = self._findHostWidget(obj)
+                if isinstance(host, ParameterWidget):
+                    host.setWidgetFromParameter()
+                elif isinstance(host, MethodDisplay):
+                    host.anyInput.input.clear()
+                self._treeView.setFocus()
+                return True
+
+            elif key == "Tab":
+                self._commitAndMove(obj, 1)
+                return True
+
+            elif key == "Backtab":
+                self._commitAndMove(obj, -1)
+                return True
+
+        return super().eventFilter(obj, event)
+
+    def _findHostWidget(
+        self, obj: QtCore.QObject
+    ) -> Optional[Union[ParameterWidget, MethodDisplay]]:
+        parent = obj.parent()
+        while parent is not None:
+            if isinstance(parent, (ParameterWidget, MethodDisplay)):
+                return parent
+            parent = parent.parent()
+        return None
+
+    def _commitAndMove(self, obj: QtCore.QObject, direction: int) -> None:
+        host = self._findHostWidget(obj)
+        if isinstance(host, ParameterWidget):
+            host.setButton.click()
+        elif isinstance(host, MethodDisplay):
+            host.runFun()
+        current = self._treeView.currentIndex()
+        if current.isValid():
+            next_idx = (
+                self._treeView.indexBelow(current)
+                if direction > 0
+                else self._treeView.indexAbove(current)
+            )
+            if next_idx.isValid():
+                self._treeView.setCurrentIndex(next_idx)
+        self._treeView.setFocus()
 
 
 class ModelParameters(InstrumentModelBase):
@@ -424,6 +515,7 @@ class ParametersTreeView(InstrumentTreeViewBase):
         super().__init__(model, [2], *args, **kwargs)
 
         self.delegate = ParameterDelegate(self)
+        self.delegate.navFilter = ValueCellNavigationFilter(self)
 
         self.setItemDelegateForColumn(2, self.delegate)
         self.setAllDelegatesPersistent()
@@ -482,11 +574,14 @@ class InstrumentParameters(InstrumentDisplayBase):
     def connectSignals(self) -> None:
         super().connectSignals()
         self.model.itemNewValue.connect(self.view.onItemNewValue)
+
+        self.view.editCurrentParameter.connect(self._focusToParameterValue)
+        self.view.clearCurrentParameter.connect(self._clearCurrentParameter)
+
         self.shortcutManager.register("refresh_item", self._refreshCurrentItem, self)
         self.shortcutManager.register(
             "toggle_python", self._togglePythonCurrentItem, self
         )
-        self.shortcutManager.register("edit_value", self._focusToParameterValue, self)
 
     def _withCurrentParameter(
         self, callback: Callable[["ParameterWidget"], None]
@@ -517,7 +612,24 @@ class InstrumentParameters(InstrumentDisplayBase):
             lambda w: (
                 w.paramWidget.input.setFocus()
                 if isinstance(w.paramWidget, AnyInput)
+                else None
+                if isinstance(w.paramWidget, QtWidgets.QLabel)
                 else w.paramWidget.setFocus()
+            )
+        )
+
+    @QtCore.Slot()
+    def _clearCurrentParameter(self) -> None:
+        self._withCurrentParameter(
+            lambda w: (
+                w.paramWidget.input.clear()
+                if isinstance(w.paramWidget, AnyInput)
+                # read-only parameters are shown in a QLabel; clearing it would blank the display
+                else None
+                if isinstance(w.paramWidget, QtWidgets.QLabel)
+                else w.paramWidget.clear()
+                if hasattr(w.paramWidget, "clear")
+                else None
             )
         )
 
@@ -539,11 +651,24 @@ class ParameterDeleteDelegate(ParameterDelegate):
         index: QtCore.QModelIndex,
     ) -> QtWidgets.QWidget:
         item = self.getItem(index)
+
+        if not item.showDelegate:  # type: ignore[attr-defined]
+            return None  # type: ignore[return-value]
+
         element = item.element  # type: ignore[attr-defined]
         rw = self.makeRemoveWidget(item.name, widget)  # type: ignore[attr-defined]
 
         ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
+
+        if self.navFilter is not None:
+            if isinstance(ret.paramWidget, AnyInput):
+                input_widget = ret.paramWidget.input
+            else:
+                input_widget = ret.paramWidget
+            input_widget.installEventFilter(self.navFilter)
+            self.navFilter.registerWidget(input_widget, index)
 
         return ret
 
@@ -572,6 +697,7 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         super().__init__(model, [2], *args, **kwargs)
 
         self.delegate = ParameterDeleteDelegate(self)
+        self.delegate.navFilter = ValueCellNavigationFilter(self)
 
         self.setItemDelegateForColumn(2, self.delegate)
         self.setAllDelegatesPersistent()
@@ -769,6 +895,7 @@ class MethodsDelegate(DelegateBase):
         super().__init__(parent=parent)
 
         self.methods: Dict[str, "MethodDisplay"] = {}
+        self.navFilter: Optional[ValueCellNavigationFilter] = None
 
     def createEditor(  # type: ignore[override]
         self,
@@ -777,6 +904,10 @@ class MethodsDelegate(DelegateBase):
         index: QtCore.QModelIndex,
     ) -> QtWidgets.QWidget:
         item = self.getItem(index)
+
+        if not item.showDelegate:  # type: ignore[attr-defined]
+            return None  # type: ignore[return-value]
+
         element = item.element  # type: ignore[attr-defined]
         ret = MethodDisplay(element, item.name, parent=widget)  # type: ignore[attr-defined]
 
@@ -786,6 +917,12 @@ class MethodsDelegate(DelegateBase):
         parent.clearAlertsAction.triggered.connect(ret.alertLabel.clearAlert)  # type: ignore[union-attr]
 
         self.methods[item.name] = ret  # type: ignore[attr-defined]
+        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
+
+        if self.navFilter is not None:
+            ret.anyInput.input.installEventFilter(self.navFilter)
+            self.navFilter.registerWidget(ret.anyInput.input, index)
+
         return ret
 
 
@@ -804,6 +941,7 @@ class MethodsTreeView(InstrumentTreeViewBase):
         self.contextMenu.addAction(self.clearAlertsAction)
 
         self.delegate = MethodsDelegate(self)
+        self.delegate.navFilter = ValueCellNavigationFilter(self)
         self.setItemDelegateForColumn(1, self.delegate)
         self.setAllDelegatesPersistent()
 
@@ -834,10 +972,13 @@ class InstrumentMethods(InstrumentDisplayBase):
 
     def connectSignals(self) -> None:
         super().connectSignals()
+
+        self.view.editCurrentParameter.connect(self._focusToMethodValue)
+        self.view.clearCurrentParameter.connect(self._clearCurrentMethod)
+
         self.shortcutManager.register(
             "toggle_python", self._togglePythonCurrentItem, self
         )
-        self.shortcutManager.register("edit_value", self._focusToMethodValue, self)
         self.shortcutManager.register("run_method", self._runCurrentMethod, self)
 
     def _withCurrentMethod(self, callback: Callable[["MethodDisplay"], None]) -> None:
@@ -854,6 +995,10 @@ class InstrumentMethods(InstrumentDisplayBase):
     @QtCore.Slot()
     def _focusToMethodValue(self) -> None:
         self._withCurrentMethod(lambda w: w.anyInput.input.setFocus())
+
+    @QtCore.Slot()
+    def _clearCurrentMethod(self) -> None:
+        self._withCurrentMethod(lambda w: w.anyInput.input.clear())
 
     @QtCore.Slot()
     def _runCurrentMethod(self) -> None:

@@ -635,8 +635,8 @@ class ServerGui(QtWidgets.QMainWindow):
         )
 
         # A test client, just a simple helper object.
-        self.client = EmbeddedClient(raise_exceptions=False, timeout=5000)
-        self.client.recv_timeout_ms = 10_000
+        # timeout is in seconds; it configures the socket's receive timeout when connecting.
+        self.client = EmbeddedClient(raise_exceptions=False, timeout=10)
 
         # Central widget is simply a tab container.
         self.tabs = DetachableTabWidget(self)
