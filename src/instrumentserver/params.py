@@ -10,6 +10,7 @@ from qcodes.instrument import InstrumentBase
 from qcodes.parameters import ParameterBase
 
 from . import serialize
+from .base import Broadcaster
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +206,7 @@ class ParameterGroup(InstrumentBase):
         return tolist(tree)
 
 
-class ParameterManager(ParameterGroup):
+class ParameterManager(Broadcaster, ParameterGroup):
     """
     A virtual instrument that acts as a manager for a collection of
     arbitrary parameters and groups of parameters.
@@ -215,6 +216,11 @@ class ParameterManager(ParameterGroup):
     The Parameter Manager is the root of the parameter tree. It extends the
     Parameter Group with file, profile, and (later) Type and Lock logic;
     its submodules are plain Parameter Groups.
+
+    It implements the Broadcaster contract, so the Server can register
+    itself as a broadcast sink when the Parameter Manager joins the
+    Station. Nothing is broadcast yet; the Lock and Type features will
+    emit through it.
 
     For the parameter manager to recognize other profiles in disk,
     the profile filename needs to start with 'parameter_manager-'
