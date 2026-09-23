@@ -195,7 +195,10 @@ BaseClient → ZMQ Network → ThreadPool + Broadcast
 
 ## Testing
 
+Tests never use a fixed port. Use the `server_port` fixture; agents run the suite in parallel.
+
 ### Test Setup (test/pytest/conftest.py)
+- `server_port` fixture - Session-scoped pair of free consecutive ports (server port and broadcast port)
 - `start_server` fixture - Module-scoped server for all tests
 - `cli` fixture - New Client per test
 - `dummy_instrument` fixture - Test dummy instrument with submodules

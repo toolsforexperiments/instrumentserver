@@ -22,7 +22,14 @@ def _shutdown_server_window(window):
             pass
 
 
-def test_saving_button(qtbot):
+def _wait_until_client_points_at_server(qtbot, window, port):
+    """The embedded client connects to the default port when it is constructed
+    and only re-targets the real server port once the event loop delivers the
+    server-started signal, so the first request must not be sent before then."""
+    qtbot.waitUntil(lambda: window.client.addr.endswith(f":{port}"), timeout=10000)
+
+
+def test_saving_button(qtbot, server_port):
     correct_file_dict = {
         "rr.bandwidth": 10000.0,
         "rr.data": None,
@@ -37,7 +44,8 @@ def test_saving_button(qtbot):
         "rr.stop_frequency": 20000000000.0,
     }
 
-    window = startServerGuiApplication()
+    window = startServerGuiApplication(port=server_port)
+    _wait_until_client_points_at_server(qtbot, window, server_port)
     window.client.find_or_create_instrument(
         "rr", "instrumentserver.testing.dummy_instruments.rf.ResonatorResponse"
     )
@@ -58,7 +66,7 @@ def test_saving_button(qtbot):
         _shutdown_server_window(window)
 
 
-def test_loading_button(qtbot):
+def test_loading_button(qtbot, server_port):
     correct_file_dict = {
         "dummy.A.ch0": 0,
         "dummy.A.ch1": 1,
@@ -70,7 +78,8 @@ def test_loading_button(qtbot):
         "dummy.param1": 1,
     }
 
-    window = startServerGuiApplication()
+    window = startServerGuiApplication(port=server_port)
+    _wait_until_client_points_at_server(qtbot, window, server_port)
 
     file_path = Path(window._paramValuesFile)
 
@@ -94,8 +103,9 @@ def test_loading_button(qtbot):
         _shutdown_server_window(window)
 
 
-def test_refresh_button(qtbot):
-    window = startServerGuiApplication()
+def test_refresh_button(qtbot, server_port):
+    window = startServerGuiApplication(port=server_port)
+    _wait_until_client_points_at_server(qtbot, window, server_port)
     qtbot.addWidget(window)
     try:
         assert window.stationList.topLevelItemCount() == 0
@@ -113,10 +123,11 @@ def test_refresh_button(qtbot):
         _shutdown_server_window(window)
 
 
-def test_clicking_an_item(qtbot):
+def test_clicking_an_item(qtbot, server_port):
     # If there is an exception raise, it will not reach the assert True statement
 
-    window = startServerGuiApplication()
+    window = startServerGuiApplication(port=server_port)
+    _wait_until_client_points_at_server(qtbot, window, server_port)
     qtbot.addWidget(window)
     try:
         assert window.stationList.topLevelItemCount() == 0
@@ -138,8 +149,9 @@ def test_clicking_an_item(qtbot):
         _shutdown_server_window(window)
 
 
-def test_opening_new_tab_generic_object(qtbot):
-    window = startServerGuiApplication()
+def test_opening_new_tab_generic_object(qtbot, server_port):
+    window = startServerGuiApplication(port=server_port)
+    _wait_until_client_points_at_server(qtbot, window, server_port)
     qtbot.addWidget(window)
     try:
         window.client.find_or_create_instrument(
