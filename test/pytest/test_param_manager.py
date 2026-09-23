@@ -1,6 +1,6 @@
 import json
 
-from instrumentserver.params import ParameterManager
+from instrumentserver.params import ParameterGroup, ParameterManager
 
 
 def prep_param_manager(params, template=1):
@@ -215,3 +215,42 @@ def test_selectedProfile_only_changing_when_correct_name(tmp_path):
     new_path = names_path.replace(tmp_path.joinpath("parameter_manager-names.json"))
     params.fromFile(new_path)
     assert params.selectedProfile == "parameter_manager-names.json"
+
+
+def test_submodules_are_groups(caplog):
+    params = ParameterManager(name="params")
+    # the root itself may warn about its own missing profile file;
+    # only warnings from creating the submodule are of interest here
+    caplog.clear()
+
+    params.add_parameter(name="q01.IF", initial_value=1e9, unit="Hz")
+    params.add_parameter(name="q01.readout.power", initial_value=-10, unit="dBm")
+
+    assert isinstance(params.q01, ParameterGroup)
+    assert not isinstance(params.q01, ParameterManager)
+    assert isinstance(params.q01.readout, ParameterGroup)
+    assert not isinstance(params.q01.readout, ParameterManager)
+
+    # creating a submodule no longer lists the working directory or
+    # tries to load a parameter file for it
+    assert "parameter file not found" not in caplog.text
+
+
+def test_submodule_does_not_load_parameter_file(tmp_path, monkeypatch):
+    """Submodules are Parameter Groups with no file or profile logic of
+    their own: a parameter_manager-q01.json file in the working directory
+    is not loaded into the q01 submodule."""
+    monkeypatch.chdir(tmp_path)
+    profile = tmp_path / "parameter_manager-q01.json"
+    profile.write_text(
+        json.dumps({"q01.file_param": {"value": 999, "unit": "V"}})
+    )
+
+    params = ParameterManager(name="params")
+    params.add_parameter(name="q01.my_param", initial_value=1, unit="M")
+
+    assert isinstance(params.q01, ParameterGroup)
+    assert not isinstance(params.q01, ParameterManager)
+    assert not params.q01.has_param("file_param")
+    assert "q01.file_param" not in params.list()
+    assert params.q01.my_param() == 1

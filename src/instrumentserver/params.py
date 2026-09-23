@@ -56,111 +56,31 @@ def paramTypeFromName(name: str) -> Union[ParameterTypes, None]:
     return None
 
 
-class ParameterManager(InstrumentBase):
+class ParameterGroup(InstrumentBase):
     """
-    A virtual instrument that acts as a manager for a collection of
-    arbitrary parameters and groups of parameters.
+    A Parameter Group: a plain container of parameters and nested Parameter
+    Groups inside a Parameter Manager.
 
-    Allows extra-easy on-the-fly addition/removal of new parameters.
-
-    For the parameter manager to recognize other profiles in disk,
-    the profile filename needs to start with 'parameter_manager-'
-    and end with '.json' with the name of the profile in the middle.
-    For example, 'parameter_manager-qubit1.json' represents the profile qubit1
+    It holds parameters and nested Parameter Groups and offers the tree
+    helpers (dotted-path add/remove/get/set, listing, tree building), but
+    has no file, profile, Type or Lock logic of its own. Every submodule
+    of a Parameter Manager is a Parameter Group; only the root is the
+    Parameter Manager, which extends the Parameter Group with those
+    responsibilities.
     """
-
-    # TODO: method to instantiate entirely from paramDict
-
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-
-        self._workingDirectory = Path(os.getcwd())
-
-        #: default location and name of the parameters save file.
-        self.selectedProfile = self.fullProfileName(self.name)
-        self.profiles: List[str] = []
-        self.refresh_profiles()
-
-        self.fromFile()
-
-    @property
-    def workingDirectory(self) -> Path:
-        return self._workingDirectory
-
-    @workingDirectory.setter
-    def workingDirectory(self, path: Union[str, Path]) -> None:
-        self._workingDirectory = Path(path)
-        self.refresh_profiles()
-
-    def getWorkingDirectory(self):  # type: ignore[no-untyped-def]
-        return self.workingDirectory
-
-    @staticmethod
-    def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
-        """Create a new ParameterManager instance from a paramDict.
-
-        :param paramDict: The paramDict object.
-        :param name: Name of the instrument in the paramDict (each entry in the
-            paramDict starts with <instrumentName>.[...]).
-        :returns: New ParameterManager instance.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def cleanProfileName(name: str) -> str:
-        """
-        When passed the full file name of a parameter_manager profile, return only the middle
-        string representing the profile's name.
-        """
-        return name.replace("parameter_manager-", "").replace(".json", "")
-
-    @staticmethod
-    def fullProfileName(name: str) -> str:
-        """
-        Adds 'parameter_manager-' to the beginning of `name` and adds '.json' at the end.
-        """
-
-        if not name.startswith("parameter_manager-"):
-            name = "parameter_manager-" + name
-        if not name.endswith(".json"):
-            name += ".json"
-        return name
 
     @classmethod
-    def _to_tree(cls, pm: "ParameterManager") -> Dict:
+    def _to_tree(cls, pm: "ParameterGroup") -> Dict:
         ret: dict[str, Any] = {}
         for smn, sm in pm.submodules.items():
-            assert isinstance(sm, ParameterManager)
+            assert isinstance(sm, ParameterGroup)
             ret[smn] = cls._to_tree(sm)
         for pn, p in pm.parameters.items():
             ret[pn] = p
         return ret
 
-    @classmethod
-    def does_profile_exist(cls, profiles: List[str], target: str) -> bool:
-        found = False
-        for profile in profiles:
-            if target in profile:
-                found = True
-                break
-        return found
-
-    def refresh_profiles(self) -> List[str]:
-        """
-        Goes into the working directory and updates the list of profiles.
-
-        :return: List of profiles in the working directory
-        """
-        profiles = []
-        for filename in os.listdir(self.workingDirectory):
-            if filename.startswith("parameter_manager") and filename.endswith(".json"):
-                profiles.append(filename)
-
-        self.profiles = profiles
-        return profiles
-
     def to_tree(self) -> Dict:
-        return ParameterManager._to_tree(self)
+        return ParameterGroup._to_tree(self)
 
     def _get_param(self, param_name: str) -> ParameterBase:
         parent = self._get_parent(param_name)
@@ -172,7 +92,7 @@ class ParameterManager(InstrumentBase):
 
     def _get_parent(
         self, param_name: str, create_parent: bool = False
-    ) -> "ParameterManager":
+    ) -> "ParameterGroup":
 
         split_names = param_name.split(".")
         parent = self
@@ -186,7 +106,7 @@ class ParameterManager(InstrumentBase):
                 )
             if n not in parent.submodules:
                 if create_parent:
-                    parent.add_submodule(n, ParameterManager(n))  # type: ignore[type-var]
+                    parent.add_submodule(n, ParameterGroup(n))  # type: ignore[type-var]
                 else:
                     raise ValueError(f"{n} does not exist.")
             parent = parent.submodules[n]  # type: ignore[assignment]
@@ -261,12 +181,6 @@ class ParameterManager(InstrumentBase):
 
         purge(self)
 
-    def remove_all_parameters(self) -> None:
-        """Remove all parameters from the instrument."""
-        for param in self.list():
-            self.remove_parameter(param, cleanup=False)
-        self.remove_empty_submodules()
-
     def parameter(self, name: str) -> ParameterBase:
         """Get a parameter object from the manager.
 
@@ -289,6 +203,110 @@ class ParameterManager(InstrumentBase):
             return ret_
 
         return tolist(tree)
+
+
+class ParameterManager(ParameterGroup):
+    """
+    A virtual instrument that acts as a manager for a collection of
+    arbitrary parameters and groups of parameters.
+
+    Allows extra-easy on-the-fly addition/removal of new parameters.
+
+    The Parameter Manager is the root of the parameter tree. It extends the
+    Parameter Group with file, profile, and (later) Type and Lock logic;
+    its submodules are plain Parameter Groups.
+
+    For the parameter manager to recognize other profiles in disk,
+    the profile filename needs to start with 'parameter_manager-'
+    and end with '.json' with the name of the profile in the middle.
+    For example, 'parameter_manager-qubit1.json' represents the profile qubit1
+    """
+
+    # TODO: method to instantiate entirely from paramDict
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+        self._workingDirectory = Path(os.getcwd())
+
+        #: default location and name of the parameters save file.
+        self.selectedProfile = self.fullProfileName(self.name)
+        self.profiles: List[str] = []
+        self.refresh_profiles()
+
+        self.fromFile()
+
+    @property
+    def workingDirectory(self) -> Path:
+        return self._workingDirectory
+
+    @workingDirectory.setter
+    def workingDirectory(self, path: Union[str, Path]) -> None:
+        self._workingDirectory = Path(path)
+        self.refresh_profiles()
+
+    def getWorkingDirectory(self):  # type: ignore[no-untyped-def]
+        return self.workingDirectory
+
+    @staticmethod
+    def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
+        """Create a new ParameterManager instance from a paramDict.
+
+        :param paramDict: The paramDict object.
+        :param name: Name of the instrument in the paramDict (each entry in the
+            paramDict starts with <instrumentName>.[...]).
+        :returns: New ParameterManager instance.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def cleanProfileName(name: str) -> str:
+        """
+        When passed the full file name of a parameter_manager profile, return only the middle
+        string representing the profile's name.
+        """
+        return name.replace("parameter_manager-", "").replace(".json", "")
+
+    @staticmethod
+    def fullProfileName(name: str) -> str:
+        """
+        Adds 'parameter_manager-' to the beginning of `name` and adds '.json' at the end.
+        """
+
+        if not name.startswith("parameter_manager-"):
+            name = "parameter_manager-" + name
+        if not name.endswith(".json"):
+            name += ".json"
+        return name
+
+    @classmethod
+    def does_profile_exist(cls, profiles: List[str], target: str) -> bool:
+        found = False
+        for profile in profiles:
+            if target in profile:
+                found = True
+                break
+        return found
+
+    def refresh_profiles(self) -> List[str]:
+        """
+        Goes into the working directory and updates the list of profiles.
+
+        :return: List of profiles in the working directory
+        """
+        profiles = []
+        for filename in os.listdir(self.workingDirectory):
+            if filename.startswith("parameter_manager") and filename.endswith(".json"):
+                profiles.append(filename)
+
+        self.profiles = profiles
+        return profiles
+
+    def remove_all_parameters(self) -> None:
+        """Remove all parameters from the instrument."""
+        for param in self.list():
+            self.remove_parameter(param, cleanup=False)
+        self.remove_empty_submodules()
 
     def fromFile(
         self,
