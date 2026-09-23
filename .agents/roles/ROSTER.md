@@ -11,11 +11,11 @@ instructions and work with any coding agent.
 |---|---|---|---|---|---|
 | `coder` | `coder.md` | opencode | lumen/glm-5.3-flash | `opencode --agent coder` | yes |
 | `reviewer-deepseek` | `reviewer.md` | opencode | lumen/deepseek-v4-flash | `opencode --agent reviewer-deepseek` | yes |
-| `reviewer-qwen` | `reviewer.md` | opencode | lumen/qwen3-coder-next | `opencode --agent reviewer-qwen` | yes |
+| `reviewer-qwen` | `reviewer.md` | opencode | lumen/qwen3.8-27b | `opencode --agent reviewer-qwen` | yes |
 | `test-reviewer-deepseek` | `test-reviewer.md` | opencode | lumen/deepseek-v4-flash | `opencode --agent test-reviewer-deepseek` | yes |
-| `test-reviewer-qwen` | `test-reviewer.md` | opencode | lumen/qwen3-coder-next | `opencode --agent test-reviewer-qwen` | yes |
+| `test-reviewer-qwen` | `test-reviewer.md` | opencode | lumen/qwen3.8-27b | `opencode --agent test-reviewer-qwen` | yes |
 | `plan-checker-deepseek` | `plan-checker.md` | opencode | lumen/deepseek-v4-flash | `opencode --agent plan-checker-deepseek` | yes |
-| `plan-checker-qwen` | `plan-checker.md` | opencode | lumen/qwen3-coder-next | `opencode --agent plan-checker-qwen` | yes |
+| `plan-checker-qwen` | `plan-checker.md` | opencode | lumen/qwen3.8-27b | `opencode --agent plan-checker-qwen` | yes |
 
 **Last column.** "yes" means the runner loads the role file itself as standing
 instructions. "no" means the orchestrator must paste the role file's full text at the top of
@@ -27,7 +27,7 @@ Whatever runner fills a role, set up its permission system to match these three 
 opencode they live in `opencode.json`.
 
 **Always allowed (all roles):** reading and searching files; `git status`, `diff`, `log`,
-`show`, `blame`, `rev-parse`; `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `rg`;
+`show`, `blame`, `rev-parse`, `branch --show-current`; `cd`, `pwd`, `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `rg`, `sed -n`, `lsof -nP -i...`;
 `uv run pytest ...`; the `orca orchestration` worker commands (`check`, `send`, `ask`) that
 Orca's preamble tells workers to run.
 

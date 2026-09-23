@@ -205,27 +205,30 @@ Dispatch id, how to `ask`, how to send `worker_done`) plus your spec into that s
 
 ## Waiting
 
+Never sit in a long `check --wait`: permission prompts do not arrive as messages, so
+workers would stay stuck until the wait ends. Use the watcher instead. It returns within
+about 3 seconds of anything that needs you:
+
 ```
-orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 120000 --json
+.agents/skills/orchestrate-plan/scripts/wait-event.sh 600 <handle of every active worker>...
 ```
 
-Use a **2-minute** timeout, not the guide's 15 minutes, because permission prompts
-(below) do not arrive as messages. On every return:
+It prints one line:
 
-1. Process every message in the delivery:
-   - `question` → answer from the plan if it clearly answers it (`orchestration reply --id
-     <msg> --body ...`) and log it. Otherwise **stop and ask the user**, then reply with
-     their answer.
-   - `escalation` → see "Stopping".
-   - `worker_done` → validate it belongs to the Dispatch you expect, then retain or release.
-2. Ack the delivery: `check --ack <delivery_id> ...`.
-3. Scan every active worker for a permission prompt. Orca does **not** flag these as
-   needing attention. Read each worker's screen with `orca terminal read --terminal
-   <handle> --json` and look for `Permission required` (details in
-   `references/permission-prompts.md`). Handle any you find (below).
+- `message <n>` → run `orca orchestration check --json` and process the delivery:
+  - `question` → answer from the plan if it clearly answers it (`orchestration reply --id
+    <msg> --body ...`) and log it. Otherwise **stop and ask the user**, then reply with
+    their answer.
+  - `escalation` → see "Stopping".
+  - `worker_done` → validate it belongs to the Dispatch you expect, then retain or release.
+  - Then ack: `orca orchestration check --ack <delivery_id> --json`.
+- `permission <handle>` → handle the prompt on that worker (below), then run the watcher again.
+- `timeout` → 10 minutes with nothing. Normal for long tasks; run it again. After three
+  timeouts in a row, follow the guide's rule: enumerate with `worker-list` and inspect.
+  Never stop, abandon or relaunch a worker without proof its process exited.
 
-A timeout with nothing new is normal. Keep waiting. Follow the guide's rules on empty waits:
-never stop, abandon or relaunch a worker without proof its process exited.
+Pass only the handles of workers currently working (not retained idle ones), so the
+watcher stays fast.
 
 ## Permission prompts
 

@@ -320,6 +320,12 @@ Technical Guide Broadcasts page (with the Broadcaster contract) as Phase 6, then
 `PMTypeBluePrint`; parameter class `ManagedParameter`; container class `ParameterGroup`;
 mixin `Broadcaster`.
 
+**D27 — Per-run test ports (added 2026-09-23).** Several agents run the suite at the same
+time, and the tests' fixed ports (5555/5556, 5599) made those runs collide. Task 0.0 gives
+every pytest session its own free port pair through a `server_port` fixture, and
+`AGENTS.md` tells every agent to use it. This widens scope beyond D24 on purpose; it
+touches only `test/` and `AGENTS.md`.
+
 ---
 
 ## Design reference — translating the mock to Qt
@@ -383,6 +389,17 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 0 — Foundations
 
+- [ ] **0.0 Per-run test ports.** Added 2026-09-23 (see Decision record note of that date).
+  In `test/pytest/conftest.py` add a session-scoped fixture `server_port` that picks two
+  free consecutive ports once per pytest session (the server binds `port` and uses
+  `port + 1` for broadcasts). `start_server`, `cli`, the shutdown client in `start_server`
+  and every test use it instead of a fixed port: `test_client_station.py` (six
+  `ClientStation(port=5555)` and the `"5555"` assert), `test_server_gui.py` (five
+  `startServerGuiApplication()` calls), `test_gui_navigation.py` (`TEST_PORT = 5599`).
+  Add to `AGENTS.md` under "Testing": "Tests never use a fixed port. Use the `server_port`
+  fixture; agents run the suite in parallel." No change to `src/`.
+  Acceptance: `grep -rn "5555\|5599" test/pytest` finds nothing; two `uv run pytest` runs
+  started at the same time both pass. Tests: whole suite green.
 - [x] **0.1 `ParameterGroup` split.** In `params.py` create `ParameterGroup(InstrumentBase)`
   holding parameters and nested groups with the tree helpers moved from `ParameterManager`
   (`_get_param`, `_get_parent`, `has_param`, `parameter`, `to_tree`/`_to_tree`, `list`,
