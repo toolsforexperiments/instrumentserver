@@ -389,7 +389,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 0 — Foundations
 
-- [ ] **0.0 Per-run test ports.** Added 2026-09-23 (see Decision record note of that date).
+- [x] **0.0 Per-run test ports.** Added 2026-09-23 (see Decision record note of that date).
   In `test/pytest/conftest.py` add a session-scoped fixture `server_port` that picks two
   free consecutive ports once per pytest session (the server binds `port` and uses
   `port + 1` for broadcasts). `start_server`, `cli`, the shutdown client in `start_server`
