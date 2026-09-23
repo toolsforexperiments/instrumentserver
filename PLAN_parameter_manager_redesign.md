@@ -412,7 +412,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   Tests: `test_param_manager.py` all green unchanged; add `test_submodules_are_groups` and a
   test with a `parameter_manager-q01.json` present in `tmp_path` proving it is **not**
   loaded into the `q01` submodule.
-- [ ] **0.2 `Broadcaster` mixin.** In `base.py` (next to `sendBroadcast`): class
+- [x] **0.2 `Broadcaster` mixin.** In `base.py` (next to `sendBroadcast`): class
   `Broadcaster` with `add_broadcast_sink(fn)`, `remove_broadcast_sink(fn)`,
   `broadcast(bp: ParameterBroadcastBluePrint)`; sinks stored in a list; exceptions in one
   sink are logged and do not stop the others; no sinks → no-op. `ParameterManager` inherits
