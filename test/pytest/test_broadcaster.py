@@ -53,6 +53,26 @@ def test_broadcast_reaches_all_sinks_in_registration_order():
     assert order == ["first", "second"]
 
 
+def test_adding_the_same_sink_twice_delivers_twice():
+    """Pins the documented semantics: sinks are stored in a plain list, so a
+    sink registered twice receives every Broadcast twice, and a single
+    remove leaves it registered once."""
+    bc = Broadcaster()
+    bp = make_bp()
+    received = []
+    bc.add_broadcast_sink(received.append)
+    bc.add_broadcast_sink(received.append)
+
+    bc.broadcast(bp)
+    assert len(received) == 2
+    assert received == [bp, bp]
+
+    bc.remove_broadcast_sink(received.append)
+    bc.broadcast(bp)
+    assert len(received) == 3
+    assert received == [bp, bp, bp]
+
+
 def test_exception_in_one_sink_is_logged_and_others_still_run(caplog):
     bc = Broadcaster()
     bp = make_bp()
