@@ -383,7 +383,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 0 — Foundations
 
-- [ ] **0.1 `ParameterGroup` split.** In `params.py` create `ParameterGroup(InstrumentBase)`
+- [x] **0.1 `ParameterGroup` split.** In `params.py` create `ParameterGroup(InstrumentBase)`
   holding parameters and nested groups with the tree helpers moved from `ParameterManager`
   (`_get_param`, `_get_parent`, `has_param`, `parameter`, `to_tree`/`_to_tree`, `list`,
   `remove_empty_submodules`, the dotted `add_parameter`/`remove_parameter`/`get`/`set`).
