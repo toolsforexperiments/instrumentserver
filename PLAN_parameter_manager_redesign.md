@@ -478,7 +478,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   raises on cycles (checked in `add_nested_type`) and on a path appearing twice. `_globals`
   refused as a Type name. Tests: `test_pm_types.py` unit part (definitions, effective set,
   cycle refusal, collision refusal, blueprint content).
-- [ ] **2.2 Instance matching.** `instances_of(type)` and `types_of(path)` per D12 (existence
+- [x] **2.2 Instance matching.** `instances_of(type)` and `types_of(path)` per D12 (existence
   **and** unit; every submodule at any depth; never root; never under `_globals`; empty Type
   → none). `types_of` orders innermost first (longest submodule path), then largest effective
   set. Tests: `test_pm_types.py` — the three-tier case from the mock (`qubit` nests `readout`

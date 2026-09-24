@@ -263,3 +263,39 @@ The root `ParameterManager` now has a Type registry, `self._types`, which maps e
 - The orchestrator's watcher missed the six reviewers' ruff permission prompts for about 10 minutes in round 0. A prompt sweep was added to each wait cycle.
 - Piping `uv run pytest | tail` from the orchestrator's session hung. Running the suite detached, with output to a log file, works.
 - reviewer-qwen ran its full-suite runs in the background, logging to `orchestration/2.1/`, and deleted its logs afterwards in both rounds. There were no rejected permissions and no stalls.
+
+## 2.2 Instance matching — 2026-09-24
+
+`ParameterManager` in `src/instrumentserver/params.py` now answers the two D12/D16 matching queries. `instances_of(type_name)` returns the paths of every Parameter Group, at any depth, that carries every path of the Type's effective set with the declared unit. Values don't matter, the root is never an Instance, `_globals` and everything under it are skipped, and an empty Type has no Instances. `types_of(path)` returns the Types claiming a parameter, innermost first. A Type claims the parameter when one of its Instances sits above it and the parameter's path relative to that Instance is in the effective set. Matching is duck-typed and walks the tree on every query through the private helpers `_iter_submodule_groups`, `_carries_effective_set` and `_instances_of_effective`. Both queries change no state and emit no Broadcast. `test/pytest/test_pm_types.py` grew from 21 to 38 server-free tests.
+
+### Commit by commit
+- `6d1560b` The two queries, their helpers and 16 tests. The plan left some behaviour open, so the orchestrator wrote its reading into the coder spec: `types_of` takes a parameter path (the mock's `claims()` works per row), a remaining tie after depth and size is broken by Type name, and an unknown Type or path raises `ValueError` naming it. The coder added two readings of its own. `_globals` is skipped by name at any depth, not only at the root, and a Type that claims a parameter through two Instances is listed once, placed by its innermost Instance. Depth is `len(submodule_path)`. The string length ranks depth correctly because every claiming Instance is a dotted prefix of the parameter path. The tests cover the plan's five cases: the three-tier mock (`test_instances_of_finds_the_three_tier_instances`, `test_types_of_orders_innermost_first`), `test_a_unit_mismatch_excludes_the_submodule`, `test_extra_parameters_do_not_matter`, `test_two_types_on_one_submodule` and `test_q01_readout_is_an_instance_of_readout_on_its_own`. The other tests cover these cases:
+  - a mismatch at one level leaving a deeper Instance
+  - the Type-name tie-break
+  - the root
+  - `_globals` at two depths, with parameters built by the `put_globals_parameter` helper through `_add_own_parameter`
+  - values being irrelevant
+  - one Type nested at two submodules
+  - the error paths, including a Parameter Group path given to `types_of`
+  - an unclaimed parameter
+  
+  Orchestrator run: ruff clean, 37 passed in `test_pm_types.py`, 275 in the full suite.
+- `ef1f2cf` Fix from round 0, test only: `test_a_type_claiming_through_two_instances_is_ordered_by_its_innermost_instance`. The test sets up Type `zzz = {x, a.x}` and Type `aaa = {a.x, top}`, with parameters at `a.x`, `a.top`, `a.a.x` and `a.a.a.x`. `zzz` has Instances at `a` and `a.a`, and `types_of("a.a.x")` must return `["zzz", "aaa"]`. If the `depth > known[0]` dedup ever falls back to keeping the first claim it sees, the Type-name tie-break puts `aaa` first. All four general and test reviewers raised this gap (should-fix). The `known is None or depth > known[0]` branch could be broken and every test would still pass. The fix list used test-reviewer-glm's scenario. The coder briefly flipped the branch locally to show the test catches the regression, then reverted it before committing. Two re-reviewers ran the same check in scratch scripts. All six approved in re-review, and all four who raised the item confirmed it fixed. Orchestrator run: ruff clean, 38 in `test_pm_types.py`, 276 in the full suite.
+
+### Dropped findings
+- The unit check is strict. A parameter created without a unit has `unit=None`, so it never matches a Type entry whose unit is `""` (plan-checker-qwen, nit) → not sent. The plan says nothing about this case. It matters for the unit propagation in 2.3 and the unit-conflict scan in 2.4 (see Questions).
+- A user-made `q01._globals` group is excluded too, which goes beyond the root-level Globals the glossary defines (plan-checker-qwen, nit). No test covers the nested case (test-reviewer-glm, nit) → not sent. ADR-0001 says `_globals` is "excluded from matching at any depth", so the coder's reading stands, and 3.1 checks the exclusion again.
+- The comment doesn't explain why `len(submodule_path)` is a safe measure of depth (reviewer-glm, nit), and the `types_of` docstring doesn't mention the cycle and duplicate errors it inherits from `_effective_parameters` (reviewer-qwen, nit) → not sent.
+- Two tests wrap `instances_of` in `sorted()` although the docstring promises tree order (test-reviewer-qwen, nit) → not sent, because the plan fixes no order. The 5.5 instances pane may want the order pinned.
+- `put_globals_parameter` creates plain `Parameter`s and its docstring cites a 3.1 refusal that doesn't exist yet (test-reviewer-qwen, nit). No test checks that cycle and duplicate errors pass through `instances_of` (test-reviewer-glm, nit) → not sent. The second state can't be reached once 2.3's `add_nested_type` refuses cycles.
+
+### Questions to Marcos
+- The orchestrator flagged these readings for the run report: `types_of` takes a parameter path; a remaining tie is broken by Type name; unknown names raise; `_globals` is excluded at any depth; a `None` unit doesn't match a declared `""`. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 2.3/2.4: decide whether a parameter with no unit counts as carrying `""` (see above). For now `_carries_effective_set` compares `param.unit` to the declared unit exactly.
+- `types_of` recomputes every Type's effective set and Instances on each call. That is what ADR-0001 asks for (no cache), but the cost grows with the number of Types times the tree size.
+- No proxy tests for `instances_of`/`types_of` yet; they belong to 2.5.
+
+### Process notes
+- Reviewers checked their findings with scratch scripts in `orchestration/2.2/` in both rounds. The orchestrator read each script before allowing it to run, and the reviewers deleted them afterwards. One scratch tempdir left under `round-0/` was removed by the orchestrator. There were no rejected permissions, no stalls and no nudges.
