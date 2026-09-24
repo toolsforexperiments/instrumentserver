@@ -109,6 +109,26 @@ Do three things:
 OWNERSHIP and OUTPUT: same as before, but write to <new report path>.
 ```
 
+## Historian: write section
+
+```
+ROLE: historian for plan task <T>. Your role file says how to work and what the section
+looks like.
+
+PLAN FILE: <plan-file>. The task, copied from the plan:
+<task text, verbatim>
+
+COMMITS: `git log --oneline <BASE>..<HEAD>` (the orchestrator's own commits are not in
+this range yet). WORKING FOLDER: orchestration/<T>/ (decisions.md, round-*/ reviews and
+fix lists). Task finished: <date>.
+
+OWNERSHIP: you may edit only <history file>. Add exactly one section at its end. Do not
+change anything above it. Do not commit.
+
+ACCEPTANCE: one new section for <T> at the end of <history file>, following the role
+file's format. In worker_done pass --report-path <history file>.
+```
+
 ---
 
 ## Report format (all reviewers)

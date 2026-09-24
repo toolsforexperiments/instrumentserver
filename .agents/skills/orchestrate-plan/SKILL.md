@@ -42,8 +42,8 @@ Roles and the agents that fill them are listed in **`.agents/roles/ROSTER.md`**.
 startup. It gives, per agent id: its role file, the runner (e.g. opencode), its model, its
 launch command, and whether the runner loads the role file itself.
 
-The current roster has seven agents: one `coder`, and six **reviewers**, three roles each on
-two models:
+The current roster has eight agents: one `coder`, one `historian` (writes the task's history
+section at the end, Step 7), and six **reviewers**, three roles each on two models:
 
 - `reviewer-*`: general code review
 - `test-reviewer-*`: do the tests prove the task, and what is untested
@@ -63,7 +63,8 @@ Reviewers write only their own report file. Only the coder edits code.
    a time: the coder. Reviewers only read.
 3. **Commits.** The coder commits code and tests: one commit for the first implementation,
    one per fix round, each message starting with the task number (`0.1: ...`). You commit
-   only `orchestration/<task>/` files and the plan's checkboxes. Nobody pushes, amends,
+   only the history file (`HISTORY_<plan name>.md`, see Step 7) and the plan's checkboxes.
+   `orchestration/` is git-ignored working space: never commit it. Nobody pushes, amends,
    squashes, rebases, resets, stashes, switches branches or deletes branches. Ever.
 4. **Fresh sessions per task.** Within a task, reuse the same coder and the same six reviewer
    sessions across fix rounds. At task end, release all seven.
@@ -84,7 +85,7 @@ Reviewers write only their own report file. Only the coder edits code.
    parameter-manager plan: `CONTEXT.md` and `docs/adr/*`). Find the tasks to run.
 5. `orca orchestration run-create --objective "<plan-file>: tasks <first>..<last>" --json`.
    Keep the Run id.
-6. Create `orchestration/` if missing. Append a run header to `orchestration/RUNS.md`:
+6. Create `orchestration/` if missing. Append a run header to `orchestration/RUNS.md` (local only, not committed):
    date, plan, tasks, branch, starting commit (`git rev-parse HEAD`).
 
 ## The loop for one task
@@ -167,7 +168,7 @@ findings were all dropped with a logged reason) → go to Step 6.
    previous report path. Report path: `D/round-<k>/<agent-id>.md` for fix round `k`.
 6. Wait for all six, retain them, go back to Step 4.
 
-### Step 6: finish the task
+### Step 6: close the task's workers
 
 1. Release all seven workers: `orca orchestration worker-release --dispatch <id> --json`
    for each final Dispatch. Because you created their terminals yourself, Orca answers
@@ -175,12 +176,25 @@ findings were all dropped with a logged reason) → go to Step 6.
    close each one: `orca terminal close --terminal <handle> --json`. Then confirm
    `orca orchestration worker-list --run <run_id> --terminal-state reclaimable --json`
    shows none of this task's workers.
-2. Change the checkbox to `[x]`. Add a one-line summary to `decisions.md`: commits
-   (`git log --oneline $BASE..HEAD`), fix rounds used, test summary line.
-3. Commit your paper trail:
-   `git add orchestration/T <plan-file> && git commit -m "T: orchestration record"`.
-   Only those paths. Never `git add -A`.
-4. Next task. If `--only` was given, or the next task is in a new phase, stop and report.
+2. Add a one-line summary to `decisions.md`: commits (`git log --oneline $BASE..HEAD`),
+   fix rounds used, test summary line.
+
+### Step 7: history
+
+The history file is named after the plan: `PLAN_<name>.md` → `HISTORY_<name>.md`, in the
+same folder. Create it with a one-line title (`# History: <plan title>`) if it does not exist.
+
+1. Launch the `historian` (see `ROSTER.md`; it is a fresh session every task) with the
+   "Historian: write section" spec from `references/task-specs.md`.
+2. Wait for its `worker_done`. Check: `git status --porcelain` shows only the history file
+   changed (plus the ignored `orchestration/`); the new section is at the end; no earlier
+   section changed (`git diff` of the history file only adds lines). Otherwise send it back
+   with what to fix, in the same session.
+3. Release it and close its terminal, as in Step 6.
+4. Change the task's checkbox to `[x]`.
+5. Commit: `git add <history file> <plan-file> && git commit -m "T: history"`.
+   Only those two paths. Never `git add -A`.
+6. Next task. If `--only` was given, or the next task is in a new phase, stop and report.
 
 ## Launching a worker
 
@@ -281,7 +295,7 @@ your recommendation. Log the question and the user's answer in `decisions.md`.
 ## Final report
 
 When the run stops (done, `--only`, phase end, or a question), write to your terminal and
-to `orchestration/RUNS.md`:
+to `orchestration/RUNS.md` (local only, not committed):
 
 - Per task: outcome (`done` / `stopped: <reason>`), commits (`git log --oneline`), fix rounds
   used, final test summary line.
@@ -291,7 +305,8 @@ to `orchestration/RUNS.md`:
 ## Files you produce
 
 ```
-orchestration/
+HISTORY_<plan name>.md             # committed: one historian section per task
+orchestration/                     # git-ignored working space, kept on disk
   RUNS.md                          # one header + final report per run
   0.1/
     decisions.md                   # every decision, question, permission, test result

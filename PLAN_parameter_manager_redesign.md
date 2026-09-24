@@ -40,9 +40,10 @@ Each work session starts fresh from this document.
 6. **Commit atomic units of work; never push.** All commits go on branch
    `marcosfrenkel/new-param-manager`. The coder commits code and tests, and only when the
    task's named tests pass. The first implementation of a task is one commit; each round
-   of review fixes is its own commit. The orchestrator commits only review reports and
-   decision logs under `orchestration/<task>/` and this file's checkboxes; reviewers never
-   commit.
+   of review fixes is its own commit. The orchestrator commits only the task's section in
+   `HISTORY_parameter_manager_redesign.md` (written by the historian agent from the
+   reviews and decision log, which stay in the git-ignored `orchestration/` folder) and
+   this file's checkboxes; reviewers never commit.
    Every commit message starts with the task number (`0.1: split ParameterGroup out of
    ParameterManager`). Never amend, squash, rebase or push: Marcos reads the history
    commit by commit afterwards.

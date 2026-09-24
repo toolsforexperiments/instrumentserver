@@ -98,3 +98,6 @@ ENV/
 
 # Mac stuff
 .DS_Store
+
+# Orchestrator and reviewer working files (kept locally, summarized in HISTORY_*.md)
+orchestration/

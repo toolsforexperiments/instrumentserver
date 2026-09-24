@@ -16,6 +16,7 @@ instructions and work with any coding agent.
 | `test-reviewer-qwen` | `test-reviewer.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent test-reviewer-qwen` | yes |
 | `plan-checker-deepseek` | `plan-checker.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-deepseek` | yes |
 | `plan-checker-qwen` | `plan-checker.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-qwen` | yes |
+| `historian` | `historian.md` | claude | opus | `.agents/roles/bin/historian-claude.sh` | yes |
 
 **Last column.** "yes" means the runner loads the role file itself as standing
 instructions. "no" means the orchestrator must paste the role file's full text at the top of
@@ -38,6 +39,10 @@ Orca's preamble tells workers to run.
 **Always denied (all roles):** `git push`, `rebase`, `reset`, `commit --amend`, `stash`,
 `checkout`, `switch`, `branch -d/-D`, `clean`; `git add -A`, `git add .`, `git add --all`.
 **Reviewers also:** editing anything outside `orchestration/`, in-place shell edits (`sed -i`, `perl -pi`, `perl -i`), `git add`, `git commit`.
+
+**Historian (Claude Code):** its launcher, `bin/historian-claude.sh`, allows reading,
+read-only git, the Orca worker commands and editing `HISTORY_*.md` only; it denies commits,
+pushes and deletes. It never needs the opencode rules above.
 
 **Everything else: ask.** The question goes to whoever watches the agent: the
 orchestrator, which decides per `SKILL.md` "Permission prompts".
