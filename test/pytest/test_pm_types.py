@@ -91,6 +91,15 @@ def test_add_type_refuses_the_reserved_globals_name(pm):
     assert pm.list_types() == []
 
 
+def test_the_type_registry_lives_on_the_root_only(pm):
+    pm.add_parameter("q01.IF")
+
+    assert hasattr(pm, "_types")
+    # the Parameter Group q01 carries no registry and no Type methods (D15)
+    assert not hasattr(pm.q01, "_types")
+    assert not hasattr(pm.q01, "add_type")
+
+
 def test_add_type_refuses_a_duplicate_name_and_changes_nothing(pm):
     pm.add_type("qubit")
 
@@ -159,6 +168,20 @@ def test_remove_type_names_every_type_nesting_it(pm):
         "cannot remove Type 'readout': nested in Type(s) 'qubit', 'qubit2'"
     )
     assert sorted(pm.list_types()) == ["qubit", "qubit2", "readout"]
+
+
+def test_remove_type_removes_a_type_that_nests_other_types(pm):
+    # qubit nests readout but is nested by nobody: removing it is allowed,
+    # and the Nested Type readout stays in the registry untouched
+    put_type(pm, "readout", parameters={"IF": {"default": None, "unit": "Hz"}})
+    put_type(pm, "qubit", nested={"readout": "readout"})
+
+    pm.remove_type("qubit")
+
+    assert pm.list_types() == ["readout"]
+    assert pm.get_type("readout").parameters == {
+        "IF": {"default": None, "unit": "Hz", "target": None}
+    }
 
 
 def test_get_type_with_an_unknown_name_raises_naming_it(pm):
