@@ -13,11 +13,15 @@ import logging
 import time
 from contextlib import contextmanager
 
+import qcodes as qc
+
 from instrumentserver import QtCore
 from instrumentserver.base import Broadcaster
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
 from instrumentserver.client.proxy import SubClient
+from instrumentserver.config import loadConfig
 from instrumentserver.params import ParameterManager
+from instrumentserver.server.core import StationServer
 
 
 def make_bp(
@@ -231,3 +235,45 @@ def test_plain_dummy_instrument_still_works_and_gets_no_sink(dummy_instrument, s
 
     server_dummy = start_server.station.components["dummy"]
     assert not hasattr(server_dummy, "add_broadcast_sink")
+
+
+def test_config_loaded_broadcaster_instrument_gets_sink(
+    tmp_path, server_port, qapp_session
+):
+    """Instruments that reach the Station from a config file get the Server
+    registered as a Broadcast sink in ``StationServer.__init__`` (ADR-0003).
+
+    Mirrors the production config path: an instrumentserver YAML like
+    ``test/docs_verification/getting_started/quickstartConfig.yml`` is split
+    by ``loadConfig`` into a station config and a serverConfig, and the
+    Server registers itself on every component the Station was loaded with.
+    The StationServer is constructed directly — registration happens in
+    ``__init__``, so no thread or socket bind is needed.
+    """
+    config = tmp_path / "serverConfig.yml"
+    config.write_text(
+        "instruments:\n"
+        "  cfg_bcaster:\n"
+        "    type: instrumentserver.testing.dummy_instruments.generic."
+        "DummyBroadcasterInstrument\n"
+        "    initialize: True\n"
+    )
+    stationConfigPath, serverConfig, _, _, tempFile, _, _ = loadConfig(config)
+
+    server = StationServer(
+        port=server_port, serverConfig=serverConfig, stationConfig=stationConfigPath
+    )
+    try:
+        assert "cfg_bcaster" in server.station.components
+        component = server.station.components["cfg_bcaster"]
+        assert isinstance(component, Broadcaster)
+        assert server._broadcastParameterChange in component._broadcast_sinks
+        assert len(component._broadcast_sinks) == 1
+    finally:
+        # The StationServer was never started (no thread, no bound sockets);
+        # close what it opened so the other tests keep a clean qcodes state.
+        tempFile.close()
+        server._wakeup_r.close()
+        server._wakeup_w.close()
+        if qc.Instrument.exist("cfg_bcaster"):
+            qc.Instrument.find_instrument("cfg_bcaster").close()
