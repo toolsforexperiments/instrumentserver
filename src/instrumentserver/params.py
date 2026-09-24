@@ -501,7 +501,8 @@ class ParameterManager(Broadcaster, ParameterGroup):
         locks it: while locked, ``name`` answers ``get`` with the Target's
         value and refuses ``set`` (ADR-0002). The Target must be a
         parameter of this same Parameter Manager (D8). Raises
-        ``ValueError`` naming the paths when a path does not exist, the
+        ``ValueError`` naming every offending path when a path does not
+        exist (both paths are checked before one error is raised), the
         Follower cannot carry a Lock, the Lock would be a self-lock, or it
         would close a cycle (walking Targets regardless of locked/unlocked
         state, D7).
@@ -509,8 +510,18 @@ class ParameterManager(Broadcaster, ParameterGroup):
         :param name: path of the Follower.
         :param target: path of the Target.
         """
-        follower = self._resolve_param(name)
-        target_param = self._resolve_param(target)
+        # validate-then-mutate: resolve both paths up front and name every
+        # missing one in a single error (rule 3)
+        resolved: List[ParameterBase] = []
+        missing: List[str] = []
+        for path in (name, target):
+            try:
+                resolved.append(self._resolve_param(path))
+            except ValueError as exc:
+                missing.append(str(exc))
+        if missing:
+            raise ValueError("; ".join(missing))
+        follower, target_param = resolved
         follower_full = self._full_path(name)
         target_full = self._full_path(target)
         if not isinstance(follower, ManagedParameter):

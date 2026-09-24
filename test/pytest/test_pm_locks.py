@@ -250,6 +250,73 @@ def test_lock_with_unknown_follower_or_target_raises_naming_the_path(pm):
     assert pm.list_locks() == {}
 
 
+def test_lock_with_two_unknown_paths_names_both(pm):
+    with pytest.raises(ValueError) as excinfo:
+        pm.lock("nope1", "nope2")
+
+    # every offending path, not the first (rule 3)
+    assert str(excinfo.value) == (
+        "Parameter 'nope1' does not exist; Parameter 'nope2' does not exist"
+    )
+    assert pm.list_locks() == {}
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda pm: pm.unlock("nope.x"),
+        lambda pm: pm.relock("nope.x"),
+        lambda pm: pm.toggle_lock("nope.x"),
+        lambda pm: pm.remove_lock("nope.x"),
+        lambda pm: pm.get_lock("nope.x"),
+        lambda pm: pm.followers_of("nope.x"),
+    ],
+    ids=[
+        "unlock",
+        "relock",
+        "toggle_lock",
+        "remove_lock",
+        "get_lock",
+        "followers_of",
+    ],
+)
+def test_unknown_path_raises_naming_the_path_and_changes_nothing(pm, call):
+    # a Lock exists, so list_locks proves the failed call changed nothing
+    pm.lock("q01.x", "q01Data.IF")
+
+    with pytest.raises(ValueError, match="Parameter 'nope.x' does not exist"):
+        call(pm)
+
+    assert pm.list_locks() == {
+        "q01.x": PMLockBluePrint(
+            target="parameter_manager.q01Data.IF", locked=True
+        )
+    }
+
+
+def test_relock_with_a_missing_remembered_target_raises_naming_both(pm):
+    pm.lock("q01.x", "q01Data.IF")
+    pm.unlock("q01.x")
+    # hand-wire a remembered Target that no longer exists
+    pm.parameter("q01.x").lock = PMLockBluePrint(
+        target="parameter_manager.gone", locked=False
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "parameter_manager.q01.x remembers Target parameter_manager.gone, "
+            "which does not exist"
+        ),
+    ):
+        pm.relock("q01.x")
+
+    # the refused relock left the Lock unlocked
+    assert pm.get_lock("q01.x") == PMLockBluePrint(
+        target="parameter_manager.gone", locked=False
+    )
+
+
 def test_self_lock_raises_naming_the_path(pm):
     with pytest.raises(
         ValueError, match="cannot lock parameter_manager.q01.x to itself"
