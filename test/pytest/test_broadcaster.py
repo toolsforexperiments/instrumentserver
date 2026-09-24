@@ -1,16 +1,22 @@
-"""Unit tests for the Broadcaster mixin (``instrumentserver.base``).
+"""Tests for the Broadcaster contract (``instrumentserver.base``) and its
+Server-side registration (``instrumentserver.server.core``).
 
-These tests need no Server: they exercise the mixin's own behaviour —
+The unit part needs no Server: it exercises the mixin's own behaviour —
 registering and removing sinks, fanning a Broadcast out to the sinks,
 tolerating an exception in one sink, and doing nothing without sinks.
-The Server part of this file (the Server registering itself as a sink for
-created and config-loaded instruments) is a separate task.
+The Server part creates a Broadcaster instrument through a client, makes it
+emit a Broadcast, and checks that a SubClient receives it; a plain dummy
+instrument is checked to still work and to stay sink-free.
 """
 
 import logging
+import time
+from contextlib import contextmanager
 
+from instrumentserver import QtCore
 from instrumentserver.base import Broadcaster
 from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from instrumentserver.client.proxy import SubClient
 from instrumentserver.params import ParameterManager
 
 
@@ -140,3 +146,88 @@ def test_parameter_manager_broadcast_reaches_sink(tmp_path, monkeypatch):
     pm.remove_broadcast_sink(received.append)
     pm.broadcast(make_bp())
     assert received == [bp]
+
+
+# ---------------------------------------------------------------------------
+# Server part: the Server registers itself as a sink on Broadcaster
+# instruments that join the Station, and a Broadcast emitted by such an
+# instrument reaches a SubClient through the Server's PUB socket.
+# ---------------------------------------------------------------------------
+
+BROADCASTER_INSTRUMENT_CLASS = (
+    "instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument"
+)
+
+
+@contextmanager
+def capture_broadcasts(instruments, sub_port):
+    """Run a SubClient on its own QThread and collect the Broadcasts it receives.
+
+    Mirrors the pattern of ``test/docs_verification/helpers.py``, but takes the
+    Broadcast port from the ``server_port`` fixture instead of the default.
+    """
+    received = []
+    sub = SubClient(
+        instruments=instruments, sub_host="localhost", sub_port=sub_port
+    )
+    sub.update.connect(received.append, QtCore.Qt.DirectConnection)
+    thread = QtCore.QThread()
+    sub.moveToThread(thread)
+    thread.started.connect(sub.connect)
+    sub.finished.connect(thread.quit)
+    thread.start()
+    # PUB/SUB slow joiner: let the SUB socket connect before Broadcasts fire.
+    time.sleep(0.3)
+    try:
+        yield received
+    finally:
+        sub.stop()
+        thread.wait(2000)
+        thread.deleteLater()
+
+
+def wait_for_broadcasts(received, n=1, timeout=5.0):
+    """Block until at least ``n`` Broadcasts arrived, or fail with a report."""
+    deadline = time.monotonic() + timeout
+    while len(received) < n:
+        if time.monotonic() > deadline:
+            raise AssertionError(
+                f"Expected {n} Broadcast(s) within {timeout}s, "
+                f"got {len(received)}: {received!r}"
+            )
+        time.sleep(0.05)
+
+
+def test_created_broadcaster_instrument_reaches_subclient(cli, start_server, server_port):
+    """A Broadcaster instrument created through a client has the Server as a
+    sink, and a method call that emits a blueprint arrives at a SubClient."""
+    inst = cli.find_or_create_instrument("bcaster", BROADCASTER_INSTRUMENT_CLASS)
+
+    # The Server registered itself as a sink on the instrument in the Station.
+    server_instrument = start_server.station.components["bcaster"]
+    assert start_server._broadcastParameterChange in server_instrument._broadcast_sinks
+
+    with capture_broadcasts(["bcaster"], server_port + 1) as received:
+        inst.emit_broadcast(value=2.5, unit="V")
+
+        wait_for_broadcasts(received)
+        # exactly one message: the Server registered itself once
+        assert len(received) == 1
+        bp = received[0]
+        assert isinstance(bp, ParameterBroadcastBluePrint)
+        assert bp.name == "bcaster.param0"
+        assert bp.action == "parameter-update"
+        assert float(bp.value) == 2.5
+        assert bp.unit == "V"
+
+
+def test_plain_dummy_instrument_still_works_and_gets_no_sink(dummy_instrument, start_server):
+    """A plain dummy instrument keeps working over the wire, and since it does
+    not implement the Broadcaster contract the Server registers no sink."""
+    cli, dummy = dummy_instrument
+
+    dummy.param0(0.5)
+    assert dummy.param0() == 0.5
+
+    server_dummy = start_server.station.components["dummy"]
+    assert not hasattr(server_dummy, "add_broadcast_sink")
