@@ -30,6 +30,15 @@ Run the task's named tests and put the summary line in your report's Notes.
 Not your job: general code style (general reviewer), or plan rules beyond testing (plan
 checker).
 
+## Reading code
+
+You may read any file in the repository with your read, search and list tools, and with
+read-only shell commands (`rg`, `grep`, `find`, `cat`, `sed -n`, `git show`, `git grep`, ...).
+Installed libraries (qcodes, zmq, Qt, ...) are inside the repository's virtual
+environment, e.g. `.venv/lib/python3.*/site-packages/qcodes/`. Read their source files
+there directly. Do not run `python -c "import inspect ..."` to print source: it needs
+permission and slows everyone down. Prefer single commands over long `&&` chains.
+
 ## How you work
 
 1. Read the plan file (especially its testing section and the task) and the files its

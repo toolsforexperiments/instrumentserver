@@ -9,13 +9,13 @@ instructions and work with any coding agent.
 
 | Id | Role file | Runner | Model | Launch command | Role file loaded by runner? |
 |---|---|---|---|---|---|
-| `coder` | `coder.md` | opencode | lumen/glm-5.3-flash | `opencode --agent coder` | yes |
-| `reviewer-deepseek` | `reviewer.md` | opencode | lumen/deepseek-v4-flash | `opencode --agent reviewer-deepseek` | yes |
-| `reviewer-qwen` | `reviewer.md` | opencode | lumen/qwen3.8-27b | `opencode --agent reviewer-qwen` | yes |
-| `test-reviewer-deepseek` | `test-reviewer.md` | opencode | lumen/deepseek-v4-flash | `opencode --agent test-reviewer-deepseek` | yes |
-| `test-reviewer-qwen` | `test-reviewer.md` | opencode | lumen/qwen3.8-27b | `opencode --agent test-reviewer-qwen` | yes |
-| `plan-checker-deepseek` | `plan-checker.md` | opencode | lumen/deepseek-v4-flash | `opencode --agent plan-checker-deepseek` | yes |
-| `plan-checker-qwen` | `plan-checker.md` | opencode | lumen/qwen3.8-27b | `opencode --agent plan-checker-qwen` | yes |
+| `coder` | `coder.md` | opencode | lumen/glm-5.3-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent coder` | yes |
+| `reviewer-deepseek` | `reviewer.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent reviewer-deepseek` | yes |
+| `reviewer-qwen` | `reviewer.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent reviewer-qwen` | yes |
+| `test-reviewer-deepseek` | `test-reviewer.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent test-reviewer-deepseek` | yes |
+| `test-reviewer-qwen` | `test-reviewer.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent test-reviewer-qwen` | yes |
+| `plan-checker-deepseek` | `plan-checker.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-deepseek` | yes |
+| `plan-checker-qwen` | `plan-checker.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-qwen` | yes |
 
 **Last column.** "yes" means the runner loads the role file itself as standing
 instructions. "no" means the orchestrator must paste the role file's full text at the top of
@@ -27,17 +27,17 @@ Whatever runner fills a role, set up its permission system to match these three 
 opencode they live in `opencode.json`.
 
 **Always allowed (all roles):** reading and searching files; `git status`, `diff`, `log`,
-`show`, `blame`, `rev-parse`, `branch --show-current`; `cd`, `pwd`, `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `rg`, `sed -n`, `lsof -nP -i...`;
+`show`, `blame`, `rev-parse`, `branch --show-current`; `cd`, `pwd`, `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `rg`, `sed -n`, `lsof`, `ps`, `find` (not with `-delete`/`-exec`), `git grep`, `git ls-files`, `sort`, `uniq`, `cut`, `diff`, `jq`, `echo`, and similar read-only tools;
 `uv run pytest ...`; the `orca orchestration` worker commands (`check`, `send`, `ask`) that
 Orca's preamble tells workers to run.
 
-**Coder also:** editing files; `git add <paths>`; `git commit -m ...`.
+**Coder also:** editing files, including in-place shell edits (`sed -i`, `perl -pi`, `perl -i`); `git add <paths>`; `git commit -m ...`.
 
 **Reviewers also:** creating or editing files under `orchestration/` (including `mkdir -p` there), and nothing else.
 
 **Always denied (all roles):** `git push`, `rebase`, `reset`, `commit --amend`, `stash`,
 `checkout`, `switch`, `branch -d/-D`, `clean`; `git add -A`, `git add .`, `git add --all`.
-**Reviewers also:** editing anything outside `orchestration/`, `git add`, `git commit`.
+**Reviewers also:** editing anything outside `orchestration/`, in-place shell edits (`sed -i`, `perl -pi`, `perl -i`), `git add`, `git commit`.
 
 **Everything else: ask.** The question goes to whoever watches the agent: the
 orchestrator, which decides per `SKILL.md` "Permission prompts".

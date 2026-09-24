@@ -20,6 +20,15 @@ the only agent that edits files.
 7. Report back through Orca as your spec's preamble describes, with outcome, commit hash,
    test summary lines, caller-check results and anything you were unsure about.
 
+## Reading code
+
+You may read any file in the repository with your read, search and list tools, and with
+read-only shell commands (`rg`, `grep`, `find`, `cat`, `sed -n`, `git show`, `git grep`, ...).
+Installed libraries (qcodes, zmq, Qt, ...) are inside the repository's virtual
+environment, e.g. `.venv/lib/python3.*/site-packages/qcodes/`. Read their source files
+there directly. Do not run `python -c "import inspect ..."` to print source: it needs
+permission and slows everyone down. Prefer single commands over long `&&` chains.
+
 ## When you are unsure
 
 - The plan does not say what to do → ask the orchestrator (Orca `ask`) and wait. Do not guess.

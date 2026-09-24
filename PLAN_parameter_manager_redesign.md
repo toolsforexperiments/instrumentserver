@@ -377,7 +377,8 @@ Three layers, four new files plus the existing one:
 | `test/pytest/test_pm_gui.py` | pytest-qt | tabs, tints, lock toggle, arm flow, Locks panel, Types tab, live update from a second client |
 
 Conventions: proxy tests use the `param_manager` fixture; GUI tests copy the
-`test_gui_navigation.py` pattern (own server on a fixed port ≥ 5600, `qtbot.waitUntil`).
+`test_gui_navigation.py` pattern (own server on the `server_port` fixture, never a fixed
+port, see D27; `qtbot.waitUntil`).
 Every error path decided above has a test asserting the exception type **and** that the
 message lists every offending path.
 
@@ -398,7 +399,8 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   `startServerGuiApplication()` calls), `test_gui_navigation.py` (`TEST_PORT = 5599`).
   Add to `AGENTS.md` under "Testing": "Tests never use a fixed port. Use the `server_port`
   fixture; agents run the suite in parallel." No change to `src/`.
-  Acceptance: `grep -rn "5555\|5599" test/pytest` finds nothing; two `uv run pytest` runs
+  Acceptance: `git grep -n "5555\|5599" -- test/pytest` finds nothing (tracked source only;
+  changed 2026-09-23 from `grep -rn`, which also matched `__pycache__` bytecode); two `uv run pytest` runs
   started at the same time both pass. Tests: whole suite green.
 - [x] **0.1 `ParameterGroup` split.** In `params.py` create `ParameterGroup(InstrumentBase)`
   holding parameters and nested groups with the tree helpers moved from `ParameterManager`

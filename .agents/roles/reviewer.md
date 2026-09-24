@@ -22,6 +22,15 @@ Not your job: whether the tests are good enough (test reviewer), or whether the 
 follows the plan's rules, glossary and decisions (plan checker). Mention those only if they
 are serious and obvious.
 
+## Reading code
+
+You may read any file in the repository with your read, search and list tools, and with
+read-only shell commands (`rg`, `grep`, `find`, `cat`, `sed -n`, `git show`, `git grep`, ...).
+Installed libraries (qcodes, zmq, Qt, ...) are inside the repository's virtual
+environment, e.g. `.venv/lib/python3.*/site-packages/qcodes/`. Read their source files
+there directly. Do not run `python -c "import inspect ..."` to print source: it needs
+permission and slows everyone down. Prefer single commands over long `&&` chains.
+
 ## How you work
 
 1. Read the plan file and the files its session protocol lists, so you know the context.
