@@ -884,6 +884,18 @@ class ParameterManager(Broadcaster, ParameterGroup):
         when a Nested Type is missing from the registry, and — naming
         every offending path — when an entry path appears twice in the
         expanded set."""
+        expanded = self._expand_effective(type_name)
+        return {
+            path: {"unit": entry.unit, "from_type": from_type}
+            for path, (entry, from_type) in expanded.items()
+        }
+
+    def _expand_effective(self, type_name: str) -> Dict[str, Tuple["_TypeEntry", str]]:
+        """The effective parameter set of the Type ``type_name`` in raw
+        form: every expanded path mapped to the :class:`_TypeEntry` that
+        defines it and the name of the Type defining it. Raises the same
+        errors as :meth:`_effective_parameters` (unknown Type, a cycle,
+        a Nested Type missing from the registry, a path appearing twice)."""
         definition = self._require_type(type_name)
         # cycles first: the expansion below would not terminate
         cycle = self._nested_cycle(definition)
@@ -891,31 +903,50 @@ class ParameterManager(Broadcaster, ParameterGroup):
             raise ValueError(f"cycle in nested Types: {' -> '.join(cycle)}")
         # the cycle walk visited every Nested Type of the closure, so all
         # lookups below are known to exist
-        effective: Dict[str, Dict[str, str]] = {}
+        expanded: Dict[str, Tuple[_TypeEntry, str]] = {}
         duplicated: List[str] = []
-        self._collect_effective(definition, "", effective, duplicated)
+        self._collect_effective(definition, "", expanded, duplicated)
         if duplicated:
             paths = ", ".join(f"'{path}'" for path in sorted(duplicated))
             raise ValueError(
                 f"parameter path(s) {paths} appear more than once in the "
                 f"effective set of Type '{type_name}'"
             )
-        return effective
+        return expanded
+
+    def _effective_entries(self, type_name: str) -> Dict[str, _TypeEntry]:
+        """The effective parameter set of the Type ``type_name`` carrying
+        the full :class:`_TypeEntry` (default value, unit, Type Lock
+        Target) of the entry that defines each path: what writing the set
+        into the tree as parameters needs. Raises like
+        :meth:`_effective_parameters`."""
+        return {
+            path: entry
+            for path, (entry, _) in self._expand_effective(type_name).items()
+        }
 
     def _nested_cycle(
-        self, definition: "_TypeDefinition"
+        self,
+        definition: "_TypeDefinition",
+        types: Dict[str, "_TypeDefinition"] | None = None,
     ) -> "List[str] | None":
         """The chain of Type names of the first cycle among the Nested
         Types reachable from ``definition`` (the chain starts and ends
         with the same Type), or ``None`` when none is reachable. Raises
-        ``ValueError`` naming both names when a Nested Type is not in the
-        registry. The walk follows each branch with its own chain, so
-        nesting the same Type at several submodules is not a cycle."""
+        ``ValueError`` naming both names when a Nested Type is not in
+        ``types``. The walk follows each branch with its own chain, so
+        nesting the same Type at several submodules is not a cycle.
+        ``types`` defaults to the Type registry; ``add_nested_type``
+        passes a copied registry holding a candidate definition so it can
+        refuse a cycle before mutating anything."""
+        if types is None:
+            types = self._types
+
         def walk(defn: _TypeDefinition, chain: List[str]) -> List[str] | None:
             for nested_name in defn.nested.values():
                 if nested_name in chain:
                     return chain[chain.index(nested_name):] + [nested_name]
-                nested = self._types.get(nested_name)
+                nested = types.get(nested_name)
                 if nested is None:
                     raise ValueError(
                         f"Type '{defn.name}' nests '{nested_name}', "
@@ -932,22 +963,20 @@ class ParameterManager(Broadcaster, ParameterGroup):
         self,
         definition: "_TypeDefinition",
         prefix: str,
-        effective: Dict[str, Dict[str, str]],
+        effective: Dict[str, Tuple[_TypeEntry, str]],
         duplicated: List[str],
     ) -> None:
         """Add every entry of ``definition`` — and, recursively, of its
-        Nested Types under their submodule names — to ``effective``,
-        recording every path that appears more than once in
-        ``duplicated`` instead of raising, so one error can name them all."""
+        Nested Types under their submodule names — to ``effective`` as
+        ``(entry, defining Type name)`` pairs, recording every path that
+        appears more than once in ``duplicated`` instead of raising, so
+        one error can name them all."""
         for path, entry in definition.parameters.items():
             full_path = f"{prefix}{path}"
             if full_path in effective:
                 duplicated.append(full_path)
             else:
-                effective[full_path] = {
-                    "unit": entry.unit,
-                    "from_type": definition.name,
-                }
+                effective[full_path] = (entry, definition.name)
         for submodule, nested_name in definition.nested.items():
             self._collect_effective(
                 self._types[nested_name],
@@ -1080,6 +1109,408 @@ class ParameterManager(Broadcaster, ParameterGroup):
             claims,
             key=lambda name: (-claims[name][0], -claims[name][1], name),
         )
+
+    # ------------------------------------------------------------------
+    # Type edits with Instance side effects (plan decisions D11, D13, D16)
+    #
+    # Every edit validates all its preconditions first and raises before
+    # touching anything: on an error the Type registry and the parameter
+    # tree are exactly as they were. The side effects target the Instances
+    # that exist before the edit — they are computed while the registry
+    # still holds the old shape, because after the edit no submodule
+    # matches until it carries what is new — together with the Instances
+    # of every Type whose effective parameter set contains the edited
+    # Type through nesting. The affected parameter paths are collected
+    # de-duplicated and each missing one is created once, through the
+    # ordinary ``add_parameter`` path, as a ``ManagedParameter`` with the
+    # entry's default value and unit. A parameter that already exists at
+    # a target path is left alone: the submodule it lives in simply stops
+    # being an Instance when its unit differs (D1). No edit emits a
+    # Broadcast yet: ``pm-type-update`` and the re-emitted
+    # ``parameter-creation`` arrive with the Type-editing broadcasts task.
+    # ------------------------------------------------------------------
+
+    def _nesting_prefixes(self, type_name: str) -> Dict[str, List[str]]:
+        """Map every Type whose effective parameter set contains the
+        entries of ``type_name`` through nesting to the dotted submodule
+        prefixes under which they sit in that set. ``type_name`` itself
+        maps to ``[""]``; a Type requiring it directly at ``readout`` maps
+        to ``["readout."]``, and so on transitively, with one prefix per
+        nesting chain (a Type nesting it at several submodules maps to
+        several). The walk follows the ``nested`` maps upwards, from the
+        nested Types to the Types requiring them, and stops at a Type
+        already on the current branch, so it terminates even on a
+        registry that holds a cycle (which the public API refuses)."""
+        prefixes: Dict[str, List[str]] = {type_name: [""]}
+
+        def walk(name: str, prefix: str, branch: Tuple[str, ...]) -> None:
+            for parent_name, definition in self._types.items():
+                for submodule, nested_name in definition.nested.items():
+                    if nested_name != name or parent_name in branch:
+                        continue
+                    extended = f"{submodule}.{prefix}"
+                    known = prefixes.setdefault(parent_name, [])
+                    if extended not in known:
+                        known.append(extended)
+                        walk(parent_name, extended, branch + (parent_name,))
+
+        walk(type_name, "", (type_name,))
+        return prefixes
+
+    def _group_at(self, path: str) -> "ParameterGroup":
+        """The Parameter Group at a dotted path relative to this Parameter
+        Manager (the root itself for the empty path)."""
+        group: ParameterGroup = self
+        for segment in path.split("."):
+            if segment:
+                submodule = group.submodules[segment]
+                assert isinstance(submodule, ParameterGroup)
+                group = submodule
+        return group
+
+    def _check_creation_targets(
+        self, targets: List[Tuple[str, str]]
+    ) -> None:
+        """Validate the parameters a Type edit is about to create as side
+        effects, before anything is mutated. ``targets`` holds
+        ``(Instance path, relative target path)`` pairs. An intermediate
+        segment of a target may not be an existing parameter (a parameter
+        cannot have child parameters) and the final segment may not be an
+        existing Parameter Group (a Parameter Group cannot become a
+        parameter); a target whose final segment is an existing parameter
+        is fine — it is left alone. Raises ``ValueError`` naming every
+        offending full path."""
+        offending: Dict[str, str] = {}
+        seen: set = set()
+        for instance_path, relative_target in targets:
+            full = f"{instance_path}.{relative_target}"
+            if full in seen:
+                continue
+            seen.add(full)
+            group = self._group_at(instance_path)
+            segments = relative_target.split(".")
+            for index, segment in enumerate(segments):
+                last = index == len(segments) - 1
+                if segment in group.parameters:
+                    if not last:
+                        blocked = f"{instance_path}.{'.'.join(segments[:index + 1])}"
+                        offending[full] = (
+                            f"'{blocked}' is a parameter, and cannot have "
+                            "child parameters"
+                        )
+                    break
+                if last:
+                    if segment in group.submodules:
+                        offending[full] = (
+                            f"'{full}' is already a Parameter Group"
+                        )
+                    break
+                submodule = group.submodules.get(segment)
+                if submodule is None:
+                    # missing Parameter Group: it is created on the way,
+                    # so nothing deeper along this target can clash
+                    break
+                assert isinstance(submodule, ParameterGroup)
+                group = submodule
+        if offending:
+            details = "; ".join(
+                f"cannot create parameter '{path}': {reason}"
+                for path, reason in offending.items()
+            )
+            raise ValueError(details)
+
+    def _require_type_entry(self, type_name: str, path: str) -> _TypeEntry:
+        """The Type ``type_name``'s own entry at ``path``. Raises
+        ``ValueError`` naming the path — and the Type that defines it,
+        when the path only reaches the effective parameter set through a
+        Nested Type — when it is not an entry of the Type itself."""
+        definition = self._require_type(type_name)
+        entry = definition.parameters.get(path)
+        if entry is not None:
+            return entry
+        expanded = self._expand_effective(type_name)
+        if path in expanded:
+            from_type = expanded[path][1]
+            raise ValueError(
+                f"parameter path '{path}' is not an entry of Type "
+                f"'{type_name}' itself: it is only in the effective set "
+                f"through the entry of Type '{from_type}'"
+            )
+        raise ValueError(
+            f"parameter path '{path}' is not an entry of Type '{type_name}'"
+        )
+
+    def _instances_before_edit(self, affected: Dict[str, List[str]]) -> Dict[str, List[str]]:
+        """The Instances of every Type in ``affected``, computed while the
+        registry still holds the shape the edit is about to change (D13):
+        after the edit no submodule matches until it carries what is new,
+        so the side effects must key off the Instances found now."""
+        return {name: self.instances_of(name) for name in affected}
+
+    def add_type_parameter(
+        self, type_name: str, path: str, default: Any = None, unit: str = ""
+    ) -> None:
+        """Add an entry to the Type ``type_name`` (D11) and create the
+        parameter at ``path`` — with the entry's default value and unit —
+        in every Instance of the Type that lacks it, and in every Instance
+        of a Type whose effective parameter set contains ``type_name``
+        through nesting (D13). Parameters that already exist at a target
+        path are left alone, whatever their unit; the missing Parameter
+        Groups along a target path are created.
+
+        Raises ``ValueError`` — leaving the registry and the parameter
+        tree untouched — naming every offending path when no such Type
+        exists, when ``path`` is empty or has an empty segment, when
+        ``path`` is already in the Type's effective parameter set (naming
+        the Type that defines it), or when a target path cannot be
+        created because an intermediate segment is an existing parameter
+        or the final segment is an existing Parameter Group.
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the entry.
+        :param default: Default value the created parameters start with.
+        :param unit: Unit of the entry and the created parameters.
+        """
+        # validate-then-mutate: every check below runs before the registry
+        # or the tree is touched
+        definition = self._require_type(type_name)
+        if not path or any(segment == "" for segment in path.split(".")):
+            raise ValueError(
+                f"'{path}' is not a valid parameter path for a Type entry"
+            )
+        expanded = self._expand_effective(type_name)
+        if path in expanded:
+            from_type = expanded[path][1]
+            raise ValueError(
+                f"parameter path '{path}' is already in the effective set "
+                f"of Type '{type_name}' (defined by Type '{from_type}')"
+            )
+        affected = self._nesting_prefixes(type_name)
+        instances_before = self._instances_before_edit(affected)
+        targets = [
+            (instance_path, f"{prefix}{path}")
+            for name, prefixes in affected.items()
+            for instance_path in instances_before[name]
+            for prefix in prefixes
+        ]
+        self._check_creation_targets(targets)
+        definition.parameters[path] = _TypeEntry(default=default, unit=unit)
+        created: set = set()
+        for instance_path, relative_target in targets:
+            full = f"{instance_path}.{relative_target}"
+            if full in created:
+                continue
+            created.add(full)
+            if not self.has_param(full):
+                self.add_parameter(full, initial_value=default, unit=unit)
+
+    def remove_type_parameter(self, type_name: str, path: str) -> None:
+        """Remove the entry at ``path`` from the Type ``type_name``'s own
+        entries (D13): the parameters of the Instances are untouched, and
+        the submodules that no longer carry the whole shape simply stop
+        being Instances (D1).
+
+        Raises ``ValueError`` naming the path when no such Type exists,
+        when ``path`` is not an entry of the Type itself — naming the
+        Type that defines it, when the path only reaches the effective
+        parameter set through a Nested Type — and when it is in no
+        effective set at all. Nothing is removed then.
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the entry.
+        """
+        self._require_type_entry(type_name, path)
+        del self._types[type_name].parameters[path]
+
+    def set_type_parameter_default(
+        self, type_name: str, path: str, value: Any
+    ) -> None:
+        """Set the default value of the Type ``type_name``'s own entry at
+        ``path`` (D13): the parameters the Instances already carry keep
+        their values, and only parameters created later start with the
+        new default.
+
+        Raises ``ValueError`` naming the path under the same conditions
+        as :meth:`remove_type_parameter`; nothing is changed then.
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the entry.
+        :param value: The entry's new default value.
+        """
+        entry = self._require_type_entry(type_name, path)
+        entry.default = value
+
+    def set_type_parameter_unit(
+        self, type_name: str, path: str, unit: str
+    ) -> None:
+        """Set the unit of the Type ``type_name``'s own entry at ``path``
+        and propagate it to that parameter in every Instance of the Type
+        and of every Type whose effective parameter set contains
+        ``type_name`` through nesting (D13); the target of a propagation
+        is one of the Instance's parameters by construction, and a
+        parameter already carrying the new unit is simply set again.
+
+        Raises ``ValueError`` naming the path under the same conditions
+        as :meth:`remove_type_parameter`; nothing is changed then.
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the entry.
+        :param unit: The entry's and the Instances' new unit.
+        """
+        entry = self._require_type_entry(type_name, path)
+        # the Instances exist before the edit; the propagation targets are
+        # among their parameters by construction
+        affected = self._nesting_prefixes(type_name)
+        instances_before = self._instances_before_edit(affected)
+        entry.unit = unit
+        propagated: set = set()
+        for name, prefixes in affected.items():
+            for instance_path in instances_before[name]:
+                for prefix in prefixes:
+                    full = f"{instance_path}.{prefix}{path}"
+                    if full in propagated:
+                        continue
+                    propagated.add(full)
+                    if self.has_param(full):
+                        self.parameter(full).unit = unit
+
+    def add_nested_type(
+        self, type_name: str, submodule: str, nested_type: str
+    ) -> None:
+        """Require the Nested Type ``nested_type`` at the submodule
+        ``submodule`` of the Type ``type_name`` (D11), and write the
+        nested Type's effective parameter set under that submodule into
+        every Instance of ``type_name`` — and of every Type nesting it —
+        that lacks the parameters, with each entry's default value and
+        unit (D13).
+
+        Raises ``ValueError`` — leaving the registry and the parameter
+        tree untouched — naming every offending name or path when a Type
+        does not exist, when ``submodule`` is empty, has an empty segment
+        or starts with the reserved Globals name ``_globals`` (D18), when
+        the submodule already requires a Nested Type, when the nesting
+        would close a cycle (``type_name == nested_type`` included), when
+        the resulting effective parameter set of ``type_name`` or of any
+        Type nesting it would contain a path twice, or when a target path
+        cannot be created.
+
+        :param type_name: Name of the outer Type.
+        :param submodule: Name of the submodule that requires the Nested
+            Type.
+        :param nested_type: Name of the Nested Type.
+        """
+        # validate-then-mutate: every check below runs before the registry
+        # or the tree is touched
+        missing = [
+            f"no Type named '{name}' exists"
+            for name in dict.fromkeys((type_name, nested_type))
+            if name not in self._types
+        ]
+        if missing:
+            raise ValueError("; ".join(missing))
+        definition = self._types[type_name]
+        if not submodule or any(segment == "" for segment in submodule.split(".")):
+            raise ValueError(
+                f"'{submodule}' is not a valid submodule name for a "
+                "Nested Type"
+            )
+        if submodule.split(".")[0] == "_globals":
+            raise ValueError(
+                f"'{submodule}' is not a valid submodule name for a "
+                "Nested Type: the Globals submodule name is reserved"
+            )
+        if submodule in definition.nested:
+            raise ValueError(
+                f"submodule '{submodule}' of Type '{type_name}' already "
+                f"requires the Nested Type '{definition.nested[submodule]}'"
+            )
+        # the cycle check runs on a copied registry holding the candidate
+        # definition, so a refusal leaves the real one untouched
+        candidate = _TypeDefinition(
+            name=definition.name,
+            parameters=dict(definition.parameters),
+            nested={**definition.nested, submodule: nested_type},
+        )
+        candidate_registry = dict(self._types)
+        candidate_registry[type_name] = candidate
+        cycle = self._nested_cycle(candidate, types=candidate_registry)
+        if cycle is not None:
+            raise ValueError(
+                f"cannot nest Type '{nested_type}' at submodule "
+                f"'{submodule}' of Type '{type_name}': cycle in nested "
+                f"Types: {' -> '.join(cycle)}"
+            )
+        # the resulting effective parameter set of the edited Type and of
+        # every Type nesting it must not contain a path twice; computed
+        # against the current registry, which the mutation below follows
+        affected = self._nesting_prefixes(type_name)
+        nested_entries = self._effective_entries(nested_type)
+        collisions: List[str] = []
+        for name in affected:
+            current = set(self._expand_effective(name))
+            new_paths: List[str] = []
+            for prefix in affected[name]:
+                for entry_path in nested_entries:
+                    new_path = f"{prefix}{submodule}.{entry_path}"
+                    if new_path in current or new_path in new_paths:
+                        described = (
+                            f"'{new_path}' (in the effective set of "
+                            f"Type '{name}')"
+                        )
+                        if described not in collisions:
+                            collisions.append(described)
+                    else:
+                        new_paths.append(new_path)
+        if collisions:
+            raise ValueError(
+                f"cannot nest Type '{nested_type}' at submodule "
+                f"'{submodule}' of Type '{type_name}': parameter path(s) "
+                f"{', '.join(collisions)} would appear more than once"
+            )
+        instances_before = self._instances_before_edit(affected)
+        targets = [
+            (instance_path, f"{prefix}{submodule}.{entry_path}", entry)
+            for name, prefixes in affected.items()
+            for instance_path in instances_before[name]
+            for prefix in prefixes
+            for entry_path, entry in nested_entries.items()
+        ]
+        self._check_creation_targets(
+            [(instance_path, relative_target) for instance_path, relative_target, _ in targets]
+        )
+        definition.nested[submodule] = nested_type
+        created: set = set()
+        for instance_path, relative_target, entry in targets:
+            full = f"{instance_path}.{relative_target}"
+            if full in created:
+                continue
+            created.add(full)
+            if not self.has_param(full):
+                self.add_parameter(
+                    full, initial_value=entry.default, unit=entry.unit
+                )
+
+    def remove_nested_type(self, type_name: str, submodule: str) -> None:
+        """Remove the Nested Type required at the submodule ``submodule``
+        of the Type ``type_name`` (D13): the parameters of the Instances
+        are untouched, and the submodules that no longer carry the whole
+        shape simply stop being Instances (D1).
+
+        Raises ``ValueError`` naming the Type and the submodule when no
+        such Type exists or the submodule requires no Nested Type;
+        nothing is removed then.
+
+        :param type_name: Name of the Type.
+        :param submodule: Name of the submodule that requires the Nested
+            Type.
+        """
+        definition = self._require_type(type_name)
+        if submodule not in definition.nested:
+            raise ValueError(
+                f"submodule '{submodule}' of Type '{type_name}' has no "
+                "Nested Type"
+            )
+        del definition.nested[submodule]
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
