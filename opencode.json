@@ -89,10 +89,10 @@
         "external_directory": "ask"
       }
     },
-    "reviewer-deepseek": {
+    "reviewer-glm": {
       "description": "General code review of one plan task's commits. Read-only. Role: .agents/roles/reviewer.md",
       "mode": "primary",
-      "model": "lumen/deepseek-v4-flash",
+      "model": "lumen/glm-5.3-flash",
       "prompt": "{file:./.agents/roles/reviewer.md}",
       "permission": {
         "read": "allow",
@@ -275,10 +275,10 @@
         "external_directory": "ask"
       }
     },
-    "test-reviewer-deepseek": {
+    "test-reviewer-glm": {
       "description": "Reviews whether the tests prove the task and what is untested. Read-only. Role: .agents/roles/test-reviewer.md",
       "mode": "primary",
-      "model": "lumen/deepseek-v4-flash",
+      "model": "lumen/glm-5.3-flash",
       "prompt": "{file:./.agents/roles/test-reviewer.md}",
       "permission": {
         "read": "allow",
@@ -461,10 +461,10 @@
         "external_directory": "ask"
       }
     },
-    "plan-checker-deepseek": {
+    "plan-checker-glm": {
       "description": "Checks commits against the plan, glossary, decisions and ADRs. Read-only. Role: .agents/roles/plan-checker.md",
       "mode": "primary",
-      "model": "lumen/deepseek-v4-flash",
+      "model": "lumen/glm-5.3-flash",
       "prompt": "{file:./.agents/roles/plan-checker.md}",
       "permission": {
         "read": "allow",

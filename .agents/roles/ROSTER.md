@@ -10,11 +10,11 @@ instructions and work with any coding agent.
 | Id | Role file | Runner | Model | Launch command | Role file loaded by runner? |
 |---|---|---|---|---|---|
 | `coder` | `coder.md` | opencode | lumen/glm-5.3-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent coder` | yes |
-| `reviewer-deepseek` | `reviewer.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent reviewer-deepseek` | yes |
+| `reviewer-glm` | `reviewer.md` | opencode | lumen/glm-5.3-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent reviewer-glm` | yes |
 | `reviewer-qwen` | `reviewer.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent reviewer-qwen` | yes |
-| `test-reviewer-deepseek` | `test-reviewer.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent test-reviewer-deepseek` | yes |
+| `test-reviewer-glm` | `test-reviewer.md` | opencode | lumen/glm-5.3-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent test-reviewer-glm` | yes |
 | `test-reviewer-qwen` | `test-reviewer.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent test-reviewer-qwen` | yes |
-| `plan-checker-deepseek` | `plan-checker.md` | opencode | lumen/deepseek-v4-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-deepseek` | yes |
+| `plan-checker-glm` | `plan-checker.md` | opencode | lumen/glm-5.3-flash | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-glm` | yes |
 | `plan-checker-qwen` | `plan-checker.md` | opencode | lumen/qwen3.8-27b | `PYTHONDONTWRITEBYTECODE=1 opencode --agent plan-checker-qwen` | yes |
 | `historian` | `historian.md` | claude | opus | `.agents/roles/bin/historian-claude.sh` | yes |
 
