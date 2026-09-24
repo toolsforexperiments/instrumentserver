@@ -428,7 +428,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   rename. Tests: `test_broadcaster.py` server part — a dummy `Broadcaster` instrument created
   through `cli.find_or_create_instrument`; calling a method on it that emits a blueprint is
   received by a `SubClient`; a plain dummy instrument still works and gets no sink.
-- [ ] **0.4 Pre-existing fixes (D24, first two).** `_newOrDeleteParameterDetection`: use
+- [x] **0.4 Pre-existing fixes (D24, first two).** `_newOrDeleteParameterDetection`: use
   `kwargs.get("initial_value")` / `kwargs.get("unit", "")`. `apps.py:parameterManagerScript`:
   pass `sub_port=args.port + 1` (and `sub_host="localhost"`) into `ParameterManagerGui`.
   Tests: `test_apps.py` (extend the two existing param-manager launcher tests to assert

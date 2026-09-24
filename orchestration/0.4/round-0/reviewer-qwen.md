@@ -1,0 +1,23 @@
+# 0.4 — reviewer-qwen — round 0
+
+Verdict: approve
+
+## Findings
+
+### F1 — nit
+- Where: test/pytest/test_param_manager.py:63-97
+- What: `capture_broadcasts` and `wait_for_broadcasts` are copied verbatim (~35 lines) from test/pytest/test_broadcaster.py:166-202 (only the docstring's cross-reference differs).
+- Why: Two identical copies of a non-trivial QThread + PUB/SUB slow-joiner helper can drift; the plan adds further proxy broadcast tests in tasks 1.3 and 2.5 (test_pm_locks.py, test_pm_types.py), so the duplication is likely to multiply. Not a correctness issue today — both copies pass — and cross-importing between test modules is fragile (a module is only importable when its file was collected), which is probably why the coder copied instead.
+- Suggested fix: If desired, move both helpers into test/pytest/conftest.py so every module gets one copy; otherwise leave as is and let the first task that adds a third copy consolidate.
+
+## Notes
+
+- Tests run:
+  - `uv run pytest test/pytest/test_apps.py test/pytest/test_param_manager.py` → `31 passed in 12.46s`.
+  - `uv run pytest` (whole suite) → `174 passed, 4 warnings in 69.14s`. All 4 warnings are pre-existing `PytestUnknownMarkWarning` for the unregistered `integration` mark in the old test_apps.py integration tests; not introduced by this commit.
+- Server fix (src/instrumentserver/server/core.py:624-630): matches D24 verbatim. `kwargs.get("initial_value")` yields `None` and `kwargs.get("unit", "")` yields `""`, which are exactly the `ParameterBroadcastBluePrint` dataclass defaults (blueprints.py:362-363), so the empty-payload broadcast is well-formed. `None` round-trips through the wire format: `bluePrintToDict` → `json.dumps` (null) → `deserialize_obj` returns `None` for null values (blueprints.py:935-936), confirmed by the passing proxy test asserting `bp.value is None`.
+- Positional-args edge case considered and dismissed: `_newOrDeleteParameterDetection` reads only `kwargs`, so a positional `add_parameter("x", 5, "V")` would broadcast `value=None, unit=""`. This cannot happen for the Parameter Manager in practice: `ParameterManager.add_parameter(name, **kw)` is keyword-only (params.py:123), so a positional call raises `TypeError` on the server before the detection runs (server/core.py:484) — no half state, no wrong payload. All real callers use kwargs (GUI: gui/instruments.py:830-833; proxy: client/proxy.py:290). D24 prescribes exactly this form, so no finding.
+- Launcher fix (src/instrumentserver/apps.py:145-151): verified the kwargs chain. `ParameterManagerGui.__init__` forwards `**kwargs` to `InstrumentParameters.__init__`, which pops `sub_host`/`sub_port` into the model kwargs (gui/instruments.py:756-772, 555-558) and they reach `SubClient` (client/proxy.py:681-697). `sub_host="localhost"` matches the implicit host of `Client(port=args.port)` (client/proxy.py:452 defaults host to "localhost"), so the two stay consistent.
+- Judgment call on `type=int` (apps.py:128): correct, and within D24's scope. Without it, argparse returns `--port` as a string, and `args.port + 1` would raise `TypeError` for every explicit `--port` — precisely the custom-port path D24 exists to fix (the no-flag default `5555` is the only case that would have worked). It also aligns `parameterManagerScript` with `clientStationScript`, which already uses `type=int` for `--port` (apps.py:173). No existing behaviour breaks: `BaseClient` only interpolates the port into an f-string address (client/core.py:43), so int and str ports behave identically on the wire; the only behavioural change is that invalid input (`--port abc`) now fails at parse time with a clear argparse error instead of later at connect. `serverScript`/`detachedServerScript` still have string-typed `--port` (apps.py:45, 161) — pre-existing, explicitly outside D24 (which names only the parameter-manager launcher), and pinned by existing tests that assert string values (`port == "9999"`, `port="9000"` in test_apps.py:269, 345-347); correctly left untouched.
+- Both extended launcher tests (test_apps.py:355-418) assert the exact kwargs `sub_port=4568, sub_host="localhost"` and would fail against the pre-fix code; the new proxy test would also fail pre-fix (the latent KeyError surfaces as a failed remote call) and on a wrong sub-port (timeout in `wait_for_broadcasts`), so the named tests can fail and pin the behaviour.
+- New proxy test uses the module-scoped `server_port` fixture per D27 (`server_port + 1` for the broadcast port), no fixed ports; the parameter name `"x"` does not collide with parameters created by earlier tests in the module.
