@@ -8,7 +8,7 @@ from qtpy.QtGui import QGuiApplication
 from qtpy.QtWidgets import QFileDialog, QWidget
 
 from instrumentserver import QtCore, QtGui, QtWidgets, getInstrumentserverPath
-from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from instrumentserver.blueprints import PARAMETER_UPDATE, ParameterBroadcastBluePrint
 from instrumentserver.client import ClientStation
 from instrumentserver.client.proxy import SubClient
 from instrumentserver.gui.instruments import GenericInstrument
@@ -184,7 +184,7 @@ class ClientStationGui(QtWidgets.QMainWindow):
 
     @QtCore.Slot(ParameterBroadcastBluePrint)
     def listenerEvent(self, message: ParameterBroadcastBluePrint) -> None:
-        if message.action == "parameter-update":
+        if message.action == PARAMETER_UPDATE:
             logger.info(f"{message.action}: {message.name}: {message.value}")
 
     def openInstrumentTab(self, item: QtWidgets.QTreeWidgetItem, index: int) -> None:

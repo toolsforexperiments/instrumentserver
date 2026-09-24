@@ -38,6 +38,10 @@ from ..base import recv_router, send_router, sendBroadcast
 from ..blueprints import (
     INSTRUMENT_MODULE_BASE_CLASSES,
     PARAMETER_BASE_CLASSES,
+    PARAMETER_CALL,
+    PARAMETER_CREATION,
+    PARAMETER_DELETION,
+    PARAMETER_UPDATE,
     CallSpec,
     InstrumentCreationSpec,
     InstrumentModuleBluePrint,
@@ -493,7 +497,7 @@ class StationServer(QtCore.QObject):
                     # Broadcast changes in parameter values.
                     self._broadcastParameterChange(
                         ParameterBroadcastBluePrint(
-                            spec.target, "parameter-update", args[0]
+                            spec.target, PARAMETER_UPDATE, args[0]
                         )
                     )
                 else:
@@ -501,7 +505,7 @@ class StationServer(QtCore.QObject):
 
                     # Broadcast calls of parameters.
                     self._broadcastParameterChange(
-                        ParameterBroadcastBluePrint(spec.target, "parameter-call", ret)
+                        ParameterBroadcastBluePrint(spec.target, PARAMETER_CALL, ret)
                     )
             else:
                 self.funcCalled.emit(spec.target, args, kwargs, ret)
@@ -625,14 +629,14 @@ class StationServer(QtCore.QObject):
             name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
             pb = ParameterBroadcastBluePrint(
                 name,
-                "parameter-creation",
+                PARAMETER_CREATION,
                 kwargs.get("initial_value"),
                 kwargs.get("unit", ""),
             )
             self._broadcastParameterChange(pb)
         elif spec.target.split(".")[-1] == "remove_parameter":
             name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
-            pb = ParameterBroadcastBluePrint(name, "parameter-deletion")
+            pb = ParameterBroadcastBluePrint(name, PARAMETER_DELETION)
             self._broadcastParameterChange(pb)
 
     def _get_lock_for_target(self, target: str) -> Optional[threading.RLock]:

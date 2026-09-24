@@ -7,7 +7,13 @@ from qcodes import Instrument
 from instrumentserver.gui.misc import AlertLabelGreen
 
 from .. import DEFAULT_PORT, QtCore, QtGui, QtWidgets
-from ..blueprints import ParameterBroadcastBluePrint
+from ..blueprints import (
+    PARAMETER_CALL,
+    PARAMETER_CREATION,
+    PARAMETER_DELETION,
+    PARAMETER_UPDATE,
+    ParameterBroadcastBluePrint,
+)
 from ..client import ProxyInstrument, SubClient
 from ..helpers import nestedAttributeFromString
 from ..params import ParameterManager, ParameterTypes, parameterTypes, paramTypeFromName
@@ -442,7 +448,7 @@ class ModelParameters(InstrumentModelBase):
     def updateParameter(self, bp: ParameterBroadcastBluePrint) -> None:
         fullName = ".".join(bp.name.split(".")[1:])
 
-        if bp.action == "parameter-creation":
+        if bp.action == PARAMETER_CREATION:
             if fullName not in self.instrument.list():
                 self.instrument.update()
             if fullName in self.instrument.list():
@@ -451,10 +457,10 @@ class ModelParameters(InstrumentModelBase):
                     element=nestedAttributeFromString(self.instrument, fullName),
                 )
 
-        elif bp.action == "parameter-deletion":
+        elif bp.action == PARAMETER_DELETION:
             self.removeItem(fullName)
 
-        elif bp.action == "parameter-update" or bp.action == "parameter-call":
+        elif bp.action == PARAMETER_UPDATE or bp.action == PARAMETER_CALL:
             item = self.findItems(
                 fullName,
                 cast(

@@ -78,6 +78,16 @@ PARAMETER_BASE_CLASSES = [Parameter, ParameterWithSetpoints]
 
 ParameterType = Union[Parameter, ParameterWithSetpoints]
 
+# Action strings carried in ParameterBroadcastBluePrint.action. These are the
+# exact strings on the wire; PM_LOCK_UPDATE and PM_TYPE_UPDATE are emitted by
+# instruments implementing the Broadcaster contract.
+PARAMETER_UPDATE = "parameter-update"
+PARAMETER_CALL = "parameter-call"
+PARAMETER_CREATION = "parameter-creation"
+PARAMETER_DELETION = "parameter-deletion"
+PM_LOCK_UPDATE = "pm-lock-update"
+PM_TYPE_UPDATE = "pm-type-update"
+
 
 @dataclass
 class ParameterBluePrint:
