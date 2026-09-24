@@ -419,7 +419,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   `broadcast(bp: ParameterBroadcastBluePrint)`; sinks stored in a list; exceptions in one
   sink are logged and do not stop the others; no sinks → no-op. `ParameterManager` inherits
   it (no emissions yet). Tests: `test_broadcaster.py` unit part.
-- [ ] **0.3 Server registers sinks.** In `server/core.py`: helper
+- [x] **0.3 Server registers sinks.** In `server/core.py`: helper
   `_registerBroadcaster(instrument)` doing `hasattr(instrument, "add_broadcast_sink")` →
   `instrument.add_broadcast_sink(self._broadcastParameterChange)`. Call it after
   `self.station.add_component(new_instrument)` in `_createInstrument` and for every
