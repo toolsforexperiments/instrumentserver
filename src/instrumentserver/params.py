@@ -523,26 +523,31 @@ class ParameterManager(Broadcaster, ParameterGroup):
         """Unlock the Lock of the parameter at ``name`` (dotted path
         relative to this Parameter Manager): it keeps remembering its
         Target but answers ``get`` with its own value again (D5). Raises
-        ``ValueError`` naming the path when the parameter does not exist,
-        carries no Lock, or is not locked."""
+        ``ValueError`` naming the path when the parameter does not exist
+        or carries no Lock; unlocking an already unlocked Lock does
+        nothing and logs at INFO level."""
         param = self._resolve_param(name)
         lock = self._require_lock(param, name)
         if not lock.locked:
-            raise ValueError(f"{self._full_path(name)} is not locked")
+            logger.info(
+                f"{self._full_path(name)} is already unlocked; nothing to do"
+            )
+            return
         lock.locked = False
 
     def relock(self, name: str) -> None:
         """Lock the Lock of the parameter at ``name`` (dotted path
         relative to this Parameter Manager) to its remembered Target again
         (D5). Raises ``ValueError`` naming the paths when the parameter
-        does not exist, carries no Lock, is already locked, or when the
-        remembered Target is gone or locking to it would close a cycle
-        (D7)."""
+        does not exist, carries no Lock, or when the remembered Target is
+        gone or locking to it would close a cycle (D7); relocking an
+        already locked Lock does nothing and logs at INFO level."""
         param = self._resolve_param(name)
         lock = self._require_lock(param, name)
         follower_full = self._full_path(name)
         if lock.locked:
-            raise ValueError(f"{follower_full} is already locked")
+            logger.info(f"{follower_full} is already locked; nothing to do")
+            return
         target_param = self._param_by_full_path(lock.target)
         if target_param is None:
             raise ValueError(

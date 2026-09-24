@@ -9,6 +9,7 @@ exercises the Lock API on a local Parameter Manager (``lock``, ``unlock``,
 Broadcasts are task 1.3.
 """
 
+import logging
 import re
 
 import pytest
@@ -405,25 +406,61 @@ def test_toggle_lock_switches_both_ways(pm):
     assert pm.get("q01.x") == 10
 
 
-def test_state_inconsistent_calls_raise_naming_the_path(pm):
-    # no Lock at all
+def test_calls_without_a_lock_raise_naming_the_path(pm):
     for call in (pm.unlock, pm.relock, pm.toggle_lock, pm.remove_lock):
         with pytest.raises(
             ValueError, match="parameter_manager.q01.x has no Lock"
         ):
             call("q01.x")
 
-    # Lock present but in the other state already
+
+def test_unlock_on_an_already_unlocked_lock_is_a_logged_no_op(pm, caplog):
     pm.lock("q01.x", "q01Data.IF")
-    with pytest.raises(
-        ValueError, match="parameter_manager.q01.x is already locked"
-    ):
-        pm.relock("q01.x")
     pm.unlock("q01.x")
-    with pytest.raises(
-        ValueError, match="parameter_manager.q01.x is not locked"
-    ):
+    target_obj = pm.parameter("q01Data.IF")
+    follower = pm.parameter("q01.x")
+
+    with caplog.at_level(logging.INFO):
         pm.unlock("q01.x")
+
+    # state unchanged: the Lock is still present and unlocked, still
+    # remembering its Target, and the own value still answers get()
+    assert pm.get_lock("q01.x") == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=False
+    )
+    assert follower._target is target_obj
+    assert pm.get("q01.x") == 1
+    records = [r for r in caplog.records if r.levelno == logging.INFO]
+    assert len(records) == 1
+    assert (
+        "parameter_manager.q01.x is already unlocked; nothing to do"
+        in records[0].getMessage()
+    )
+
+
+def test_relock_on_an_already_locked_lock_is_a_logged_no_op(pm, caplog):
+    pm.lock("q01.x", "q01Data.IF")
+    follower = pm.parameter("q01.x")
+    # sentinel: relock's mutation path would re-resolve the remembered
+    # Target into _target and replace this reference; the no-op must not
+    sentinel = pm.parameter("q02.y")
+    follower._target = sentinel
+    value_before = pm.get("q01.x")
+
+    with caplog.at_level(logging.INFO):
+        pm.relock("q01.x")
+
+    assert pm.get_lock("q01.x") == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=True
+    )
+    assert follower._target is sentinel
+    assert pm.get("q01.x") == value_before
+    records = [r for r in caplog.records if r.levelno == logging.INFO]
+    assert len(records) == 1
+    assert (
+        "parameter_manager.q01.x is already locked; nothing to do"
+        in records[0].getMessage()
+    )
 
 
 def test_remove_lock_forgets_the_target_entirely(pm):
