@@ -460,7 +460,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   messages naming the paths. `lock` on a parameter with an existing Lock re-targets (after
   the cycle check). `remove_parameter` removes every Lock whose Target is the removed
   parameter (D3) and then deletes. Chains behave per D7. Tests: `test_pm_locks.py` unit part.
-- [ ] **1.3 `pm-lock-update` and proxy round-trip.** Emit `pm-lock-update` per D10 from every
+- [x] **1.3 `pm-lock-update` and proxy round-trip.** Emit `pm-lock-update` per D10 from every
   Lock method and from the `remove_parameter` cleanup. Tests: `test_pm_locks.py` proxy part
   via the `param_manager` fixture: every method callable through the proxy; `get_lock` /
   `list_locks` deserialise to `PMLockBluePrint`; `pm.q02.x()` returns the Target's value over

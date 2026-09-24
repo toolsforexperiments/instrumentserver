@@ -201,3 +201,40 @@ Two of the three pre-existing defects listed in D24 are fixed. In `src/instrumen
 - The coder's `ask` timed out on its side before Marcos's answer came back, so it built the behaviour Marcos then overruled, which cost the pre-review fix round.
 - While moving the coder's permission-dialog selection, the orchestrator sent Shift+Tab, which is opencode's agent switcher, and the coder terminal switched to the "Build" agent, which has no deny rules. The turn that was running kept running as Coder. The orchestrator pressed Tab to switch back and checked the bottom bar before the next dispatch. The first Enter on that dialog had also opened an "Always allow" confirm, which was cancelled; the prompt helper should send left-arrows before Enter.
 - Two rejected permission requests in round 0: reviewer-qwen asked for `/tmp` and reviewer-glm tried to write a scratch file to opencode's temp dir. Both were told to use `orchestration/1.2/`, and they ran and deleted their scratch scripts there in both rounds.
+
+## 1.3 `pm-lock-update` and proxy round-trip — 2026-09-24
+
+Every `ParameterManager` Lock method that changes a Lock now emits one `pm-lock-update` Broadcast per affected Follower (D10) through the new private helper `_broadcast_lock_update(follower_path, lock)`. `name` is the full Follower path, and `value` is a `PMLockBluePrint`, or `None` when the Lock was removed. `lock`, `unlock`, `relock` and `remove_lock` emit directly, and `toggle_lock` emits through `unlock`/`relock`. The `remove_parameter` cleanup emits one `None` per dropped Lock, locked or unlocked, before it deletes the Target. Read-only methods, failed validations and the INFO-logged no-op paths emit nothing. `test/pytest/test_pm_locks.py` grew from 48 to 63 tests: server-free sink tests on a `pm_with_sink` fixture, plus the four proxy tests the task names, which run on the `param_manager` fixture.
+
+### Commit by commit
+- `d5f0c63` The emissions, docstrings stating when each method emits, and 13 tests. The proxy tests are `test_every_lock_method_is_callable_through_the_proxy`, `test_get_lock_and_list_locks_deserialise_to_pm_lock_blueprint`, `test_locked_follower_answers_get_with_the_target_value_over_the_wire` (10 while locked, 20 after the Target is set over the wire, the own value 3 after `unlock`) and `test_subclient_receives_pm_lock_update_and_none_after_remove_lock`. The sink tests cover each method, `test_noop_unlock_and_relock_emit_nothing`, `test_failed_lock_validations_emit_nothing` and the two `remove_parameter` cases. The commit also made three changes the task text did not name. The orchestrator flagged them for the reviewers, and all six judged them in scope:
+  - `ParameterBroadcastBluePrint.value` is widened from `int | None` to `Any | None`, so it can carry a `PMLockBluePrint`. This settles the 1.1 loose end.
+  - `dict_to_serialized_dict` in `blueprints.py` gained a `BluePrintType` branch. Without it, the dict of blueprints that `list_locks` returns went over the wire as `str(value)` and could not be rebuilt. test-reviewer-glm confirmed that the `list_locks` isinstance assertion depends on this branch.
+  - `capture_broadcasts` / `wait_for_broadcasts` moved into `conftest.py` as session fixtures, and `test_broadcaster.py` and `test_param_manager.py` now use them. This is the third-copy move planned after 0.3 and 0.4.
+  Orchestrator run: 87 passed in the three named files, 236 in the full suite.
+- `d1a4332` Fix from round 0, four items:
+  - Two ruff `I001` import-order errors, in `params.py` and `test_pm_locks.py`. reviewer-glm caught them (should-fix) by checking that the base was ruff-clean. The coder had reported "ruff clean", and the orchestrator confirmed that claim was wrong.
+  - `unlock` and `relock` broadcast the stored `PMLockBluePrint` itself, so a sink that kept payloads saw earlier ones change on the next toggle. reviewer-glm caught this too (should-fix). Both methods now broadcast a fresh copy. The coder did the same for `lock()`, which had the same aliasing, and said so in the commit. New test: `test_broadcast_payloads_are_independent_of_the_stored_lock`.
+  - `test_re_targeting_a_lock_emits_one_pm_lock_update_with_the_new_target`. Both test reviewers raised this as a nit, and it was sent because a fix round was happening anyway.
+  - `test_failed_lock_validations_emit_nothing` gained failed `relock` / `toggle_lock` calls on a parameter with no Lock, and a refused cycle `relock` on a hand-wired chain. An `unlock` comes first, so the already-locked no-op cannot swallow the raise. Both test reviewers raised this as a nit. The coder replaced the existing `remove_lock("q02.y")` case with a `relock` case instead of adding to it.
+  Orchestrator run: ruff clean, 89 in the named files, 238 in the full suite.
+- `7ff0d71` Fix from round 1: puts the `pm.remove_lock("q02.y")` raise back into `test_failed_lock_validations_emit_nothing` (2 lines). test-reviewer-glm caught the regression (should-fix): after `d1a4332`, no test anywhere checked that a failed `remove_lock` emits nothing. All six reviewers approved in re-review, and test-reviewer-glm confirmed its finding fixed. Orchestrator run: 63 in `test_pm_locks.py`, 89 in the named files, 238 in the full suite.
+
+### Dropped findings
+- The Lock API comment block's sentence "Broadcasts that only report state are emitted after the change" is muddled (reviewer-glm, nit) → not sent. It is still in `params.py`.
+- `value: Any | None` is a redundant union (reviewer-qwen, nit) → not sent, style only.
+- In `test_broadcast_payloads_are_independent_of_the_stored_lock`, the `!=` assertion adds nothing beyond the two `is` assertions above it (test-reviewer-qwen, round 1 nit) → not sent. The fix list had asked for that line word for word.
+
+### Questions to Marcos
+- Should the INFO-logged no-op paths of `unlock`/`relock` emit `pm-lock-update`? The coder asked this before writing the code. The orchestrator answered from D10: no, since "one per affected Follower" and a no-op affects no Follower, so "emitted by every Lock method" means every method that changes a Lock. A test was required (`test_noop_unlock_and_relock_emit_nothing`). The orchestrator flagged the reading for Marcos in the run report, and plan-checker-glm asked for D10's wording to be read as amended by it. No answer from Marcos is recorded yet.
+
+### Loose ends
+- Dict-valued responses such as `list_locks` still go over the wire as `str(dict)` plus the quote handling in `ServerResponse.__init__`. That works for lab paths but would break if a value ever contained a quote (reviewer-qwen). This was already the case before 1.3. reviewer-qwen suggested an entry in `TEST_AUDIT.md`, but none is there yet.
+- `ModelParameters.updateParameter` in the GUI ignores the new `pm-lock-update` action without error until task 5.1 (reviewer-glm, reviewer-qwen).
+- Only `lock` and `remove_lock` are tested with a `SubClient` over the wire. The `unlock`/`relock`/`toggle_lock` and `remove_parameter` emissions are covered by the sink tests only (test-reviewer-glm; this matches the task text). A group-level `pm.q01.remove_parameter(...)` emission is not asserted either, although it routes through the same root method.
+- The 1.2 suggestions to add a depth-2 Lock and an unknown-path `remove_parameter` check to 1.3's tests were not taken up.
+
+### Process notes
+- The coder tried to write a scratch file to opencode's temp dir outside the repo. It was rejected, and the coder used `orchestration/1.3/` and deleted the file afterwards.
+- plan-checker-glm sent worker_done twice in round 0. Orca rejected the second one.
+- No stalls or nudges were needed in any round.
