@@ -38,3 +38,29 @@
 - Workers still alive: none.
 - Permission prompts: ~45 handled; all read-only or coder-allowed edits/commits allowed once, 3 rejected (reviewer-deepseek asked for ~/.agents/roles and a garbled path outside the repo; plan-checker-deepseek tried to write its report via a python heredoc whose target was not visible).
 - Process notes: (1) deepseek reviewers stalled three times (one garbled-output degeneration, one provider "Upstream error", one idle after concluding); a terminal nudge recovered each. (2) The 0.0 fixture removed the port collisions seen in the pilot run; reviewers ran the suite in parallel with no spurious failures. (3) Nits not sent but worth folding into a later task touching conftest.py: the server_port docstring's "outside the OS ephemeral range" claim is false on Linux.
+
+## Run 2026-09-23 — run_e6f4c00ea2df
+
+- Plan: PLAN_parameter_manager_redesign.md
+- Tasks: 0.3, 0.4, 0.5 (--from 0.3; rest of Phase 0)
+- Branch: marcosfrenkel/new-param-manager
+- Starting commit: 0fbbddf9ba0410fbbd429f5f348067726591d4d8
+
+### Report
+
+| Task | Outcome | Commits | Fix rounds | Final tests |
+|---|---|---|---|---|
+| 0.3 | done | `04c4cbc 0.3: server registers itself as a broadcast sink on Broadcaster instruments`, `5167241 0.3: fix from review round 1: test the config-load sink registration path` | 1 | named file 12 passed; full suite 173 passed, 4 warnings |
+| 0.4 | done | `56ece34 0.4: fix latent KeyError in parameter-creation broadcast and pass broadcast port to the parameter manager GUI launcher` | 0 | named files 31 passed; full suite 174 passed, 4 warnings |
+| 0.5 | done | `b3e6586 0.5: broadcast action constants in blueprints.py, used at every literal site in server, gui and client application`, `eec0c25 0.5: fix from review round 1: pin the broadcast action constants' wire values in a unit test` | 1 | named file 13 passed; full suite 175 passed, 4 warnings |
+
+- Phase 0 is complete. Stopped at the end of the phase (rule 7). Next open task: 1.1 `ManagedParameter`.
+- Open questions / notes for the user (none block Phase 1):
+  1. `_runInitScript` (server/core.py, run from `startServer` after `__init__`) can add instruments to the Station after the `__init__` sink-registration loop; those instruments would get no Broadcaster sink. The plan lists only two entry points, so 0.3 followed the plan. Decide whether the init-script path needs registration (small follow-up task) or is accepted. (plan-checker-qwen, reviewer-qwen, 0.3)
+  2. Once the Server registers as a sink, the mixin's public `broadcast` / `add_broadcast_sink` / `remove_broadcast_sink` are wire-callable on any Broadcaster proxy. Inert in practice (callables do not survive JSON; a malformed remote `broadcast(dict)` hits the logged sink-error path), but a client can inject a Broadcast. A 0.2 design consequence; accept or add a note. (reviewer-qwen, 0.2 and 0.3)
+  3. 0.4: the coder added `type=int` to the launcher's `--port` argparse argument so the plan's `args.port + 1` works; all six reviewers judged it in scope. Recorded here because it goes slightly beyond D24's literal text.
+  4. Carried over from the previous run: the plan's Testing paragraph and the `test_gui_navigation.py` fact line still mention fixed ports, made stale by D27 / task 0.0.
+- Nits not sent, worth folding into a later task: `capture_broadcasts`/`wait_for_broadcasts` are now duplicated in test_broadcaster.py and test_param_manager.py (consolidate into conftest.py when 1.3 / 2.5 need a third copy); log.py:158 regex and testing/dummy_instruments/generic.py:454 keep literal action strings.
+- Workers still alive: none.
+- Permission prompts: ~20 handled; all read-only or reviewers' own files allowed once; 6 rejected (garbled paths or commands from deepseek reviewers, one /tmp access).
+- Process notes: (1) deepseek reviewers stalled 11 times across the three tasks (provider "Upstream error" or garbled-output degeneration), each recovered by a terminal nudge; consider a different model for the deepseek slots. (2) Orchestrator shell pitfalls found and fixed mid-run: `orca` reads stdin inside `while read` loops (use `</dev/null`), and zsh does not word-split `$var` in `for` loops (one nudge batch silently went nowhere for ~10 min). (3) No test-port collisions; reviewers ran the suite in parallel without spurious failures.
