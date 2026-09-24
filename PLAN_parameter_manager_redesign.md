@@ -443,7 +443,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 1 — Locks
 
-- [ ] **1.1 `ManagedParameter`.** In `params.py`: `ManagedParameter(Parameter)` with
+- [x] **1.1 `ManagedParameter`.** In `params.py`: `ManagedParameter(Parameter)` with
   attribute `lock: PMLockBluePrint | None` plus a private reference to the Target parameter
   object and a `locked` flag. `get_raw`: if locked → `return self._target.get()`; else own
   cached value. `set_raw`: if locked → `raise ValueError(f"{full_name} is locked to

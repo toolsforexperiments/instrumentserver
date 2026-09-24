@@ -133,3 +133,35 @@ Two of the three pre-existing defects listed in D24 are fixed. In `src/instrumen
 - In round 0, test-reviewer-deepseek stalled on a provider "Upstream error" and plan-checker-deepseek's output turned into garbage. Neither left a report. After nudges, test-reviewer-deepseek wrote its report but stopped before worker_done, and plan-checker-deepseek hit two more provider errors, the last one on its report write. Both finished after further nudges.
 - Four permission requests were rejected: reviewer-deepseek asked for `/tmp` and then sent a garbled request; test-reviewer-deepseek sent a garbled request; and in re-review plan-checker-deepseek asked for a garbled path outside the repo. Each was pointed back to writing its report file.
 - In re-review, test-reviewer-deepseek's worker_done text came through garbled, but its report was at the right path.
+
+## 1.1 `ManagedParameter` — 2026-09-24
+
+`src/instrumentserver/params.py` now has `ManagedParameter(Parameter)`, the first task of Phase 1. It carries `lock: PMLockBluePrint | None`, a private `_target` (the Target parameter object), a read-only `locked` property (true when a Lock is present and `lock.locked`), a `path` property (the full dotted path, or the plain name when standalone) and `own_value()`. While locked, `get` answers with the Target's value (pulled on each get, ADR-0002), `set` raises `ValueError("<Follower path> is locked to <Target path>")`, and `snapshot_base` reports the Target's value; a `lock` entry is in the snapshot whenever a Lock exists, locked or not. `ParameterManager.add_parameter` creates `ManagedParameter`s and sets `path` to `f"{self.name}.{name}"`. `PMLockBluePrint(target, locked, _class_type="PMLockBluePrint")` is in `blueprints.py` and part of `BluePrintType`. The new `test/pytest/test_pm_locks.py` has 11 server-free tests; the Lock is wired by hand on the parameter objects, since the Lock API is task 1.2.
+
+### Commit by commit
+- `0f58c83` The class, the blueprint, and 9 tests (get redirect with pull on Target change, set raises and changes nothing, unlocked Lock exposes the own value, cache untouched by locking, three snapshot cases, `own_value` in every state, the manager creating `ManagedParameter`s). Three things the task text did not spell out:
+  - Besides `get_raw`, the coder overrode `_wrap_get`. qcodes' get wrapper writes every answered value into the parameter's cache, so a locked get would have overwritten the Follower's own value, which unlocking must expose again. `test_locking_leaves_the_own_cache_untouched` checks this.
+  - `lock` and `_target` are set before `super().__init__`, because an `initial_value` already runs `set_raw`.
+  - `ParameterGroup.add_parameter` now uses `kw.setdefault("parameter_class", Parameter)` instead of forcing `Parameter`, so the manager's override reaches parameters created in submodules.
+  Orchestrator run: 22 passed in `test_pm_locks.py` + `test_param_manager.py`, 184 in the full suite.
+- `9c11376` Fix from round 0, two items:
+  - The locked-set message used qcodes' `full_name`. Inside a manager that reads `q02_y is locked to q01_x`: underscore-joined, and without the instrument name because `ParameterGroup`s have no parent chain. reviewer-qwen caught the message and test-reviewer-qwen the test's blind spot (the test built its expected string from `full_name` too, so it could not tell). The orchestrator reproduced it and read the task's "full_name" as the plan's full dotted path (rule 4, D10, D19). The fix adds the `path` constructor argument and property, sets it in `ParameterManager.add_parameter`, and takes the Target half from `self.lock.target`. New test `test_set_while_locked_names_dotted_full_paths_inside_a_manager` checks `parameter_manager.q02.y is locked to parameter_manager.q01.x`.
+  - With `update=True`, `snapshot_base` read the Target twice: once through the base snapshot's `get`, again in the override. Raised as a nit by both general reviewers and plan-checker-glm, and sent because a fix round was happening anyway. The override now runs only when `update is not True`. For a falsy `update` it still calls the Target's `get()`, not its cache, so each hop of a chain reads by its own state (D7); reviewer-glm had suggested the cache, and the orchestrator told the coder not to. New test `test_locked_snapshot_gets_the_target_once_per_snapshot` counts Target reads with a `CountingManagedParameter` subclass.
+  All six reviewers approved in re-review, and each one that raised an item confirmed it fixed. Orchestrator run: 11 passed in `test_pm_locks.py`, 24 in the two named files, 186 in the full suite.
+
+### Dropped findings
+- The locked redirect is written twice, in `get_raw` and in `_wrap_get` (reviewer-glm, nit) → not sent. The plan asks for `get_raw` by name, and both copies are one identical line.
+- No test covers the `setdefault` passthrough in `ParameterGroup.add_parameter` (test-reviewer-glm, nit) → not sent. No caller passes `parameter_class`; noted for 1.2.
+- No `PMLockBluePrint` serialization round-trip test (test-reviewer-qwen, nit) → not sent. The plan puts wire tests in 1.3.
+- The `value` override ignores `snapshot_value=False`, and with `snapshot_get=False` a locked `snapshot(update=True)` would report the own value (reviewer-qwen round 0, plan-checker-qwen round 1, nits) → not sent. The Parameter Manager never creates such parameters.
+
+### Questions to Marcos
+- Does the task text's `full_name` in the locked-set message mean the full dotted path (`parameter_manager.q02.y`) rather than qcodes' `full_name`? The orchestrator decided yes and flagged it for the run report. No answer is recorded yet.
+
+### Loose ends
+- Carried forward in `decisions.md` for later tasks: v1 `toParamDict` saves the Target's value for a locked parameter until 4.1 (reviewer-qwen); `ParameterBroadcastBluePrint.value` is annotated `int | None` and needs widening in 1.3 (reviewer-qwen); a parameter added over the wire straight on a submodule group (`pm.q01.add_parameter`) is a plain `Parameter` with no `path`, which 1.2's validation must handle (test-reviewer-qwen).
+- The error message now takes the Target half from the stored `lock.target`, not the live Target object, so 1.2 owns checking that the stored Target exists.
+
+### Process notes
+- reviewer-qwen tried to write a scratch script to opencode's temp dir outside the repo. It was rejected, and the reviewer was told to use `orchestration/1.1/`; it ran and then deleted the script there, in both rounds.
+- First run with the glm reviewers in place of deepseek: no stalls, no garbled output, and no nudges were needed.
