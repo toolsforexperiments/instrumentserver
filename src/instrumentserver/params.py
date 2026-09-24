@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from enum import Enum, auto, unique
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, Iterator, List, Tuple, Union
 
 from qcodes import Parameter, validators
 from qcodes.instrument import InstrumentBase
@@ -185,6 +185,17 @@ class ParameterGroup(InstrumentBase):
     def to_tree(self) -> Dict:
         return ParameterGroup._to_tree(self)
 
+    def _iter_params(self) -> Iterator[Tuple[str, ParameterBase]]:
+        """Yield ``(relative dotted path, parameter)`` for every parameter
+        in this Parameter Group and its nested Parameter Groups, in tree
+        order. The paths are relative to this group."""
+        for pname, param in self.parameters.items():
+            yield pname, param
+        for smn, sm in self.submodules.items():
+            assert isinstance(sm, ParameterGroup)
+            for path, param in sm._iter_params():
+                yield f"{smn}.{path}", param
+
     def _get_param(self, param_name: str) -> ParameterBase:
         parent = self._get_parent(param_name)
         try:
@@ -316,7 +327,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
     Allows extra-easy on-the-fly addition/removal of new parameters.
 
     The Parameter Manager is the root of the parameter tree. It extends the
-    Parameter Group with file, profile, and (later) Type and Lock logic;
+    Parameter Group with file, profile, Lock, and (later) Type logic;
     its submodules are plain Parameter Groups.
 
     It implements the Broadcaster contract, so the Server can register
@@ -376,6 +387,236 @@ class ParameterManager(Broadcaster, ParameterGroup):
         kw["parameter_class"] = ManagedParameter
         kw["path"] = f"{self.name}.{name}"
         super().add_parameter(name, **kw)
+
+    def remove_parameter(self, param_name: str, cleanup: bool = True) -> None:
+        """Remove a parameter, first removing every Lock whose Target it is
+        (ADR-0002): the Followers become plain parameters and answer ``get``
+        with their own values again.
+
+        Same signature and deletion behaviour as
+        :meth:`ParameterGroup.remove_parameter`; the path is relative to
+        this Parameter Manager.
+        """
+        # validate-then-mutate: the parameter must exist before any Lock is
+        # touched. The checks mirror what the deletion itself would raise.
+        parent = self._get_parent(param_name)
+        pname = param_name.split(".")[-1]
+        if pname not in parent.parameters:
+            raise KeyError(pname)
+
+        # every Lock pointing at the removed parameter goes away with it,
+        # locked or not: an unlocked Lock must not keep remembering a
+        # Target that no longer exists.
+        target_full = self._full_path(param_name)
+        for rel_path, param in self._iter_params():
+            lock = getattr(param, "lock", None)
+            if lock is not None and lock.target == target_full:
+                assert isinstance(param, ManagedParameter)
+                param.lock = None
+                param._target = None
+
+        super().remove_parameter(param_name, cleanup)
+
+    # ------------------------------------------------------------------
+    # Lock API (plan decision D9)
+    #
+    # A Lock lives on the Follower's :class:`ManagedParameter`: its
+    # :class:`PMLockBluePrint` records the Target as a full dotted path
+    # with the instrument name and whether the Lock is currently locked.
+    # Every method validates first and raises before touching anything
+    # (no partial state on error). Paths passed in by name and returned
+    # by name are dotted paths relative to this Parameter Manager; only
+    # ``PMLockBluePrint.target`` and the stored Lock Target use the full
+    # form, as :attr:`ManagedParameter.path` does.
+
+    def _full_path(self, relative_name: str) -> str:
+        """The full dotted path (with the instrument name) of a path
+        relative to this Parameter Manager."""
+        return f"{self.name}.{relative_name}"
+
+    def _resolve_param(self, name: str) -> ParameterBase:
+        """The parameter object at a dotted path relative to this
+        Parameter Manager; raises ``ValueError`` naming the path when no
+        parameter exists there."""
+        try:
+            parent = self._get_parent(name)
+        except ValueError:
+            raise ValueError(f"Parameter '{name}' does not exist") from None
+        pname = name.split(".")[-1]
+        if pname not in parent.parameters:
+            raise ValueError(f"Parameter '{name}' does not exist")
+        return parent.parameters[pname]
+
+    def _param_by_full_path(self, full_path: str) -> ParameterBase | None:
+        """The parameter object at a full dotted path (the form a Lock's
+        Target is stored in), or ``None`` when the path points outside
+        this Parameter Manager or no parameter exists there."""
+        prefix = f"{self.name}."
+        if not full_path.startswith(prefix):
+            return None
+        try:
+            return self._get_param(full_path[len(prefix):])
+        except ValueError:
+            return None
+
+    def _require_lock(self, param: ParameterBase, name: str) -> PMLockBluePrint:
+        """The Lock record of a Follower; raises ``ValueError`` naming the
+        path when the parameter carries no Lock."""
+        lock = getattr(param, "lock", None)
+        if lock is None:
+            raise ValueError(f"{self._full_path(name)} has no Lock")
+        return lock
+
+    def _check_lock_allowed(self, follower_full: str, target_full: str) -> None:
+        """Raise ``ValueError`` for a self-lock, or when locking would
+        close a cycle: the walk follows each Target's Lock regardless of
+        locked/unlocked state (D7)."""
+        if follower_full == target_full:
+            raise ValueError(f"cannot lock {follower_full} to itself")
+        chain = [target_full]
+        seen = {target_full}
+        current = target_full
+        while True:
+            param = self._param_by_full_path(current)
+            if param is None:
+                break
+            lock = getattr(param, "lock", None)
+            if lock is None:
+                break
+            nxt = lock.target
+            if nxt == follower_full or nxt in seen:
+                raise ValueError(
+                    f"cannot lock {follower_full} to {target_full}: cycle in "
+                    f"Lock targets: {' -> '.join(chain + [nxt])}"
+                )
+            seen.add(nxt)
+            chain.append(nxt)
+            current = nxt
+
+    def lock(self, name: str, target: str) -> None:
+        """Lock the parameter at ``name`` to the parameter at ``target``
+        (dotted paths relative to this Parameter Manager).
+
+        Creates the Lock, or re-targets it when one exists already, and
+        locks it: while locked, ``name`` answers ``get`` with the Target's
+        value and refuses ``set`` (ADR-0002). The Target must be a
+        parameter of this same Parameter Manager (D8). Raises
+        ``ValueError`` naming the paths when a path does not exist, the
+        Follower cannot carry a Lock, the Lock would be a self-lock, or it
+        would close a cycle (walking Targets regardless of locked/unlocked
+        state, D7).
+
+        :param name: path of the Follower.
+        :param target: path of the Target.
+        """
+        follower = self._resolve_param(name)
+        target_param = self._resolve_param(target)
+        follower_full = self._full_path(name)
+        target_full = self._full_path(target)
+        if not isinstance(follower, ManagedParameter):
+            raise ValueError(f"{follower_full} cannot carry a Lock")
+        self._check_lock_allowed(follower_full, target_full)
+        follower._target = target_param
+        follower.lock = PMLockBluePrint(target=target_full, locked=True)
+
+    def unlock(self, name: str) -> None:
+        """Unlock the Lock of the parameter at ``name`` (dotted path
+        relative to this Parameter Manager): it keeps remembering its
+        Target but answers ``get`` with its own value again (D5). Raises
+        ``ValueError`` naming the path when the parameter does not exist,
+        carries no Lock, or is not locked."""
+        param = self._resolve_param(name)
+        lock = self._require_lock(param, name)
+        if not lock.locked:
+            raise ValueError(f"{self._full_path(name)} is not locked")
+        lock.locked = False
+
+    def relock(self, name: str) -> None:
+        """Lock the Lock of the parameter at ``name`` (dotted path
+        relative to this Parameter Manager) to its remembered Target again
+        (D5). Raises ``ValueError`` naming the paths when the parameter
+        does not exist, carries no Lock, is already locked, or when the
+        remembered Target is gone or locking to it would close a cycle
+        (D7)."""
+        param = self._resolve_param(name)
+        lock = self._require_lock(param, name)
+        follower_full = self._full_path(name)
+        if lock.locked:
+            raise ValueError(f"{follower_full} is already locked")
+        target_param = self._param_by_full_path(lock.target)
+        if target_param is None:
+            raise ValueError(
+                f"{follower_full} remembers Target {lock.target}, "
+                "which does not exist"
+            )
+        self._check_lock_allowed(follower_full, lock.target)
+        assert isinstance(param, ManagedParameter)
+        param._target = target_param
+        lock.locked = True
+
+    def toggle_lock(self, name: str) -> None:
+        """Toggle the Lock of the parameter at ``name`` (dotted path
+        relative to this Parameter Manager): locked becomes unlocked and
+        unlocked becomes locked again (D5). Raises ``ValueError`` naming
+        the path when the parameter does not exist or carries no Lock, and
+        like :meth:`relock` when locking back would close a cycle."""
+        param = self._resolve_param(name)
+        lock = self._require_lock(param, name)
+        if lock.locked:
+            self.unlock(name)
+        else:
+            self.relock(name)
+
+    def remove_lock(self, name: str) -> None:
+        """Remove the Lock of the parameter at ``name`` (dotted path
+        relative to this Parameter Manager) entirely: the Target is
+        forgotten and the parameter behaves as a plain parameter again
+        (D5). Raises ``ValueError`` naming the path when the parameter
+        does not exist or carries no Lock."""
+        param = self._resolve_param(name)
+        self._require_lock(param, name)
+        assert isinstance(param, ManagedParameter)
+        param.lock = None
+        param._target = None
+
+    def get_lock(self, name: str) -> "PMLockBluePrint | None":
+        """The Lock of the parameter at ``name`` (dotted path relative to
+        this Parameter Manager) as a :class:`PMLockBluePrint` whose Target
+        is the full dotted path, or ``None`` when it carries no Lock.
+        Raises ``ValueError`` naming the path when the parameter does not
+        exist."""
+        param = self._resolve_param(name)
+        lock = getattr(param, "lock", None)
+        if lock is None:
+            return None
+        return PMLockBluePrint(target=lock.target, locked=lock.locked)
+
+    def list_locks(self) -> "Dict[str, PMLockBluePrint]":
+        """All Locks in this Parameter Manager, locked and unlocked alike
+        (D5), as a mapping from the Follower's path (relative to this
+        Parameter Manager) to its :class:`PMLockBluePrint`."""
+        locks: Dict[str, PMLockBluePrint] = {}
+        for rel_path, param in self._iter_params():
+            lock = getattr(param, "lock", None)
+            if lock is not None:
+                locks[rel_path] = PMLockBluePrint(
+                    target=lock.target, locked=lock.locked
+                )
+        return locks
+
+    def followers_of(self, name: str) -> "List[str]":
+        """Paths (relative to this Parameter Manager) of every Follower
+        whose Lock points at the parameter at ``name``, locked and
+        unlocked alike. Raises ``ValueError`` naming the path when the
+        parameter does not exist."""
+        self._resolve_param(name)
+        target_full = self._full_path(name)
+        followers: List[str] = []
+        for rel_path, param in self._iter_params():
+            lock = getattr(param, "lock", None)
+            if lock is not None and lock.target == target_full:
+                followers.append(rel_path)
+        return followers
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
