@@ -913,6 +913,8 @@ def test_failed_lock_validations_emit_nothing(pm_with_sink):
         pm.relock("q02.y")  # no Lock
     with pytest.raises(ValueError):
         pm.toggle_lock("q02.y")  # no Lock
+    with pytest.raises(ValueError):
+        pm.remove_lock("q02.y")  # no Lock
     # a relock that would close a cycle is refused as well (D7)
     pm.parameter("q01Data.IF")._target = pm.parameter("q01.x")
     pm.parameter("q01Data.IF").lock = PMLockBluePrint(
