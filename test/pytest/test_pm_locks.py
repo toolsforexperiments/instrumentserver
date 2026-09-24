@@ -25,7 +25,19 @@ def lock_follower(follower, target, locked=True):
     """Attach a Lock to the Follower directly (no manager: task 1.2 adds
     the Lock API)."""
     follower._target = target
-    follower.lock = PMLockBluePrint(target=target.full_name, locked=locked)
+    follower.lock = PMLockBluePrint(target=target.path, locked=locked)
+
+
+class CountingManagedParameter(ManagedParameter):
+    """ManagedParameter that counts how often its value is read."""
+
+    def __init__(self, name, **kwargs):
+        self.get_calls = 0
+        super().__init__(name, **kwargs)
+
+    def get_raw(self):
+        self.get_calls += 1
+        return super().get_raw()
 
 
 def test_get_redirects_to_target_while_locked():
@@ -46,14 +58,33 @@ def test_set_while_locked_raises_and_names_the_target():
     lock_follower(follower, target)
 
     with pytest.raises(
-        ValueError,
-        match=re.escape(f"{follower.full_name} is locked to {target.full_name}"),
+        ValueError, match=re.escape(f"{follower.path} is locked to {target.path}")
     ):
         follower.set(5)
 
     # the refused set changed nothing: neither the Target nor the own value
     assert target.get() == 11
     assert follower.own_value() == 22
+
+
+def test_set_while_locked_names_dotted_full_paths_inside_a_manager():
+    pm = ParameterManager(name="parameter_manager")
+    pm.add_parameter("q01.x", initial_value=1, unit="V")
+    pm.add_parameter("q02.y", initial_value=2, unit="V")
+
+    target = pm.parameter("q01.x")
+    follower = pm.parameter("q02.y")
+    assert target.path == "parameter_manager.q01.x"
+    assert follower.path == "parameter_manager.q02.y"
+
+    follower._target = target
+    follower.lock = PMLockBluePrint(target="parameter_manager.q01.x", locked=True)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("parameter_manager.q02.y is locked to parameter_manager.q01.x"),
+    ):
+        follower.set(5)
 
 
 def test_unlocked_lock_exposes_own_value():
@@ -97,7 +128,7 @@ def test_snapshot_while_locked_reports_target_value_and_lock():
 
     snap = follower.snapshot(update=False)
     assert snap["value"] == 11
-    assert snap["lock"] == {"target": target.full_name, "locked": True}
+    assert snap["lock"] == {"target": target.path, "locked": True}
 
     # the own value survives in the cache
     assert follower.own_value() == 22
@@ -109,7 +140,25 @@ def test_snapshot_while_unlocked_reports_own_value_and_lock():
 
     snap = follower.snapshot(update=False)
     assert snap["value"] == 22
-    assert snap["lock"] == {"target": target.full_name, "locked": False}
+    assert snap["lock"] == {"target": target.path, "locked": False}
+
+
+def test_locked_snapshot_gets_the_target_once_per_snapshot():
+    target = CountingManagedParameter("target", set_cmd=None, initial_value=11)
+    follower = ManagedParameter("follower", set_cmd=None, initial_value=22)
+    lock_follower(follower, target)
+
+    # update=True: the base snapshot asks this parameter, whose locked get
+    # already answers with the Target's value — no second Target get
+    snap = follower.snapshot(update=True)
+    assert snap["value"] == 11
+    assert snap["lock"] == {"target": target.path, "locked": True}
+    assert target.get_calls == 1
+
+    # update=False: the Target is read directly, per its own state (D7)
+    snap = follower.snapshot(update=False)
+    assert snap["value"] == 11
+    assert target.get_calls == 2
 
 
 def test_own_value_is_the_cached_own_value_regardless_of_state():

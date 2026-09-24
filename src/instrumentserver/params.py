@@ -73,12 +73,20 @@ class ManagedParameter(Parameter):
     remembers its Target.
     """
 
-    def __init__(self, name: str, **kwargs: Any) -> None:
+    def __init__(self, name: str, path: str | None = None, **kwargs: Any) -> None:
         # The Lock state must exist before ``super().__init__``: creating the
         # parameter with an ``initial_value`` already runs ``set_raw``.
         self.lock: PMLockBluePrint | None = None
         self._target: ParameterBase | None = None
+        self._path: str | None = path
         super().__init__(name, **kwargs)
+
+    @property
+    def path(self) -> str:
+        """The parameter's full dotted path with the instrument name, the
+        form Locks and files use (``parameter_manager.q01.x``); for a
+        standalone parameter, its plain name."""
+        return self._path if self._path is not None else self.name
 
     @property
     def locked(self) -> bool:
@@ -103,11 +111,10 @@ class ManagedParameter(Parameter):
 
     def set_raw(self, value: Any) -> None:
         """Store the value while not locked; while locked, refuse with a
-        ``ValueError`` naming the Target."""
+        ``ValueError`` naming the full dotted paths of Follower and Target."""
         if self.locked:
-            raise ValueError(
-                f"{self.full_name} is locked to {self._locked_target().full_name}"
-            )
+            assert self.lock is not None, "a locked Lock has no record"
+            raise ValueError(f"{self.path} is locked to {self.lock.target}")
         self.cache._set_from_raw_value(value)
 
     def _wrap_get(self, get_function: Callable[..., Any]) -> Callable[..., Any]:
@@ -134,12 +141,19 @@ class ManagedParameter(Parameter):
         params_to_skip_update: Sequence[str] | None = None,
     ) -> Dict[str, Any]:
         """Snapshot with a ``lock`` entry while a Lock is present; while
-        locked, the reported ``value`` is the Target's value."""
+        locked, the reported ``value`` is the Target's value.
+
+        With ``update=True`` the base snapshot already asks this parameter,
+        whose locked get answers with the Target's value, so the Target is
+        not read a second time. With a falsy ``update`` the Target is read
+        directly — not its cache — so that each hop of a chain reads
+        according to its own state (D7).
+        """
         snap = super().snapshot_base(
             update=update, params_to_skip_update=params_to_skip_update
         )
         if self.lock is not None:
-            if self.locked:
+            if self.locked and update is not True:
                 snap["value"] = self._locked_target().get()
             snap["lock"] = {"target": self.lock.target, "locked": self.lock.locked}
         return snap
@@ -347,7 +361,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
         Same dotted-name semantics as :meth:`ParameterGroup.add_parameter`,
         which this method calls; only the parameter class differs, so that
-        the Parameter Manager's parameters can carry a Lock.
+        the Parameter Manager's parameters can carry a Lock. The created
+        parameter's ``path`` is set to its full dotted path with the
+        instrument name (``parameter_manager.q01.x``), the form Locks and
+        files use.
 
         :param name: Name of the parameter; see
             :meth:`ParameterGroup.add_parameter`.
@@ -357,6 +374,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         :return: None.
         """
         kw["parameter_class"] = ManagedParameter
+        kw["path"] = f"{self.name}.{name}"
         super().add_parameter(name, **kw)
 
     @staticmethod
