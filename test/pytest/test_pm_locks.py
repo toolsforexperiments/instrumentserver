@@ -15,7 +15,11 @@ import re
 import pytest
 
 from instrumentserver.blueprints import PMLockBluePrint
-from instrumentserver.params import ManagedParameter, ParameterManager
+from instrumentserver.params import (
+    ManagedParameter,
+    ParameterGroup,
+    ParameterManager,
+)
 
 
 def make_target_and_follower():
@@ -632,9 +636,10 @@ def test_remove_all_parameters_clears_every_lock(pm):
 
 
 def test_lock_with_a_plain_group_parameter(pm):
-    # a parameter added directly on a Parameter Group (as the wire call
-    # pm.q01.add_parameter does) is a plain qcodes Parameter
-    pm.q01.add_parameter("plain", initial_value=7)
+    # a plain qcodes Parameter (no lock, no path) can only end up inside a
+    # Parameter Manager through direct, unrouted creation — legacy or
+    # foreign code. The Lock API must still handle it.
+    pm.q01._add_own_parameter("plain", set_cmd=None, initial_value=7)
 
     # it cannot carry a Lock
     with pytest.raises(
@@ -652,6 +657,51 @@ def test_lock_with_a_plain_group_parameter(pm):
     assert pm.followers_of("q01.plain") == ["q01.x"]
     # a plain Parameter never shows up as a Follower
     assert "q01.plain" not in pm.list_locks()
+
+
+def test_group_remove_parameter_delegates_to_the_root(pm):
+    pm.lock("q01.x", "q02.y")
+
+    pm.q02.remove_parameter("y")
+
+    # the Lock pointing at the removed Target went with it (D3), through
+    # the root's cleanup
+    assert pm.list_locks() == {}
+    assert pm.get_lock("q01.x") is None
+    assert pm.get("q01.x") == 1
+    pm.set("q01.x", 5)
+    assert pm.get("q01.x") == 5
+
+
+def test_group_add_parameter_creates_a_managed_parameter(pm):
+    pm.q01.add_parameter("z", initial_value=1)
+
+    param = pm.parameter("q01.z")
+    assert isinstance(param, ManagedParameter)
+    assert param.path == "parameter_manager.q01.z"
+    # it can carry a Lock
+    pm.lock("q01.z", "q01Data.IF")
+    assert pm.get("q01.z") == 10
+
+
+def test_nested_group_add_parameter_creates_a_managed_parameter(pm):
+    pm.add_parameter("q01.ro.IF", initial_value=2)  # creates the depth-2 group
+
+    pm.q01.ro.add_parameter("gain", initial_value=3)
+
+    param = pm.parameter("q01.ro.gain")
+    assert isinstance(param, ManagedParameter)
+    assert param.path == "parameter_manager.q01.ro.gain"
+    pm.lock("q01.ro.gain", "q01.ro.IF")
+    assert pm.get("q01.ro.gain") == 2
+
+
+def test_standalone_group_keeps_plain_parameters():
+    solo = ParameterGroup("solo_group")
+    solo.add_parameter("p", initial_value=1)
+
+    assert solo._root is None
+    assert not isinstance(solo.parameter("p"), ManagedParameter)
 
 
 def test_target_paths_must_be_relative_to_the_manager(pm):

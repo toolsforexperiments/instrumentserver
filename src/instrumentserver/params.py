@@ -169,8 +169,23 @@ class ParameterGroup(InstrumentBase):
     has no file, profile, Type or Lock logic of its own. Every submodule
     of a Parameter Manager is a Parameter Group; only the root is the
     Parameter Manager, which extends the Parameter Group with those
-    responsibilities.
+    responsibilities. When a Parameter Group belongs to a Parameter
+    Manager, its public ``add_parameter``/``remove_parameter`` route to
+    the root, so ``ManagedParameter`` creation and the Lock cleanup always
+    happen; a standalone Parameter Group behaves as a plain container.
     """
+
+    #: The root Parameter Manager this Parameter Group belongs to, or
+    #: ``None`` for a standalone Parameter Group or the root itself. When
+    #: set, the public add/remove methods route to the root (D15): only
+    #: the root owns ``ManagedParameter`` creation and Lock logic.
+    _root: "ParameterManager | None" = None
+
+    #: This Parameter Group's dotted path relative to its root Parameter
+    #: Manager, with a trailing dot (``"q01.ro."``); empty on the root and
+    #: on standalone Parameter Groups. Set together with ``_root`` at
+    #: creation and used to build root-relative paths when routing.
+    _path_prefix: str = ""
 
     @classmethod
     def _to_tree(cls, pm: "ParameterGroup") -> Dict:
@@ -211,20 +226,31 @@ class ParameterGroup(InstrumentBase):
         split_names = param_name.split(".")
         parent = self
         full_name = self.name
+        prefix = self._path_prefix
 
         for i, n in enumerate(split_names[:-1]):
             full_name += f".{n}"
+            prefix += f"{n}."
             if n in parent.parameters:
                 raise ValueError(
                     f"{n} is a parameter, and cannot have child parameters."
                 )
             if n not in parent.submodules:
                 if create_parent:
-                    parent.add_submodule(n, ParameterGroup(n))  # type: ignore[type-var]
+                    new_group = ParameterGroup(n)
+                    new_group._root = self._root_for_new_groups()
+                    new_group._path_prefix = prefix
+                    parent.add_submodule(n, new_group)  # type: ignore[type-var]
                 else:
                     raise ValueError(f"{n} does not exist.")
             parent = parent.submodules[n]  # type: ignore[assignment]
         return parent
+
+    def _root_for_new_groups(self) -> "ParameterManager | None":
+        """The root Parameter Manager that nested Parameter Groups created
+        under this group belong to: this group's root, or ``None`` when
+        this group is standalone."""
+        return self._root
 
     def has_param(self, param_name: str) -> bool:
         try:
@@ -235,6 +261,12 @@ class ParameterGroup(InstrumentBase):
 
     def add_parameter(self, name: str, **kw: Any) -> None:  # type: ignore[override]
         """Add a parameter.
+
+        A Parameter Group that belongs to a Parameter Manager routes the
+        call to the root, with the path made relative to it
+        (``<group path>.<name>``), so the parameter is created as a
+        :class:`ManagedParameter` that can carry a Lock (D15). A
+        standalone Parameter Group creates a plain qcodes ``Parameter``.
 
         :param name: Name of the parameter.
             If the name contains `.`s, then an element before a dot is interpreted
@@ -249,18 +281,39 @@ class ParameterGroup(InstrumentBase):
             - ``vals`` defaults to ``qcodes.utils.validators.Anything()``.
         :return: None.
         """
+        if self._root is not None:
+            self._root.add_parameter(f"{self._path_prefix}{name}", **kw)
+            return
         kw.setdefault("parameter_class", Parameter)
         if "vals" not in kw:
             kw["vals"] = validators.Anything()
         kw["set_cmd"] = None
 
         parent = self._get_parent(name, create_parent=True)
-        if parent is self:
-            super().add_parameter(name.split(".")[-1], **kw)
-        else:
-            parent.add_parameter(name.split(".")[-1], **kw)
+        parent._add_own_parameter(name.split(".")[-1], **kw)
+
+    def _add_own_parameter(self, name: str, **kw: Any) -> None:
+        """Create a parameter directly on this Parameter Group, without
+        routing: the plain creation path the root's methods end in."""
+        super().add_parameter(name, **kw)
 
     def remove_parameter(self, param_name: str, cleanup: bool = True) -> None:
+        """Remove a parameter.
+
+        A Parameter Group that belongs to a Parameter Manager routes the
+        call to the root, with the path made relative to it, so the
+        root's Lock cleanup happens before the deletion (D3, D15). A
+        standalone Parameter Group deletes directly.
+
+        :param param_name: Name of the parameter; dotted names traverse
+            nested Parameter Groups.
+        :param cleanup: Whether to remove emptied submodules afterwards.
+        """
+        if self._root is not None:
+            self._root.remove_parameter(
+                f"{self._path_prefix}{param_name}", cleanup=cleanup
+            )
+            return
         parent = self._get_parent(param_name)
         pname = param_name.split(".")[-1]
         del parent.parameters[pname]
@@ -387,6 +440,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
         kw["parameter_class"] = ManagedParameter
         kw["path"] = f"{self.name}.{name}"
         super().add_parameter(name, **kw)
+
+    def _root_for_new_groups(self) -> "ParameterManager":
+        """Parameter Groups created under the Parameter Manager belong to
+        it: it is their root."""
+        return self
 
     def remove_parameter(self, param_name: str, cleanup: bool = True) -> None:
         """Remove a parameter, first removing every Lock whose Target it is
