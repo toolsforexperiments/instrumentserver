@@ -956,6 +956,131 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 duplicated,
             )
 
+    # ------------------------------------------------------------------
+    # Instance matching (plan decisions D12, D16; ADR-0001)
+    #
+    # Instances are duck-typed: a Parameter Group is an Instance of a Type
+    # because it carries every path of the Type's effective parameter set,
+    # each with the unit the Type declares; nothing stores membership and
+    # matching walks the tree on every query. The root is never an
+    # Instance, and the reserved Globals submodule ``_globals`` — wherever
+    # it appears in the tree — and everything under it are excluded from
+    # matching. ``instances_of`` and ``types_of`` are read-only queries:
+    # they change no state and emit no Broadcast.
+    # ------------------------------------------------------------------
+
+    def _iter_submodule_groups(self) -> Iterator[Tuple[str, "ParameterGroup"]]:
+        """Yield ``(dotted path, Parameter Group)`` for every Parameter
+        Group below this Parameter Manager, at any depth: never the root
+        itself, and never the reserved Globals submodule ``_globals`` or
+        anything inside it (D12)."""
+        def walk(
+            group: "ParameterGroup", prefix: str
+        ) -> Iterator[Tuple[str, "ParameterGroup"]]:
+            for name, sm in group.submodules.items():
+                assert isinstance(sm, ParameterGroup)
+                if name == "_globals":
+                    continue
+                path = f"{prefix}{name}"
+                yield path, sm
+                yield from walk(sm, f"{path}.")
+
+        yield from walk(self, "")
+
+    @staticmethod
+    def _carries_effective_set(
+        group: "ParameterGroup", effective: Dict[str, Dict[str, str]]
+    ) -> bool:
+        """Whether the Parameter Group ``group`` carries every path of the
+        effective set ``effective`` with the unit the Type declares for it
+        (D12): a match requires existence **and** unit; values are
+        irrelevant."""
+        for path, spec in effective.items():
+            try:
+                param = group._get_param(path)
+            except ValueError:
+                return False
+            if getattr(param, "unit", None) != spec["unit"]:
+                return False
+        return True
+
+    def _instances_of_effective(
+        self, effective: Dict[str, Dict[str, str]]
+    ) -> List[str]:
+        """Paths (relative to this Parameter Manager) of every Parameter
+        Group in the tree that is an Instance for the effective set
+        ``effective``: every submodule at any depth that carries the whole
+        set with the declared units (D12)."""
+        return [
+            path
+            for path, group in self._iter_submodule_groups()
+            if self._carries_effective_set(group, effective)
+        ]
+
+    def instances_of(self, type_name: str) -> List[str]:
+        """Paths (relative to this Parameter Manager) of every Instance of
+        the Type ``type_name`` (D12): every Parameter Group at any depth
+        that carries every path of the Type's effective set with the unit
+        the Type declares; values are irrelevant. The root is never an
+        Instance, the Globals submodule ``_globals`` and everything under
+        it are excluded, and an empty Type has no Instances (ADR-0001).
+        Matching is computed on demand; this query changes no state.
+
+        Raises ``ValueError`` naming the name when no such Type exists,
+        and like :meth:`_effective_parameters` when its Nested Types cycle
+        or its effective set contains a path twice.
+
+        :param type_name: Name of the Type.
+        :return: Paths of the Instances, in tree order.
+        """
+        effective = self._effective_parameters(type_name)
+        if not effective:
+            return []
+        return self._instances_of_effective(effective)
+
+    def types_of(self, path: str) -> List[str]:
+        """Names of the Types claiming the parameter at ``path`` (a dotted
+        path relative to this Parameter Manager), innermost first (D16):
+        the Type whose Instance is the deepest submodule above the
+        parameter wins, then the one with the largest effective set, with
+        any remaining tie broken by Type name. A Type claims the parameter
+        when an Instance of it above the parameter — some submodule the
+        parameter lives under — carries the parameter's path relative to
+        that Instance in its effective set. Parameters under the Globals
+        submodule ``_globals`` are claimed by nothing, since matching
+        excludes ``_globals`` (D12). Matching is computed on demand; this
+        query changes no state.
+
+        Raises ``ValueError`` naming the path when no parameter exists
+        there.
+
+        :param path: Path of the parameter.
+        :return: Claiming Type names, innermost first.
+        """
+        self._resolve_param(path)
+        # one claim per Type: when a Type claims the parameter through
+        # more than one Instance, its innermost Instance orders it
+        claims: Dict[str, Tuple[int, int]] = {}
+        for definition in self._types.values():
+            effective = self._effective_parameters(definition.name)
+            if not effective:
+                continue
+            for submodule_path in self._instances_of_effective(effective):
+                prefix = f"{submodule_path}."
+                if not path.startswith(prefix):
+                    continue
+                if path[len(prefix):] not in effective:
+                    continue
+                depth = len(submodule_path)
+                size = len(effective)
+                known = claims.get(definition.name)
+                if known is None or depth > known[0]:
+                    claims[definition.name] = (depth, size)
+        return sorted(
+            claims,
+            key=lambda name: (-claims[name][0], -claims[name][1], name),
+        )
+
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
         """Create a new ParameterManager instance from a paramDict.
