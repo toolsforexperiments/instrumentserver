@@ -454,7 +454,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   _class_type="PMLockBluePrint")` in `blueprints.py`. Tests: `test_pm_locks.py` unit part
   with two standalone `ManagedParameter`s (no manager): get redirect, set raises with the
   right message, unlocked exposes own value, snapshot values, cache untouched by locking.
-- [ ] **1.2 Lock API on `ParameterManager`.** `lock`, `unlock`, `relock`, `toggle_lock`,
+- [x] **1.2 Lock API on `ParameterManager`.** `lock`, `unlock`, `relock`, `toggle_lock`,
   `remove_lock`, `get_lock`, `list_locks`, `followers_of` (D9), all validate-then-mutate:
   unknown paths, self-lock, and cycles (walking Targets regardless of state, D7) raise with
   messages naming the paths. `lock` on a parameter with an existing Lock re-targets (after
