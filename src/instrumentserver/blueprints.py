@@ -421,12 +421,38 @@ class PMLockBluePrint:
         return bluePrintToDict(self)
 
 
+@dataclass
+class PMTypeBluePrint:
+    """Blueprint of a Type of the Parameter Manager.
+
+    ``parameters`` carries the Type's own entries as
+    ``{path: {default, unit, target}}``, where ``target`` is the Target of
+    the entry's Type Lock (``None`` when it has none). ``nested`` maps the
+    submodule name that requires a Nested Type to the nested Type's name.
+    ``effective`` is the computed effective parameter set: every own and
+    Nested Type entry path expanded under its submodule names, mapped to
+    the unit the entry declares and the Type that defines it
+    (``{path: {unit, from_type}}``). Returned by the Type API and sent as
+    the value of ``pm-type-update`` Broadcasts.
+    """
+
+    name: str
+    parameters: Dict[str, Dict[str, Any]]
+    nested: Dict[str, str]
+    effective: Dict[str, Dict[str, str]]
+    _class_type: str = "PMTypeBluePrint"
+
+    def toJson(self) -> Dict[str, Any]:
+        return bluePrintToDict(self)
+
+
 BluePrintType = Union[
     ParameterBluePrint,
     MethodBluePrint,
     InstrumentModuleBluePrint,
     ParameterBroadcastBluePrint,
     PMLockBluePrint,
+    PMTypeBluePrint,
 ]
 
 

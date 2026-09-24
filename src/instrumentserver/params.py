@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from enum import Enum, auto, unique
 from functools import wraps
 from pathlib import Path
@@ -17,6 +18,7 @@ from .blueprints import (
     PM_LOCK_UPDATE,
     ParameterBroadcastBluePrint,
     PMLockBluePrint,
+    PMTypeBluePrint,
 )
 
 logger = logging.getLogger(__name__)
@@ -376,6 +378,28 @@ class ParameterGroup(InstrumentBase):
         return tolist(tree)
 
 
+@dataclass
+class _TypeEntry:
+    """One entry of a Type: a relative parameter path with its default
+    value and unit, plus the Target of the entry's Type Lock (``None``
+    until a Type Lock is declared on it)."""
+
+    default: Any = None
+    unit: str = ""
+    target: str | None = None
+
+
+@dataclass
+class _TypeDefinition:
+    """The Type registry's record of a Type: its name, its entries by
+    relative parameter path, and its Nested Types as a mapping from the
+    submodule name that requires them to the nested Type's name."""
+
+    name: str
+    parameters: Dict[str, _TypeEntry] = field(default_factory=dict)
+    nested: Dict[str, str] = field(default_factory=dict)
+
+
 class ParameterManager(Broadcaster, ParameterGroup):
     """
     A virtual instrument that acts as a manager for a collection of
@@ -384,7 +408,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
     Allows extra-easy on-the-fly addition/removal of new parameters.
 
     The Parameter Manager is the root of the parameter tree. It extends the
-    Parameter Group with file, profile, Lock, and (later) Type logic;
+    Parameter Group with file, profile, Lock, and Type logic;
     its submodules are plain Parameter Groups.
 
     It implements the Broadcaster contract, so the Server can register
@@ -404,6 +428,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
+
+        # The Type registry: maps each Type name to its ``_TypeDefinition``.
+        # It lives on the root Parameter Manager only (D15); Parameter
+        # Groups hold no Types.
+        self._types: Dict[str, _TypeDefinition] = {}
 
         self._workingDirectory = Path(os.getcwd())
 
@@ -750,6 +779,182 @@ class ParameterManager(Broadcaster, ParameterGroup):
             if lock is not None and lock.target == target_full:
                 followers.append(rel_path)
         return followers
+
+    # ------------------------------------------------------------------
+    # Type API (plan decisions D11, D15, D16)
+    #
+    # The Type registry (``self._types``) lives on the root Parameter
+    # Manager only: it maps each Type name to its ``_TypeDefinition``. A
+    # Type's entries are relative dotted paths with a default value and a
+    # unit; its Nested Types map the submodule name that requires them to
+    # the nested Type's name. Type names are refused for the reserved
+    # Globals submodule ``_globals``. Methods validate before mutating and
+    # name every offending path or Type in an error. No Type method emits
+    # a Broadcast yet: the ``pm-type-update`` emissions arrive with the
+    # Type-editing broadcasts task.
+    # ------------------------------------------------------------------
+
+    def _require_type(self, name: str) -> "_TypeDefinition":
+        """The registry entry of the Type ``name``; raises ``ValueError``
+        naming the name when no such Type exists."""
+        try:
+            return self._types[name]
+        except KeyError:
+            raise ValueError(f"no Type named '{name}' exists") from None
+
+    def add_type(self, name: str) -> None:
+        """Create an empty Type named ``name`` in the Type registry.
+
+        Raises ``ValueError`` naming the name when it is the reserved
+        Globals name ``_globals`` or when a Type with that name exists
+        already; nothing is changed then. A fresh Type has no entries and
+        no Nested Types, so it has no Instances until entries are added.
+
+        :param name: Name of the Type.
+        """
+        # validate-then-mutate: both refusals are checked before the
+        # registry is touched
+        if name == "_globals":
+            raise ValueError(
+                f"'{name}' is not a valid Type name: "
+                "the Globals submodule name is reserved"
+            )
+        if name in self._types:
+            raise ValueError(f"a Type named '{name}' already exists")
+        self._types[name] = _TypeDefinition(name=name)
+
+    def remove_type(self, name: str) -> None:
+        """Remove the Type ``name`` from the Type registry.
+
+        The parameters of Instances are untouched (D13). Raises
+        ``ValueError`` when no such Type exists, and — naming every Type
+        that nests it — while any other Type still requires ``name`` as a
+        Nested Type; nothing is removed then.
+
+        :param name: Name of the Type.
+        """
+        self._require_type(name)
+        nesting = sorted(
+            definition.name
+            for definition in self._types.values()
+            if name in definition.nested.values()
+        )
+        if nesting:
+            nesters = ", ".join(f"'{other}'" for other in nesting)
+            raise ValueError(
+                f"cannot remove Type '{name}': nested in Type(s) {nesters}"
+            )
+        del self._types[name]
+
+    def list_types(self) -> List[str]:
+        """Names of every Type in the Type registry."""
+        return list(self._types)
+
+    def get_type(self, name: str) -> "PMTypeBluePrint":
+        """The Type ``name`` as a :class:`PMTypeBluePrint`: its own
+        entries as ``{path: {default, unit, target}}``, its Nested Types
+        as ``{submodule: type}``, and the computed effective parameter
+        set as ``{path: {unit, from_type}}``. Raises ``ValueError``
+        naming the name when no such Type exists, and like
+        :meth:`_effective_parameters` when its Nested Types cycle or its
+        effective set contains a path twice."""
+        definition = self._require_type(name)
+        return PMTypeBluePrint(
+            name=definition.name,
+            parameters={
+                path: {
+                    "default": entry.default,
+                    "unit": entry.unit,
+                    "target": entry.target,
+                }
+                for path, entry in definition.parameters.items()
+            },
+            nested=dict(definition.nested),
+            effective=self._effective_parameters(name),
+        )
+
+    def _effective_parameters(self, type_name: str) -> Dict[str, Dict[str, str]]:
+        """The effective parameter set of the Type ``type_name`` (D11):
+        every entry path of the Type itself and of its Nested Types,
+        expanded recursively under the submodule name that requires them,
+        mapped to ``{"unit": <unit>, "from_type": <defining Type>}``.
+
+        Raises ``ValueError`` naming the cycle when the Nested Types
+        reachable from ``type_name`` form a cycle, naming both Type names
+        when a Nested Type is missing from the registry, and — naming
+        every offending path — when an entry path appears twice in the
+        expanded set."""
+        definition = self._require_type(type_name)
+        # cycles first: the expansion below would not terminate
+        cycle = self._nested_cycle(definition)
+        if cycle is not None:
+            raise ValueError(f"cycle in nested Types: {' -> '.join(cycle)}")
+        # the cycle walk visited every Nested Type of the closure, so all
+        # lookups below are known to exist
+        effective: Dict[str, Dict[str, str]] = {}
+        duplicated: List[str] = []
+        self._collect_effective(definition, "", effective, duplicated)
+        if duplicated:
+            paths = ", ".join(f"'{path}'" for path in sorted(duplicated))
+            raise ValueError(
+                f"parameter path(s) {paths} appear more than once in the "
+                f"effective set of Type '{type_name}'"
+            )
+        return effective
+
+    def _nested_cycle(
+        self, definition: "_TypeDefinition"
+    ) -> "List[str] | None":
+        """The chain of Type names of the first cycle among the Nested
+        Types reachable from ``definition`` (the chain starts and ends
+        with the same Type), or ``None`` when none is reachable. Raises
+        ``ValueError`` naming both names when a Nested Type is not in the
+        registry. The walk follows each branch with its own chain, so
+        nesting the same Type at several submodules is not a cycle."""
+        def walk(defn: _TypeDefinition, chain: List[str]) -> List[str] | None:
+            for nested_name in defn.nested.values():
+                if nested_name in chain:
+                    return chain[chain.index(nested_name):] + [nested_name]
+                nested = self._types.get(nested_name)
+                if nested is None:
+                    raise ValueError(
+                        f"Type '{defn.name}' nests '{nested_name}', "
+                        "which does not exist"
+                    )
+                cycle = walk(nested, chain + [nested_name])
+                if cycle is not None:
+                    return cycle
+            return None
+
+        return walk(definition, [definition.name])
+
+    def _collect_effective(
+        self,
+        definition: "_TypeDefinition",
+        prefix: str,
+        effective: Dict[str, Dict[str, str]],
+        duplicated: List[str],
+    ) -> None:
+        """Add every entry of ``definition`` — and, recursively, of its
+        Nested Types under their submodule names — to ``effective``,
+        recording every path that appears more than once in
+        ``duplicated`` instead of raising, so one error can name them all."""
+        for path, entry in definition.parameters.items():
+            full_path = f"{prefix}{path}"
+            if full_path in effective:
+                duplicated.append(full_path)
+            else:
+                effective[full_path] = {
+                    "unit": entry.unit,
+                    "from_type": definition.name,
+                }
+        for submodule, nested_name in definition.nested.items():
+            self._collect_effective(
+                self._types[nested_name],
+                f"{prefix}{submodule}.",
+                effective,
+                duplicated,
+            )
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
