@@ -1,12 +1,16 @@
-"""Unit tests for ``ManagedParameter`` and the Lock API (plan tasks 1.1
-and 1.2).
+"""Tests for ``ManagedParameter`` and the Lock API (plan tasks 1.1–1.3).
 
 The first part wires two standalone ManagedParameters (a Target and a
 Follower) by hand, with no Parameter Manager involved. The second part
 exercises the Lock API on a local Parameter Manager (``lock``, ``unlock``,
 ``relock``, ``toggle_lock``, ``remove_lock``, ``get_lock``, ``list_locks``,
-``followers_of``, and the ``remove_parameter`` Lock cleanup). Its
-Broadcasts are task 1.3.
+``followers_of``, and the ``remove_parameter`` Lock cleanup). The third
+part checks the ``pm-lock-update`` Broadcasts the Lock methods emit
+(D10), on a local Parameter Manager with a Broadcast sink. The last part
+exercises the Lock API through a client proxy against a live Server: every
+method callable over the wire, ``get_lock``/``list_locks`` deserialising
+to ``PMLockBluePrint``, the pull-on-get value over the wire, and a
+SubClient receiving the Broadcasts.
 """
 
 import logging
@@ -14,7 +18,11 @@ import re
 
 import pytest
 
-from instrumentserver.blueprints import PMLockBluePrint
+from instrumentserver.blueprints import (
+    PM_LOCK_UPDATE,
+    PMLockBluePrint,
+    ParameterBroadcastBluePrint,
+)
 from instrumentserver.params import (
     ManagedParameter,
     ParameterGroup,
@@ -720,3 +728,312 @@ def test_target_paths_must_be_relative_to_the_manager(pm):
         pm.lock("q01.x", "other.z")
 
     assert pm.list_locks() == {}
+
+
+# ---------------------------------------------------------------------------
+# pm-lock-update Broadcasts (plan task 1.3, D10)
+#
+# One Broadcast per affected Follower, name = full Follower path, value =
+# its PMLockBluePrint, or None when its Lock was removed. Emitted by every
+# Lock method that changes a Lock and by remove_parameter when deleting a
+# Target drops Locks; the logged no-op paths and failed validations emit
+# nothing (decided during 1.3).
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def pm_with_sink(pm):
+    """The Lock API fixture with a Broadcast sink attached, recording
+    every Broadcast the Parameter Manager emits."""
+    received = []
+    pm.add_broadcast_sink(received.append)
+    return pm, received
+
+
+def test_lock_emits_one_pm_lock_update_naming_the_follower(pm_with_sink):
+    pm, received = pm_with_sink
+
+    pm.lock("q01.x", "q01Data.IF")
+
+    assert len(received) == 1
+    bp = received[0]
+    assert isinstance(bp, ParameterBroadcastBluePrint)
+    assert bp.name == "parameter_manager.q01.x"
+    assert bp.action == PM_LOCK_UPDATE
+    assert bp.value == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=True
+    )
+
+
+def test_unlock_emits_pm_lock_update_with_the_unlocked_lock(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    received.clear()
+
+    pm.unlock("q01.x")
+
+    assert len(received) == 1
+    bp = received[0]
+    assert bp.name == "parameter_manager.q01.x"
+    assert bp.action == PM_LOCK_UPDATE
+    assert bp.value == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=False
+    )
+
+
+def test_relock_emits_pm_lock_update_with_the_locked_lock(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    pm.unlock("q01.x")
+    received.clear()
+
+    pm.relock("q01.x")
+
+    assert len(received) == 1
+    bp = received[0]
+    assert bp.name == "parameter_manager.q01.x"
+    assert bp.action == PM_LOCK_UPDATE
+    assert bp.value == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=True
+    )
+
+
+def test_toggle_lock_emits_one_broadcast_per_state_change(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    received.clear()
+
+    pm.toggle_lock("q01.x")
+    assert len(received) == 1
+    assert received[0].name == "parameter_manager.q01.x"
+    assert received[0].value == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=False
+    )
+
+    pm.toggle_lock("q01.x")
+    assert len(received) == 2
+    assert received[1].value == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=True
+    )
+
+
+def test_remove_lock_emits_pm_lock_update_with_none(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    received.clear()
+
+    pm.remove_lock("q01.x")
+
+    assert len(received) == 1
+    bp = received[0]
+    assert bp.name == "parameter_manager.q01.x"
+    assert bp.action == PM_LOCK_UPDATE
+    assert bp.value is None
+
+
+def test_noop_unlock_and_relock_emit_nothing(pm_with_sink, caplog):
+    # decided during 1.3: the logged no-op paths affect no Follower,
+    # so they emit no Broadcast
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")  # locked
+    pm.lock("q02.x", "q01Data.IF")  # locked
+    pm.unlock("q02.x")  # unlocked
+    received.clear()
+
+    with caplog.at_level(logging.INFO):
+        pm.relock("q01.x")  # already locked: no-op
+        pm.unlock("q02.x")  # already unlocked: no-op
+
+    assert received == []
+    assert "already locked" in caplog.text
+    assert "already unlocked" in caplog.text
+
+
+def test_failed_lock_validations_emit_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+
+    # validate-then-mutate: a refused call must not broadcast either
+    with pytest.raises(ValueError):
+        pm.lock("nope", "q01Data.IF")
+    with pytest.raises(ValueError):
+        pm.lock("q01.x", "q01.x")  # self-lock
+    assert received == []
+
+    pm.lock("q01.x", "q01Data.IF")
+    received.clear()
+    with pytest.raises(ValueError):
+        pm.lock("q01Data.IF", "q01.x")  # would close a cycle
+    with pytest.raises(ValueError):
+        pm.unlock("q02.y")  # no Lock
+    with pytest.raises(ValueError):
+        pm.remove_lock("q02.y")  # no Lock
+
+    assert received == []
+
+
+def test_remove_parameter_emits_one_none_per_dropped_lock(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    pm.lock("q02.x", "q01Data.IF")
+    pm.unlock("q02.x")  # an unlocked Lock is dropped all the same
+    received.clear()
+
+    pm.remove_parameter("q01Data.IF")
+
+    assert len(received) == 2
+    names = {bp.name for bp in received}
+    assert names == {"parameter_manager.q01.x", "parameter_manager.q02.x"}
+    for bp in received:
+        assert bp.action == PM_LOCK_UPDATE
+        assert bp.value is None
+
+
+def test_remove_parameter_without_dropped_locks_emits_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")  # q01.x is a Follower, not a Target
+    received.clear()
+
+    # removing a Follower drops no Locks: its own Lock disappears with it,
+    # and the parameter-deletion Broadcast is the Server's business
+    pm.remove_parameter("q01.x")
+    assert received == []
+
+    pm.remove_parameter("q02.y")  # unrelated parameter
+    assert received == []
+
+
+# ---------------------------------------------------------------------------
+# Lock API through a client proxy against a live Server (plan task 1.3)
+#
+# The Server registers itself as a Broadcast sink on the Parameter Manager
+# (task 0.3), so every Lock method call over the wire also emits its
+# pm-lock-update on the PUB socket. The server-side Parameter Manager is
+# shared by all tests of this module, so every test removes the parameters
+# it created again.
+# ---------------------------------------------------------------------------
+
+PROXY_FOLLOWER = "q02.x"
+PROXY_TARGET = "q01Data.IF"
+
+
+def _add_proxy_params(params):
+    """Create the two parameters the proxy Lock tests use, replacing any
+    leftovers from an earlier test of this module."""
+    _remove_proxy_params(params)
+    params.add_parameter(PROXY_FOLLOWER, initial_value=3, unit="V")
+    params.add_parameter(PROXY_TARGET, initial_value=10, unit="Hz")
+
+
+def _remove_proxy_params(params):
+    for name in (PROXY_FOLLOWER, PROXY_TARGET):
+        if params.has_param(name):
+            params.remove_parameter(name)
+
+
+def test_every_lock_method_is_callable_through_the_proxy(param_manager):
+    cli, params = param_manager
+    _add_proxy_params(params)
+    try:
+        params.lock(PROXY_FOLLOWER, PROXY_TARGET)
+        assert params.get_lock(PROXY_FOLLOWER) == PMLockBluePrint(
+            target="parameter_manager.q01Data.IF", locked=True
+        )
+
+        params.unlock(PROXY_FOLLOWER)
+        assert params.get_lock(PROXY_FOLLOWER).locked is False
+
+        params.relock(PROXY_FOLLOWER)
+        assert params.get_lock(PROXY_FOLLOWER).locked is True
+
+        params.toggle_lock(PROXY_FOLLOWER)
+        assert params.get_lock(PROXY_FOLLOWER).locked is False
+        params.toggle_lock(PROXY_FOLLOWER)
+        assert params.get_lock(PROXY_FOLLOWER).locked is True
+
+        assert params.followers_of(PROXY_TARGET) == [PROXY_FOLLOWER]
+        assert list(params.list_locks()) == [PROXY_FOLLOWER]
+
+        params.remove_lock(PROXY_FOLLOWER)
+        assert params.get_lock(PROXY_FOLLOWER) is None
+        assert params.list_locks() == {}
+        assert params.followers_of(PROXY_TARGET) == []
+    finally:
+        _remove_proxy_params(params)
+
+
+def test_get_lock_and_list_locks_deserialise_to_pm_lock_blueprint(param_manager):
+    cli, params = param_manager
+    _add_proxy_params(params)
+    try:
+        params.lock(PROXY_FOLLOWER, PROXY_TARGET)
+
+        lock_bp = params.get_lock(PROXY_FOLLOWER)
+        assert isinstance(lock_bp, PMLockBluePrint)
+        assert lock_bp == PMLockBluePrint(
+            target="parameter_manager.q01Data.IF", locked=True
+        )
+
+        locks = params.list_locks()
+        assert isinstance(locks, dict)
+        assert isinstance(locks[PROXY_FOLLOWER], PMLockBluePrint)
+        assert locks == {
+            PROXY_FOLLOWER: PMLockBluePrint(
+                target="parameter_manager.q01Data.IF", locked=True
+            )
+        }
+    finally:
+        _remove_proxy_params(params)
+
+
+def test_locked_follower_answers_get_with_the_target_value_over_the_wire(
+    param_manager,
+):
+    cli, params = param_manager
+    _add_proxy_params(params)
+    try:
+        params.lock(PROXY_FOLLOWER, PROXY_TARGET)
+
+        # the named check: pm.q02.x() returns the Target's value
+        assert params.q02.x() == 10
+
+        # pull on get: changing the Target is enough, nothing is pushed
+        params.q01Data.IF.set(20)
+        assert params.q02.x() == 20
+
+        # unlocking exposes the Follower's own value again
+        params.unlock(PROXY_FOLLOWER)
+        assert params.q02.x() == 3
+    finally:
+        _remove_proxy_params(params)
+
+
+def test_subclient_receives_pm_lock_update_and_none_after_remove_lock(
+    param_manager, server_port, capture_broadcasts, wait_for_broadcasts
+):
+    cli, params = param_manager
+    _add_proxy_params(params)
+    try:
+        with capture_broadcasts(["parameter_manager"], server_port + 1) as received:
+            params.lock(PROXY_FOLLOWER, PROXY_TARGET)
+            wait_for_broadcasts(received)
+
+            assert len(received) == 1
+            bp = received[0]
+            assert isinstance(bp, ParameterBroadcastBluePrint)
+            assert bp.name == "parameter_manager.q02.x"
+            assert bp.action == PM_LOCK_UPDATE
+            assert isinstance(bp.value, PMLockBluePrint)
+            assert bp.value == PMLockBluePrint(
+                target="parameter_manager.q01Data.IF", locked=True
+            )
+
+            params.remove_lock(PROXY_FOLLOWER)
+            wait_for_broadcasts(received, n=2)
+
+            assert len(received) == 2
+            removed = received[1]
+            assert removed.name == "parameter_manager.q02.x"
+            assert removed.action == PM_LOCK_UPDATE
+            assert removed.value is None
+    finally:
+        _remove_proxy_params(params)

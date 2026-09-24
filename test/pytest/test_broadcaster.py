@@ -10,12 +10,9 @@ instrument is checked to still work and to stay sink-free.
 """
 
 import logging
-import time
-from contextlib import contextmanager
 
 import qcodes as qc
 
-from instrumentserver import QtCore
 from instrumentserver.base import Broadcaster
 from instrumentserver.blueprints import (
     PARAMETER_CALL,
@@ -26,7 +23,6 @@ from instrumentserver.blueprints import (
     PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
 )
-from instrumentserver.client.proxy import SubClient
 from instrumentserver.config import loadConfig
 from instrumentserver.params import ParameterManager
 from instrumentserver.server.core import StationServer
@@ -193,46 +189,9 @@ BROADCASTER_INSTRUMENT_CLASS = (
 )
 
 
-@contextmanager
-def capture_broadcasts(instruments, sub_port):
-    """Run a SubClient on its own QThread and collect the Broadcasts it receives.
-
-    Mirrors the pattern of ``test/docs_verification/helpers.py``, but takes the
-    Broadcast port from the ``server_port`` fixture instead of the default.
-    """
-    received = []
-    sub = SubClient(
-        instruments=instruments, sub_host="localhost", sub_port=sub_port
-    )
-    sub.update.connect(received.append, QtCore.Qt.DirectConnection)
-    thread = QtCore.QThread()
-    sub.moveToThread(thread)
-    thread.started.connect(sub.connect)
-    sub.finished.connect(thread.quit)
-    thread.start()
-    # PUB/SUB slow joiner: let the SUB socket connect before Broadcasts fire.
-    time.sleep(0.3)
-    try:
-        yield received
-    finally:
-        sub.stop()
-        thread.wait(2000)
-        thread.deleteLater()
-
-
-def wait_for_broadcasts(received, n=1, timeout=5.0):
-    """Block until at least ``n`` Broadcasts arrived, or fail with a report."""
-    deadline = time.monotonic() + timeout
-    while len(received) < n:
-        if time.monotonic() > deadline:
-            raise AssertionError(
-                f"Expected {n} Broadcast(s) within {timeout}s, "
-                f"got {len(received)}: {received!r}"
-            )
-        time.sleep(0.05)
-
-
-def test_created_broadcaster_instrument_reaches_subclient(cli, start_server, server_port):
+def test_created_broadcaster_instrument_reaches_subclient(
+    cli, start_server, server_port, capture_broadcasts, wait_for_broadcasts
+):
     """A Broadcaster instrument created through a client has the Server as a
     sink, and a method call that emits a blueprint arrives at a SubClient."""
     inst = cli.find_or_create_instrument("bcaster", BROADCASTER_INSTRUMENT_CLASS)

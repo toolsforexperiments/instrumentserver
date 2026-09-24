@@ -13,7 +13,7 @@ from qcodes.parameters import ParameterBase
 
 from . import serialize
 from .base import Broadcaster
-from .blueprints import PMLockBluePrint
+from .blueprints import PM_LOCK_UPDATE, PMLockBluePrint, ParameterBroadcastBluePrint
 
 logger = logging.getLogger(__name__)
 
@@ -385,8 +385,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
     It implements the Broadcaster contract, so the Server can register
     itself as a broadcast sink when the Parameter Manager joins the
-    Station. Nothing is broadcast yet; the Lock and Type features will
-    emit through it.
+    Station. Every Lock method that changes a Lock emits one
+    ``pm-lock-update`` Broadcast per affected Follower (D10), and
+    ``remove_parameter`` emits them for the Locks that deleting a Target
+    drops; Type editing will emit through it too.
 
     For the parameter manager to recognize other profiles in disk,
     the profile filename needs to start with 'parameter_manager-'
@@ -449,7 +451,8 @@ class ParameterManager(Broadcaster, ParameterGroup):
     def remove_parameter(self, param_name: str, cleanup: bool = True) -> None:
         """Remove a parameter, first removing every Lock whose Target it is
         (ADR-0002): the Followers become plain parameters and answer ``get``
-        with their own values again.
+        with their own values again. One ``pm-lock-update`` Broadcast with a
+        ``None`` value is emitted per dropped Lock (D10).
 
         Same signature and deletion behaviour as
         :meth:`ParameterGroup.remove_parameter`; the path is relative to
@@ -466,12 +469,16 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # locked or not: an unlocked Lock must not keep remembering a
         # Target that no longer exists.
         target_full = self._full_path(param_name)
+        dropped_followers: List[str] = []
         for rel_path, param in self._iter_params():
             lock = getattr(param, "lock", None)
             if lock is not None and lock.target == target_full:
                 assert isinstance(param, ManagedParameter)
                 param.lock = None
                 param._target = None
+                dropped_followers.append(rel_path)
+        for rel_path in dropped_followers:
+            self._broadcast_lock_update(rel_path, None)
 
         super().remove_parameter(param_name, cleanup)
 
@@ -486,6 +493,28 @@ class ParameterManager(Broadcaster, ParameterGroup):
     # by name are dotted paths relative to this Parameter Manager; only
     # ``PMLockBluePrint.target`` and the stored Lock Target use the full
     # form, as :attr:`ManagedParameter.path` does.
+    #
+    # Every method that changes a Lock emits one ``pm-lock-update``
+    # Broadcast per affected Follower (D10), through :meth:`broadcast` of
+    # the Broadcaster contract. Broadcasts that only report state are
+    # emitted after the change; failed validations and the logged no-op
+    # paths (unlock on an unlocked, relock on a locked Lock) emit nothing.
+
+    def _broadcast_lock_update(
+        self, follower_path: str, lock: "PMLockBluePrint | None"
+    ) -> None:
+        """Emit one ``pm-lock-update`` Broadcast about the Follower at
+        ``follower_path`` (relative to this Parameter Manager): the payload
+        is its :class:`PMLockBluePrint`, or ``None`` when its Lock was
+        removed (D10). With no sink registered, :meth:`broadcast` is a
+        no-op, so standalone use of the Parameter Manager emits nothing."""
+        self.broadcast(
+            ParameterBroadcastBluePrint(
+                name=self._full_path(follower_path),
+                action=PM_LOCK_UPDATE,
+                value=lock,
+            )
+        )
 
     def _full_path(self, relative_name: str) -> str:
         """The full dotted path (with the instrument name) of a path
@@ -563,7 +592,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         exist (both paths are checked before one error is raised), the
         Follower cannot carry a Lock, the Lock would be a self-lock, or it
         would close a cycle (walking Targets regardless of locked/unlocked
-        state, D7).
+        state, D7). On success emits one ``pm-lock-update`` Broadcast
+        naming the Follower with its new Lock (D10); a failed validation
+        emits nothing.
 
         :param name: path of the Follower.
         :param target: path of the Target.
@@ -587,6 +618,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         self._check_lock_allowed(follower_full, target_full)
         follower._target = target_param
         follower.lock = PMLockBluePrint(target=target_full, locked=True)
+        self._broadcast_lock_update(name, follower.lock)
 
     def unlock(self, name: str) -> None:
         """Unlock the Lock of the parameter at ``name`` (dotted path
@@ -594,7 +626,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         Target but answers ``get`` with its own value again (D5). Raises
         ``ValueError`` naming the path when the parameter does not exist
         or carries no Lock; unlocking an already unlocked Lock does
-        nothing and logs at INFO level."""
+        nothing and logs at INFO level. On a state change emits one
+        ``pm-lock-update`` Broadcast carrying the unlocked Lock (D10);
+        the no-op path emits nothing."""
         param = self._resolve_param(name)
         lock = self._require_lock(param, name)
         if not lock.locked:
@@ -603,6 +637,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
             )
             return
         lock.locked = False
+        self._broadcast_lock_update(name, lock)
 
     def relock(self, name: str) -> None:
         """Lock the Lock of the parameter at ``name`` (dotted path
@@ -610,7 +645,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         (D5). Raises ``ValueError`` naming the paths when the parameter
         does not exist, carries no Lock, or when the remembered Target is
         gone or locking to it would close a cycle (D7); relocking an
-        already locked Lock does nothing and logs at INFO level."""
+        already locked Lock does nothing and logs at INFO level. On a
+        state change emits one ``pm-lock-update`` Broadcast carrying the
+        locked Lock (D10); the no-op path emits nothing."""
         param = self._resolve_param(name)
         lock = self._require_lock(param, name)
         follower_full = self._full_path(name)
@@ -627,13 +664,16 @@ class ParameterManager(Broadcaster, ParameterGroup):
         assert isinstance(param, ManagedParameter)
         param._target = target_param
         lock.locked = True
+        self._broadcast_lock_update(name, lock)
 
     def toggle_lock(self, name: str) -> None:
         """Toggle the Lock of the parameter at ``name`` (dotted path
         relative to this Parameter Manager): locked becomes unlocked and
         unlocked becomes locked again (D5). Raises ``ValueError`` naming
         the path when the parameter does not exist or carries no Lock, and
-        like :meth:`relock` when locking back would close a cycle."""
+        like :meth:`relock` when locking back would close a cycle. Emits
+        one ``pm-lock-update`` Broadcast through :meth:`unlock` /
+        :meth:`relock`, which carry out the change (D10)."""
         param = self._resolve_param(name)
         lock = self._require_lock(param, name)
         if lock.locked:
@@ -646,12 +686,15 @@ class ParameterManager(Broadcaster, ParameterGroup):
         relative to this Parameter Manager) entirely: the Target is
         forgotten and the parameter behaves as a plain parameter again
         (D5). Raises ``ValueError`` naming the path when the parameter
-        does not exist or carries no Lock."""
+        does not exist or carries no Lock. Emits one ``pm-lock-update``
+        Broadcast with a ``None`` value for the Follower whose Lock was
+        removed (D10)."""
         param = self._resolve_param(name)
         self._require_lock(param, name)
         assert isinstance(param, ManagedParameter)
         param.lock = None
         param._target = None
+        self._broadcast_lock_update(name, None)
 
     def get_lock(self, name: str) -> "PMLockBluePrint | None":
         """The Lock of the parameter at ``name`` (dotted path relative to

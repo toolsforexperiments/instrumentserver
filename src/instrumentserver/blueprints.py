@@ -365,11 +365,16 @@ def bluePrintFromInstrumentModule(
 
 @dataclass
 class ParameterBroadcastBluePrint:
-    """Blueprint to broadcast parameter changes."""
+    """Blueprint to broadcast parameter changes.
+
+    ``value`` carries whatever payload the action needs: a plain value for
+    the parameter actions and a :class:`PMLockBluePrint` for
+    ``pm-lock-update`` (``None`` when a Lock was removed).
+    """
 
     name: str
     action: str
-    value: int | None = None
+    value: Any | None = None
     unit: str = ""
     _class_type: str = "ParameterBroadcastBluePrint"
 
@@ -889,6 +894,9 @@ def dict_to_serialized_dict(
             if isinstance(value, dict):
                 serialized_iterable = dict_to_serialized_dict(dct=value)
                 converted_dict[name] = serialized_iterable
+
+            elif isinstance(value, get_args(BluePrintType)):
+                converted_dict[name] = bluePrintToDict(value)
 
             # Enum/IntFlag members are treated as scalars. This must come before
             # the generic Iterable check: since Python 3.11 a Flag member is

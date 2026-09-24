@@ -1,11 +1,14 @@
 import random
 import socket
+import time
+from contextlib import contextmanager
 
 import pytest  # type: ignore[import-not-found]
 import qcodes as qc
 
+from instrumentserver import QtCore
 from instrumentserver.client.core import BaseClient
-from instrumentserver.client.proxy import Client
+from instrumentserver.client.proxy import Client, SubClient
 from instrumentserver.server.core import startServer
 
 
@@ -106,3 +109,60 @@ def param_manager(cli):
         "parameter_manager", "instrumentserver.params.ParameterManager"
     )
     return cli, params
+
+
+# ---------------------------------------------------------------------------
+# Broadcast capture helpers, shared by the proxy tests (test_broadcaster.py,
+# test_param_manager.py, test_pm_locks.py). They are exposed as fixtures so
+# test modules do not import from conftest directly.
+# ---------------------------------------------------------------------------
+
+
+@contextmanager
+def _capture_broadcasts(instruments, sub_port):
+    """Run a SubClient on its own QThread and collect the Broadcasts it receives.
+
+    Mirrors the pattern of ``test/docs_verification/helpers.py``, but takes
+    the Broadcast port explicitly so tests pass the ``server_port`` fixture's
+    Broadcast port (``server_port + 1``).
+    """
+    received = []
+    sub = SubClient(instruments=instruments, sub_host="localhost", sub_port=sub_port)
+    sub.update.connect(received.append, QtCore.Qt.DirectConnection)
+    thread = QtCore.QThread()
+    sub.moveToThread(thread)
+    thread.started.connect(sub.connect)
+    sub.finished.connect(thread.quit)
+    thread.start()
+    # PUB/SUB slow joiner: let the SUB socket connect before Broadcasts fire.
+    time.sleep(0.3)
+    try:
+        yield received
+    finally:
+        sub.stop()
+        thread.wait(2000)
+        thread.deleteLater()
+
+
+def _wait_for_broadcasts(received, n=1, timeout=5.0):
+    """Block until at least ``n`` Broadcasts arrived, or fail with a report."""
+    deadline = time.monotonic() + timeout
+    while len(received) < n:
+        if time.monotonic() > deadline:
+            raise AssertionError(
+                f"Expected {n} Broadcast(s) within {timeout}s, "
+                f"got {len(received)}: {received!r}"
+            )
+        time.sleep(0.05)
+
+
+@pytest.fixture(scope="session")
+def capture_broadcasts():
+    """The :func:`_capture_broadcasts` context manager factory."""
+    return _capture_broadcasts
+
+
+@pytest.fixture(scope="session")
+def wait_for_broadcasts():
+    """The :func:`_wait_for_broadcasts` wait helper."""
+    return _wait_for_broadcasts
