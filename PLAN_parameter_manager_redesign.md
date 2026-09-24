@@ -469,7 +469,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 2 — Types
 
-- [ ] **2.1 Type registry and definitions.** In `params.py`: internal dataclasses
+- [x] **2.1 Type registry and definitions.** In `params.py`: internal dataclasses
   `_TypeEntry(default, unit, target)` and `_TypeDefinition(name, parameters: dict[str,
   _TypeEntry], nested: dict[str, str])`; registry `self._types` on the root only.
   `add_type`, `remove_type` (raises if any other Type nests it), `list_types`, `get_type`

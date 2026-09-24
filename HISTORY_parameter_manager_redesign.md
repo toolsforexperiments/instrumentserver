@@ -238,3 +238,28 @@ Every `ParameterManager` Lock method that changes a Lock now emits one `pm-lock-
 - The coder tried to write a scratch file to opencode's temp dir outside the repo. It was rejected, and the coder used `orchestration/1.3/` and deleted the file afterwards.
 - plan-checker-glm sent worker_done twice in round 0. Orca rejected the second one.
 - No stalls or nudges were needed in any round.
+
+## 2.1 Type registry and definitions — 2026-09-24
+
+The root `ParameterManager` now has a Type registry, `self._types`, which maps each Type name to a `_TypeDefinition(name, parameters, nested)`. Entries are `_TypeEntry(default, unit, target)`, and Parameter Groups hold no Types (D15). The Type API is `add_type` (refuses `_globals` and duplicates), `remove_type` (refuses while any Type nests it, naming every nester), `list_types` (returns `List[str]`) and `get_type`. `get_type` returns the new `PMTypeBluePrint(name, parameters, nested, effective)` from `blueprints.py`, which is also in the `BluePrintType` union. `_effective_parameters` builds the effective set as `{path: {unit, from_type}}`. `_nested_cycle` runs first and refuses a cycle, naming the chain; it refuses a missing Nested Type too. `_collect_effective` then expands the Nested Types under their submodule names and collects every duplicated path into a single error. No Type method emits a Broadcast yet (that comes in 2.5). The new `test/pytest/test_pm_types.py` has 21 server-free unit tests.
+
+### Commit by commit
+- `83afee7` The dataclasses, the registry, the Type API, the effective-set helpers and 19 tests. `add_nested_type` belongs to 2.3, so the orchestrator's scope note said to raise on cycles from `_effective_parameters` and to build Nested Types in tests by putting `_TypeDefinition`s straight into `pm._types` (the `put_type` helper). The tests cover the definitions, three-tier expansion from the mock and its middle tier, and `test_the_same_type_nested_twice_is_not_a_cycle`. They also cover the refusals for a two-Type cycle, a self-nest, a missing Nested Type and one or two duplicated paths, plus full blueprint equality and a `toJson` → `deserialize_obj` round-trip. The coder found that the public methods need quoted return annotations: with `PMTypeBluePrint` unquoted, proxy method generation broke 8 tests in its own run. This is the 0.2 rule again. Orchestrator run: ruff clean, 19 passed in `test_pm_types.py`, 257 in the full suite.
+- `3c275d2` Fix from round 0, three items:
+  - `test_the_type_registry_lives_on_the_root_only`: after `pm.add_parameter("q01.IF")`, `pm.q01` has no `_types` and no `add_type`. Both test reviewers caught it (should-fix): no test touched a Parameter Group, so moving the registry there would have failed nothing.
+  - `test_remove_type_removes_a_type_that_nests_other_types`: removing `qubit`, which nests `readout`, succeeds and leaves `readout` untouched. test-reviewer-glm caught it (should-fix), and the orchestrator confirmed that only the refusal direction was tested.
+  - A `gap` row in `TEST_AUDIT.md`: `bluePrintToDict` stringifies scalar leaves and `deserialize_obj` parses them back as numbers, so a string `default` of `"10"` comes back through a proxy `get_type` as the int `10`. This was already true before 2.1 and affects every blueprint payload. reviewer-glm (nit) and reviewer-qwen (observation) raised it, and it went to the audit under plan rule 6 with no code change.
+  All six reviewers approved in re-review, and both test reviewers confirmed their items fixed. Orchestrator run: ruff clean, 21 in `test_pm_types.py`, 259 in the full suite.
+
+### Dropped findings
+- `remove_type` counts a Type that nests itself as its own nester, so it can never be removed. The task says "any *other* Type" (reviewer-glm, test-reviewer-qwen, plan-checker-glm, plan-checker-qwen, all nits) → not sent. The state can only be built by hand until 2.3's `add_nested_type`, which refuses cycles. The orchestrator flagged it for the 2.3 spec to decide.
+- `_collect_effective` lists a path that appears three or more times twice in the error message (plan-checker-glm, nit) → not sent, cosmetic.
+
+### Loose ends
+- For 2.3: settle the self-nesting `remove_type` case above and pin it in a test. `add_nested_type` must also do the cycle check the plan asks for; for now only `_effective_parameters` checks.
+- `get_type` returns fresh dicts, so the blueprint cannot alias the registry, but only by construction: no test checks it (test-reviewer-qwen, observation).
+
+### Process notes
+- The orchestrator's watcher missed the six reviewers' ruff permission prompts for about 10 minutes in round 0. A prompt sweep was added to each wait cycle.
+- Piping `uv run pytest | tail` from the orchestrator's session hung. Running the suite detached, with output to a log file, works.
+- reviewer-qwen ran its full-suite runs in the background, logging to `orchestration/2.1/`, and deleted its logs afterwards in both rounds. There were no rejected permissions and no stalls.
