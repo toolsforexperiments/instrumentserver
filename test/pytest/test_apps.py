@@ -353,7 +353,11 @@ def test_detached_server_script_custom():
 
 
 def test_param_manager_script_instrument_exists():
-    """parameterManagerScript: instrument exists → get_instrument path taken."""
+    """parameterManagerScript: instrument exists → get_instrument path taken.
+
+    The GUI must listen for Broadcasts on the server's broadcast port
+    (request port + 1), not on the default port.
+    """
     sys.argv = ["instrumentserver-param-manager", "--port", "4567"]
     mock_pm = MagicMock()
     mock_cli = MagicMock()
@@ -373,12 +377,18 @@ def test_param_manager_script_instrument_exists():
 
     mock_cli.get_instrument.assert_called_once_with("parameter_manager")
     mock_cli.find_or_create_instrument.assert_not_called()
-    mock_pmg.assert_called_once_with(mock_pm)
+    mock_pmg.assert_called_once_with(
+        mock_pm, sub_port=4568, sub_host="localhost"
+    )
     mock_wmw.assert_called_once()
 
 
 def test_param_manager_script_instrument_missing():
-    """parameterManagerScript: instrument not found → find_or_create path taken."""
+    """parameterManagerScript: instrument not found → find_or_create path taken.
+
+    The GUI must listen for Broadcasts on the server's broadcast port
+    (request port + 1), not on the default port.
+    """
     sys.argv = ["instrumentserver-param-manager", "--port", "4567"]
     mock_pm = MagicMock()
     mock_cli = MagicMock()
@@ -402,7 +412,9 @@ def test_param_manager_script_instrument_missing():
     mock_cli.get_instrument.assert_not_called()
     mock_pm.fromFile.assert_called_once()
     mock_pm.update.assert_called_once()
-    mock_pmg.assert_called_once_with(mock_pm)
+    mock_pmg.assert_called_once_with(
+        mock_pm, sub_port=4568, sub_host="localhost"
+    )
     mock_wmw.assert_called_once()
 
 

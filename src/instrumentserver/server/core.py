@@ -624,7 +624,10 @@ class StationServer(QtCore.QObject):
         if spec.target.split(".")[-1] == "add_parameter":
             name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
             pb = ParameterBroadcastBluePrint(
-                name, "parameter-creation", kwargs["initial_value"], kwargs["unit"]
+                name,
+                "parameter-creation",
+                kwargs.get("initial_value"),
+                kwargs.get("unit", ""),
             )
             self._broadcastParameterChange(pb)
         elif spec.target.split(".")[-1] == "remove_parameter":

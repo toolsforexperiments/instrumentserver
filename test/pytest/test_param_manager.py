@@ -1,5 +1,10 @@
 import json
+import time
+from contextlib import contextmanager
 
+from instrumentserver import QtCore
+from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from instrumentserver.client.proxy import SubClient
 from instrumentserver.params import ParameterGroup, ParameterManager
 
 
@@ -53,6 +58,65 @@ def test_proxy_add_remove_parameter(param_manager):
 
     params.remove_parameter(name="probe_param")
     assert "probe_param" not in params.parameters
+
+
+@contextmanager
+def capture_broadcasts(instruments, sub_port):
+    """Run a SubClient on its own QThread and collect the Broadcasts it receives.
+
+    Follows the capture pattern of ``test_broadcaster.py``; takes the
+    Broadcast port from the ``server_port`` fixture instead of the default.
+    """
+    received = []
+    sub = SubClient(instruments=instruments, sub_host="localhost", sub_port=sub_port)
+    sub.update.connect(received.append, QtCore.Qt.DirectConnection)
+    thread = QtCore.QThread()
+    sub.moveToThread(thread)
+    thread.started.connect(sub.connect)
+    sub.finished.connect(thread.quit)
+    thread.start()
+    # PUB/SUB slow joiner: let the SUB socket connect before Broadcasts fire.
+    time.sleep(0.3)
+    try:
+        yield received
+    finally:
+        sub.stop()
+        thread.wait(2000)
+        thread.deleteLater()
+
+
+def wait_for_broadcasts(received, n=1, timeout=5.0):
+    """Block until at least ``n`` Broadcasts arrived, or fail with a report."""
+    deadline = time.monotonic() + timeout
+    while len(received) < n:
+        if time.monotonic() > deadline:
+            raise AssertionError(
+                f"Expected {n} Broadcast(s) within {timeout}s, "
+                f"got {len(received)}: {received!r}"
+            )
+        time.sleep(0.05)
+
+
+def test_add_parameter_without_initial_value_succeeds_and_broadcasts(
+    param_manager, server_port
+):
+    """Calling ``add_parameter("x")`` with no initial_value and no unit over
+    the wire succeeds and Broadcasts the creation with an empty payload
+    (the Server's detection must not raise a latent KeyError)."""
+    cli, params = param_manager
+
+    with capture_broadcasts(["parameter_manager"], server_port + 1) as received:
+        params.add_parameter("x")
+        wait_for_broadcasts(received)
+
+    assert "x" in params.parameters
+    assert len(received) == 1
+    bp = received[0]
+    assert isinstance(bp, ParameterBroadcastBluePrint)
+    assert bp.name == "parameter_manager.x"
+    assert bp.action == "parameter-creation"
+    assert bp.value is None
+    assert bp.unit == ""
 
 
 def test_removing_all_params():
