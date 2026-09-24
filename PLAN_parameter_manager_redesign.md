@@ -434,7 +434,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   Tests: `test_apps.py` (extend the two existing param-manager launcher tests to assert
   the kwargs); a proxy test in `test_param_manager.py` that `add_parameter("x")` with no
   `initial_value`/`unit` succeeds and broadcasts.
-- [ ] **0.5 Broadcast action constants.** In `blueprints.py`: `PARAMETER_UPDATE`,
+- [x] **0.5 Broadcast action constants.** In `blueprints.py`: `PARAMETER_UPDATE`,
   `PARAMETER_CALL`, `PARAMETER_CREATION`, `PARAMETER_DELETION`, `PM_LOCK_UPDATE`,
   `PM_TYPE_UPDATE` string constants; use them in `server/core.py`, `gui/instruments.py`,
   `client/application.py`, `monitoring/listener.py` wherever the literals appear (grep
