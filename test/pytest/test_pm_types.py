@@ -775,6 +775,32 @@ def test_add_type_parameter_refuses_a_path_defined_by_a_nested_type(pm):
     assert pm.get_type("qubit").parameters == {}
 
 
+def test_add_type_parameter_refuses_a_path_that_collides_in_a_nesting_type(pm):
+    # qubit nests the empty readout and owns the entry readout.window:
+    # adding window to readout would duplicate the path in qubit's
+    # effective set and break every query on qubit
+    pm.add_type("readout")
+    pm.add_type("qubit")
+    pm.add_nested_type("qubit", "readout", "readout")
+    pm.add_type_parameter("qubit", "readout.window", default=None, unit="s")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "cannot add 'window' to Type 'readout': parameter path "
+            "'readout.window' would appear more than once in the "
+            "effective set of Type 'qubit'"
+        ),
+    ):
+        pm.add_type_parameter("readout", "window")
+
+    # refused before any mutation
+    assert pm.get_type("readout").parameters == {}
+    assert pm.get_type("qubit").parameters == {
+        "readout.window": {"default": None, "unit": "s", "target": None}
+    }
+
+
 def test_add_type_parameter_refuses_a_target_blocked_by_a_parameter(pm):
     pm.add_type("qubit")
     pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
@@ -1023,6 +1049,79 @@ def test_add_nested_type_reaches_the_instances_of_outer_types(pm):
     assert pm.instances_of("readout") == ["s01.q.readout"]
 
 
+def test_add_nested_type_builds_the_three_tier_case(pm):
+    # a Nested Type that itself nests a Type, built entirely through the
+    # public API: nesting readout into qubit writes readout's whole
+    # effective set, pulse_window's entries included
+    pm.add_type("pulse_window")
+    pm.add_type_parameter("pulse_window", "duration", default=None, unit="s")
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=None, unit="Hz")
+    pm.add_nested_type("readout", "pw", "pulse_window")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    assert pm.has_param("q01.readout.IF")
+    assert pm.get("q01.readout.IF") is None
+    assert pm.parameter("q01.readout.IF").unit == "Hz"
+    assert pm.has_param("q01.readout.pw.duration")
+    assert pm.get("q01.readout.pw.duration") is None
+    assert pm.parameter("q01.readout.pw.duration").unit == "s"
+    assert pm.instances_of("qubit") == ["q01"]
+    assert pm.instances_of("readout") == ["q01.readout"]
+    assert pm.instances_of("pulse_window") == ["q01.readout.pw"]
+
+
+def test_add_nested_type_leaves_an_existing_parameter_at_the_target_alone(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    # q01 carries a readout.IF of its own, with another value and unit
+    pm.add_parameter("q01.readout.IF", initial_value=1, unit="V")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+    assert pm.instances_of("qubit") == ["q01"]
+
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    # the existing parameter is left alone, whatever its unit
+    assert pm.get("q01.readout.IF") == 1
+    assert pm.parameter("q01.readout.IF").unit == "V"
+    # q01 stops being an Instance: its readout.IF does not carry the unit
+    # the entry declares
+    assert pm.instances_of("qubit") == []
+
+
+def test_add_nested_type_accepts_a_dotted_submodule_name(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+
+    pm.add_nested_type("qubit", "ro.deep", "readout")
+
+    assert pm.get_type("qubit").nested == {"ro.deep": "readout"}
+    assert pm._effective_parameters("qubit")["ro.deep.IF"] == {
+        "unit": "Hz",
+        "from_type": "readout",
+    }
+    # the entries are written under the dotted submodule, with the entry
+    # default and unit
+    assert pm.get("q01.ro.deep.IF") == 10e6
+    assert pm.parameter("q01.ro.deep.IF").unit == "Hz"
+    assert pm.instances_of("qubit") == ["q01"]
+
+    # removing the Nested Type is symmetric
+    pm.remove_nested_type("qubit", "ro.deep")
+    assert pm.get_type("qubit").nested == {}
+    # the created parameter stays (D13)
+    assert pm.has_param("q01.ro.deep.IF")
+
+
 def test_add_nested_type_refuses_a_self_nesting(pm):
     pm.add_type("loop")
 
@@ -1066,6 +1165,75 @@ def test_add_nested_type_refuses_an_occupied_submodule(pm):
         pm.add_nested_type("qubit", "readout", "pulse_window")
 
     assert pm.get_type("qubit").nested == {"readout": "readout"}
+
+
+def test_add_nested_type_refuses_a_target_blocked_by_a_parameter_group(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=None, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.octave_gain", unit="dB")
+    # the Parameter Group q01.readout.IF occupies the target path of the
+    # nested entry IF
+    pm.add_parameter("q01.readout.IF.sub", unit="s")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "cannot create parameter 'q01.readout.IF': 'q01.readout.IF' "
+            "is already a Parameter Group"
+        ),
+    ):
+        pm.add_nested_type("qubit", "readout", "readout")
+
+    # nothing was mutated
+    assert pm.get_type("qubit").nested == {}
+    assert pm.list() == ["q01.readout.IF.sub", "q01.octave_gain"]
+
+
+def test_add_nested_type_refuses_conflicting_creation_targets(pm):
+    # the Nested Type's effective set holds b and the strict extension
+    # b.c: the one edit would create the parameter q01.s.b and need it as
+    # a Parameter Group for q01.s.b.c — refused before anything is
+    # mutated, after which the creation would have raised mid-way
+    pm.add_type("leaf")
+    pm.add_type_parameter("leaf", "c", default=1, unit="V")
+    pm.add_type("branched")
+    pm.add_type_parameter("branched", "b", default=2, unit="A")
+    pm.add_nested_type("branched", "b", "leaf")
+    pm.add_type("outer")
+    pm.add_type_parameter("outer", "top", default=0, unit="")
+    pm.add_parameter("q01.top", initial_value=0, unit="")
+    assert pm.instances_of("outer") == ["q01"]
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_nested_type("outer", "s", "branched")
+
+    # the offending pair is named, both paths (rule 3)
+    message = str(excinfo.value)
+    assert "cannot create parameter 'q01.s.b.c'" in message
+    assert "'q01.s.b' is also created by this edit" in message
+    # refused before any mutation
+    assert pm.get_type("outer").nested == {}
+    assert pm.list() == ["q01.top"]
+
+
+def test_add_nested_type_refuses_a_submodule_name_with_empty_segments(pm):
+    pm.add_type("readout")
+    pm.add_type("qubit")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'' is not a valid submodule name for a Nested Type"),
+    ):
+        pm.add_nested_type("qubit", "", "readout")
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'x..y' is not a valid submodule name for a Nested Type"),
+    ):
+        pm.add_nested_type("qubit", "x..y", "readout")
+
+    assert pm.get_type("qubit").nested == {}
 
 
 def test_add_nested_type_refuses_a_duplicated_effective_path(pm):
@@ -1175,6 +1343,22 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
     pm.add_parameter("q01.readout.window", initial_value=2e-6, unit="s")
     pm.add_parameter("q02.octave_gain", initial_value=11, unit="dB")
     pm.add_parameter("q02.readout.IF", initial_value=20e6, unit="Hz")
+    # a Nested Type whose effective set holds b and the strict extension
+    # b.c, built through the public API while it has no Instances
+    pm.add_type("leaf")
+    pm.add_type_parameter("leaf", "c", default=1, unit="V")
+    pm.add_type("branched")
+    pm.add_type_parameter("branched", "b", default=2, unit="A")
+    pm.add_nested_type("branched", "b", "leaf")
+    # an empty Nested Type whose nester owns an entry under it
+    pm.add_type("bare")
+    pm.add_type("holder")
+    pm.add_type_parameter("holder", "bare.window", default=None, unit="s")
+    pm.add_nested_type("holder", "bare", "bare")
+    # an outer Type with an Instance, for the refused nesting below
+    pm.add_type("outer")
+    pm.add_type_parameter("outer", "top", default=0, unit="")
+    pm.add_parameter("q01.top", initial_value=0, unit="")
 
     def state():
         return (
@@ -1192,6 +1376,9 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
         lambda: pm.add_type_parameter("qubit", ""),
         # q02.octave_gain is a parameter and blocks the target path
         lambda: pm.add_type_parameter("qubit", "octave_gain.x", default=1, unit="s"),
+        # the path collides in the effective set of holder, which nests
+        # the empty bare at bare
+        lambda: pm.add_type_parameter("bare", "window"),
         lambda: pm.remove_type_parameter("qubit", "readout.IF"),
         lambda: pm.remove_type_parameter("qubit", "nope"),
         lambda: pm.set_type_parameter_default("qubit", "readout.IF", 1),
@@ -1205,6 +1392,13 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
         lambda: pm.add_nested_type("nope", "s", "readout"),
         lambda: pm.add_nested_type("readout", "qubit", "qubit"),
         lambda: pm.add_nested_type("readout", "self", "readout"),
+        # q01.octave_gain is a parameter and blocks the nested targets
+        lambda: pm.add_nested_type("qubit", "octave_gain", "readout"),
+        # the edit would create q01.s.b and need it as a Parameter Group
+        # for q01.s.b.c: the targets of one edit conflict with each other
+        lambda: pm.add_nested_type("outer", "s", "branched"),
+        lambda: pm.add_nested_type("qubit", "", "readout"),
+        lambda: pm.add_nested_type("qubit", "x..y", "readout"),
         lambda: pm.remove_nested_type("qubit", "pw"),
         lambda: pm.remove_nested_type("nope", "readout"),
     ]

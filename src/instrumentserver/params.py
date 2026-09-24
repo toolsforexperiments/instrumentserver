@@ -1178,8 +1178,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
         cannot have child parameters) and the final segment may not be an
         existing Parameter Group (a Parameter Group cannot become a
         parameter); a target whose final segment is an existing parameter
-        is fine — it is left alone. Raises ``ValueError`` naming every
-        offending full path."""
+        is fine — it is left alone. One de-duplicated target path may also
+        not be a strict segment-prefix of another target of the same edit:
+        creating the shorter parameter would take the Parameter Group the
+        longer one needs, so the edit could never carry out its own
+        pre-check. Raises ``ValueError`` naming every offending full
+        path."""
         offending: Dict[str, str] = {}
         seen: set = set()
         for instance_path, relative_target in targets:
@@ -1212,6 +1216,22 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     break
                 assert isinstance(submodule, ParameterGroup)
                 group = submodule
+        # the prefix check runs over the de-duplicated targets of this one
+        # edit, whatever Instance or nesting chain produced them
+        full_paths = sorted(seen)
+        for index, shorter in enumerate(full_paths):
+            for longer in full_paths[index + 1:]:
+                if longer.startswith(f"{shorter}."):
+                    blocked, blocker = longer, shorter
+                elif shorter.startswith(f"{longer}."):
+                    blocked, blocker = shorter, longer
+                else:
+                    continue
+                offending.setdefault(
+                    blocked,
+                    f"'{blocker}' is also created by this edit, and a "
+                    "parameter cannot have child parameters",
+                )
         if offending:
             details = "; ".join(
                 f"cannot create parameter '{path}': {reason}"
@@ -1262,9 +1282,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
         tree untouched — naming every offending path when no such Type
         exists, when ``path`` is empty or has an empty segment, when
         ``path`` is already in the Type's effective parameter set (naming
-        the Type that defines it), or when a target path cannot be
-        created because an intermediate segment is an existing parameter
-        or the final segment is an existing Parameter Group.
+        the Type that defines it), when ``prefix + path`` is already in
+        the effective parameter set of a Type nesting this one (naming
+        that Type and the path: the duplicated path would break every
+        query on it), or when a target path cannot be created because an
+        intermediate segment is an existing parameter, the final segment
+        is an existing Parameter Group, or another target of the same
+        edit is a strict segment-prefix of it.
 
         :param type_name: Name of the Type.
         :param path: Relative parameter path of the entry.
@@ -1286,6 +1310,20 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 f"of Type '{type_name}' (defined by Type '{from_type}')"
             )
         affected = self._nesting_prefixes(type_name)
+        # the new path must not collide in the effective parameter set of
+        # a Type nesting this one either — the same check the Nested Type
+        # edit runs for its candidate sets (the edited Type's own case is
+        # handled by the check above)
+        for name in affected:
+            current = set(self._expand_effective(name))
+            for prefix in affected[name]:
+                candidate = f"{prefix}{path}"
+                if candidate in current:
+                    raise ValueError(
+                        f"cannot add '{path}' to Type '{type_name}': "
+                        f"parameter path '{candidate}' would appear more "
+                        f"than once in the effective set of Type '{name}'"
+                    )
         instances_before = self._instances_before_edit(affected)
         targets = [
             (instance_path, f"{prefix}{path}")
@@ -1392,7 +1430,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         would close a cycle (``type_name == nested_type`` included), when
         the resulting effective parameter set of ``type_name`` or of any
         Type nesting it would contain a path twice, or when a target path
-        cannot be created.
+        cannot be created because an intermediate segment is an existing
+        parameter, the final segment is an existing Parameter Group, or
+        another target of the same edit is a strict segment-prefix of it.
 
         :param type_name: Name of the outer Type.
         :param submodule: Name of the submodule that requires the Nested
