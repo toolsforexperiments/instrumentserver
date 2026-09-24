@@ -412,6 +412,40 @@ def test_types_of_orders_innermost_first(pm):
     assert pm.types_of("q01.octave_gain") == ["qubit"]
 
 
+def test_a_type_claiming_through_two_instances_is_ordered_by_its_innermost_instance(pm):
+    # one Type claiming a parameter through more than one Instance is
+    # listed once, ordered by its innermost Instance
+    put_type(
+        pm,
+        "zzz",
+        parameters={
+            "x": {"default": None, "unit": "Hz"},
+            "a.x": {"default": None, "unit": "Hz"},
+        },
+    )
+    put_type(
+        pm,
+        "aaa",
+        parameters={
+            "a.x": {"default": None, "unit": "Hz"},
+            "top": {"default": None, "unit": "s"},
+        },
+    )
+    pm.add_parameter("a.x", unit="Hz")
+    pm.add_parameter("a.top", unit="s")
+    pm.add_parameter("a.a.x", unit="Hz")
+    pm.add_parameter("a.a.a.x", unit="Hz")
+
+    # both a and a.a carry the whole zzz shape (x and a.x with unit Hz)
+    assert pm.instances_of("zzz") == ["a", "a.a"]
+    # aaa is carried by a alone (a.a lacks a.top)
+    assert pm.instances_of("aaa") == ["a"]
+    # zzz claims a.a.x through a.a (innermost) and through a; aaa claims
+    # it only through a: the innermost Instance puts zzz first, although
+    # the Type-name tie-break alone would put aaa first
+    assert pm.types_of("a.a.x") == ["zzz", "aaa"]
+
+
 def test_q01_readout_is_an_instance_of_readout_on_its_own(pm):
     # the parent carries only the readout shape, not the full qubit shape:
     # the nested Parameter Group matches readout regardless of its parent
