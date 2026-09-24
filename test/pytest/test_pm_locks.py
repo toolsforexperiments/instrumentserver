@@ -20,8 +20,8 @@ import pytest
 
 from instrumentserver.blueprints import (
     PM_LOCK_UPDATE,
-    PMLockBluePrint,
     ParameterBroadcastBluePrint,
+    PMLockBluePrint,
 )
 from instrumentserver.params import (
     ManagedParameter,
@@ -765,6 +765,23 @@ def test_lock_emits_one_pm_lock_update_naming_the_follower(pm_with_sink):
     )
 
 
+def test_re_targeting_a_lock_emits_one_pm_lock_update_with_the_new_target(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    received.clear()
+
+    pm.lock("q01.x", "q01.y")  # re-targets the existing Lock (D9)
+
+    assert len(received) == 1
+    bp = received[0]
+    assert bp.name == "parameter_manager.q01.x"
+    assert bp.action == PM_LOCK_UPDATE
+    assert bp.value == PMLockBluePrint(target="parameter_manager.q01.y", locked=True)
+    assert pm.get("q01.x") == 2  # the Follower now pulls from q01.y
+
+
 def test_unlock_emits_pm_lock_update_with_the_unlocked_lock(pm_with_sink):
     pm, received = pm_with_sink
     pm.lock("q01.x", "q01Data.IF")
@@ -817,6 +834,28 @@ def test_toggle_lock_emits_one_broadcast_per_state_change(pm_with_sink):
     )
 
 
+def test_broadcast_payloads_are_independent_of_the_stored_lock(pm_with_sink):
+    # unlock and relock broadcast a snapshot, not the parameter's own Lock
+    # record: a sink that keeps payloads must still see each Broadcast's
+    # state at emit time after the Lock is toggled again
+    pm, received = pm_with_sink
+    pm.lock("q01.x", "q01Data.IF")
+    received.clear()
+
+    pm.toggle_lock("q01.x")  # unlock
+    pm.toggle_lock("q01.x")  # lock again
+
+    assert len(received) == 2
+    assert received[0].value.locked is False
+    assert received[1].value.locked is True
+    assert received[0].value.locked != received[1].value.locked
+    assert received[0].value is not received[1].value
+    # the stored record is untouched by the broadcasting
+    assert pm.get_lock("q01.x") == PMLockBluePrint(
+        target="parameter_manager.q01Data.IF", locked=True
+    )
+
+
 def test_remove_lock_emits_pm_lock_update_with_none(pm_with_sink):
     pm, received = pm_with_sink
     pm.lock("q01.x", "q01Data.IF")
@@ -857,16 +896,30 @@ def test_failed_lock_validations_emit_nothing(pm_with_sink):
         pm.lock("nope", "q01Data.IF")
     with pytest.raises(ValueError):
         pm.lock("q01.x", "q01.x")  # self-lock
+    with pytest.raises(ValueError):
+        pm.relock("q02.y")  # no Lock
+    with pytest.raises(ValueError):
+        pm.toggle_lock("q02.y")  # no Lock
     assert received == []
 
     pm.lock("q01.x", "q01Data.IF")
+    pm.unlock("q01.x")
     received.clear()
     with pytest.raises(ValueError):
         pm.lock("q01Data.IF", "q01.x")  # would close a cycle
     with pytest.raises(ValueError):
         pm.unlock("q02.y")  # no Lock
     with pytest.raises(ValueError):
-        pm.remove_lock("q02.y")  # no Lock
+        pm.relock("q02.y")  # no Lock
+    with pytest.raises(ValueError):
+        pm.toggle_lock("q02.y")  # no Lock
+    # a relock that would close a cycle is refused as well (D7)
+    pm.parameter("q01Data.IF")._target = pm.parameter("q01.x")
+    pm.parameter("q01Data.IF").lock = PMLockBluePrint(
+        target="parameter_manager.q01.x", locked=True
+    )
+    with pytest.raises(ValueError, match="cycle in Lock targets"):
+        pm.relock("q01.x")
 
     assert received == []
 

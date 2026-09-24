@@ -13,7 +13,11 @@ from qcodes.parameters import ParameterBase
 
 from . import serialize
 from .base import Broadcaster
-from .blueprints import PM_LOCK_UPDATE, PMLockBluePrint, ParameterBroadcastBluePrint
+from .blueprints import (
+    PM_LOCK_UPDATE,
+    ParameterBroadcastBluePrint,
+    PMLockBluePrint,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -618,7 +622,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
         self._check_lock_allowed(follower_full, target_full)
         follower._target = target_param
         follower.lock = PMLockBluePrint(target=target_full, locked=True)
-        self._broadcast_lock_update(name, follower.lock)
+        # a snapshot, not the stored record: sinks must not see the payload
+        # change when the Lock is toggled or re-targeted later
+        self._broadcast_lock_update(
+            name, PMLockBluePrint(target=target_full, locked=True)
+        )
 
     def unlock(self, name: str) -> None:
         """Unlock the Lock of the parameter at ``name`` (dotted path
@@ -637,7 +645,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
             )
             return
         lock.locked = False
-        self._broadcast_lock_update(name, lock)
+        # a snapshot, not the live record: sinks must not see the payload
+        # change when the Lock is toggled again
+        self._broadcast_lock_update(
+            name, PMLockBluePrint(target=lock.target, locked=lock.locked)
+        )
 
     def relock(self, name: str) -> None:
         """Lock the Lock of the parameter at ``name`` (dotted path
@@ -664,7 +676,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
         assert isinstance(param, ManagedParameter)
         param._target = target_param
         lock.locked = True
-        self._broadcast_lock_update(name, lock)
+        # a snapshot, not the live record: sinks must not see the payload
+        # change when the Lock is toggled again
+        self._broadcast_lock_update(
+            name, PMLockBluePrint(target=lock.target, locked=lock.locked)
+        )
 
     def toggle_lock(self, name: str) -> None:
         """Toggle the Lock of the parameter at ``name`` (dotted path
