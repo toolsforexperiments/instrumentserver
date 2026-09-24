@@ -1,9 +1,11 @@
 import json
 import logging
 import os
+from collections.abc import Sequence
 from enum import Enum, auto, unique
+from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 
 from qcodes import Parameter, validators
 from qcodes.instrument import InstrumentBase
@@ -11,6 +13,7 @@ from qcodes.parameters import ParameterBase
 
 from . import serialize
 from .base import Broadcaster
+from .blueprints import PMLockBluePrint
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +58,91 @@ def paramTypeFromName(name: str) -> Union[ParameterTypes, None]:
         if name == v["name"]:
             return k
     return None
+
+
+class ManagedParameter(Parameter):
+    """
+    A parameter that can carry a Lock naming another parameter as its Target.
+
+    While the Lock is locked, the parameter answers ``get`` with the Target's
+    value and refuses ``set`` with a ``ValueError`` naming the Target: values
+    are pulled on get, nothing is ever pushed into a Follower (ADR-0002).
+    Locking never touches the own cached value, so unlocking exposes the own
+    value again. With no Lock, or with a Lock that is present but unlocked,
+    the parameter behaves like a plain ``Parameter``; an unlocked Lock only
+    remembers its Target.
+    """
+
+    def __init__(self, name: str, **kwargs: Any) -> None:
+        # The Lock state must exist before ``super().__init__``: creating the
+        # parameter with an ``initial_value`` already runs ``set_raw``.
+        self.lock: PMLockBluePrint | None = None
+        self._target: ParameterBase | None = None
+        super().__init__(name, **kwargs)
+
+    @property
+    def locked(self) -> bool:
+        """Whether a Lock is present and currently locked."""
+        return self.lock is not None and self.lock.locked
+
+    def _locked_target(self) -> ParameterBase:
+        """The Target parameter object of a locked Lock."""
+        assert self._target is not None, "a locked Lock has no Target"
+        return self._target
+
+    def own_value(self) -> Any:
+        """Return the own cached value, whatever state the Lock is in."""
+        return self.cache.get(get_if_invalid=False)
+
+    def get_raw(self) -> Any:
+        """Answer with the Target's value while locked, the own cached value
+        otherwise."""
+        if self.locked:
+            return self._locked_target().get()
+        return self.cache.raw_value
+
+    def set_raw(self, value: Any) -> None:
+        """Store the value while not locked; while locked, refuse with a
+        ``ValueError`` naming the Target."""
+        if self.locked:
+            raise ValueError(
+                f"{self.full_name} is locked to {self._locked_target().full_name}"
+            )
+        self.cache._set_from_raw_value(value)
+
+    def _wrap_get(self, get_function: Callable[..., Any]) -> Callable[..., Any]:
+        """Wrap ``get_raw`` so that a locked get answers with the Target's
+        value without recording it in the own cache.
+
+        qcodes' get wrapper writes every answered value into the parameter's
+        cache; for a Follower that would destroy the own value that unlocking
+        must expose again (ADR-0002).
+        """
+        plain_get = super()._wrap_get(get_function)
+
+        @wraps(get_function)
+        def get_wrapper(*args: Any, **kwargs: Any) -> Any:
+            if self.locked:
+                return self._locked_target().get()
+            return plain_get(*args, **kwargs)
+
+        return get_wrapper
+
+    def snapshot_base(
+        self,
+        update: bool | None = True,
+        params_to_skip_update: Sequence[str] | None = None,
+    ) -> Dict[str, Any]:
+        """Snapshot with a ``lock`` entry while a Lock is present; while
+        locked, the reported ``value`` is the Target's value."""
+        snap = super().snapshot_base(
+            update=update, params_to_skip_update=params_to_skip_update
+        )
+        if self.lock is not None:
+            if self.locked:
+                snap["value"] = self._locked_target().get()
+            snap["lock"] = {"target": self.lock.target, "locked": self.lock.locked}
+        return snap
 
 
 class ParameterGroup(InstrumentBase):
@@ -132,11 +220,11 @@ class ParameterGroup(InstrumentBase):
         :param kw: Any keyword arguments will be passed on to
             qcodes.Instrument.add_parameter, except:
             - ``set_cmd`` is always set to ``None``
-            - ``parameter_class`` is ``qcodes.Parameter``
+            - ``parameter_class`` defaults to ``qcodes.Parameter``
             - ``vals`` defaults to ``qcodes.utils.validators.Anything()``.
         :return: None.
         """
-        kw["parameter_class"] = Parameter
+        kw.setdefault("parameter_class", Parameter)
         if "vals" not in kw:
             kw["vals"] = validators.Anything()
         kw["set_cmd"] = None
@@ -253,6 +341,23 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
     def getWorkingDirectory(self):  # type: ignore[no-untyped-def]
         return self.workingDirectory
+
+    def add_parameter(self, name: str, **kw: Any) -> None:  # type: ignore[override]
+        """Add a parameter, created as a :class:`ManagedParameter`.
+
+        Same dotted-name semantics as :meth:`ParameterGroup.add_parameter`,
+        which this method calls; only the parameter class differs, so that
+        the Parameter Manager's parameters can carry a Lock.
+
+        :param name: Name of the parameter; see
+            :meth:`ParameterGroup.add_parameter`.
+        :param kw: Any keyword arguments will be passed on to
+            qcodes.Instrument.add_parameter, as in
+            :meth:`ParameterGroup.add_parameter`.
+        :return: None.
+        """
+        kw["parameter_class"] = ManagedParameter
+        super().add_parameter(name, **kw)
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":

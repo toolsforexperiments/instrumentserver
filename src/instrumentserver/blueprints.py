@@ -399,11 +399,29 @@ class ParameterBroadcastBluePrint:
         return bluePrintToDict(self)
 
 
+@dataclass
+class PMLockBluePrint:
+    """Blueprint of a Lock of the Parameter Manager.
+
+    Carries the full name of the Target the Follower's Lock points at and
+    whether the Lock is currently locked. Sent as the value of
+    ``pm-lock-update`` Broadcasts and returned by the Lock API.
+    """
+
+    target: str
+    locked: bool
+    _class_type: str = "PMLockBluePrint"
+
+    def toJson(self) -> Dict[str, Any]:
+        return bluePrintToDict(self)
+
+
 BluePrintType = Union[
     ParameterBluePrint,
     MethodBluePrint,
     InstrumentModuleBluePrint,
     ParameterBroadcastBluePrint,
+    PMLockBluePrint,
 ]
 
 
