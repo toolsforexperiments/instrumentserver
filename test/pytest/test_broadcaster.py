@@ -17,7 +17,15 @@ import qcodes as qc
 
 from instrumentserver import QtCore
 from instrumentserver.base import Broadcaster
-from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from instrumentserver.blueprints import (
+    PARAMETER_CALL,
+    PARAMETER_CREATION,
+    PARAMETER_DELETION,
+    PARAMETER_UPDATE,
+    PM_LOCK_UPDATE,
+    PM_TYPE_UPDATE,
+    ParameterBroadcastBluePrint,
+)
 from instrumentserver.client.proxy import SubClient
 from instrumentserver.config import loadConfig
 from instrumentserver.params import ParameterManager
@@ -120,6 +128,28 @@ def test_removing_a_sink_that_was_never_added_is_a_noop():
         pass
 
     bc.remove_broadcast_sink(unknown_sink)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Broadcast action strings
+# (the constants every emitter and consumer shares; their values are the
+# wire contract, so they are pinned here)
+# ---------------------------------------------------------------------------
+
+
+def test_broadcast_action_constants_pin_the_wire_strings():
+    """The action of a Broadcast is a plain string on the wire, and external
+    subscribers parse these exact strings unchanged (ADR-0003). Every
+    in-repo emitter and consumer now shares the constants, so the whole
+    suite would pass even if a constant's value drifted; pinning the values
+    here keeps that drift from silently breaking external subscribers.
+    """
+    assert PARAMETER_UPDATE == "parameter-update"
+    assert PARAMETER_CALL == "parameter-call"
+    assert PARAMETER_CREATION == "parameter-creation"
+    assert PARAMETER_DELETION == "parameter-deletion"
+    assert PM_LOCK_UPDATE == "pm-lock-update"
+    assert PM_TYPE_UPDATE == "pm-type-update"
 
 
 # ---------------------------------------------------------------------------
