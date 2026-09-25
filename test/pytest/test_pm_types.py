@@ -2,8 +2,10 @@
 duck-typed Instance matching (plan task 2.2), the Type edits with
 Instance side effects (plan task 2.3), ``add_instance`` (plan task 2.4),
 the ``pm-type-update`` and side-effect creation Broadcasts (plan task
-2.5) and the Globals rules with the ``_ensure_global_target`` helper
-(plan task 3.1).
+2.5), the Globals rules with the ``_ensure_global_target`` helper (plan
+task 3.1) and the Type Locks ``lock_type_parameter`` /
+``unlock_type_parameter`` with their application to new Instances (plan
+task 3.2).
 
 The definition and editing methods are exercised through the public API:
 ``add_type`` / ``add_type_parameter`` / ``add_nested_type`` and friends.
@@ -51,15 +53,41 @@ the way and a Parameter Group at the target — each leaving the tree
 byte-identical — and that a Globals parameter is otherwise ordinary (set,
 read, Target of a Lock). The proxy part exercises the ``add_parameter``
 refusal over the wire.
+The Type Lock part (3.2) checks that ``lock_type_parameter`` locks every
+current Instance's parameter to the Target — the default Globals one,
+created on demand with the entry's default and unit, or an explicit
+ordinary parameter — that the skipped Followers carrying a Lock on
+another Target are returned and named in one warning, that re-declaring
+re-applies ("lock all") and a different Target skips the old Followers,
+that ``unlock_type_parameter`` removes only the rule while every Lock
+stays, that an Instance falling out keeps its Locks, that
+``add_instance`` locks the new Instance's parameters at the locked
+entries (a kept parameter included, with its own value and unit
+untouched) and skips the ones it cannot lock with one warning, that
+``add_nested_type`` applies the Nested Type's Type Lock under the
+submodule (a pre-existing parameter included) while ``add_type_parameter``
+applies none (its fresh entries carry no Target), and the refusals
+(unknown Type, non-own entry, missing explicit Target, self-lock, cycle,
+parameters that cannot carry a Lock) each leaving the tree, the Locks and
+the registry byte-identical. The Broadcast part checks the order
+parameter-creation, pm-lock-updates, pm-type-update for a declaration,
+the single pm-type-update of a removal and of an all-locked re-declare,
+and that refused calls emit nothing. The proxy part exercises both
+methods over the wire (the skipped list round-tripping, the full-form
+Target in ``get_type``, a locked Instance parameter pulling the Globals
+value) and a SubClient receiving the declaration Broadcasts made by a
+second client.
 """
 
 import copy
+import logging
 import re
 
 import pytest
 
 from instrumentserver.blueprints import (
     PARAMETER_CREATION,
+    PM_LOCK_UPDATE,
     PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
     PMLockBluePrint,
@@ -2036,6 +2064,562 @@ def test_a_globals_parameter_is_an_ordinary_parameter(pm):
 
 
 # ---------------------------------------------------------------------------
+# Type Locks: lock_type_parameter / unlock_type_parameter (plan task 3.2, D17)
+#
+# A Type Lock is a rule on a Type entry naming a Target. Declaring it
+# stores the Target on the entry (the default is the Globals parameter
+# ``_globals.<type>.<path>``, created on demand) and puts an ordinary,
+# locked Lock on the entry's parameter in every current Instance;
+# Followers that carry a Lock on another Target are skipped with one
+# warning and returned. Removing the Type Lock removes only the rule;
+# every new Instance gets the existing Type Locks of its Type at
+# creation.
+# ---------------------------------------------------------------------------
+
+
+def put_qubit_instances(pm):
+    """The Type ``qubit`` (entries IF and octave_gain) with the Instances
+    q01 and q02 carrying the whole shape."""
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.IF", initial_value=5e9, unit="Hz")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+    pm.add_parameter("q02.IF", initial_value=6e9, unit="Hz")
+    pm.add_parameter("q02.octave_gain", initial_value=11, unit="dB")
+
+
+def lock_state(pm):
+    """Everything a refused Type Lock call must leave byte-identical: the
+    parameter tree, every Lock and the Type registry."""
+    return (
+        sorted(pm.list()),
+        pm.list_locks(),
+        copy.deepcopy(pm._types),
+    )
+
+
+def test_lock_type_parameter_locks_every_current_instance_parameter(pm):
+    put_qubit_instances(pm)
+
+    skipped = pm.lock_type_parameter("qubit", "IF")
+
+    assert skipped == []
+    # every Instance parameter is locked to the default Globals Target
+    for inst in ("q01", "q02"):
+        assert pm.get_lock(f"{inst}.IF") == PMLockBluePrint(
+            target="parameter_manager._globals.qubit.IF", locked=True
+        )
+    # the Followers pull the Target's value and refuse set
+    pm.set("_globals.qubit.IF", 7e9)
+    assert pm.get("q01.IF") == 7e9
+    assert pm.get("q02.IF") == 7e9
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "parameter_manager.q01.IF is locked to "
+            "parameter_manager._globals.qubit.IF"
+        ),
+    ):
+        pm.set("q01.IF", 1)
+    # the entry carries the Target in the full form; the other entry is
+    # untouched
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager._globals.qubit.IF"
+    )
+    assert pm.get_type("qubit").parameters["octave_gain"]["target"] is None
+
+
+def test_lock_type_parameter_creates_the_default_globals_target(pm):
+    put_qubit_instances(pm)
+
+    pm.lock_type_parameter("qubit", "IF")
+
+    # the default Target _globals.<type>.<path> with the entry's default
+    # and unit
+    assert pm.has_param("_globals.qubit.IF")
+    assert pm.get("_globals.qubit.IF") == 5e9
+    assert pm.parameter("_globals.qubit.IF").unit == "Hz"
+    assert isinstance(pm.parameter("_globals.qubit.IF"), ManagedParameter)
+
+
+def test_lock_type_parameter_skips_a_lock_on_another_target_with_a_warning(
+    pm, caplog
+):
+    put_qubit_instances(pm)
+    pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
+    pm.lock("q01.IF", "q00.IF")
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        skipped = pm.lock_type_parameter("qubit", "IF")
+
+    # the skipped path is returned, in tree order
+    assert skipped == ["q01.IF"]
+    # one warning naming the Type, the entry path, the skipped path and
+    # its Target
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'qubit'" in message
+    assert "'IF'" in message
+    assert "'q01.IF'" in message
+    assert "parameter_manager.q00.IF" in message
+    # the skipped Lock is untouched and still pulls its own Target
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager.q00.IF", locked=True
+    )
+    assert pm.get("q01.IF") == 1e9
+    # the other Instance is locked
+    assert pm.get_lock("q02.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+
+
+def test_lock_type_parameter_without_skips_warns_nothing(pm, caplog):
+    put_qubit_instances(pm)
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        assert pm.lock_type_parameter("qubit", "IF") == []
+
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert warnings_ == []
+
+
+def test_add_instance_applies_the_existing_type_lock_to_the_new_instance(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+
+    pm.add_instance("qubit", "q03")
+
+    assert pm.get_lock("q03.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get("q03.IF") == pm.get("_globals.qubit.IF")
+
+
+def test_add_instance_locks_a_kept_parameter_and_keeps_its_own_value_and_unit(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    # q05 carries IF with its own value already, but lacks octave_gain:
+    # not an Instance yet
+    pm.add_parameter("q05.IF", initial_value=4e9, unit="Hz")
+
+    pm.add_instance("qubit", "q05")
+
+    # the kept parameter is locked like a created one; its own value and
+    # unit are untouched (D14 keeps those, D17 adds the Lock)
+    assert pm.get_lock("q05.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.parameter("q05.IF").own_value() == 4e9
+    assert pm.parameter("q05.IF").unit == "Hz"
+    assert pm.instances_of("qubit") == ["q01", "q02", "q05"]
+
+
+def test_add_instance_skips_a_kept_parameter_locked_to_another_target(pm, caplog):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
+    pm.add_parameter("q06.IF", initial_value=4e9, unit="Hz")
+    pm.lock("q06.IF", "q00.IF")
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        pm.add_instance("qubit", "q06")
+
+    # the creation itself succeeded and q06 is an Instance
+    assert pm.instances_of("qubit") == ["q01", "q02", "q06"]
+    assert pm.get("q06.octave_gain") == 10
+    # the kept parameter's Lock on another Target is untouched
+    assert pm.get_lock("q06.IF") == PMLockBluePrint(
+        target="parameter_manager.q00.IF", locked=True
+    )
+    assert pm.get("q06.IF") == 1e9
+    # one warning names the Type, the entry path, the skipped path and
+    # its Target
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'qubit'" in message
+    assert "'IF'" in message
+    assert "'q06.IF'" in message
+    assert "parameter_manager.q00.IF" in message
+
+
+def test_add_instance_skips_the_type_lock_when_the_target_is_gone(pm, caplog):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    # the Globals Target is removed; until task 3.3 the entry keeps the
+    # stored Target, and the application must skip instead of raising
+    pm.remove_parameter("_globals.qubit.IF")
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        pm.add_instance("qubit", "q07")
+
+    # the creation itself still succeeds; the created parameter carries
+    # no Lock
+    assert pm.instances_of("qubit") == ["q01", "q02", "q07"]
+    assert pm.get_lock("q07.IF") is None
+    assert pm.get("q07.IF") == 5e9
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'q07.IF'" in message
+    assert "does not exist" in message
+
+
+def test_the_creation_methods_leave_an_existing_instance_lock_state_untouched(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.unlock("q01.IF")  # unlocked individually
+
+    pm.add_instance("qubit", "q08")
+
+    # q01 was an Instance before the edit: its unlocked Lock stays
+    # unlocked; only lock_type_parameter re-applies to everyone
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=False
+    )
+    # the new Instance is locked
+    assert pm.get_lock("q08.IF").locked is True
+
+
+def test_add_type_parameter_applies_no_type_locks(pm):
+    # under the edit loops the parameters are created only under Instances
+    # found before the edit, so no submodule becomes a new Instance and no
+    # Type Lock is applied: the fresh entry carries no Target, and the
+    # Instances that existed keep their Lock state
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.unlock("q01.IF")  # an individually unlocked Follower stays unlocked
+    locks_before = pm.list_locks()
+
+    pm.add_type_parameter("qubit", "extra", default=1, unit="V")
+
+    # the created parameters carry no Lock
+    assert pm.get_lock("q01.extra") is None
+    assert pm.get_lock("q02.extra") is None
+    assert pm.list_locks() == locks_before
+
+    # the same through a nesting Type: readout's fresh entry window is
+    # created under qubit's Instance, with no Lock
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_nested_type("qubit", "readout", "readout")
+    pm.lock_type_parameter("readout", "IF")
+    locks_before = pm.list_locks()
+
+    pm.add_type_parameter("readout", "window", default=2e-6, unit="s")
+
+    assert pm.get_lock("q01.readout.window") is None
+    assert pm.list_locks() == locks_before
+
+
+def test_add_nested_type_applies_the_nested_type_lock_under_the_submodule(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+    pm.lock_type_parameter("readout", "IF")
+
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    # the created readout.IF is locked to readout's Globals Target
+    assert pm.get_lock("q01.readout.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.readout.IF", locked=True
+    )
+    assert pm.get("q01.readout.IF") == pm.get("_globals.readout.IF")
+
+
+def test_add_nested_type_locks_a_pre_existing_parameter_when_it_completes(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type_parameter("readout", "window", default=2e-6, unit="s")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+    # q01.readout carries only IF: not an Instance of readout yet, so the
+    # declaration locks nobody
+    pm.add_parameter("q01.readout.IF", initial_value=10e6, unit="Hz")
+    pm.lock_type_parameter("readout", "IF")
+    assert pm.get_lock("q01.readout.IF") is None
+
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    # the edit creates the missing window, completing q01.readout into a
+    # new Instance of readout: its PRE-EXISTING IF gets the Type Lock
+    assert pm.get_lock("q01.readout.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.readout.IF", locked=True
+    )
+    # the entry without a Type Lock stays unlocked
+    assert pm.get_lock("q01.readout.window") is None
+
+
+def test_unlock_type_parameter_leaves_every_lock_in_place(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    locks_before = pm.list_locks()
+
+    pm.unlock_type_parameter("qubit", "IF")
+
+    # only the Type Lock goes: the entry's Target is cleared ...
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
+    # ... and every Lock stays, locked as it was
+    assert pm.list_locks() == locks_before
+    assert pm.get("q01.IF") == pm.get("_globals.qubit.IF")
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "parameter_manager.q01.IF is locked to "
+            "parameter_manager._globals.qubit.IF"
+        ),
+    ):
+        pm.set("q01.IF", 1)
+
+
+def test_unlock_type_parameter_without_a_type_lock_is_a_logged_no_op(pm, caplog):
+    put_qubit_instances(pm)
+    received = []
+    pm.add_broadcast_sink(received.append)
+    caplog.clear()
+
+    with caplog.at_level(logging.INFO):
+        pm.unlock_type_parameter("qubit", "IF")
+
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
+    # the no-op emits nothing
+    assert received == []
+    records = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.INFO and r.name == "instrumentserver.params"
+    ]
+    assert len(records) == 1
+    assert "carries no Type Lock" in records[0].getMessage()
+
+
+def test_an_instance_falling_out_keeps_its_locks(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+
+    pm.remove_parameter("q01.octave_gain")  # q01 stops matching
+
+    assert pm.instances_of("qubit") == ["q02"]
+    # the Lock stays on the parameter that fell out
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get("q01.IF") == pm.get("_globals.qubit.IF")
+
+
+def test_re_declaring_the_type_lock_re_applies_it(pm, caplog):
+    put_qubit_instances(pm)
+    pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
+    pm.lock_type_parameter("qubit", "IF")
+    # q01 is re-targeted to another Target, q02 is unlocked individually
+    pm.lock("q01.IF", "q00.IF")
+    pm.unlock("q02.IF")
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        skipped = pm.lock_type_parameter("qubit", "IF")
+
+    # the Follower on another Target is skipped again, with the warning
+    assert skipped == ["q01.IF"]
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager.q00.IF", locked=True
+    )
+    # the individually unlocked Follower is locked again ("lock all")
+    assert pm.get_lock("q02.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get("q02.IF") == pm.get("_globals.qubit.IF")
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    assert "'q01.IF'" in warnings_[0].getMessage()
+
+
+def test_re_declaring_with_a_different_target_skips_the_old_followers(pm, caplog):
+    put_qubit_instances(pm)
+    pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
+    pm.lock_type_parameter("qubit", "IF")  # everyone locked to the Globals
+    pm.remove_lock("q02.IF")  # no Lock at all
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        skipped = pm.lock_type_parameter("qubit", "IF", target="q00.IF")
+
+    # the Follower still locked to the old Target is skipped
+    assert skipped == ["q01.IF"]
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    # the parameter without a Lock is locked to the new Target
+    assert pm.get_lock("q02.IF") == PMLockBluePrint(
+        target="parameter_manager.q00.IF", locked=True
+    )
+    assert pm.get("q02.IF") == 1e9
+    # the entry carries the new Target
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager.q00.IF"
+    )
+
+
+def test_lock_type_parameter_with_an_explicit_ordinary_target(pm):
+    put_qubit_instances(pm)
+    pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
+
+    skipped = pm.lock_type_parameter("qubit", "IF", target="q00.IF")
+
+    assert skipped == []
+    # no Globals parameter is created for an explicit Target
+    assert not pm.has_param("_globals.qubit.IF")
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager.q00.IF"
+    )
+    for inst in ("q01", "q02"):
+        assert pm.get_lock(f"{inst}.IF") == PMLockBluePrint(
+            target="parameter_manager.q00.IF", locked=True
+        )
+    pm.set("q00.IF", 2e9)
+    assert pm.get("q01.IF") == 2e9
+
+
+def test_lock_type_parameter_refuses_an_unknown_type(pm):
+    put_qubit_instances(pm)
+    before = lock_state(pm)
+
+    with pytest.raises(ValueError, match="no Type named 'nope' exists"):
+        pm.lock_type_parameter("nope", "IF")
+    with pytest.raises(ValueError, match="no Type named 'nope' exists"):
+        pm.unlock_type_parameter("nope", "IF")
+
+    assert lock_state(pm) == before
+
+
+def test_lock_type_parameter_refuses_a_path_that_is_not_an_own_entry(pm):
+    put_three_tier_registry(pm)
+    put_three_tier_tree(pm)
+    before = lock_state(pm)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "parameter path 'readout.IF' is not an entry of Type 'qubit' "
+            "itself: it is only in the effective set through the entry of "
+            "Type 'readout'"
+        ),
+    ):
+        pm.lock_type_parameter("qubit", "readout.IF")
+    with pytest.raises(
+        ValueError,
+        match=re.escape("parameter path 'nope' is not an entry of Type 'qubit'"),
+    ):
+        pm.lock_type_parameter("qubit", "nope")
+    # unlock_type_parameter refuses the same way
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'readout.IF' is not an entry of Type 'qubit' itself"),
+    ):
+        pm.unlock_type_parameter("qubit", "readout.IF")
+
+    assert lock_state(pm) == before
+
+
+def test_lock_type_parameter_refuses_a_missing_explicit_target(pm):
+    put_qubit_instances(pm)
+    before = lock_state(pm)
+
+    with pytest.raises(ValueError, match="Parameter 'nope.IF' does not exist"):
+        pm.lock_type_parameter("qubit", "IF", target="nope.IF")
+
+    # nothing was created and nobody was locked
+    assert lock_state(pm) == before
+    assert not pm.has_param("_globals.qubit.IF")
+
+
+def test_lock_type_parameter_refuses_a_self_lock_naming_the_path(pm):
+    put_qubit_instances(pm)
+    before = lock_state(pm)
+
+    # the explicit Target is the entry's own parameter in one of the
+    # Instances: its own Instance is a self-lock
+    with pytest.raises(
+        ValueError,
+        match=re.escape("cannot lock parameter_manager.q01.IF to itself"),
+    ):
+        pm.lock_type_parameter("qubit", "IF", target="q01.IF")
+
+    assert lock_state(pm) == before
+    assert not pm.has_param("_globals.qubit.IF")
+
+
+def test_lock_type_parameter_refuses_a_cycle_naming_the_path(pm):
+    put_qubit_instances(pm)
+    pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
+    # the Target is a Follower of the Instance parameter q01.IF
+    pm.lock("q00.IF", "q01.IF")
+    before = lock_state(pm)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "cannot lock parameter_manager.q01.IF to "
+            "parameter_manager.q00.IF: cycle in Lock targets: "
+            "parameter_manager.q00.IF -> parameter_manager.q01.IF"
+        ),
+    ):
+        pm.lock_type_parameter("qubit", "IF", target="q00.IF")
+
+    assert lock_state(pm) == before
+
+
+def test_lock_type_parameter_names_every_offending_path(pm):
+    # both Instances carry a plain qcodes Parameter at the entry path:
+    # neither can carry a Lock, and one error names both (rule 3)
+    put_qubit_instances(pm)
+    pm.remove_parameter("q01.IF")
+    pm.remove_parameter("q02.IF")
+    pm.q01._add_own_parameter("IF", set_cmd=None, unit="Hz")
+    pm.q02._add_own_parameter("IF", set_cmd=None, unit="Hz")
+    assert pm.instances_of("qubit") == ["q01", "q02"]
+    before = lock_state(pm)
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.lock_type_parameter("qubit", "IF")
+
+    message = str(excinfo.value)
+    assert "parameter_manager.q01.IF cannot carry a Lock" in message
+    assert "parameter_manager.q02.IF cannot carry a Lock" in message
+    assert lock_state(pm) == before
+    assert not pm.has_param("_globals.qubit.IF")
+
+
+# ---------------------------------------------------------------------------
 # pm-type-update and side-effect creation Broadcasts (plan task 2.5, D22)
 #
 # One pm-type-update per affected Type — the edited Type first, then every
@@ -2459,6 +3043,134 @@ def test_type_broadcast_payloads_are_snapshots_of_their_time(pm_with_sink):
 
 
 # ---------------------------------------------------------------------------
+# Type Lock Broadcasts (plan task 3.2, D10/D17/D22)
+#
+# A declaration emits the Globals parameter-creation (when created), then
+# one pm-lock-update per Lock it created or relocked — nothing for skipped
+# or already-locked parameters — then one pm-type-update for the edited
+# Type. A removal emits exactly one pm-type-update; the no-op removal
+# emits nothing. add_instance with an existing Type Lock emits its
+# parameter-creations first, then the pm-lock-updates. A refused call
+# emits nothing.
+# ---------------------------------------------------------------------------
+
+
+def test_lock_type_parameter_emits_creation_lock_updates_then_type_update(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    received.clear()
+
+    pm.lock_type_parameter("qubit", "IF")
+
+    assert len(received) == 4
+    creation, first_lock, second_lock, type_update = received
+    assert creation.name == "parameter_manager._globals.qubit.IF"
+    assert creation.action == PARAMETER_CREATION
+    assert creation.value == 5e9
+    assert creation.unit == "Hz"
+    assert first_lock.name == "parameter_manager.q01.IF"
+    assert first_lock.action == PM_LOCK_UPDATE
+    assert first_lock.value == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert second_lock.name == "parameter_manager.q02.IF"
+    assert second_lock.action == PM_LOCK_UPDATE
+    assert second_lock.value == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert type_update.name == "parameter_manager.qubit"
+    assert type_update.action == PM_TYPE_UPDATE
+    assert type_update.value.parameters["IF"]["target"] == (
+        "parameter_manager._globals.qubit.IF"
+    )
+
+
+def test_re_declaring_an_all_locked_type_lock_emits_only_the_type_update(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    pm.lock_type_parameter("qubit", "IF")
+
+    # every Instance parameter is already locked to the same Target: no
+    # pm-lock-update, and the Globals parameter exists already
+    assert len(received) == 1
+    assert received[0].name == "parameter_manager.qubit"
+    assert received[0].action == PM_TYPE_UPDATE
+
+
+def test_unlock_type_parameter_emits_exactly_one_pm_type_update(pm_with_sink):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    pm.unlock_type_parameter("qubit", "IF")
+
+    # one pm-type-update and no pm-lock-update: the Locks stay
+    assert len(received) == 1
+    update = received[0]
+    assert update.name == "parameter_manager.qubit"
+    assert update.action == PM_TYPE_UPDATE
+    assert update.value.parameters["IF"]["target"] is None
+
+    received.clear()
+    pm.unlock_type_parameter("qubit", "IF")  # no Type Lock any more: no-op
+    assert received == []
+
+
+def test_add_instance_with_a_type_lock_emits_creations_then_lock_updates(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    pm.add_instance("qubit", "q03")
+
+    # the parameter-creations first, then the pm-lock-update of the
+    # applied Type Lock; add_instance edits no Type, so no pm-type-update
+    assert len(received) == 3
+    first, second, lock_update = received
+    assert first.name == "parameter_manager.q03.IF"
+    assert first.action == PARAMETER_CREATION
+    assert second.name == "parameter_manager.q03.octave_gain"
+    assert second.action == PARAMETER_CREATION
+    assert lock_update.name == "parameter_manager.q03.IF"
+    assert lock_update.action == PM_LOCK_UPDATE
+    assert lock_update.value == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+
+
+def test_failed_type_lock_calls_emit_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    received.clear()
+
+    with pytest.raises(ValueError):
+        pm.lock_type_parameter("nope", "IF")
+    with pytest.raises(ValueError):
+        pm.lock_type_parameter("qubit", "nope")
+    with pytest.raises(ValueError):
+        pm.lock_type_parameter("qubit", "IF", target="nope.IF")
+    with pytest.raises(ValueError):
+        pm.lock_type_parameter("qubit", "IF", target="q01.IF")  # self-lock
+    with pytest.raises(ValueError):
+        pm.unlock_type_parameter("qubit", "nope")
+
+    assert received == []
+    assert not pm.has_param("_globals.qubit.IF")
+    assert pm.list_locks() == {}
+
+
+# ---------------------------------------------------------------------------
 # Type API and Broadcasts through a client proxy against a live Server
 # (plan task 2.5)
 #
@@ -2651,3 +3363,131 @@ def test_add_parameter_refusal_over_the_wire(param_manager):
 
     # nothing was created over the wire either
     assert sorted(params.list()) == before
+
+
+# ---------------------------------------------------------------------------
+# Type Locks through a client proxy against a live Server (plan task 3.2)
+#
+# The Server registers itself as a Broadcast sink on the Parameter Manager
+# (task 0.3), so a Type Lock declaration over the wire also emits its
+# Broadcasts on the PUB socket. The server-side Parameter Manager is
+# shared by all tests of this module, so every test removes the parameters
+# and Types it created again — the Globals Targets included.
+# ---------------------------------------------------------------------------
+
+PROXY_LOCK_TYPE = "ptl_qubit"
+PROXY_LOCK_INSTANCES = ("ptl_q01", "ptl_q02")
+
+
+def _cleanup_proxy_lock_types(params):
+    """Remove every parameter (the Globals Targets included) and the Type
+    the Type Lock proxy tests create, so the module's shared server-side
+    Parameter Manager starts each test clean."""
+    for path in list(params.list()):
+        top = path.split(".")[0]
+        if top.startswith("ptl_") or top == "_globals":
+            params.remove_parameter(path)
+    if PROXY_LOCK_TYPE in params.list_types():
+        params.remove_type(PROXY_LOCK_TYPE)
+
+
+def test_lock_type_parameter_round_trips_over_the_wire(param_manager):
+    cli, params = param_manager
+    _cleanup_proxy_lock_types(params)
+    try:
+        params.add_type(PROXY_LOCK_TYPE)
+        params.add_type_parameter(PROXY_LOCK_TYPE, "IF", default=5e9, unit="Hz")
+        params.add_type_parameter(
+            PROXY_LOCK_TYPE, "octave_gain", default=10, unit="dB"
+        )
+        for name in PROXY_LOCK_INSTANCES:
+            params.add_instance(PROXY_LOCK_TYPE, name)
+        params.update()
+
+        # nothing is skipped: the return value is an empty list
+        assert params.lock_type_parameter(PROXY_LOCK_TYPE, "IF") == []
+
+        # get_type deserialises with the full-form Target
+        bp = params.get_type(PROXY_LOCK_TYPE)
+        assert isinstance(bp, PMTypeBluePrint)
+        assert bp.parameters["IF"]["target"] == (
+            f"parameter_manager._globals.{PROXY_LOCK_TYPE}.IF"
+        )
+
+        # a locked Instance parameter pulls the Globals Target's value;
+        # the Target is set through the server-side Parameter Group's set
+        # (the client proxy's own set is qcodes' local, deprecated one)
+        cli.call(
+            "parameter_manager.set", f"_globals.{PROXY_LOCK_TYPE}.IF", 7e9
+        )
+        assert getattr(params, PROXY_LOCK_INSTANCES[0]).IF() == 7e9
+
+        # a Follower locked to another Target comes back as the skipped
+        # list over the wire
+        params.add_parameter("ptl_target.IF", initial_value=1e9, unit="Hz")
+        params.lock(f"{PROXY_LOCK_INSTANCES[1]}.IF", "ptl_target.IF")
+        skipped = params.lock_type_parameter(PROXY_LOCK_TYPE, "IF")
+        assert skipped == [f"{PROXY_LOCK_INSTANCES[1]}.IF"]
+
+        # the removal works over the wire too and clears the Target
+        params.unlock_type_parameter(PROXY_LOCK_TYPE, "IF")
+        assert params.get_type(PROXY_LOCK_TYPE).parameters["IF"]["target"] is None
+        # the Locks it created stay
+        assert params.get_lock(f"{PROXY_LOCK_INSTANCES[0]}.IF").locked is True
+    finally:
+        _cleanup_proxy_lock_types(params)
+
+
+def test_subclient_receives_the_type_lock_broadcasts_from_a_second_client(
+    param_manager, server_port, capture_broadcasts, wait_for_broadcasts
+):
+    cli, params = param_manager
+    _cleanup_proxy_lock_types(params)
+    second_cli = Client(port=server_port)
+    try:
+        second_params = second_cli.find_or_create_instrument(
+            "parameter_manager", "instrumentserver.params.ParameterManager"
+        )
+        second_params.add_type(PROXY_LOCK_TYPE)
+        second_params.add_type_parameter(PROXY_LOCK_TYPE, "IF", default=5e9, unit="Hz")
+        second_params.add_type_parameter(
+            PROXY_LOCK_TYPE, "octave_gain", default=10, unit="dB"
+        )
+        for name in PROXY_LOCK_INSTANCES:
+            second_params.add_instance(PROXY_LOCK_TYPE, name)
+
+        with capture_broadcasts(["parameter_manager"], server_port + 1) as received:
+            second_params.lock_type_parameter(PROXY_LOCK_TYPE, "IF")
+            wait_for_broadcasts(received, n=4)
+
+            # the Globals parameter-creation, one pm-lock-update per
+            # locked Instance parameter, then the pm-type-update
+            assert [bp.action for bp in received] == [
+                PARAMETER_CREATION,
+                PM_LOCK_UPDATE,
+                PM_LOCK_UPDATE,
+                PM_TYPE_UPDATE,
+            ]
+            assert received[0].name == (
+                f"parameter_manager._globals.{PROXY_LOCK_TYPE}.IF"
+            )
+            assert received[1].name == f"parameter_manager.{PROXY_LOCK_INSTANCES[0]}.IF"
+            assert isinstance(received[1].value, PMLockBluePrint)
+            assert received[1].value == PMLockBluePrint(
+                target=f"parameter_manager._globals.{PROXY_LOCK_TYPE}.IF",
+                locked=True,
+            )
+            assert received[2].name == f"parameter_manager.{PROXY_LOCK_INSTANCES[1]}.IF"
+            assert received[3].name == f"parameter_manager.{PROXY_LOCK_TYPE}"
+            assert isinstance(received[3].value, PMTypeBluePrint)
+            assert received[3].value.parameters["IF"]["target"] == (
+                f"parameter_manager._globals.{PROXY_LOCK_TYPE}.IF"
+            )
+
+            second_params.unlock_type_parameter(PROXY_LOCK_TYPE, "IF")
+            wait_for_broadcasts(received, n=5)
+            assert received[4].action == PM_TYPE_UPDATE
+            assert received[4].value.parameters["IF"]["target"] is None
+    finally:
+        second_cli.disconnect()
+        _cleanup_proxy_lock_types(params)

@@ -423,7 +423,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
     Type edits and :meth:`add_instance` create as side effects are
     re-emitted as ``parameter-creation`` Broadcasts (ADR-0003); direct
     ``add_parameter`` calls keep being announced by the Server, so nothing
-    is announced twice.
+    is announced twice. Declaring a Type Lock with
+    :meth:`lock_type_parameter` and removing it with
+    :meth:`unlock_type_parameter` do both: they emit the
+    ``pm-lock-update`` Broadcasts of the Locks the declaration creates and
+    the ``pm-type-update`` of the edited Type, and every new Instance gets
+    the existing Type Locks of its Type at creation (D17).
 
     For the parameter manager to recognize other profiles in disk,
     the profile filename needs to start with 'parameter_manager-'
@@ -1208,10 +1213,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
     #
     # The Broadcasts go out only after the whole edit succeeded (D22):
     # one ``parameter-creation`` per created parameter, in creation
-    # order, then one ``pm-type-update`` per affected Type — the edited
-    # Type first, then every Type nesting it, whose effective parameter
-    # set the edit changed too. The affected Types are the keys of
-    # ``_nesting_prefixes``, which the side-effect computation already
+    # order, then the Type Locks applied to the submodules the edit
+    # turned into new Instances (D17), each emitting one
+    # ``pm-lock-update``, then one ``pm-type-update`` per affected Type —
+    # the edited Type first, then every Type nesting it, whose effective
+    # parameter set the edit changed too. The affected Types are the keys
+    # of ``_nesting_prefixes``, which the side-effect computation already
     # walks. A refused edit emits nothing.
     # ------------------------------------------------------------------
 
@@ -1398,11 +1405,17 @@ class ParameterManager(Broadcaster, ParameterGroup):
         edit is a strict segment-prefix of it.
 
         After the edit succeeds it emits one ``parameter-creation``
-        Broadcast per parameter it created, in creation order, followed
-        by one ``pm-type-update`` Broadcast per affected Type — the
-        edited Type first, then every Type nesting it, whose effective
-        parameter set the new entry extends (D22, ADR-0003); a failed
-        validation emits nothing.
+        Broadcast per parameter it created, in creation order, followed by
+        one ``pm-lock-update`` Broadcast per Type Lock it applied to a new
+        Instance and one ``pm-type-update`` Broadcast per affected Type —
+        the edited Type first, then every Type nesting it, whose effective
+        parameter set the new entry extends (D17, D22, ADR-0003); a failed
+        validation emits nothing. A new Instance — a submodule that is an
+        Instance of an affected Type after the edit but was not one before
+        — gets the existing Type Locks of that Type applied to its
+        parameters at the Type's locked effective entries, parameters the
+        edit kept included; skips are collected into one ``logger.warning``
+        and the edit still succeeds.
 
         :param type_name: Name of the Type.
         :param path: Relative parameter path of the entry.
@@ -1469,11 +1482,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 creations.append((full, default, unit))
         # broadcasts after the whole edit succeeded (D22): one
         # parameter-creation per created parameter in creation order,
-        # then one pm-type-update per affected Type, the edited Type first
+        # then the Type Locks of the new Instances (each emitting its
+        # pm-lock-update, D17), then one pm-type-update per affected Type
         for created_path, initial_value, created_unit in creations:
             self._broadcast_parameter_creation(
                 created_path, initial_value, created_unit
             )
+        self._apply_type_locks_to_new_instances(list(affected), instances_before)
         for name in affected:
             self._broadcast_type_update(name)
 
@@ -1589,11 +1604,19 @@ class ParameterManager(Broadcaster, ParameterGroup):
         another target of the same edit is a strict segment-prefix of it.
 
         After the edit succeeds it emits one ``parameter-creation``
-        Broadcast per parameter it created, in creation order, followed
-        by one ``pm-type-update`` Broadcast per affected Type — the
-        edited Type first, then every Type nesting it, whose effective
-        parameter set the nested entries extend (D22, ADR-0003); a failed
-        validation emits nothing.
+        Broadcast per parameter it created, in creation order, followed by
+        one ``pm-lock-update`` Broadcast per Type Lock it applied to a new
+        Instance and one ``pm-type-update`` Broadcast per affected Type —
+        the edited Type first, then every Type nesting it, whose effective
+        parameter set the nested entries extend (D17, D22, ADR-0003); a
+        failed validation emits nothing. A new Instance — a submodule that
+        is an Instance after the edit but was not one before — gets the
+        existing Type Locks of its Type applied to its parameters at the
+        Type's locked effective entries, parameters the edit kept included;
+        the Nested Type's own chain joins the Types whose Type Locks are
+        applied, since nesting it completes the submodules at its position
+        into Instances of it; skips are collected into one
+        ``logger.warning`` and the edit still succeeds.
 
         :param type_name: Name of the outer Type.
         :param submodule: Name of the submodule that requires the Nested
@@ -1645,6 +1668,15 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # every Type nesting it must not contain a path twice; computed
         # against the current registry, which the mutation below follows
         affected = self._nesting_prefixes(type_name)
+        # the Nested Type's own chain joins the Types whose Type Locks are
+        # applied to new Instances (D17): nesting readout into qubit
+        # completes the submodules at the readout position into Instances
+        # of readout, whose Type Locks must be applied too; the creations
+        # and the pm-type-updates keep using ``affected`` only
+        lock_types = list(
+            dict.fromkeys([*affected, *self._nesting_prefixes(nested_type)])
+        )
+        instances_before = {name: self.instances_of(name) for name in lock_types}
         nested_entries = self._effective_entries(nested_type)
         collisions: List[str] = []
         for name in affected:
@@ -1668,7 +1700,6 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 f"'{submodule}' of Type '{type_name}': parameter path(s) "
                 f"{', '.join(collisions)} would appear more than once"
             )
-        instances_before = self._instances_before_edit(affected)
         targets = [
             (instance_path, f"{prefix}{submodule}.{entry_path}", entry)
             for name, prefixes in affected.items()
@@ -1694,11 +1725,14 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 creations.append((full, entry.default, entry.unit))
         # broadcasts after the whole edit succeeded (D22): one
         # parameter-creation per created parameter in creation order,
-        # then one pm-type-update per affected Type, the edited Type first
+        # then the Type Locks of the new Instances (each emitting its
+        # pm-lock-update, D17), then one pm-type-update per affected Type,
+        # the edited Type first
         for created_path, initial_value, created_unit in creations:
             self._broadcast_parameter_creation(
                 created_path, initial_value, created_unit
             )
+        self._apply_type_locks_to_new_instances(lock_types, instances_before)
         for name in affected:
             self._broadcast_type_update(name)
 
@@ -1743,8 +1777,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
     #
     # After the whole call succeeded it emits one ``parameter-creation``
     # Broadcast per parameter it created, in creation order (D22,
-    # ADR-0003); it edits no Type, so it emits no ``pm-type-update``. A
-    # refused call emits nothing.
+    # ADR-0003), then applies the existing Type Locks of the Type and of
+    # every Type nesting it to the submodules that are Instances only
+    # after the call (D17) — each applied Lock emitting its
+    # ``pm-lock-update``; it edits no Type, so it emits no
+    # ``pm-type-update``. A refused call emits nothing.
     # ------------------------------------------------------------------
 
     def add_instance(self, type_name: str, name: str) -> None:
@@ -1774,9 +1811,19 @@ class ParameterManager(Broadcaster, ParameterGroup):
         existing Parameter Group.
 
         After the Instance is created it emits one ``parameter-creation``
-        Broadcast per parameter it created, in creation order (D22,
-        ADR-0003); the call edits no Type, so it emits no
-        ``pm-type-update``. A failed validation emits nothing.
+        Broadcast per parameter it created, in creation order, followed by
+        one ``pm-lock-update`` Broadcast per Type Lock it applied to the
+        new Instance (D17, D22, ADR-0003); the call edits no Type, so it
+        emits no ``pm-type-update``. A failed validation emits nothing.
+        As a new Instance, ``name`` gets the existing Type Locks of this
+        Type and of every Type nesting it applied to its parameters at
+        their locked effective entries — a parameter the call kept (D14)
+        included, since a Lock changes neither its own value nor its unit.
+        A kept parameter that already carries a Lock on another Target, a
+        stored Target that no longer exists and a Lock that would close a
+        cycle are skipped, collected into one ``logger.warning``; the
+        creation itself still succeeds. Submodules that were Instances
+        before the call are untouched.
 
         :param type_name: Name of the Type.
         :param name: Dotted submodule path of the Instance, relative to
@@ -1818,6 +1865,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 f"'{name}': " + "; ".join(conflicts)
             )
         self._check_creation_targets([(name, path) for path in effective])
+        # the Instances of this Type and of every Type nesting it, before
+        # anything is created: the submodules that are Instances only after
+        # the call get the existing Type Locks applied (D17)
+        lock_types = list(self._nesting_prefixes(type_name))
+        instances_before = {name_: self.instances_of(name_) for name_ in lock_types}
         creations: List[Tuple[str, Any, str]] = []
         for path, entry in effective.items():
             full = f"{name}.{path}"
@@ -1826,12 +1878,14 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     full, initial_value=entry.default, unit=entry.unit
                 )
                 creations.append((full, entry.default, entry.unit))
-        # one parameter-creation per created parameter, in creation order
-        # (D22); no pm-type-update: the call edits no Type
+        # one parameter-creation per created parameter, in creation order,
+        # then the Type Locks of the new Instances (each emitting its
+        # pm-lock-update, D17); no pm-type-update: the call edits no Type
         for created_path, initial_value, created_unit in creations:
             self._broadcast_parameter_creation(
                 created_path, initial_value, created_unit
             )
+        self._apply_type_locks_to_new_instances(lock_types, instances_before)
 
     # ------------------------------------------------------------------
     # Globals (plan decision D18)
@@ -1855,8 +1909,8 @@ class ParameterManager(Broadcaster, ParameterGroup):
         with the entry's default value and unit — and return its dotted
         path relative to this Parameter Manager (D17, D18).
 
-        This is the internal helper a Type Lock declaration builds its
-        default Target with; nothing public calls it yet (task 3.2 will).
+        This is the internal helper :meth:`lock_type_parameter` builds the
+        default Target of a Type Lock declaration with.
         It bypasses the public :meth:`add_parameter` refusal of the
         Globals name through the internal creation path
         (``_get_parent(..., create_parent=True)`` +
@@ -1924,6 +1978,317 @@ class ParameterManager(Broadcaster, ParameterGroup):
         )
         self._broadcast_parameter_creation(global_path, entry.default, entry.unit)
         return global_path
+
+    # ------------------------------------------------------------------
+    # Type Locks (plan decision D17, task 3.2)
+    #
+    # A Type Lock is a rule on a Type entry naming a Target: declaring it
+    # with ``lock_type_parameter`` stores the Target on the entry (the
+    # default Target is the Globals parameter ``_globals.<type>.<path>``,
+    # created on demand through ``_ensure_global_target``) and puts an
+    # ordinary, locked Lock on the entry's parameter in every current
+    # Instance. Instance parameters that carry a Lock on another Target
+    # are skipped with a warning and returned; ``unlock_type_parameter``
+    # removes only the rule, and the Locks it created stay until they are
+    # removed individually. Every new Instance — created by
+    # ``add_instance``, or completed by ``add_type_parameter`` /
+    # ``add_nested_type`` — gets the existing Type Locks of its Type at
+    # creation, pre-existing parameters included. The Locks themselves are
+    # applied through the ordinary Lock API, so each state change emits
+    # exactly one ``pm-lock-update`` (D10); the declaration and the removal
+    # each emit one ``pm-type-update`` for the edited Type (D22).
+    # ------------------------------------------------------------------
+
+    def _classify_lock_application(
+        self, param_path: str, target_full: str
+    ) -> Tuple[str, "str | None"]:
+        """Classify what applying the Target ``target_full`` (the full
+        dotted form) to the parameter at ``param_path`` would do:
+        ``"lock"`` (no Lock present), ``"relock"`` (an unlocked Lock
+        remembering the same Target), ``"none"`` (already locked to the
+        same Target) or ``"skip"`` together with the Target the
+        parameter's Lock points at — a Lock on another Target is left
+        alone (D17)."""
+        param = self.parameter(param_path)
+        lock = getattr(param, "lock", None)
+        if lock is None:
+            return "lock", None
+        if lock.target == target_full:
+            return ("none" if lock.locked else "relock"), None
+        return "skip", lock.target
+
+    def lock_type_parameter(
+        self, type_name: str, path: str, target: str | None = None
+    ) -> List[str]:
+        """Declare the Type Lock of the entry ``path`` of the Type
+        ``type_name`` (D17): the Target is stored on the entry — the
+        parameter at ``target`` when given, the Globals parameter
+        ``_globals.<type_name>.<path>`` otherwise — and an ordinary,
+        locked Lock on that Target is put on the entry's parameter in
+        every current Instance of the Type. The default Globals Target is
+        created on demand with the entry's default value and unit, through
+        :meth:`_ensure_global_target`.
+
+        Instance parameters that already carry a Lock on another Target
+        are skipped: they are left untouched, named together with their
+        Target in one ``logger.warning``, and returned as a list of dotted
+        paths relative to this Parameter Manager (empty when nothing was
+        skipped). A parameter already locked to the same Target stays as
+        it is; an unlocked Lock remembering the same Target is locked
+        again. Declaring the Type Lock again therefore re-applies it to
+        everyone ("lock all"); declaring it with a different Target stores
+        the new one, and the Followers still locked to the old Target
+        count as skipped.
+
+        Raises ``ValueError`` — before anything is touched — naming every
+        offending path when no such Type exists, when ``path`` is not an
+        entry of the Type itself (naming the Type that defines it when the
+        path only reaches the effective parameter set through a Nested
+        Type; own entries only, like
+        :meth:`set_type_parameter_default`), when an explicit ``target``
+        does not exist as a parameter of this Parameter Manager, and when
+        locking one of the Instance parameters would be a self-lock, close
+        a cycle (walking Targets regardless of locked/unlocked state, D7)
+        or hit a parameter that cannot carry a Lock.
+
+        On success it emits the Globals parameter's ``parameter-creation``
+        (when created), then one ``pm-lock-update`` per Lock it created or
+        relocked — nothing for skipped or already-locked parameters — and
+        finally one ``pm-type-update`` for the edited Type (D10, D22); the
+        Types nesting it are not named, since their effective parameter
+        set carries units and defining Types, not Targets. A failed
+        validation emits nothing.
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the Type's own entry.
+        :param target: Path of the Target, relative to this Parameter
+            Manager; the default Globals Target when ``None``.
+        :return: The skipped Instance parameter paths, in tree order.
+        """
+        # validate-then-mutate: every check below runs before the entry or
+        # any Lock is touched (rule 3)
+        entry = self._require_type_entry(type_name, path)
+        if target is not None:
+            # the explicit Target must be a parameter of this Parameter
+            # Manager, resolved like lock() resolves it (D8)
+            self._resolve_param(target)
+            target_relative = target
+        else:
+            target_relative = f"_globals.{type_name}.{path}"
+        target_full = self._full_path(target_relative)
+        # classify every current Instance's parameter at the entry path; an
+        # Instance always carries the parameter (D12)
+        applications: List[Tuple[str, str]] = []
+        skipped: List[Tuple[str, str]] = []
+        offenders: List[str] = []
+        for instance_path in self.instances_of(type_name):
+            param_path = f"{instance_path}.{path}"
+            action, locked_to = self._classify_lock_application(
+                param_path, target_full
+            )
+            if action == "skip":
+                skipped.append((param_path, locked_to))
+                continue
+            if action == "none":
+                continue
+            follower_full = self._full_path(param_path)
+            if not isinstance(self.parameter(param_path), ManagedParameter):
+                offenders.append(f"{follower_full} cannot carry a Lock")
+                continue
+            try:
+                self._check_lock_allowed(follower_full, target_full)
+            except ValueError as exc:
+                offenders.append(str(exc))
+                continue
+            applications.append((param_path, action))
+        if offenders:
+            raise ValueError(
+                f"cannot lock the Instance parameters of Type '{type_name}' "
+                f"entry '{path}' to {target_full}: " + "; ".join(offenders)
+            )
+        # the default Target is the Globals parameter, created on demand;
+        # its parameter-creation Broadcast goes out before the Lock updates
+        if target is None:
+            self._ensure_global_target(type_name, path)
+        entry.target = target_full
+        # apply the Locks in tree order; each state change emits exactly
+        # one pm-lock-update through lock()/relock() (D10)
+        for param_path, action in applications:
+            if action == "lock":
+                self.lock(param_path, target_relative)
+            else:
+                self.relock(param_path)
+        if skipped:
+            described = ", ".join(
+                f"'{param_path}' (locked to {locked_to})"
+                for param_path, locked_to in skipped
+            )
+            logger.warning(
+                f"Type Lock of Type '{type_name}' entry '{path}' to "
+                f"{target_full}: skipped Instance parameter(s) {described}, "
+                "which carry a Lock on another Target"
+            )
+        # one pm-type-update for the edited Type, after the Lock updates;
+        # the Types nesting it are not named — their effective parameter
+        # set carries units and defining Types, not Targets (D22)
+        self._broadcast_type_update(type_name)
+        return [param_path for param_path, _ in skipped]
+
+    def unlock_type_parameter(self, type_name: str, path: str) -> None:
+        """Remove the Type Lock of the entry ``path`` of the Type
+        ``type_name`` (D17): only the rule goes — the entry's stored Target
+        is cleared and one ``pm-type-update`` Broadcast naming the Type
+        goes out — while the Locks the declaration put on the Instance
+        parameters stay until they are removed individually with
+        :meth:`remove_lock`. Instances that stop matching keep their
+        Locks either way.
+
+        Raises ``ValueError`` naming the Type and the path when no such
+        Type exists or ``path`` is not an entry of the Type itself; nothing
+        is changed then. An entry that carries no Type Lock is a no-op
+        logged at INFO level that emits nothing (like :meth:`unlock` and
+        :meth:`relock`).
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the Type's own entry.
+        """
+        entry = self._require_type_entry(type_name, path)
+        if entry.target is None:
+            logger.info(
+                f"the entry '{path}' of Type '{type_name}' carries no Type "
+                "Lock; nothing to do"
+            )
+            return
+        entry.target = None
+        self._broadcast_type_update(type_name)
+
+    def _apply_type_locks_to_new_instances(
+        self, lock_types: List[str], instances_before: Dict[str, List[str]]
+    ) -> None:
+        """Apply the existing Type Locks of the Types ``lock_types`` to the
+        submodules that an edit just turned into new Instances (D17): a
+        Parameter Group that is an Instance after the edit but was not one
+        before gets a locked Lock on the entry's Target for every entry of
+        the Type's effective parameter set that carries one — a parameter
+        the edit kept (D14) included, since a Lock changes neither its own
+        value nor its unit.
+
+        Per parameter an unlocked Lock remembering the same Target is
+        locked again, an already locked one is left as it is, and a Lock
+        on another Target is skipped. A Target that no longer exists
+        (possible until task 3.3 clears the stored Target on deletion), a
+        parameter that cannot carry a Lock and one whose Lock would close
+        a cycle are skipped too. Every skip is collected into one
+        ``logger.warning`` naming the Type, the entry path, the skipped
+        parameter path and the reason; the edit itself still succeeds and
+        the calling method keeps returning ``None``. Submodules that were
+        Instances before the edit are untouched: only
+        :meth:`lock_type_parameter` re-applies a Type Lock to everyone.
+
+        Each applied Lock emits exactly one ``pm-lock-update`` through
+        :meth:`lock` / :meth:`relock` (D10); the caller runs this after
+        the ``parameter-creation`` Broadcasts and before the
+        ``pm-type-update`` Broadcasts.
+
+        :param lock_types: Names of the Types whose Type Locks are applied,
+            the edited Type and the Types nesting it (and, for
+            :meth:`add_nested_type`, the Nested Type and the Types nesting
+            it).
+        :param instances_before: The Instances of every Type in
+            ``lock_types``, computed before the edit (see
+            :meth:`_instances_before_edit`).
+        """
+        applications: List[Tuple[str, str, bool]] = []
+        skipped: List[Tuple[str, str, str, str]] = []
+        seen: set = set()
+        for type_name in lock_types:
+            locked_entries = {
+                entry_path: entry
+                for entry_path, entry in self._effective_entries(type_name).items()
+                if entry.target is not None
+            }
+            if not locked_entries:
+                continue
+            for instance_path in self.instances_of(type_name):
+                if instance_path in instances_before.get(type_name, []):
+                    # an Instance before the edit: only lock_type_parameter
+                    # re-applies a Type Lock to everyone
+                    continue
+                for entry_path, entry in locked_entries.items():
+                    param_path = f"{instance_path}.{entry_path}"
+                    if param_path in seen:
+                        # the same defining entry reaches the parameter
+                        # through several Types of the closure
+                        continue
+                    seen.add(param_path)
+                    if self._param_by_full_path(entry.target) is None:
+                        skipped.append(
+                            (
+                                type_name,
+                                entry_path,
+                                param_path,
+                                f"the stored Target {entry.target} does "
+                                "not exist",
+                            )
+                        )
+                        continue
+                    action, locked_to = self._classify_lock_application(
+                        param_path, entry.target
+                    )
+                    if action == "skip":
+                        skipped.append(
+                            (
+                                type_name,
+                                entry_path,
+                                param_path,
+                                "it carries a Lock on another Target "
+                                f"({locked_to})",
+                            )
+                        )
+                        continue
+                    if action == "none":
+                        continue
+                    param = self.parameter(param_path)
+                    follower_full = self._full_path(param_path)
+                    if not isinstance(param, ManagedParameter):
+                        skipped.append(
+                            (
+                                type_name,
+                                entry_path,
+                                param_path,
+                                f"{follower_full} cannot carry a Lock",
+                            )
+                        )
+                        continue
+                    try:
+                        self._check_lock_allowed(follower_full, entry.target)
+                    except ValueError as exc:
+                        skipped.append(
+                            (type_name, entry_path, param_path, str(exc))
+                        )
+                        continue
+                    applications.append(
+                        (
+                            param_path,
+                            entry.target[len(self.name) + 1:],
+                            action == "relock",
+                        )
+                    )
+        for param_path, target_relative, is_relock in applications:
+            if is_relock:
+                self.relock(param_path)
+            else:
+                self.lock(param_path, target_relative)
+        if skipped:
+            described = "; ".join(
+                f"'{param_path}' (entry '{entry_path}' of Type "
+                f"'{type_name}') {reason}"
+                for type_name, entry_path, param_path, reason in skipped
+            )
+            logger.warning(
+                "skipped Instance parameter(s) while applying the Type "
+                f"Locks to new Instances: {described}"
+            )
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":
