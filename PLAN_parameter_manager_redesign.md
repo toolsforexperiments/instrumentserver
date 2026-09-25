@@ -495,7 +495,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 - [x] **2.4 `add_instance`.** Per D14, including the up-front unit-conflict scan that raises
   listing every conflicting path before creating anything, dotted (nested) names, and
   `_globals` refusal. Tests: `test_pm_types.py`.
-- [ ] **2.5 `pm-type-update` and side-effect broadcasts.** Every Type-editing method emits
+- [x] **2.5 `pm-type-update` and side-effect broadcasts.** Every Type-editing method emits
   `pm-type-update` (D22) with the updated `PMTypeBluePrint` (or `None` on `remove_type`).
   Every parameter created by 2.3/2.4 emits `parameter-creation` through `self.broadcast`;
   none is emitted for direct `add_parameter` calls (the server does those). Tests:

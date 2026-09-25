@@ -390,3 +390,54 @@ The root `ParameterManager` now has a Type registry, `self._types`, which maps e
 ### Process notes
 - At the end of implementation the coder tried `rm -rf orchestration/2.4`. It was rejected because the orchestrator's files live there, and the coder was told to leave the folder.
 - Reviewers checked their findings with scratch scripts under `orchestration/2.4/`. Each was scanned before it ran and deleted afterwards. plan-checker-glm ran the full suite detached to a log file in both rounds, because piping it hangs (see 2.1). Neither log is left in the folder. There were no stalls and no nudges.
+
+## 2.5 `pm-type-update` and side-effect broadcasts — 2026-09-24
+
+The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D22, ADR-0003). All eight Type-editing methods (`add_type`, `remove_type` and the six 2.3 edits) emit `pm-type-update` through the new `_broadcast_type_update`, with the Type's fresh `PMTypeBluePrint`. An edit that changes the effective set of outer Types emits one update per affected Type, the edited one first, then each nester in `_nesting_prefixes` order. `remove_type` emits one update with a `None` payload. Every parameter that `add_type_parameter`, `add_nested_type` or `add_instance` actually creates emits a `parameter-creation` through `_broadcast_parameter_creation`, whose payload mirrors the Server's `_newOrDeleteParameterDetection`. Kept parameters and direct `add_parameter` calls emit nothing, and neither do refused calls or the read-only queries. `test/pytest/test_pm_types.py` grew from 90 to 111 tests: server-free sink tests on a `pm_with_sink` fixture, and four proxy tests that follow `test_pm_locks.py`.
+
+### Commit by commit
+- `9de2239` The emissions and 18 tests (14 sink, 4 proxy). The orchestrator's eight readings in the coder spec set these rules:
+  - which methods emit (the Phase 3 `lock_type_parameter`/`unlock_type_parameter` don't exist yet)
+  - outer Types get their own update
+  - `add_instance` emits only `parameter-creation`s
+  - payload shapes mirror 1.3 and the Server
+  - creations go first, in creation order, then the Type updates, all after the whole mutation
+  - refused calls emit nothing
+  - `set_type_parameter_unit`'s propagation emits no value Broadcast
+
+  The coder added two readings of its own. `set_type_parameter_default` emits for the edited Type only, because `effective` carries unit and `from_type` but no defaults, so no outer blueprint changes. Creations are collected during the loop and broadcast after it. All six reviewers judged both readings as fitting the plan. The sink tests include one per method, plus these:
+  - `test_add_instance_emits_one_creation_per_created_parameter`
+  - `test_add_instance_emits_nothing_for_kept_parameters`
+  - `test_read_only_type_queries_emit_nothing`
+  - `test_failed_type_validations_emit_nothing`, which runs about 19 refusals and, with two direct `add_parameter` calls under the sink, also pins the plan's "none for direct `add_parameter`"
+  - `test_type_broadcast_payloads_are_snapshots_of_their_time`
+
+  The four proxy tests are the plan's list:
+  - `test_every_type_method_is_callable_through_the_proxy` (all 13 D16 methods, `instances_of`/`types_of` included)
+  - `test_get_type_and_list_types_deserialise_over_the_wire`
+  - `test_subclient_sees_pm_type_update_and_creations_from_a_second_client`
+  - `test_the_first_clients_proxy_shows_the_created_parameters_after_update`
+
+  Orchestrator run: ruff clean, 108 in `test_pm_types.py`, 346 in the full suite.
+- `80635c3` Fix from round 0, test only, three tests:
+  - `test_pm_type_update_reaches_every_type_of_a_three_tier_nesting_chain`: every sink test nested only one level (`put_nested_instance`), so a `_nesting_prefixes` walk that stopped at direct nesters would have passed the suite and left the outermost Type's blueprint stale on every GUI. The test uses `put_three_tier_registry` and `add_type_parameter("pulse_window", "amp", ...)`, then expects exactly three updates in the order `pulse_window`, `readout`, `qubit`, with `readout.pw.amp` in `qubit`'s `effective`. Both test reviewers caught it (should-fix).
+  - `test_add_type_parameter_emits_no_creation_for_kept_parameters` and `test_add_nested_type_emits_no_creation_for_kept_parameters`: the kept-parameter rule had a sink test only for `add_instance`, not for the two 2.3 creation loops. Both general reviewers raised it as a nit. The orchestrator sent it anyway, because both models of one role raised it, the test was cheap and a fix round was happening regardless.
+
+  The coder backed up `params.py` under `orchestration/2.5/`, applied two temporary mutations to show that the new tests fail, and restored the file. The orchestrator and three reviewers checked that `git diff 9de2239..80635c3 -- src/` is empty. All six approved in re-review with no findings, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 111 in `test_pm_types.py`, 349 in the full suite.
+
+### Dropped findings
+- The wire-level `add_instance` test creates only one parameter, so "one `parameter-creation` per created parameter" is shown over the wire only for n=1 (test-reviewer-glm, nit). The only multi-creation sink test creates `q01.IF` then `q01.octave_gain`, which is also alphabetical order, so a loop that sorted paths would still pass (test-reviewer-qwen, nit) → not sent. Multiplicity and order rest on the sink tests.
+- `remove_type` builds its `None` broadcast inline, because `_broadcast_type_update` calls `get_type` on the Type that was just deleted (reviewer-glm, nit). Both type-update sites spell the name as `f"{self.name}.{type_name}"` instead of `_full_path` (reviewer-qwen, nit) → not sent. The strings are identical.
+- The creation-broadcast loop appears three times. The refused-call battery lacks the `_check_creation_targets` refusals (plan-checker-glm, nits). The `ParameterManager` class docstring leaves out the `None` payload and "per affected Type". A proxy-test comment says "propagated unit" where no Instance existed yet (plan-checker-qwen, nits) → not sent. All four are still in the code.
+
+### Questions to Marcos
+- The orchestrator flagged its eight coder-spec readings for the run report. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- The 2.2 loose end on proxy coverage of `instances_of`/`types_of` is closed by `test_every_type_method_is_callable_through_the_proxy`. The 2.1 loose end on `get_type` aliasing is now partly pinned by `test_type_broadcast_payloads_are_snapshots_of_their_time`.
+- For 3.2: `lock_type_parameter`/`unlock_type_parameter` must emit `pm-type-update` too (D22).
+- The wire tests' negative counts (`len(received) == 1` right after `wait_for_broadcasts`) could in principle race a late Broadcast, as in `test_pm_locks.py`. The strong forms of those claims live in the sink tests (test-reviewer-glm, observation).
+- Nothing from 2.5 is in `TEST_AUDIT.md`.
+
+### Process notes
+- reviewer-qwen's `git -C` commands with a line-wrapped path slipped past the whitelist several times and needed manual approval. They were read-only and all were allowed. Its scratch script under `orchestration/2.5/` was re-scanned before each of its three runs and deleted afterwards. Reviewers and the coder ran the suite to log files in the folder and removed them. There were no rejected permissions, no stalls and no nudges.
