@@ -472,6 +472,15 @@ class ParameterManager(Broadcaster, ParameterGroup):
         instrument name (``parameter_manager.q01.x``), the form Locks and
         files use.
 
+        Raises ``ValueError`` naming the offending path, creating nothing,
+        when ``name`` is the reserved Globals name ``_globals`` or starts
+        with it (D18): the Globals submodule holds only the default
+        Targets of Type Locks, and its parameters are created on demand by
+        :meth:`_ensure_global_target`, not through the public API. Since a
+        Parameter Group routes its ``add_parameter`` to the root (D15),
+        this check covers calls made on any Parameter Group of this
+        Parameter Manager as well.
+
         :param name: Name of the parameter; see
             :meth:`ParameterGroup.add_parameter`.
         :param kw: Any keyword arguments will be passed on to
@@ -479,6 +488,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
             :meth:`ParameterGroup.add_parameter`.
         :return: None.
         """
+        # validate-then-mutate: the Globals refusal runs before anything
+        # is created (rule 3)
+        if name == "_globals" or name.startswith("_globals."):
+            raise ValueError(
+                f"'{name}' is not a valid parameter path: "
+                "the Globals submodule name is reserved"
+            )
         kw["parameter_class"] = ManagedParameter
         kw["path"] = f"{self.name}.{name}"
         super().add_parameter(name, **kw)
@@ -1816,6 +1832,110 @@ class ParameterManager(Broadcaster, ParameterGroup):
             self._broadcast_parameter_creation(
                 created_path, initial_value, created_unit
             )
+
+    # ------------------------------------------------------------------
+    # Globals (plan decision D18)
+    #
+    # The reserved Globals submodule ``_globals`` holds the default
+    # Targets of Type Locks. It is created on demand and is never an
+    # Instance; matching excludes it and everything under it (D12, the
+    # walk in ``_iter_submodule_groups``), and ``add_parameter`` refuses
+    # its name. The internal helper ``_ensure_global_target`` creates
+    # ``_globals.<type>.<path>`` through the internal creation path —
+    # the same one the public ``add_parameter`` ends in. A Globals
+    # parameter is otherwise ordinary (D18): it can be set and read, it
+    # may itself carry a Lock and be a Lock Target, and it is saved with
+    # the profile. Removing one is allowed; the Lock and Type Lock
+    # cleanup it triggers is task 3.3.
+    # ------------------------------------------------------------------
+
+    def _ensure_global_target(self, type_name: str, path: str) -> str:
+        """Create the Globals parameter ``_globals.<type_name>.<path>``
+        for the Type ``type_name``'s own entry at ``path`` — on demand,
+        with the entry's default value and unit — and return its dotted
+        path relative to this Parameter Manager (D17, D18).
+
+        This is the internal helper a Type Lock declaration builds its
+        default Target with; nothing public calls it yet (task 3.2 will).
+        It bypasses the public :meth:`add_parameter` refusal of the
+        Globals name through the internal creation path
+        (``_get_parent(..., create_parent=True)`` +
+        ``_add_own_parameter``), creating the parameter as a
+        :class:`ManagedParameter` whose ``path`` is the full dotted form
+        with the instrument name, like :meth:`add_parameter` does. A
+        parameter that exists at the target path already is kept
+        untouched — its own value is not changed and nothing is emitted
+        (created on demand, D18).
+
+        Raises ``ValueError`` — before anything is touched — naming the
+        offending name or path when no such Type exists, when ``path`` is
+        not an entry of the Type itself (naming the Type that defines it
+        when the path only reaches the effective parameter set through a
+        Nested Type; own entries only, like
+        :meth:`set_type_parameter_default`), when the parameter exists
+        with a unit different from the entry's unit (naming the path and
+        both units; unit conflicts are refused like D14), when a segment
+        of ``_globals.<type_name>.<path>`` on the way is an existing
+        parameter rather than a Parameter Group, or when the target path
+        is an existing Parameter Group.
+
+        When it creates the parameter it emits exactly one
+        ``parameter-creation`` Broadcast in the same shape the Type-edit
+        side-effect creations use (D22, ADR-0003); it edits no Type, so
+        it emits no ``pm-type-update``.
+
+        :param type_name: Name of the Type.
+        :param path: Relative parameter path of the Type's own entry.
+        :return: The path ``"_globals.<type_name>.<path>"``.
+        """
+        # validate-then-mutate: every check below runs before the tree is
+        # touched (rule 3)
+        entry = self._require_type_entry(type_name, path)
+        global_path = f"_globals.{type_name}.{path}"
+        if self.has_param(global_path):
+            existing_unit = getattr(self.parameter(global_path), "unit", None)
+            if existing_unit != entry.unit:
+                raise ValueError(
+                    f"cannot create the Globals parameter '{global_path}': "
+                    f"it exists already with unit '{existing_unit}', the "
+                    f"entry of Type '{type_name}' declares '{entry.unit}'"
+                )
+            # created on demand: an existing parameter is kept untouched,
+            # with its own value, and emits nothing (D18)
+            return global_path
+        # a parameter on the way blocks the creation, and the target path
+        # may not be an existing Parameter Group: both are checked before
+        # anything is created. A missing Parameter Group is created on the
+        # way, so nothing deeper along the path can clash behind it.
+        segments = global_path.split(".")
+        group: ParameterGroup = self
+        walked: List[str] = []
+        missing_group = False
+        for segment in segments[:-1]:
+            if segment in group.parameters:
+                blocked = ".".join([*walked, segment])
+                raise ValueError(
+                    f"'{blocked}' is a parameter, and cannot have "
+                    "child parameters"
+                )
+            submodule = group.submodules.get(segment)
+            if submodule is None:
+                missing_group = True
+                break
+            walked.append(segment)
+            group = submodule
+        if not missing_group and segments[-1] in group.submodules:
+            raise ValueError(f"'{global_path}' is already a Parameter Group")
+        parent = self._get_parent(global_path, create_parent=True)
+        parent._add_own_parameter(
+            segments[-1],
+            parameter_class=ManagedParameter,
+            path=self._full_path(global_path),
+            initial_value=entry.default,
+            unit=entry.unit,
+        )
+        self._broadcast_parameter_creation(global_path, entry.default, entry.unit)
+        return global_path
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":

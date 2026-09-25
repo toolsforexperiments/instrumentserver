@@ -1,8 +1,9 @@
 """Tests for the Type registry and definitions (plan task 2.1), the
 duck-typed Instance matching (plan task 2.2), the Type edits with
-Instance side effects (plan task 2.3), ``add_instance`` (plan task 2.4)
-and the ``pm-type-update`` and side-effect creation Broadcasts (plan task
-2.5).
+Instance side effects (plan task 2.3), ``add_instance`` (plan task 2.4),
+the ``pm-type-update`` and side-effect creation Broadcasts (plan task
+2.5) and the Globals rules with the ``_ensure_global_target`` helper
+(plan task 3.1).
 
 The definition and editing methods are exercised through the public API:
 ``add_type`` / ``add_type_parameter`` / ``add_nested_type`` and friends.
@@ -35,6 +36,21 @@ deserialising, and a SubClient receiving ``pm-type-update`` and the
 per-parameter ``parameter-creation`` Broadcasts of an ``add_instance``
 issued from a second client, whose creations the first client's proxy
 shows after ``update()``.
+The Globals part checks that ``add_parameter`` refuses the reserved
+Globals name (naming the offending path and creating nothing, through
+the root and through a Parameter Group's routed call), that
+``add_instance`` under Globals still raises, that Globals parameters
+created by the internal ``_ensure_global_target`` helper stay excluded
+from ``instances_of``/``types_of`` even when they carry a full Instance
+shape, and the helper itself: creating ``_globals.<type>.<path>`` with
+the entry's default and unit as a ``ManagedParameter``, returning the
+dotted path, emitting exactly one ``parameter-creation`` and nothing on
+a second (idempotent) call, refusing an unknown Type, a path that is not
+an own entry, a unit conflict on the existing parameter, a parameter on
+the way and a Parameter Group at the target — each leaving the tree
+byte-identical — and that a Globals parameter is otherwise ordinary (set,
+read, Target of a Lock). The proxy part exercises the ``add_parameter``
+refusal over the wire.
 """
 
 import copy
@@ -46,6 +62,7 @@ from instrumentserver.blueprints import (
     PARAMETER_CREATION,
     PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
+    PMLockBluePrint,
     PMTypeBluePrint,
     deserialize_obj,
 )
@@ -1769,6 +1786,256 @@ def test_add_instance_on_an_empty_type_creates_nothing(pm):
 
 
 # ---------------------------------------------------------------------------
+# Globals rules and _ensure_global_target (plan task 3.1, D18)
+#
+# The reserved Globals submodule ``_globals`` holds the default Targets of
+# Type Locks. The public ``add_parameter`` refuses its name (nothing is
+# created), ``add_instance`` under it keeps raising (2.4), and matching
+# keeps excluding it (2.2). The internal helper ``_ensure_global_target``
+# creates ``_globals.<type>.<path>`` on demand, with the entry's default
+# and unit; the parameter is otherwise ordinary.
+# ---------------------------------------------------------------------------
+
+
+def test_add_parameter_refuses_the_globals_submodule(pm):
+    pm.add_parameter("q01.IF", unit="Hz")
+    before = sorted(pm.list())
+
+    for name in ("_globals", "_globals.x", "_globals.qubit.IF"):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(f"'{name}' is not a valid parameter path"),
+        ):
+            pm.add_parameter(name)
+
+    # nothing was created: the tree is byte-identical, and the Globals
+    # submodule does not exist
+    assert sorted(pm.list()) == before
+    assert "_globals" not in pm.submodules
+
+
+def test_add_parameter_refusal_covers_the_parameter_group_routing(pm):
+    # a Parameter Group routes add_parameter to the root (D15), so the
+    # refusal on the root covers the pm._globals.add_parameter(...) call
+    # style too
+    put_globals_parameter(pm, "_globals.qubit.IF", unit="Hz")
+    pm.add_parameter("q01.IF", unit="Hz")
+    before = sorted(pm.list())
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'_globals.qubit.IF' is not a valid parameter path"),
+    ):
+        pm._globals.add_parameter("qubit.IF")
+
+    # the refusal does not over-fire: a routed call without the Globals
+    # name still adds the parameter
+    pm.q01.add_parameter("sub", unit="s")
+
+    assert sorted(pm.list()) == sorted(before + ["q01.sub"])
+
+
+def test_add_instance_still_refuses_the_globals_submodule(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    pm._ensure_global_target("qubit", "IF")
+    before = sorted(pm.list())
+
+    with pytest.raises(ValueError, match="the Globals submodule name is reserved"):
+        pm.add_instance("qubit", "_globals")
+    with pytest.raises(ValueError, match="the Globals submodule name is reserved"):
+        pm.add_instance("qubit", "_globals.q01")
+
+    # nothing was created
+    assert sorted(pm.list()) == before
+
+
+def test_globals_parameters_stay_excluded_from_matching(pm):
+    # a Globals parameter is never an Instance and is claimed by nothing
+    # (D12, D18) — even when the Globals subtree carries a full Instance
+    # shape, with every effective path at the declared unit
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm._ensure_global_target("qubit", "IF")
+    pm._ensure_global_target("qubit", "octave_gain")
+    put_globals_parameter(pm, "_globals.deep.qubit.IF", unit="Hz")
+    put_globals_parameter(pm, "_globals.deep.qubit.octave_gain", unit="dB")
+
+    assert pm.instances_of("qubit") == []
+    assert pm.types_of("_globals.qubit.IF") == []
+    assert pm.types_of("_globals.qubit.octave_gain") == []
+    assert pm.types_of("_globals.deep.qubit.IF") == []
+
+
+def test_ensure_global_target_creates_the_parameter_with_default_and_unit(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+
+    path = pm._ensure_global_target("qubit", "IF")
+
+    # the relative dotted path is returned (rule 4: names are strings)
+    assert path == "_globals.qubit.IF"
+    assert pm.has_param(path)
+    assert pm.get(path) == 5e9
+    assert pm.parameter(path).unit == "Hz"
+    # created as a ManagedParameter with the full dotted path, the way
+    # add_parameter does
+    param = pm.parameter(path)
+    assert isinstance(param, ManagedParameter)
+    assert param.path == "parameter_manager._globals.qubit.IF"
+    # the Parameter Groups on the way were created
+    assert "qubit" in pm._globals.submodules
+
+    # a dotted entry path creates the Parameter Groups on the way too
+    pm.add_type("sensor")
+    pm.add_type_parameter("sensor", "sub.x", default=1, unit="V")
+    assert pm._ensure_global_target("sensor", "sub.x") == "_globals.sensor.sub.x"
+    assert pm.get("_globals.sensor.sub.x") == 1
+    assert pm.parameter("_globals.sensor.sub.x").unit == "V"
+
+
+def test_ensure_global_target_emits_one_creation_and_is_idempotent(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    received = []
+    pm.add_broadcast_sink(received.append)
+
+    path = pm._ensure_global_target("qubit", "IF")
+
+    # exactly one parameter-creation, in the same shape the Type-edit
+    # side-effect creations use (D22, ADR-0003); it edits no Type, so no
+    # pm-type-update goes out
+    assert len(received) == 1
+    bp = received[0]
+    assert bp.name == "parameter_manager._globals.qubit.IF"
+    assert bp.action == PARAMETER_CREATION
+    assert bp.value == 5e9
+    assert bp.unit == "Hz"
+
+    received.clear()
+    pm.set(path, 42.0)
+    assert pm._ensure_global_target("qubit", "IF") == path
+    # created on demand: the existing parameter is kept untouched, its own
+    # value stands, and nothing is emitted (D18)
+    assert pm.get(path) == 42.0
+    assert received == []
+
+
+def test_ensure_global_target_refuses_an_unknown_type(pm):
+    pm.add_parameter("q01.IF", unit="Hz")
+    before = sorted(pm.list())
+
+    with pytest.raises(ValueError, match="no Type named 'nope' exists"):
+        pm._ensure_global_target("nope", "IF")
+
+    assert sorted(pm.list()) == before
+    assert "_globals" not in pm.submodules
+
+
+def test_ensure_global_target_refuses_a_path_that_is_not_an_own_entry(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=None, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_nested_type("qubit", "readout", "readout")
+    before = sorted(pm.list())
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("parameter path 'nope' is not an entry of Type 'qubit'"),
+    ):
+        pm._ensure_global_target("qubit", "nope")
+    # a path only reached through a Nested Type is refused too: own entries
+    # only, like set_type_parameter_default and set_type_parameter_unit
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "parameter path 'readout.IF' is not an entry of Type 'qubit' "
+            "itself: it is only in the effective set through the entry of "
+            "Type 'readout'"
+        ),
+    ):
+        pm._ensure_global_target("qubit", "readout.IF")
+
+    assert sorted(pm.list()) == before
+    assert "_globals" not in pm.submodules
+
+
+def test_ensure_global_target_refuses_a_unit_conflict_on_the_existing_parameter(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    # an existing Globals parameter carrying a unit the entry does not
+    # declare: unit conflicts are refused like D14
+    put_globals_parameter(pm, "_globals.qubit.IF", unit="V")
+    before = sorted(pm.list())
+
+    with pytest.raises(ValueError) as excinfo:
+        pm._ensure_global_target("qubit", "IF")
+
+    # the path and both units are named
+    message = str(excinfo.value)
+    assert "'_globals.qubit.IF'" in message
+    assert "'V'" in message
+    assert "'Hz'" in message
+    # refused before anything is touched: the parameter keeps its unit
+    assert sorted(pm.list()) == before
+    assert pm.parameter("_globals.qubit.IF").unit == "V"
+
+
+def test_ensure_global_target_refuses_a_parameter_on_the_way(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    # a parameter takes the place the Globals Parameter Group qubit needs
+    put_globals_parameter(pm, "_globals.qubit")
+    before = sorted(pm.list())
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'_globals.qubit' is a parameter, and cannot have child parameters"
+        ),
+    ):
+        pm._ensure_global_target("qubit", "IF")
+
+    assert sorted(pm.list()) == before
+
+
+def test_ensure_global_target_refuses_a_parameter_group_at_the_target(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    # the Parameter Group _globals.qubit.IF occupies the target path
+    put_globals_parameter(pm, "_globals.qubit.IF.sub", unit="s")
+    before = sorted(pm.list())
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'_globals.qubit.IF' is already a Parameter Group"),
+    ):
+        pm._ensure_global_target("qubit", "IF")
+
+    assert sorted(pm.list()) == before
+
+
+def test_a_globals_parameter_is_an_ordinary_parameter(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_parameter("q01.IF", initial_value=4e9, unit="Hz")
+    path = pm._ensure_global_target("qubit", "IF")
+
+    # set and read like any parameter of the Parameter Manager (D18)
+    pm.set(path, 6e9)
+    assert pm.get(path) == 6e9
+
+    # and it can be the Target of a Lock: the Follower pulls its value
+    pm.lock("q01.IF", path)
+    assert pm.get("q01.IF") == 6e9
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.followers_of(path) == ["q01.IF"]
+
+
+# ---------------------------------------------------------------------------
 # pm-type-update and side-effect creation Broadcasts (plan task 2.5, D22)
 #
 # One pm-type-update per affected Type — the edited Type first, then every
@@ -2371,3 +2638,16 @@ def test_the_first_clients_proxy_shows_the_created_parameters_after_update(
     finally:
         second_cli.disconnect()
         _cleanup_proxy_types(params)
+
+
+def test_add_parameter_refusal_over_the_wire(param_manager):
+    cli, params = param_manager
+    before = sorted(params.list())
+
+    # the ValueError the server-side Parameter Manager raises reaches the
+    # client as an exception carrying the same message
+    with pytest.raises(Exception, match="the Globals submodule name is reserved"):
+        params.add_parameter("_globals.x")
+
+    # nothing was created over the wire either
+    assert sorted(params.list()) == before
