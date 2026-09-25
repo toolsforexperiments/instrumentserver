@@ -1283,9 +1283,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
         exists, when ``path`` is empty or has an empty segment, when
         ``path`` is already in the Type's effective parameter set (naming
         the Type that defines it), when ``prefix + path`` is already in
-        the effective parameter set of a Type nesting this one (naming
-        that Type and the path: the duplicated path would break every
-        query on it), or when a target path cannot be created because an
+        the effective parameter set of a Type nesting this one — naming
+        every colliding path and the Type whose effective set holds it,
+        since the duplicated path would break every query on that Type —
+        or when a target path cannot be created because an
         intermediate segment is an existing parameter, the final segment
         is an existing Parameter Group, or another target of the same
         edit is a strict segment-prefix of it.
@@ -1313,17 +1314,27 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # the new path must not collide in the effective parameter set of
         # a Type nesting this one either — the same check the Nested Type
         # edit runs for its candidate sets (the edited Type's own case is
-        # handled by the check above)
+        # handled by the check above); every colliding path and the Type
+        # whose effective set holds it are collected, so one error can
+        # name them all (rule 3)
+        collisions: List[str] = []
         for name in affected:
             current = set(self._expand_effective(name))
             for prefix in affected[name]:
                 candidate = f"{prefix}{path}"
                 if candidate in current:
-                    raise ValueError(
-                        f"cannot add '{path}' to Type '{type_name}': "
-                        f"parameter path '{candidate}' would appear more "
-                        f"than once in the effective set of Type '{name}'"
+                    described = (
+                        f"'{candidate}' (in the effective set of "
+                        f"Type '{name}')"
                     )
+                    if described not in collisions:
+                        collisions.append(described)
+        if collisions:
+            raise ValueError(
+                f"cannot add '{path}' to Type '{type_name}': parameter "
+                f"path(s) {', '.join(collisions)} would appear more than "
+                "once"
+            )
         instances_before = self._instances_before_edit(affected)
         targets = [
             (instance_path, f"{prefix}{path}")

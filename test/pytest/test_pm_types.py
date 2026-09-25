@@ -787,9 +787,9 @@ def test_add_type_parameter_refuses_a_path_that_collides_in_a_nesting_type(pm):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "cannot add 'window' to Type 'readout': parameter path "
-            "'readout.window' would appear more than once in the "
-            "effective set of Type 'qubit'"
+            "cannot add 'window' to Type 'readout': parameter path(s) "
+            "'readout.window' (in the effective set of Type 'qubit') "
+            "would appear more than once"
         ),
     ):
         pm.add_type_parameter("readout", "window")
@@ -798,6 +798,30 @@ def test_add_type_parameter_refuses_a_path_that_collides_in_a_nesting_type(pm):
     assert pm.get_type("readout").parameters == {}
     assert pm.get_type("qubit").parameters == {
         "readout.window": {"default": None, "unit": "s", "target": None}
+    }
+
+
+def test_add_type_parameter_names_every_nesting_type_collision(pm):
+    # one nester nesting the edited Type at two submodules, owning an
+    # entry under each: both colliding paths are named (rule 3)
+    pm.add_type("inner")
+    pm.add_type("outer")
+    pm.add_nested_type("outer", "a", "inner")
+    pm.add_nested_type("outer", "b", "inner")
+    pm.add_type_parameter("outer", "a.x", default=None, unit="Hz")
+    pm.add_type_parameter("outer", "b.x", default=None, unit="Hz")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_type_parameter("inner", "x")
+
+    message = str(excinfo.value)
+    assert "'a.x' (in the effective set of Type 'outer')" in message
+    assert "'b.x' (in the effective set of Type 'outer')" in message
+    # refused before any mutation
+    assert pm.get_type("inner").parameters == {}
+    assert pm.get_type("outer").parameters == {
+        "a.x": {"default": None, "unit": "Hz", "target": None},
+        "b.x": {"default": None, "unit": "Hz", "target": None},
     }
 
 
@@ -1350,11 +1374,14 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
     pm.add_type("branched")
     pm.add_type_parameter("branched", "b", default=2, unit="A")
     pm.add_nested_type("branched", "b", "leaf")
-    # an empty Nested Type whose nester owns an entry under it
+    # an empty Nested Type whose nester owns an entry under it, at two
+    # submodules: adding the entry to the empty Type collides twice
     pm.add_type("bare")
     pm.add_type("holder")
     pm.add_type_parameter("holder", "bare.window", default=None, unit="s")
     pm.add_nested_type("holder", "bare", "bare")
+    pm.add_nested_type("holder", "bare2", "bare")
+    pm.add_type_parameter("holder", "bare2.window", default=None, unit="s")
     # an outer Type with an Instance, for the refused nesting below
     pm.add_type("outer")
     pm.add_type_parameter("outer", "top", default=0, unit="")
@@ -1377,7 +1404,8 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
         # q02.octave_gain is a parameter and blocks the target path
         lambda: pm.add_type_parameter("qubit", "octave_gain.x", default=1, unit="s"),
         # the path collides in the effective set of holder, which nests
-        # the empty bare at bare
+        # the empty bare at bare and bare2 and owns an entry under each:
+        # both colliding paths are named
         lambda: pm.add_type_parameter("bare", "window"),
         lambda: pm.remove_type_parameter("qubit", "readout.IF"),
         lambda: pm.remove_type_parameter("qubit", "nope"),
