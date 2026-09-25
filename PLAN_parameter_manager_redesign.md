@@ -549,7 +549,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 5 — GUI
 
-- [ ] **5.1 Client-side state and broadcast handling.** In `gui/instruments.py`: a small
+- [x] **5.1 Client-side state and broadcast handling.** In `gui/instruments.py`: a small
   `PMState` helper on `ParameterManagerGui` holding `types: dict[str, PMTypeBluePrint]` and
   `locks: dict[str, PMLockBluePrint]`, filled by `list_types`/`get_type`/`list_locks` on
   load and refresh; `ModelParameters.updateParameter` routes `pm-lock-update` and

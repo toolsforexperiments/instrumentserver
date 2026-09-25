@@ -698,3 +698,52 @@ None of these were sent, since there was no fix round:
 - `does_profile_exist` matches by substring (reviewer-qwen, pre-existing). A name that is a substring of an existing profile file passes the check, and the switch then saves, clears and loads a missing file, which `fromFile` only warns about, so the manager ends up empty. `decisions.md` sends it to TEST_AUDIT at 6.3. No `TEST_AUDIT.md` row exists yet.
 - test-reviewer-glm: the switch-level tests alone can't show that `_clear_all` did the clearing, because the 4.2 reader with `deleteMissing=True` also removes Types the document doesn't define. `test_clear_all_emits_type_updates_then_lock_updates_and_nothing_else` pins the clear step directly.
 - For Phase 5: the GUI's `loadProfile` now clears Types and Locks on a switch too.
+
+## 5.1 Client-side state and broadcast handling — 2026-09-25
+
+The Parameter Manager GUI now keeps a client-side copy of the Types and Locks. `PMState` is a plain class in `gui/instruments.py`, owned as `ParameterManagerGui.state`, with `types` keyed by Type name and `locks` keyed by the Follower's path relative to the Parameter Manager (the form `list_locks()` returns). `refresh(instrument)` re-reads both, and `apply_lock`/`apply_type` replace one entry or drop it on `None`. `ModelParameters` gained two signals, `lockChanged(str, object)` and `typeChanged(str, object)`. `updateParameter` emits them for `pm-lock-update` and `pm-type-update` without touching any model item, and `connectSignals` wires them to the state. `ParameterManagerTreeView.onItemNewValue` now calls `widget._setMethod(value)` (D24 item three). The new `test/pytest/test_pm_gui.py` has 9 tests.
+
+### Commit by commit
+- `9928d03` `PMState`, the two signals and their routing, the D24 fix and 7 tests. The orchestrator's readings in the coder spec set these rules:
+  - the state is refreshed at the end of `__init__`, in `refreshAll`, in `loadProfile` and in `loadFromFile`
+  - the two signals carry `fullName`, the same instrument-name strip the other branches use. For a Lock that is the Follower's relative path and for a Type the bare Type name. Several reviewers checked this against `_broadcast_lock_update` and `_broadcast_type_update` in `params.py`, and checked that `SubClient` delivers `bp.value` as a blueprint or `None`.
+  - the D24 fix copies `ParametersTreeView.onItemNewValue`, including its `try/except RuntimeError` with a debug log. `ParameterWidget` defines `_setMethod` for every input kind, so no forwarding to the inner widget was needed.
+  - nothing else in the GUI changes (no Lock column, tints or panels; those are 5.2 onwards)
+
+  The tests use the module-scoped Server on `server_port` and build the GUI with `sub_port=server_port + 1`. A second `Client` drives the Parameter Manager, and every cross-client assertion uses `qtbot.waitUntil`. An autouse fixture moves the module into a temporary working directory, and the `pm` fixture writes one profile there, because `ParameterManagerGui.__init__` calls `loadProfile`. The helper `_wait_until_broadcasts_arrive` handles the zmq slow joiner: it adds throwaway probe Types until one of them reaches the state. The tests:
+  - `test_pm_state_helpers_work_without_a_server`: `refresh`, `apply_lock` and `apply_type` against a local `ParameterManager`
+  - `test_state_on_construction_holds_types_and_locks_created_before`
+  - `test_lock_broadcasts_from_a_second_client_update_the_state`, the plan's named test: `lock`, then `unlock` (`locked` goes False), then `remove_lock` (the key is gone)
+  - `test_type_broadcasts_from_a_second_client_update_the_state`: `add_type`, `add_type_parameter`, `remove_type`
+  - `test_type_lock_from_a_second_client_updates_types_and_locks`: the Type entry's `target` and the Instance Locks both appear. It declares an explicit Target, because the default Globals Target would send a `parameter-creation` into the pre-existing crash described under Loose ends.
+  - `test_a_second_clients_set_reaches_the_tree_widget`
+  - `test_refresh_all_refills_the_state_from_the_server`, with the listener stopped
+
+  Orchestrator run: ruff clean, 17 in the three named GUI files, 473 in the full suite.
+- `d5c5ded` Fix from round 0, four items:
+  - `test_load_profile_refreshes_the_state_without_broadcasts`: with the listener stopped, the second Client adds a Type, and after `gui.loadProfile()` the Type is in `gui.state`. Nothing had covered the refresh in `loadProfile`. It is the one that matters, because 4.2's profile load sends no `parameter-creation`/`parameter-deletion` and `loadProfile` calls `super().refreshAll()`, which skips the override's refresh (test-reviewer-glm, should-fix).
+  - `test_on_item_new_value_uses_the_parameter_widget_set_method`: a stub widget with no `paramWidget.setValue` sits in `view.delegate.parameters`, and `onItemNewValue` is called directly on a `ParameterManagerTreeView` over a local `InstrumentBase`. The live test could not tell the fix from the old code: Proxy parameters carry no validators, so every Parameter Manager row is an `AnyInput`, and there `_setMethod` is `paramWidget.setValue` (test-reviewer-qwen, should-fix; test-reviewer-glm, nit).
+  - The refreshes in `__init__` and `loadFromFile` are gone, since `loadProfile` and `refreshAll` already refresh at those points (reviewer-glm and plan-checker-glm, nits, one-line removals). The comment on the `pm-lock-update` branch now cites D10 instead of D22 (reviewer-glm, nit, folded in).
+  - Two `gap` rows in `TEST_AUDIT.md` for the defects the coder found (rule 6): "Parameter Manager GUI — live creation from another client" and "Profiles — GUI start with no profile file".
+
+  The commit shows only those two removals and the comment in `src/`. All six approved in re-review, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 19 in the three named GUI files, 475 in the full suite.
+
+### Dropped findings
+- Nothing asserts that the two PM Broadcasts leave the model's items alone (both test reviewers, nit) → not sent. The risk is low, and 5.2/5.3 will give these actions model effects on purpose.
+- `loadFromFile`'s path through `refreshAll` has no test of its own (test-reviewer-qwen, nit) → not sent. It is the same `PMState.refresh` that the `refreshAll` test covers, and 5.4/5.5 exercise files more.
+- The `loadProfile` comment blames missing creation/deletion Broadcasts for the Types/Locks refresh, when a profile load does send `pm-type-update`/`pm-lock-update` diffs (plan-checker-qwen, nit) → not sent. The comment is still in `loadProfile`.
+- Round 1 nits, none sent: the stub test's `ModelParameters` gets no `sub_port`, so its `SubClient` subscribes to the default Broadcast port 5556. It never binds, but it is a fixed port under D27's rule (test-reviewer-glm, reviewer-qwen). The inner stub's recording list is never read (reviewer-qwen). Also left from round 0: the broad `except Exception` in `_wait_until_broadcasts_arrive` (reviewer-qwen).
+
+### Questions to Marcos
+- The Lumen coin budget kept running out, and when all six round-1 re-reviews were blocked by it the orchestrator stopped to ask what to do → Marcos topped up the budget and said to finish 5.1 and report back.
+- The orchestrator flagged its coder-spec readings for Marcos: a plain `PMState` class, where it is refreshed, signals that only route and touch no model item, and the D24 fix copying `ParametersTreeView`. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- `TEST_AUDIT.md`, "Parameter Manager GUI — live creation from another client": a parameter that another Client creates while the GUI is open raises `AttributeError` in `updateParameter`'s `parameter-creation` branch. `nestedAttributeFromString` runs on the stale Proxy blueprint, even though `update()` is called first. All six reviewers confirmed the branch is unchanged from `dc15389`. This means the default-Target flow of `lock_type_parameter` has no GUI-level test until the crash is fixed (plan-checker-glm).
+- `TEST_AUDIT.md`, "Profiles — GUI start with no profile file": `switch_to_profile` raises when no profile exists, so the GUI cannot be built until there is one.
+- For 5.2/5.3: `lockChanged` and `typeChanged` only update `gui.state`. The Lock column and the Type tints can read the state or connect to the signals.
+
+### Process notes
+- `decisions.md` records the Lumen coin budget running out three times in fix round 1. The first time, one nudge after about 10 minutes got the coder going again. The second time, opencode scheduled a retry in about 48 minutes, and the fix edits sat uncommitted on disk while the orchestrator waited. After the retry the coder ran the suite green, but the budget ran out a third time before it committed, and a nudge got "No healthy endpoints for model glm-5.3-flash". It committed once the provider recovered.
+- All six round-1 re-reviews then hit the exhausted budget as soon as they were dispatched, and the orchestrator stopped for Marcos (see Questions).
+- Two coder permissions were rejected. The first was a probe run whose `tempfile.mkdtemp()` wrote outside the repo, which the coder reran with its temp directory under `orchestration/5.1/`. The second was a request for `/tmp` in fix round 1. The coder also proved both new tests fail by temporarily changing `instruments.py` from a backup under `orchestration/5.1/`. The orchestrator's diff check of `d5c5ded` showed the file restored, and the backup and logs were deleted.
