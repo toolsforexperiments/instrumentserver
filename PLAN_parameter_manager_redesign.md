@@ -526,7 +526,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 4 — Persistence (version 2)
 
-- [ ] **4.1 Writer.** `toParamDict`/`toFile` produce the D19 layout: `version: 2`,
+- [x] **4.1 Writer.** `toParamDict`/`toFile` produce the D19 layout: `version: 2`,
   `parameters` (own values via `ManagedParameter.own_value()`, `unit`, `lock` only on
   Followers, full paths as keys), `types` (parameters with default/unit/target, nested).
   Keep `json.dump(..., indent=2, sort_keys=True)`. Update `serialize.validateParamDict`

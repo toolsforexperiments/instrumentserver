@@ -574,3 +574,46 @@ The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D
 
 ### Process notes
 - plan-checker-glm's round-1 worker_done was rejected by Orca because of a garbled handle. After one nudge it resent, and a later duplicate was rejected as already settled, which did no harm. There were no stalls and no rejected permissions.
+
+## 4.1 Writer — 2026-09-25
+
+`ParameterManager.toParamDict()` now returns the D19 version-2 profile document, `{"version": 2, "parameters": {...}, "types": {...}}`, and `toFile` writes it with `json.dump(..., indent=2, sort_keys=True)` as before. `parameters` is keyed by full paths and stores each parameter's own value (`ManagedParameter.own_value()`), its unit and, on Followers only, `lock: {target, locked}`. `types` stores every Type's entries (`default`, `unit`, full-form `target` or `null`) and its Nested Types. The new `schemas/parameter_manager_v2.json` and `serialize.validateParameterManagerV2` check the whole document and then run the `parameters` map through the unchanged `validateParamDict`. `fromParamDict` got a minimal reader shim so profile round trips keep working until 4.2. The new `test/pytest/test_pm_persistence.py` has 21 tests.
+
+### Commit by commit
+- `8c5db87` The writer, the schema (plus `PM_V2_SCHEMA_PATH` in `instrumentserver/__init__.py`), `validateParameterManagerV2`, the reader shim and 19 tests. The orchestrator's readings in the coder spec set these rules:
+  - the signature `toParamDict(self, simpleFormat=False, includeMeta=["unit"])` stays (rule 7), and `simpleFormat` is documented as ignored
+  - `parameters` is built from `serialize.toParamDict([self], simpleFormat=False, ...)`, then own values are substituted and `lock` added. A locked Follower's snapshot reports the Target's value, which is why the substitution is needed.
+  - the shim: no `version` key means the legacy flat map, loaded exactly as before. `version: 2` is validated, then only `parameters` is loaded (value, unit, `deleteMissing`), and `lock` and `types` are ignored until 4.2. Any other version raises `ValueError` naming it.
+  - `validateParamDict`, `isSimpleFormat`, the Server's `serialize.fromParamDict`, `switch_to_profile` and `remove_all_parameters` stay untouched
+
+  The new private `_create_managed_parameter` is the `_get_parent(..., create_parent=True)` + `_add_own_parameter` pair that `_ensure_global_target` used to inline. Both `_ensure_global_target` and the shim now call it, so a missing `_globals.*` parameter in a file gets created instead of hitting the 3.1 refusal in `add_parameter`. `test_param_manager.py` had five flat-shape assertions in three tests, and they now read `["parameters"][...]`. The schema is shipped by the existing `schemas/*.json` package-data glob, with no `pyproject.toml` change. The tests cover:
+  - the writer: version and keys, `simpleFormat` ignored, `test_locked_follower_saves_its_own_value_and_the_lock`, `locked: false`, no `lock` key without a Lock, a Globals parameter saved, the full `types` section, the full-form Type Lock Target, `types == {}`
+  - the file: `jsonschema.validate` against the new schema, and the file text equal to `json.dumps(doc, indent=2, sort_keys=True)`
+  - the shim: legacy flat and simple-format files, a version-2 round trip through `fromFile`, `test_globals_parameter_round_trips_through_the_internal_path`, `deleteMissing` both ways, the shim ignoring `lock`/`types` (without asserting they are not restored), the refusal of versions `3` and `"2"`, and two schema refusals
+
+  Orchestrator run: ruff clean, 32 in the two named files, 437 in the full suite.
+- `d36053c` Fix from round 0, five items:
+  - `test_include_meta_selects_the_per_parameter_metadata`: `includeMeta=[]` reduces an entry to `{"value": 123}` while a Follower keeps its `lock`, and `["unit", "label"]` adds `label`. No test had varied `includeMeta`, which rule 7 protects (test-reviewer-glm, should-fix).
+  - Three more cases in `test_invalid_document_is_refused_by_the_schema`. `vals: 42` passes the v2 schema and is refused only by `parameters.json`, so deleting that leg of `validateParameterManagerV2` now fails a test (both test reviewers, should-fix). A missing top-level `types` key (both test reviewers, nit, folded in). A Type entry without `target`.
+  - The shim's `_globals.` branch sits in the load loop both formats share, so a legacy flat file with a `_globals.*` key now creates the parameter where it used to raise. That departs from reading 3's "exactly today's behaviour" for legacy files. test-reviewer-qwen (should-fix) caught it. The orchestrator decided create-on-load is intended for both formats (D18, "saved") and pinned it with `test_legacy_flat_file_creates_a_globals_parameter_on_load`. The TEST_AUDIT row "Profiles — loading Globals parameters" went from `gap` to `covered`.
+  - The `types` side of the schema is now strict: `required` and `additionalProperties: false` on the per-Type and per-entry objects. reviewer-glm, reviewer-qwen and plan-checker-qwen raised it as a nit. It was kept because both reviewer models raised it and 4.2 builds Type loading on these keys.
+  - Two `gap` rows in `TEST_AUDIT.md` for older defects (rule 6). "Profiles — loading a file": `fromFile` never forwards `deleteMissing`, so the GUI's `deleteMissing=False` load runs with `True` (reviewer-glm and the coder). "Profiles — file validation": both schemas use `patternProperties` without `additionalProperties: false`, so a malformed parameter key passes validation (plan-checker-qwen).
+
+  There were no source changes outside the schema. All six approved in re-review, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 34 in the two named files, 439 in the full suite.
+
+### Dropped findings
+- The `toParamDict` docstring says values come from the cache and "never `get`". For a locked Follower, `snapshot_base` does call `get()` on the Target, though the saved own value is from the cache (reviewer-qwen, nit) → not sent. The wording is still in `params.py`.
+- `test_locked_follower_saves_its_own_value_and_the_lock` checks `toParamDict()` output rather than reading the file back (plan-checker-glm, nit) → not sent. The file-text and schema tests write the same locked-Follower case to disk.
+- Round 1 nits, none sent. The rewritten TEST_AUDIT row says every missing parameter goes through the internal path, when only `_globals.*` ones do (reviewer-glm, reviewer-qwen); it goes to the 4.2 coder spec. A test comment says `parameters.json` refuses unknown keys, but the `vals` case is refused by its type constraint (reviewer-glm). The per-Type `required` and both `additionalProperties: false` have no refusal case of their own (test-reviewer-glm).
+
+### Questions to Marcos
+- The orchestrator flagged its coder-spec readings for Marcos: the v2 shape, `simpleFormat` kept but ignored, the new validator, the parameters-only shim with Globals created through the internal path, and the Server reader left alone. It also flagged the round-0 create-on-load decision for legacy files. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 4.2 (from reviewer-glm, recorded in `decisions.md`): loading a document while a parameter is locked in-session raises mid-loop on `set` (D6), with earlier entries already loaded. D20's order must unlock or clear Locks before values, or load own values through the cache.
+- For 4.2: the shim ignores `lock` and `types`. The tests deliberately do not assert that they stay unrestored, so 4.2 can restore them without rewriting tests. The strict `types` schema is what 4.2's Type loading can rely on.
+- `TEST_AUDIT.md`: "Profiles — loading a file" (`fromFile` drops `deleteMissing`) and "Profiles — file validation" (`patternProperties` gap), both `gap`. The wording of "Profiles — loading Globals parameters" is to be corrected in 4.2.
+
+### Process notes
+- Two permissions were rejected in round 0. test-reviewer-qwen and reviewer-qwen each tried an inline `uv run python - <<'EOF'` heredoc that could not be read in full. Each reran its check as a scanned probe script in `orchestration/4.1/round-0/` and deleted it afterwards.
+- The coder left a `mkdtemp` scratch folder under `orchestration/4.1/`, which the orchestrator removed. There were no stalls and no nudges.
