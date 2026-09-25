@@ -534,3 +534,43 @@ The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D
 - Marcos told the run during 3.2 to continue through every phase instead of stopping at the end of Phase 3 (`orchestration/RUNS.md`).
 - The coder went idle after the orchestrator answered its first question, with no edits and no worker_done. One nudge got it moving again.
 - Four permissions were rejected. reviewer-qwen and test-reviewer-qwen each asked for opencode's temp directory outside the repo. Each also first ran a scratch script (`repro_cross_target.py`, `scratch-verify.py`) that changed into a temp directory outside the repo. Both scripts were rewritten to run from their round folder, and were scanned and allowed. All scratch files and logs under `orchestration/3.2/` were deleted afterwards.
+
+## 3.3 Deletion interplay — 2026-09-25
+
+`ParameterManager.remove_parameter` now clears the Type Locks whose stored Target it deletes (D18). This covers a Globals parameter or any explicit Target. After the 1.2 Lock cleanup it sets `_TypeEntry.target` to `None` on every own entry of every Type that pointed at the removed parameter. The Broadcasts go out after the mutation, in this order: one `pm-lock-update` with `None` per dropped Follower, then one `pm-type-update` per affected Type in registry order, then the deletion. The deletion Broadcast is the Server's own `parameter-deletion`. `remove_type` and `remove_type_parameter` keep their behaviour, which is now asserted: the Type Locks go, and the Globals parameters and every Instance Lock stay. `test/pytest/test_pm_types.py` grew from 161 to 180 tests.
+
+### Commit by commit
+- `6b033a3` The cleanup loop in `remove_parameter`, docstring updates in the class, `remove_parameter`, the Globals section comment and `_apply_type_locks_to_new_instances`, and 17 new tests. The orchestrator's readings in the coder spec set these rules:
+  - any Type Lock Target counts, not only Globals parameters
+  - own entries only
+  - order: Lock updates, then Type updates, then the deletion
+  - `remove_type` and `remove_type_parameter` stay unchanged and are only asserted
+  - whatever `remove_all_parameters` turns out to do is accepted and pinned
+
+  The caller check showed that `remove_all_parameters` routes through `remove_parameter`. It deletes the Followers before the Globals Target, so it emits a single `pm-type-update` and no `pm-lock-update` (`test_remove_all_parameters_emits_the_type_lock_clearing`). The Type definitions stay for 4.3. The coder rewrote the 3.2 interim test `test_add_instance_skips_the_type_lock_when_the_target_is_gone`, whose comment said it held only until 3.3. It became `test_after_a_deletion_cleared_the_type_lock_a_new_instance_gets_no_lock`, which also checks that a re-declared `lock_type_parameter` recreates the Globals Target on demand. The defensive skip for a missing stored Target stays, documented as reachable only through a registry inserted by hand. The new tests include:
+  - unit: a Globals Target, two Types sharing one explicit Target, an ordinary explicit Target, a Target of ordinary Locks only, a Target of both ordinary Locks and Type Locks, a Follower removal, and the refusal (`KeyError` and `ValueError`, with `lock_state` covering `_types`)
+  - `test_remove_type_leaves_the_globals_parameters_and_instance_locks` and `test_remove_type_parameter_takes_the_type_lock_with_it`
+  - six sink tests on order and silence
+  - `test_removing_a_globals_type_lock_target_over_the_wire`: a `SubClient` sees two `pm-lock-update`s with `None`, the `pm-type-update` and `parameter-deletion`
+
+  Orchestrator run: ruff clean, 178 in `test_pm_types.py`, 416 in the full suite.
+- `fc60b13` Fix from round 0, three items:
+  - The rewrite in `6b033a3` had removed the only test of the kept stale-Target skip in `_apply_type_locks_to_new_instances`. test-reviewer-glm (should-fix) and reviewer-glm (nit) caught it. `test_add_instance_skips_a_hand_inserted_stale_target` sets `pm._types["qubit"].parameters["IF"].target` to a missing path. It asserts one warning naming `'q07.IF'` and "does not exist", and a `q07.IF` with no Lock.
+  - `test_two_entries_sharing_a_removed_target_emit_one_type_update` checks for one `pm-type-update` per Type, not one per cleared entry (test-reviewer-qwen, nit). The orchestrator kept it because it pins the task's "for each affected Type".
+  - A `TEST_AUDIT.md` row, "Locks — removing a parameter". It records that `remove_parameter` raises `KeyError` for a missing leaf but `ValueError` for a missing Parameter Group, while `_get_param` raises `ValueError` for both (reviewer-qwen, nit). This dates from 1.2 and is left alone per plan rule 6.
+
+  All six approved in re-review with no findings, and each raiser confirmed their item fixed. Orchestrator run: ruff clean, 180 in `test_pm_types.py`, 418 in the full suite.
+
+### Dropped findings
+- No test removes the Target of a Type Lock declared on a Nested Type's own entry (test-reviewer-glm, nit) → not sent. That case runs the same own-entry loop. The outer Type's effective set then shows `target: None` without a `pm-type-update` of its own, which is consistent with reading 1 but not pinned. test-reviewer-glm accepted the drop in round 1.
+
+### Questions to Marcos
+- The orchestrator flagged its coder-spec readings for Marcos: any Target counts, the Broadcast order, `remove_type`/`remove_type_parameter` unchanged, and the `remove_all_parameters` consequence accepted. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 4.3: after `remove_all_parameters` the Type definitions stay, with their Type Locks cleared. `switch_to_profile` has to clear Types wholesale.
+- `TEST_AUDIT.md`, "Locks — removing a parameter": the `KeyError`/`ValueError` mismatch. The 1.2 and 3.3 refusal tests pin both types.
+- plan-checker-glm (observation): the `pm-type-update` loop calls `get_type` after the entries are cleared. A registry corrupted by hand so that `get_type` raises would make `remove_parameter` raise before the deletion. The public API can't reach that state, and every Type-editing method has the same pattern.
+
+### Process notes
+- plan-checker-glm's round-1 worker_done was rejected by Orca because of a garbled handle. After one nudge it resent, and a later duplicate was rejected as already settled, which did no harm. There were no stalls and no rejected permissions.

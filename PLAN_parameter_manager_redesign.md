@@ -519,7 +519,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   Locks they create. Tests: `test_pm_types.py` — apply, skip-with-warning (use `caplog`),
   new Instance auto-locked, rule removal leaves Locks, Instance falling out keeps Locks,
   re-declare re-applies, explicit `target=` pointing at an ordinary parameter.
-- [ ] **3.3 Deletion interplay.** `remove_parameter` on a `_globals` parameter (or any Type
+- [x] **3.3 Deletion interplay.** `remove_parameter` on a `_globals` parameter (or any Type
   Lock Target) removes the Locks pointing at it **and** clears the Type Lock rule(s) whose
   Target it was, emitting `pm-type-update` for each affected Type. `remove_type` drops its
   rules but leaves `_globals` parameters and Instance Locks alone. Tests: `test_pm_types.py`.
