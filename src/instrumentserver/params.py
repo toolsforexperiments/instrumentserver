@@ -2829,7 +2829,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
             if deleteMissing:
                 for pn in current_params:
-                    if pn not in file_param_set and deleteMissing:
+                    if pn not in file_param_set:
                         self.remove_parameter(pn)
 
             # (c) the Types, written straight into the registry with no

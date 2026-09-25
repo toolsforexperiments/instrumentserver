@@ -347,11 +347,9 @@ def test_delete_missing_semantics_are_unchanged_on_a_version_two_load(tmp_path):
     assert pm.c() == 3
 
 
-def test_the_shim_ignores_the_lock_and_types_sections(tmp_path):
-    """The reader shim loads only the parameters map: the file may carry
-    ``lock`` entries and a ``types`` section, the parameters load with
-    their own values and units, and nothing about the Locks or Types is
-    pinned here (task 4.2 restores them)."""
+def test_parameters_load_with_own_values_from_a_v2_file_with_locks_and_types(tmp_path):
+    """A version-2 file may carry ``lock`` entries and a ``types``
+    section; the parameters still load with their own values and units."""
     pm = make_populated_manager()
     pm.workingDirectory = tmp_path
     pm.add_parameter(name="q01.IF", initial_value=101735237.0, unit="Hz")
@@ -586,6 +584,94 @@ def test_missing_targets_are_all_named_and_change_nothing():
     assert received == []
 
 
+def test_invalid_type_names_in_the_document_are_refused_up_front():
+    """A document whose Types include the reserved Globals name and the
+    empty name is refused with both offending names in one message,
+    before anything is loaded."""
+    pm = ParameterManager(name="params")
+    pm.add_parameter("a", initial_value=1, unit="u")
+    received = []
+    pm.add_broadcast_sink(received.append)
+
+    doc = {
+        "version": 2,
+        "parameters": {},
+        "types": {
+            "_globals": {"parameters": {}, "nested": {}},
+            "": {"parameters": {}, "nested": {}},
+        },
+    }
+    with pytest.raises(ValueError) as excinfo:
+        pm.fromParamDict(doc)
+
+    message = str(excinfo.value)
+    assert message.count("is not a valid Type name") == 2
+    assert "the Globals submodule name is reserved" in message
+    assert "it is empty" in message
+    assert pm.list() == ["a"]
+    assert pm.list_types() == []
+    assert received == []
+
+
+def test_target_validation_is_document_relative():
+    """A Lock Target that exists in-session but is not a parameters key of
+    the document is refused: the validation reads the document, not the
+    live tree."""
+    pm = ParameterManager(name="params")
+    pm.add_parameter("a", initial_value=1, unit="u")
+    pm.add_parameter("b", initial_value=2, unit="v")
+    pm.lock("b", "a")
+    received = []
+    pm.add_broadcast_sink(received.append)
+
+    doc = {
+        "version": 2,
+        "parameters": {
+            "params.a": {
+                "value": 1,
+                "unit": "u",
+                "lock": {"target": "params.b", "locked": True},
+            }
+        },
+        "types": {},
+    }
+    with pytest.raises(ValueError) as excinfo:
+        pm.fromParamDict(doc, deleteMissing=False)
+
+    message = str(excinfo.value)
+    assert "params.b" in message
+    assert "not a parameter of the document" in message
+    # the live Lock and every value are unchanged, nothing was emitted
+    assert pm.list() == ["a", "b"]
+    assert pm.get_lock("b") == PMLockBluePrint(target="params.a", locked=True)
+    assert pm.parameter("b").own_value() == 2
+    assert received == []
+
+
+def test_nested_type_validation_is_document_relative():
+    """A Nested Type that exists in-session but is missing from the
+    document's ``types`` is refused: the validation reads the document."""
+    pm = ParameterManager(name="params")
+    pm.add_type("qubit")
+    pm.add_type("readout")
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    doc = {
+        "version": 2,
+        "parameters": {},
+        "types": {
+            "qubit": {"parameters": {}, "nested": {"readout": "readout"}},
+        },
+    }
+    with pytest.raises(ValueError) as excinfo:
+        pm.fromParamDict(doc, deleteMissing=False)
+
+    assert "readout" in str(excinfo.value)
+    assert "not among the document's Types" in str(excinfo.value)
+    assert sorted(pm.list_types()) == ["qubit", "readout"]
+    assert pm.get_type("qubit").nested == {"readout": "readout"}
+
+
 def test_nested_types_missing_from_the_document_are_refused_up_front():
     """A Nested Type that no Type of the document defines is refused
     before anything is loaded, with every offender named."""
@@ -763,6 +849,58 @@ def test_partial_instances_are_not_completed_and_get_no_type_lock():
     )
 
 
+def test_a_complete_instance_gets_no_type_lock_on_load():
+    """Even a submodule the document completes into a full Instance of a
+    Type whose entry carries a Type Lock gets no Lock on load (D20): the
+    Types load with no Instance side effects, and an Instance's Locks come
+    only from the document's ``lock`` entries."""
+    pm = ParameterManager(name="params")
+    doc = {
+        "version": 2,
+        "parameters": {
+            "params._globals.qubit.octave_gain": {"value": 10, "unit": "dB"},
+            "params.q01.IF": {"value": 2e9, "unit": "Hz"},
+            "params.q01.octave_gain": {"value": 12, "unit": "dB"},
+            "params.q01.readout.power": {"value": -10, "unit": "dBm"},
+        },
+        "types": {
+            "readout": {
+                "parameters": {
+                    "power": {"default": -10, "unit": "dBm", "target": None}
+                },
+                "nested": {},
+            },
+            "qubit": {
+                "parameters": {
+                    "IF": {"default": None, "unit": "Hz", "target": None},
+                    "octave_gain": {
+                        "default": 10,
+                        "unit": "dB",
+                        "target": "params._globals.qubit.octave_gain",
+                    },
+                },
+                "nested": {"readout": "readout"},
+            },
+        },
+    }
+    pm.fromParamDict(doc)
+
+    # q01 carries the whole effective set with the declared units: it is
+    # an Instance, computed by matching, not written by the load
+    assert pm.instances_of("qubit") == ["q01"]
+    # no ``lock`` entries in the document and no Type Lock applied on load
+    assert pm.get_lock("q01.octave_gain") is None
+    assert pm.get_lock("q01.IF") is None
+    assert pm.list_locks() == {}
+    # the load created exactly the document's parameters, nothing more
+    assert set(pm.list()) == {
+        "_globals.qubit.octave_gain",
+        "q01.IF",
+        "q01.octave_gain",
+        "q01.readout.power",
+    }
+
+
 def test_a_listed_parameter_without_a_lock_entry_loses_its_lock():
     pm = ParameterManager(name="params")
     pm.add_parameter("a", initial_value=1, unit="u")
@@ -865,7 +1003,7 @@ def test_delete_missing_removes_absent_parameters_types_and_locks():
         (PM_LOCK_UPDATE, "params.a"),
         (PM_LOCK_UPDATE, "params.c"),
     ]
-    assert received[0].value is not None
+    assert received[0].value == pm.get_type("kept")
     assert received[1].value is None
     assert received[2].value == PMLockBluePrint(target="params.b", locked=True)
     assert received[3].value is None
