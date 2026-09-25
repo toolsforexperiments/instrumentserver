@@ -2143,6 +2143,27 @@ def test_lock_type_parameter_creates_the_default_globals_target(pm):
     assert isinstance(pm.parameter("_globals.qubit.IF"), ManagedParameter)
 
 
+def test_lock_type_parameter_with_no_instances_stores_the_rule(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+
+    skipped = pm.lock_type_parameter("qubit", "IF")
+
+    # no current Instances, so nothing is locked — but the rule is stored
+    # and the default Globals Target is created
+    assert skipped == []
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager._globals.qubit.IF"
+    )
+    assert pm.has_param("_globals.qubit.IF")
+    assert pm.list_locks() == {}
+    # the stored Target persists: a later Instance gets the Lock at creation
+    pm.add_instance("qubit", "q01")
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+
+
 def test_lock_type_parameter_skips_a_lock_on_another_target_with_a_warning(
     pm, caplog
 ):
@@ -2226,6 +2247,23 @@ def test_add_instance_locks_a_kept_parameter_and_keeps_its_own_value_and_unit(pm
     assert pm.instances_of("qubit") == ["q01", "q02", "q05"]
 
 
+def test_add_instance_relocks_a_follower_that_fell_out_and_came_back(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.unlock("q01.IF")  # unlocked individually, remembers the Target
+    pm.remove_parameter("q01.octave_gain")  # q01 stops matching
+    assert pm.instances_of("qubit") == ["q02"]
+
+    pm.add_instance("qubit", "q01")
+
+    # q01 is a new Instance again: its unlocked Lock remembering the same
+    # Target is locked again
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get("q01.IF") == pm.get("_globals.qubit.IF")
+
+
 def test_add_instance_skips_a_kept_parameter_locked_to_another_target(pm, caplog):
     put_qubit_instances(pm)
     pm.lock_type_parameter("qubit", "IF")
@@ -2285,6 +2323,109 @@ def test_add_instance_skips_the_type_lock_when_the_target_is_gone(pm, caplog):
     message = warnings_[0].getMessage()
     assert "'q07.IF'" in message
     assert "does not exist" in message
+
+
+def test_add_instance_skips_an_application_the_batch_made_a_cycle(pm, caplog):
+    # the Targets follow the q05 parameters crosswise: locking q05.a to z1
+    # succeeds and only then makes locking q05.b to z2 a cycle — the
+    # up-front classification ran against the pre-batch state, so the
+    # application loop must skip instead of raising
+    pm.add_type("T")
+    pm.add_type_parameter("T", "a", default=1, unit="V")
+    pm.add_type_parameter("T", "b", default=2, unit="A")
+    pm.add_type_parameter("T", "c", default=3, unit="W")
+    pm.add_parameter("q05.a", initial_value=1, unit="V")
+    pm.add_parameter("q05.b", initial_value=2, unit="A")
+    pm.add_parameter("z1", initial_value=0, unit="V")
+    pm.add_parameter("z2", initial_value=0, unit="A")
+    pm.lock("z1", "q05.b")
+    pm.lock("z2", "q05.a")
+    # no Instances yet: the declarations only store their Targets
+    assert pm.lock_type_parameter("T", "a", target="z1") == []
+    assert pm.lock_type_parameter("T", "b", target="z2") == []
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        pm.add_instance("T", "q05")
+
+    # the creation itself succeeded and q05 is an Instance
+    assert pm.has_param("q05.c")
+    assert pm.instances_of("T") == ["q05"]
+    # the first application ran and locked q05.a to z1
+    assert pm.get_lock("q05.a") == PMLockBluePrint(
+        target="parameter_manager.z1", locked=True
+    )
+    # the second application became a cycle only through the first one:
+    # skipped instead of raised, with one warning naming it and the reason
+    assert pm.get_lock("q05.b") is None
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'q05.b'" in message
+    assert "cycle in Lock targets" in message
+
+
+def test_add_instance_skips_a_parameter_that_cannot_carry_a_lock(pm, caplog):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    # q09 carries a plain qcodes Parameter at the entry path — created
+    # directly on the Parameter Group, bypassing the root — and lacks
+    # octave_gain: not an Instance yet
+    parent = pm._get_parent("q09.IF", create_parent=True)
+    parent._add_own_parameter("IF", set_cmd=None, unit="Hz")
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        pm.add_instance("qubit", "q09")
+
+    # the creation itself succeeded and q09 is an Instance
+    assert pm.instances_of("qubit") == ["q01", "q02", "q09"]
+    assert pm.get("q09.octave_gain") == 10
+    # the plain parameter cannot carry a Lock: skipped, with one warning
+    assert pm.get_lock("q09.IF") is None
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'q09.IF'" in message
+    assert "cannot carry a Lock" in message
+
+
+def test_add_instance_skips_an_application_that_would_close_a_cycle(pm, caplog):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    # q10 carries IF with its own value and lacks octave_gain; the Globals
+    # Target follows q10.IF — a Globals parameter is an ordinary parameter
+    # and may itself carry a Lock (D18)
+    pm.add_parameter("q10.IF", initial_value=4e9, unit="Hz")
+    pm.lock("_globals.qubit.IF", "q10.IF")
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        pm.add_instance("qubit", "q10")
+
+    # the creation itself succeeded and q10 is an Instance
+    assert pm.instances_of("qubit") == ["q01", "q02", "q10"]
+    # locking q10.IF to the Globals Target would close the cycle
+    # _globals.qubit.IF -> q10.IF -> _globals.qubit.IF: skipped
+    assert pm.get_lock("q10.IF") is None
+    assert pm.get("q10.IF") == 4e9
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'q10.IF'" in message
+    assert "cycle in Lock targets" in message
 
 
 def test_the_creation_methods_leave_an_existing_instance_lock_state_untouched(pm):
@@ -2373,6 +2514,37 @@ def test_add_nested_type_locks_a_pre_existing_parameter_when_it_completes(pm):
     )
     # the entry without a Type Lock stays unlocked
     assert pm.get_lock("q01.readout.window") is None
+
+
+def test_add_nested_type_locks_a_pre_existing_parameter_through_two_levels(pm):
+    # the union walk reaches the inner position through two nesting levels:
+    # super nests qubit at q, qubit nests readout at readout
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type_parameter("readout", "window", default=2e-6, unit="s")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_type("super")
+    pm.add_type_parameter("super", "top", default=1, unit="")
+    pm.add_nested_type("super", "q", "qubit")
+    pm.add_parameter("s01.top", initial_value=1, unit="")
+    pm.add_parameter("s01.q.octave_gain", initial_value=10, unit="dB")
+    # the inner position carries readout.IF only: not a readout-Instance
+    # yet, so the declaration locks nobody
+    pm.add_parameter("s01.q.readout.IF", initial_value=10e6, unit="Hz")
+    assert pm.instances_of("readout") == []
+    assert pm.lock_type_parameter("readout", "IF") == []
+
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    # the edit created the missing window, completing s01.q.readout into a
+    # new Instance of readout: its PRE-EXISTING IF gets the Type Lock
+    assert pm.instances_of("readout") == ["s01.q.readout"]
+    assert pm.get_lock("s01.q.readout.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.readout.IF", locked=True
+    )
+    # the entry without a Type Lock stays unlocked
+    assert pm.get_lock("s01.q.readout.window") is None
 
 
 def test_unlock_type_parameter_leaves_every_lock_in_place(pm):

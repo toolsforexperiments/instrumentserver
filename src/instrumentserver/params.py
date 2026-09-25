@@ -2177,8 +2177,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
         locked again, an already locked one is left as it is, and a Lock
         on another Target is skipped. A Target that no longer exists
         (possible until task 3.3 clears the stored Target on deletion), a
-        parameter that cannot carry a Lock and one whose Lock would close
-        a cycle are skipped too. Every skip is collected into one
+        parameter that cannot carry a Lock and one whose Lock application
+        would be a self-lock or close a cycle are skipped too — including
+        a cycle that another application of the same batch creates, since
+        every application is validated again against the state the earlier
+        ones left when it runs. No Lock application raises: every
+        ``ValueError`` the Lock API raises for one parameter is recorded
+        as that parameter's skip reason. Every skip is collected into one
         ``logger.warning`` naming the Type, the entry path, the skipped
         parameter path and the reason; the edit itself still succeeds and
         the calling method keeps returning ``None``. Submodules that were
@@ -2198,7 +2203,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
             ``lock_types``, computed before the edit (see
             :meth:`_instances_before_edit`).
         """
-        applications: List[Tuple[str, str, bool]] = []
+        applications: List[Tuple[str, str, str, str, bool]] = []
         skipped: List[Tuple[str, str, str, str]] = []
         seen: set = set()
         for type_name in lock_types:
@@ -2269,16 +2274,32 @@ class ParameterManager(Broadcaster, ParameterGroup):
                         continue
                     applications.append(
                         (
+                            type_name,
+                            entry_path,
                             param_path,
                             entry.target[len(self.name) + 1:],
                             action == "relock",
                         )
                     )
-        for param_path, target_relative, is_relock in applications:
-            if is_relock:
-                self.relock(param_path)
-            else:
-                self.lock(param_path, target_relative)
+        for (
+            type_name,
+            entry_path,
+            param_path,
+            target_relative,
+            is_relock,
+        ) in applications:
+            try:
+                if is_relock:
+                    self.relock(param_path)
+                else:
+                    self.lock(param_path, target_relative)
+            except ValueError as exc:
+                # the earlier applications of this batch changed the Lock
+                # state the up-front classification validated against: the
+                # Lock API refused this one, so it is skipped like any
+                # other application that cannot run — the edit itself
+                # still succeeds and no exception escapes
+                skipped.append((type_name, entry_path, param_path, str(exc)))
         if skipped:
             described = "; ".join(
                 f"'{param_path}' (entry '{entry_path}' of Type "
