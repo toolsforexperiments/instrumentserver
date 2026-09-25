@@ -349,3 +349,44 @@ The root `ParameterManager` now has a Type registry, `self._types`, which maps e
 - The coder went idle after about 6 minutes of thinking, with no edits and no worker_done. The orchestrator nudged it to continue.
 - In round 1, all five reviewers still running stopped with "Cannot connect to API" during a short Lumen outage. The orchestrator nudged each of them to resume.
 - test-reviewer-qwen asked for `/tmp` in round 0. This was rejected, and it was told to use `orchestration/2.3/`. Reviewers used scratch scripts under `orchestration/2.3/` in every round, and each was checked for writes before it ran and deleted afterwards. reviewer-qwen made several read-only `python -c` qcodes lookups, which its role file advises against.
+
+## 2.4 `add_instance` — 2026-09-24
+
+`ParameterManager.add_instance(type_name, name)` writes a Type's effective set into the Parameter Group `name` (D14). `name` is a dotted submodule path relative to the Parameter Manager, so nested Instances such as `q02.ro` work, and the Parameter Groups on the way are created. Everything is validated before anything is created. The Type must exist. An empty name, an empty segment, or `_globals` as the first segment is refused, naming the offending name. The unit-conflict scan runs over every effective path and raises once, naming each existing parameter whose unit differs from the declared one, with both units. Last, `_check_creation_targets` checks for blocked targets. Missing entries are then created with the entry's default and unit through `add_parameter`, so they are `ManagedParameter`s. Existing parameters keep their value and unit. An empty Type creates nothing, not even the submodule, but the name refusals still run first. The method returns `None` and emits no Broadcast (2.5). `test/pytest/test_pm_types.py` grew from 75 to 90 server-free tests.
+
+### Commit by commit
+- `23b42e2` `add_instance` and 13 tests. The orchestrator's five readings in the coder spec covered the name rules, validation before any creation (reusing 2.3's `_check_creation_targets`), creation through `add_parameter`, an empty Type creating nothing, and returning `None`. 2.3 only passed Instance paths that already exist, so the coder reworked `_check_creation_targets` to walk the Instance path itself. A segment that is an existing parameter now blocks every target below it and is named. A missing Parameter Group stops the check, because it will be created on the way and nothing below it can clash. The now-unused `_group_at` was deleted. All six reviewers checked that for 2.3's callers the new walk ends at the same group `_group_at` returned, so 2.3's behaviour is unchanged. The tests cover these cases:
+  - creation with defaults and units (`ManagedParameter`, full `path`, then listed by `instances_of`)
+  - keeping an existing entry
+  - a dotted name
+  - the three-tier mock matching at all three tiers (`test_add_instance_builds_the_three_tier_case`)
+  - a unit conflict on two paths
+  - a target blocked by a parameter, a name blocked by a root parameter, and a target taken by a Parameter Group
+  - the `b`/`b.c` conflicting targets
+  - `_globals`, empty segments, an unknown Type and an empty Type
+
+  Nine `add_instance` refusals were added to `test_a_failed_validation_leaves_the_tree_and_registry_byte_identical`. Orchestrator run: ruff clean, 88 in `test_pm_types.py`, 326 in the full suite.
+- `97fb5a4` Fix from round 0, test only, two items:
+  - `test_add_instance_refuses_the_globals_submodule_on_an_empty_type`: nothing pinned that the `_globals` refusal fires before the empty-Type early return. If the `if not effective: return` moved up, `add_instance("empty", "_globals")` would pass silently. Both test reviewers caught it (should-fix), and so did reviewer-glm (nit). Following test-reviewer-glm's nit, both this test and `test_add_instance_refuses_the_globals_submodule` now pin the offending name in the message, not only the reason.
+  - `test_add_instance_refuses_a_unit_conflict_on_a_nested_effective_path`: the scan had only been tested on top-level paths. The new test puts `q01.readout.IF` at unit `V` against the three-tier `qubit` and expects the full dotted path in the message, with nothing created. test-reviewer-qwen (should-fix) and reviewer-glm (nit) caught it.
+
+  All six approved in re-review, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 90 in `test_pm_types.py`, 328 in the full suite.
+
+### Dropped findings
+- The docstring says a successful call makes `name` an Instance "unless the Type is empty". That is also false for a name with a non-first `_globals` segment: `add_instance("qubit", "q01._globals")` creates the parameters, but matching skips the name (reviewer-glm, nit) → not sent, left for 3.1.
+- Docstring wording: `_check_creation_targets` says `add_instance` "names" missing Parameter Groups, which it does not. `add_instance` says a name "starts with" `_globals` when the code compares the first segment (reviewer-qwen, nits; plan-checker-qwen noted the same) → not sent. Both wordings are still in `params.py`.
+- No test calls `add_instance` twice on the same name (test-reviewer-glm, nit) → not sent.
+- The empty-segment refusal is not pinned on an empty Type (test-reviewer-glm, round 1 nit). The fix list kept only the `_globals` half of their round-0 item → not sent. They suggest adding `pm.add_instance("empty", "")` next time the file is touched.
+
+### Questions to Marcos
+- The orchestrator flagged its five coder-spec readings for the run report. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 3.1: a `_globals` segment after the first is accepted in `add_instance` names, as it already is in 2.3's `add_nested_type`.
+- The 2.2 question of whether a parameter with no unit (`None`) carries a declared `""` now reaches the unit-conflict scan too, which compares `existing_unit != entry.unit` exactly. The reviewers disagree on what happens. test-reviewer-glm, test-reviewer-qwen and both plan checkers read the code as treating `None` against `""` as a conflict. reviewer-glm ran a probe and reported that qcodes turns a missing unit into `""`, so the case would not come up. The commits do not settle this and no test pins it.
+- No test pins a call that mixes a matching-unit parameter and a conflicting one. reviewer-qwen checked it with a probe.
+- Nothing from 2.4 is in `TEST_AUDIT.md`.
+
+### Process notes
+- At the end of implementation the coder tried `rm -rf orchestration/2.4`. It was rejected because the orchestrator's files live there, and the coder was told to leave the folder.
+- Reviewers checked their findings with scratch scripts under `orchestration/2.4/`. Each was scanned before it ran and deleted afterwards. plan-checker-glm ran the full suite detached to a log file in both rounds, because piping it hangs (see 2.1). Neither log is left in the folder. There were no stalls and no nudges.

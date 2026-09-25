@@ -492,7 +492,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   validate-then-mutate. Tests: `test_pm_types.py` — each edit's effect table from D13, plus
   a failing validation leaving the tree byte-identical (compare `list()` and values before
   and after).
-- [ ] **2.4 `add_instance`.** Per D14, including the up-front unit-conflict scan that raises
+- [x] **2.4 `add_instance`.** Per D14, including the up-front unit-conflict scan that raises
   listing every conflicting path before creating anything, dotted (nested) names, and
   `_globals` refusal. Tests: `test_pm_types.py`.
 - [ ] **2.5 `pm-type-update` and side-effect broadcasts.** Every Type-editing method emits
