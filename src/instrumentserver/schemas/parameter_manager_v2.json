@@ -70,7 +70,9 @@
                   "type": ["string", "null"],
                   "description": "Target of the entry's Type Lock, in the full dotted form, or null"
                 }
-              }
+              },
+              "required": ["default", "unit", "target"],
+              "additionalProperties": false
             }
           },
           "nested": {
@@ -80,7 +82,9 @@
               "type": "string"
             }
           }
-        }
+        },
+        "required": ["parameters", "nested"],
+        "additionalProperties": false
       }
     }
   },

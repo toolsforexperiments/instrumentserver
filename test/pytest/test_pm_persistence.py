@@ -20,7 +20,7 @@ import pytest
 from jsonschema import ValidationError, validate
 
 from instrumentserver import PM_V2_SCHEMA_PATH
-from instrumentserver.params import ParameterManager
+from instrumentserver.params import ManagedParameter, ParameterManager
 
 
 def make_populated_manager(name="params"):
@@ -68,6 +68,30 @@ def test_simple_format_argument_is_ignored_by_the_writer(tmp_path):
     pm.workingDirectory = tmp_path
 
     assert pm.toParamDict(simpleFormat=True) == pm.toParamDict()
+
+
+def test_include_meta_selects_the_per_parameter_metadata(tmp_path):
+    """``includeMeta`` still selects the per-parameter metadata besides
+    ``value``; a Follower carries its ``lock`` entry whatever
+    ``includeMeta`` selects."""
+    pm = make_populated_manager()
+    pm.workingDirectory = tmp_path
+    pm.add_parameter(name="q01.IF", initial_value=101735237.0, unit="Hz")
+    pm.add_parameter(name="q01Data.IF", initial_value=42e6, unit="Hz")
+    pm.lock("q01.IF", "q01Data.IF")
+
+    doc = pm.toParamDict(includeMeta=[])
+    assert doc["parameters"]["params.my_param"] == {"value": 123}
+    assert doc["parameters"]["params.q01.IF"]["lock"] == {
+        "target": "params.q01Data.IF",
+        "locked": True,
+    }
+
+    doc = pm.toParamDict(includeMeta=["unit", "label"])
+    entry = doc["parameters"]["params.my_param"]
+    assert entry["value"] == 123
+    assert entry["unit"] == "M"
+    assert "label" in entry
 
 
 def test_locked_follower_saves_its_own_value_and_the_lock(tmp_path):
@@ -234,6 +258,28 @@ def test_legacy_simple_format_file_still_loads(tmp_path):
     assert pm.sp() == 7
 
 
+def test_legacy_flat_file_creates_a_globals_parameter_on_load(tmp_path):
+    """A legacy flat file holding a ``_globals.*`` key creates the Globals
+    parameter on load, through the internal creation path: create-on-load
+    is the intended behaviour for both file formats (D18; TEST_AUDIT.md,
+    "Profiles — loading Globals parameters")."""
+    pm = ParameterManager(name="params")
+    pm.workingDirectory = tmp_path
+
+    legacy_path = tmp_path / "legacy_globals.json"
+    legacy_path.write_text(
+        json.dumps({"params._globals.x.y": {"value": 1, "unit": "u"}})
+    )
+    pm.fromFile(str(legacy_path))
+
+    assert pm.has_param("_globals.x.y")
+    assert pm.get("_globals.x.y") == 1
+    param = pm.parameter("_globals.x.y")
+    assert param.unit == "u"
+    assert isinstance(param, ManagedParameter)
+    assert param.path == "params._globals.x.y"
+
+
 def test_version_two_file_round_trips_through_from_file(tmp_path, monkeypatch):
     """A version-2 file written by toFile loads its parameters back —
     values and units — through fromFile."""
@@ -327,6 +373,8 @@ def test_invalid_document_is_refused_by_the_schema():
     pm = ParameterManager(name="params")
     pm.add_parameter(name="a", initial_value=1, unit="u")
     pm.add_parameter(name="b", initial_value=2, unit="v")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
     good = pm.toParamDict()
 
     lock_missing_locked = json.loads(json.dumps(good))
@@ -339,6 +387,26 @@ def test_invalid_document_is_refused_by_the_schema():
     with pytest.raises(ValidationError):
         pm.fromParamDict(entry_without_value)
 
+    # a per-parameter key the v2 schema does not know is refused by the
+    # parameters.json leg of validateParameterManagerV2
+    bad_vals = json.loads(json.dumps(good))
+    bad_vals["parameters"]["params.a"]["vals"] = 42
+    with pytest.raises(ValidationError):
+        pm.fromParamDict(bad_vals)
+
+    # the top-level keys of the version-2 document are required
+    without_types = json.loads(json.dumps(good))
+    del without_types["types"]
+    with pytest.raises(ValidationError):
+        pm.fromParamDict(without_types)
+
+    # a Type entry carries exactly default, unit and target
+    type_entry_missing_target = json.loads(json.dumps(good))
+    del type_entry_missing_target["types"]["qubit"]["parameters"]["IF"]["target"]
+    with pytest.raises(ValidationError):
+        pm.fromParamDict(type_entry_missing_target)
+
     # the refused documents changed nothing
     assert pm.a() == 1
     assert pm.b() == 2
+    assert pm.list_types() == ["qubit"]
