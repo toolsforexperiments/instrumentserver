@@ -2458,6 +2458,34 @@ class ParameterManager(Broadcaster, ParameterGroup):
             self.remove_parameter(param, cleanup=False)
         self.remove_empty_submodules()
 
+    def _clear_all(self) -> None:
+        """Remove every Type from the Type registry, then all parameters
+        with their Locks: the clear step of :meth:`switch_to_profile`
+        (D20).
+
+        The Types go first, straight out of the registry with no
+        parameter side effects (D13) — one ``pm-type-update`` Broadcast
+        with a ``None`` payload per removed Type, in registry order
+        (D22). Removing them first means the parameter removals below
+        find no Type Lock to clear, so no further ``pm-type-update`` is
+        emitted. :meth:`remove_all_parameters` then removes every
+        parameter — the Globals parameters included — dropping their
+        Locks (one ``pm-lock-update`` Broadcast with a ``None`` payload
+        per dropped Lock, D10) and the Parameter Groups left empty.
+        """
+        removed_types = list(self._types)
+        for type_name in removed_types:
+            del self._types[type_name]
+        for type_name in removed_types:
+            self.broadcast(
+                ParameterBroadcastBluePrint(
+                    name=f"{self.name}.{type_name}",
+                    action=PM_TYPE_UPDATE,
+                    value=None,
+                )
+            )
+        self.remove_all_parameters()
+
     def fromFile(
         self,
         filePath: str | None = None,
@@ -3038,13 +3066,19 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
     def switch_to_profile(self, profile: str) -> None:
         """
-        Switches the server to the passed profile.
+        Switches to the passed profile (D20): the current profile is
+        saved first (the version-2 profile document :meth:`toFile`
+        writes), then every parameter, Type and Lock is cleared
+        (:meth:`_clear_all`), then the new profile is loaded
+        (:meth:`fromFile`, a legacy flat map or a version-2 document).
+        Raises ``ValueError`` — saving, clearing and loading nothing —
+        when the profile does not exist.
         """
         if not self.does_profile_exist(self.profiles, profile):
             raise ValueError(f"Profile {profile} does not exist")
 
         self.toFile(str(self.workingDirectory), self.selectedProfile)
-        self.remove_all_parameters()
+        self._clear_all()
         self.fromFile(
             str(self.workingDirectory.joinpath(self.fullProfileName(profile)))
         )

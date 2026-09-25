@@ -1,5 +1,5 @@
 """Tests for the Parameter Manager's version-2 persistence (plan tasks
-4.1 and 4.2).
+4.1, 4.2 and 4.3).
 
 The writer part checks the document :meth:`ParameterManager.toParamDict`
 produces (plan decision D19): ``version`` 2, ``parameters`` keyed by full
@@ -11,8 +11,18 @@ the legacy flat map still loads (parameters only), a version-2 document is
 validated as a whole — refused with every problem named, state untouched —
 and then loads in D20's order (the Locks of the listed parameters, the
 parameters, the Types without Instance side effects, the Locks), with the
-load's Broadcasts emitted once after it succeeded. All tests are unit tests
-on a local Parameter Manager with no Server involved.
+load's Broadcasts emitted once after it succeeded. The profile part checks
+:meth:`ParameterManager.switch_to_profile` (D20): the leaving profile is
+saved as a version-2 document, then parameters, Types and Locks are
+cleared (:meth:`ParameterManager._clear_all`, whose Broadcasts are the
+``pm-type-update`` ``None`` payloads of the removed Types first, then
+whatever the parameter removal emits), then the new profile loads — a
+version-2 document or a legacy flat map — so switching between profiles
+round-trips the Types, the Locks and the Globals parameters, switching to
+a profile without any leaves none behind, an unknown profile raises and
+saves nothing, and ``refresh_profiles``/``list_profiles`` are unchanged.
+All tests are unit tests on a local Parameter Manager with no Server
+involved.
 """
 
 import json
@@ -1108,3 +1118,294 @@ def test_one_load_emits_type_updates_then_lock_updates_and_nothing_for_values():
     with pytest.raises(ValueError):
         pm.fromParamDict(refused)
     assert received == []
+
+
+# ---------------------------------------------------------------------------
+# Profiles (4.3): switch_to_profile = save → clear → load (D20)
+# ---------------------------------------------------------------------------
+
+
+EMPTY_DOC = {
+    "version": 2,
+    "parameters": {"params.spare": {"value": 1, "unit": "V"}},
+    "types": {},
+}
+
+
+def make_profile_switch_manager(tmp_path, monkeypatch, name="params"):
+    """The first profile of the switching tests: a Parameter Manager
+    holding Types (one nesting another), an Instance of the outer Type, a
+    Type Lock with its default Globals Target (given its own value), an
+    explicit-Target Lock and an unlocked Lock — saved as profile
+    ``typed`` beside the profile ``empty``, which holds one parameter and
+    no Types and no Locks. Both files are listed as profiles."""
+    monkeypatch.chdir(tmp_path)
+    pm = ParameterManager(name=name)
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "power", default=-10, unit="dBm")
+    pm.add_nested_type("qubit", "readout", "readout")
+    pm.add_instance("qubit", "q01")
+    # the Type Lock with the default Globals Target: it creates the
+    # Globals parameter on demand and locks the Instance's parameter
+    pm.lock_type_parameter("qubit", "octave_gain")
+    pm.set("_globals.qubit.octave_gain", 33)
+    # an ordinary Lock with an explicit Target, and an unlocked Lock
+    pm.add_parameter("q01Data.IF", initial_value=42e6, unit="Hz")
+    pm.lock("q01.IF", "q01Data.IF")
+    pm.add_parameter("monitor.IF", initial_value=0, unit="Hz")
+    pm.lock("monitor.IF", "q01Data.IF")
+    pm.unlock("monitor.IF")
+    pm.toFile(tmp_path, "typed")
+    (tmp_path / "parameter_manager-empty.json").write_text(json.dumps(EMPTY_DOC))
+    pm.refresh_profiles()
+    return pm
+
+
+def test_switching_to_a_profile_without_types_or_locks_clears_them(
+    tmp_path, monkeypatch
+):
+    """Switching from a profile holding Types, a Type Lock with its
+    Globals Target, Locks in both states and a Globals parameter to a
+    profile without any leaves no Type, no Lock and no Globals submodule
+    behind: only the new profile's parameters are there (D20)."""
+    pm = make_profile_switch_manager(tmp_path, monkeypatch)
+
+    pm.switch_to_profile("empty")
+
+    assert pm.list_types() == []
+    assert pm.list_locks() == {}
+    assert "_globals" not in pm.submodules
+    assert pm.list() == ["spare"]
+    assert pm.get("spare") == 1
+    assert pm.parameter("spare").unit == "V"
+    assert pm.selectedProfile == "parameter_manager-empty.json"
+
+
+def test_switching_back_restores_types_locks_and_the_globals_parameter(
+    tmp_path, monkeypatch
+):
+    """Switching to a profile without Types and back restores every Type
+    (``get_type`` equal), every Lock in its stored state, and the Globals
+    Target parameter with its own value: the round trip through the
+    profiles."""
+    pm = make_profile_switch_manager(tmp_path, monkeypatch)
+    before_types = {t: pm.get_type(t) for t in pm.list_types()}
+    before_locks = pm.list_locks()
+
+    pm.switch_to_profile("empty")
+    assert pm.list_types() == []
+    assert pm.list_locks() == {}
+
+    pm.switch_to_profile("typed")
+
+    assert sorted(pm.list_types()) == ["qubit", "readout"]
+    for type_name, blueprint in before_types.items():
+        assert pm.get_type(type_name) == blueprint
+    assert pm.list_locks() == before_locks
+    # the Globals Target parameter comes back with its own value ...
+    assert pm.get("_globals.qubit.octave_gain") == 33
+    assert pm.parameter("_globals.qubit.octave_gain").unit == "dB"
+    # ... and the restored Locks pull again: q01.octave_gain is locked to
+    # the Globals Target, q01.IF to its explicit Target, and monitor.IF
+    # stays unlocked and answers with its own value (D5)
+    assert pm.get("q01.octave_gain") == 33
+    assert pm.parameter("q01.octave_gain").own_value() == 10
+    assert pm.get("q01.IF") == 42e6
+    assert pm.get("monitor.IF") == 0
+    assert pm.instances_of("qubit") == ["q01"]
+    assert set(pm.list()) == {
+        "q01.IF",
+        "q01.octave_gain",
+        "q01.readout.power",
+        "monitor.IF",
+        "q01Data.IF",
+        "_globals.qubit.octave_gain",
+    }
+    assert pm.selectedProfile == "parameter_manager-typed.json"
+
+
+def test_the_switch_saves_the_leaving_profile_as_a_version_two_document(
+    tmp_path, monkeypatch
+):
+    """The save step of a switch writes the leaving profile as the
+    version-2 document (D19): the Types with the full-form Type Lock
+    Target, the Followers' ``lock`` entries in both states and the
+    Globals parameter with its own value. A change made after the
+    helper's own save can only have been recorded by the switch's
+    save."""
+    pm = make_profile_switch_manager(tmp_path, monkeypatch)
+    pm.set("_globals.qubit.octave_gain", 34)
+    pm.refresh_profiles()
+
+    pm.switch_to_profile("empty")
+
+    with open(tmp_path / "parameter_manager-typed.json") as f:
+        doc = json.load(f)
+    assert doc["version"] == 2
+    assert set(doc["types"]) == {"qubit", "readout"}
+    assert doc["types"]["qubit"]["nested"] == {"readout": "readout"}
+    assert doc["types"]["qubit"]["parameters"]["octave_gain"] == {
+        "default": 10,
+        "unit": "dB",
+        "target": "params._globals.qubit.octave_gain",
+    }
+    assert doc["types"]["qubit"]["parameters"]["IF"] == {
+        "default": None,
+        "unit": "Hz",
+        "target": None,
+    }
+    assert doc["parameters"]["params._globals.qubit.octave_gain"] == {
+        "value": 34,
+        "unit": "dB",
+    }
+    assert doc["parameters"]["params.q01.octave_gain"]["lock"] == {
+        "target": "params._globals.qubit.octave_gain",
+        "locked": True,
+    }
+    assert doc["parameters"]["params.q01.IF"]["lock"] == {
+        "target": "params.q01Data.IF",
+        "locked": True,
+    }
+    assert doc["parameters"]["params.monitor.IF"]["lock"] == {
+        "target": "params.q01Data.IF",
+        "locked": False,
+    }
+
+
+def test_switching_to_a_legacy_flat_profile_leaves_no_type_or_lock(
+    tmp_path, monkeypatch
+):
+    """A legacy flat profile file (no ``version`` key) loads as
+    parameters only; switching to it works, and no Type and no Lock of
+    the previous profile is left — the clear step ran before the load."""
+    pm = make_profile_switch_manager(tmp_path, monkeypatch)
+    legacy = {
+        "params.legacy_a": {"value": 5, "unit": "V"},
+        "params.legacy_b.child": {"value": 6, "unit": "A"},
+    }
+    (tmp_path / "parameter_manager-legacy_flat.json").write_text(json.dumps(legacy))
+    pm.refresh_profiles()
+
+    pm.switch_to_profile("legacy_flat")
+
+    assert pm.list_types() == []
+    assert pm.list_locks() == {}
+    assert set(pm.list()) == {"legacy_a", "legacy_b.child"}
+    assert pm.get("legacy_a") == 5
+    assert pm.parameter("legacy_a").unit == "V"
+    assert pm.get("legacy_b.child") == 6
+    assert "_globals" not in pm.submodules
+    assert pm.selectedProfile == "parameter_manager-legacy_flat.json"
+
+
+def test_clear_all_emits_type_updates_then_lock_updates_and_nothing_else(
+    tmp_path, monkeypatch
+):
+    """``_clear_all`` emits one ``pm-type-update`` with a ``None`` payload
+    per removed Type, in registry order, then whatever
+    ``remove_all_parameters`` emits — the ``pm-lock-update`` ``None`` of a
+    Lock dropped with its Target — and nothing else. No Type Lock clearing
+    is reported, because the Types are already out of the registry when
+    the parameters go."""
+    monkeypatch.chdir(tmp_path)
+    pm = ParameterManager(name="params")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "power", default=-10, unit="dBm")
+    pm.add_nested_type("qubit", "readout", "readout")
+    pm.add_instance("qubit", "q01")
+    pm.lock_type_parameter("qubit", "IF")  # Globals Target _globals.qubit.IF
+    # a Lock whose Follower is removed after its Target in tree order, so
+    # its removal is reported with a pm-lock-update
+    pm.add_parameter("q01Data.target", initial_value=1, unit="V")
+    pm.add_parameter("follower", initial_value=0, unit="V")
+    pm.lock("follower", "q01Data.target")
+
+    received = []
+    pm.add_broadcast_sink(received.append)
+    received.clear()
+
+    pm._clear_all()
+
+    assert [(bp.action, bp.name) for bp in received] == [
+        (PM_TYPE_UPDATE, "params.qubit"),
+        (PM_TYPE_UPDATE, "params.readout"),
+        (PM_LOCK_UPDATE, "params.follower"),
+    ]
+    assert all(bp.value is None for bp in received)
+    # everything is gone, the Globals submodule included
+    assert pm.list_types() == []
+    assert pm.list_locks() == {}
+    assert pm.list() == []
+    assert "_globals" not in pm.submodules
+
+
+def test_switch_to_an_unknown_profile_raises_and_saves_nothing(
+    tmp_path, monkeypatch
+):
+    """An unknown profile raises ``ValueError`` before anything happens:
+    the current profile file keeps its contents and modification time,
+    the state of the Parameter Manager is untouched, and no file is
+    created."""
+    pm = make_profile_switch_manager(tmp_path, monkeypatch)
+    pm.refresh_profiles()
+    typed_path = tmp_path / "parameter_manager-typed.json"
+    before_mtime = typed_path.stat().st_mtime_ns
+    before_text = typed_path.read_text()
+    before_state = (pm.list(), pm.list_locks(), pm.list_types())
+
+    with pytest.raises(ValueError, match="Profile no_such does not exist"):
+        pm.switch_to_profile("no_such")
+
+    assert typed_path.stat().st_mtime_ns == before_mtime
+    assert typed_path.read_text() == before_text
+    assert (pm.list(), pm.list_locks(), pm.list_types()) == before_state
+    assert pm.selectedProfile == "parameter_manager-typed.json"
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "parameter_manager-empty.json",
+        "parameter_manager-typed.json",
+    ]
+
+
+def test_refresh_and_list_profiles_are_the_same_around_a_switch(
+    tmp_path, monkeypatch
+):
+    """``refresh_profiles``/``list_profiles`` are unchanged by a switch:
+    they list the same profile files before and after — plus the current
+    profile's file when the switch's save creates it."""
+    # both profile files exist before the switch
+    pm = make_profile_switch_manager(tmp_path, monkeypatch)
+    before = sorted(pm.refresh_profiles())
+    assert sorted(pm.list_profiles()) == before
+
+    pm.switch_to_profile("empty")
+
+    assert sorted(pm.refresh_profiles()) == before
+    assert sorted(pm.list_profiles()) == before
+
+    # the current profile's file does not exist yet: the switch's save
+    # creates it, and the refreshed list grows by exactly that file
+    (tmp_path / "parameter_manager-empty2.json").write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "parameters": {"params2.spare2": {"value": 2, "unit": "W"}},
+                "types": {},
+            }
+        )
+    )
+    pm2 = ParameterManager(name="params2")
+    pm2.add_parameter("x", initial_value=1, unit="u")
+    before2 = sorted(pm2.refresh_profiles())
+    assert "parameter_manager-params2.json" not in before2
+
+    pm2.switch_to_profile("empty2")
+
+    after2 = sorted(pm2.refresh_profiles())
+    assert after2 == sorted(before2 + ["parameter_manager-params2.json"])
+    assert sorted(pm2.list_profiles()) == after2
+    assert pm2.get("spare2") == 2
