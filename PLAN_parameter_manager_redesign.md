@@ -541,7 +541,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   side effects, then Locks (locked/unlocked as stored). Tests: `test_pm_persistence.py` —
   legacy fixture file loads; round-trip equality; missing Targets error lists every one and
   leaves the previous state intact; partial Instances are not "completed" on load.
-- [ ] **4.3 Profiles.** `remove_all_parameters` also clears Types and Locks (or add
+- [x] **4.3 Profiles.** `remove_all_parameters` also clears Types and Locks (or add
   `_clear_all()` used by `switch_to_profile`); `switch_to_profile` = save → clear → load.
   `refresh_profiles`/`list_profiles` unchanged. Tests: `test_pm_persistence.py` — switching
   between a profile with Types and one without leaves no Type or Lock behind; existing

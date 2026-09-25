@@ -661,3 +661,40 @@ The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D
 
 ### Process notes
 - Seven permissions were rejected in round 0. The coder asked for `/tmp`. reviewer-qwen asked for opencode's temp directory. plan-checker-qwen mistyped the repo path as `/Users/marcof2/...`. plan-checker-glm, test-reviewer-glm and reviewer-glm each tried an inline `uv run python - <<'EOF'` heredoc, and test-reviewer-qwen an inline `python -c`, none of which could be read in full. Each reran its check as a scanned probe under `orchestration/4.2/round-0/`. All probes and logs were deleted afterwards. There were no stalls and no nudges.
+
+## 4.3 Profiles — 2026-09-25
+
+`ParameterManager.switch_to_profile` now follows D20: it saves the current profile as the version-2 document `toFile` writes, clears parameters, Types and Locks with the new private `_clear_all()`, and then loads the new profile through `fromFile` (legacy flat map or version 2). `_clear_all` deletes every Type straight out of `_types` and emits one `pm-type-update` with `None` per Type, in registry order. It then calls `remove_all_parameters`, which is unchanged and emits its usual `pm-lock-update` `None`s. `test/pytest/test_pm_persistence.py` grew from 41 to 48 tests. The task finished in one commit with no fix round.
+
+### Commit by commit
+- `925967c` `_clear_all`, the new clear step in `switch_to_profile` and seven tests. The orchestrator's readings in the coder spec set these rules:
+  - take the plan's second option: `remove_all_parameters` keeps its signature and behaviour (rule 7), so a direct call still leaves the Type definitions in place, as 3.3 pinned
+  - Types go before parameters, so `remove_parameter` finds no Type Lock to clear and emits no extra `pm-type-update`
+  - `switch_to_profile` validates first (an unknown profile raises `ValueError` and nothing is saved), then save → `_clear_all` → load, then `selectedProfile` as before
+  - `refresh_profiles`/`list_profiles` stay unchanged, and a test asserts it
+
+  Deleting from `_types` directly, rather than calling `remove_type` for each Type, is needed because `remove_type` refuses a Type that another Type nests (reviewer-glm and plan-checker-qwen both checked this). The coder's caller check found one production caller of `switch_to_profile`, the GUI's `loadProfile` at `gui/instruments.py:851`, which keeps working unchanged. The tests share a helper, `make_profile_switch_manager`, which builds a profile `typed` holding two Types (one nesting the other), an Instance, a Type Lock whose Globals Target has its own value, an explicit-Target Lock and an unlocked Lock. It saves that profile next to a parameter-only profile `empty`. The tests:
+  - `test_switching_to_a_profile_without_types_or_locks_clears_them`, the plan's named test: no Type, no Lock, no `_globals` submodule, only the new profile's parameter
+  - `test_switching_back_restores_types_locks_and_the_globals_parameter`: `get_type` equal, `list_locks()` equal, the Globals value back, and the Followers pulling again
+  - `test_the_switch_saves_the_leaving_profile_as_a_version_two_document`: it changes a value after the helper's own save, so only the switch's save can have written it
+  - `test_switching_to_a_legacy_flat_profile_leaves_no_type_or_lock`
+  - `test_clear_all_emits_type_updates_then_lock_updates_and_nothing_else`: two `pm-type-update` `None`s in registry order, then one `pm-lock-update` `None`, and nothing else
+  - `test_switch_to_an_unknown_profile_raises_and_saves_nothing`: file contents and `st_mtime_ns` unchanged, and no new file
+  - `test_refresh_and_list_profiles_are_the_same_around_a_switch`, including a second manager whose own profile file is created by the switch's save
+
+  The existing switching tests in `test_param_manager.py` and the `remove_all_parameters` tests in `test_pm_types.py` and `test_pm_locks.py` pass unchanged. All six reviewers approved in round 0 with no must-fix or should-fix findings. Orchestrator run: ruff clean, 61 in the two named files, 466 in the full suite.
+
+### Dropped findings
+None of these were sent, since there was no fix round:
+- If the load step fails (corrupt JSON, or a version-2 document the 4.2 validation refuses), the switch has already saved and cleared, so the manager is left empty (reviewer-glm, nit; test-reviewer-qwen, nit, asking for a test that pins it). This follows from D20's order, and before 4.3 the same path already cleared the parameters. 4.3 only adds the Types and Locks to what gets cleared. reviewer-glm suggested that a later task could read and validate the target document before saving and clearing. The orchestrator flagged this for Marcos.
+- The `_clear_all` Broadcast test depends on the order `_to_tree` removes parameters in: Parameter Groups first, then root parameters. `follower` goes after its Target, so its dropped Lock is announced, while `q01.IF` goes before its Globals Target, so its Lock dies unannounced. Both test reviewers raised this as a nit, and test-reviewer-glm suggested a comment line for the `q01.IF` half. A change in removal order would make the test fail loudly, not pass silently.
+- `_clear_all` builds the `pm-type-update` `None` Broadcast inline, the third copy next to `remove_type` and `_broadcast_type_update` (reviewer-glm, nit). `_broadcast_type_update` can't be reused because it calls `get_type` on the Type that was just removed.
+- The tests move into `tmp_path` with `monkeypatch.chdir` instead of setting `workingDirectory` as reading 5 worded it (plan-checker-glm, nit). The result is the same.
+
+### Questions to Marcos
+- The orchestrator flagged its coder-spec readings for Marcos (a private `_clear_all` with `remove_all_parameters` untouched, and validate → save → clear → load), along with the emptied manager after a failed load. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- `does_profile_exist` matches by substring (reviewer-qwen, pre-existing). A name that is a substring of an existing profile file passes the check, and the switch then saves, clears and loads a missing file, which `fromFile` only warns about, so the manager ends up empty. `decisions.md` sends it to TEST_AUDIT at 6.3. No `TEST_AUDIT.md` row exists yet.
+- test-reviewer-glm: the switch-level tests alone can't show that `_clear_all` did the clearing, because the 4.2 reader with `deleteMissing=True` also removes Types the document doesn't define. `test_clear_all_emits_type_updates_then_lock_updates_and_nothing_else` pins the clear step directly.
+- For Phase 5: the GUI's `loadProfile` now clears Types and Locks on a switch too.
