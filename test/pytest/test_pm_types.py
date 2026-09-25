@@ -1869,6 +1869,66 @@ def test_add_type_parameter_emits_the_creation_then_the_type_updates(pm_with_sin
     }
 
 
+def test_pm_type_update_reaches_every_type_of_a_three_tier_nesting_chain(
+    pm_with_sink,
+):
+    # the walk must follow the nesting chain transitively: pulse_window is
+    # nested in readout, which is nested in qubit, so an edit to
+    # pulse_window affects all three Types — a walk stopping at the direct
+    # nesters would miss qubit
+    pm, received = pm_with_sink
+    put_three_tier_registry(pm)
+    received.clear()
+
+    pm.add_type_parameter("pulse_window", "amp", default=1, unit="V")
+
+    # no Instances exist, so no parameter-creation goes out: exactly one
+    # pm-type-update per affected Type, the edited pulse_window first,
+    # then outwards along the chain
+    assert len(received) == 3
+    pulse_update, readout_update, qubit_update = received
+    assert [bp.action for bp in received] == [PM_TYPE_UPDATE] * 3
+    assert isinstance(pulse_update.value, PMTypeBluePrint)
+    assert pulse_update.name == "parameter_manager.pulse_window"
+    assert pulse_update.value.parameters["amp"] == {
+        "default": 1,
+        "unit": "V",
+        "target": None,
+    }
+    assert isinstance(readout_update.value, PMTypeBluePrint)
+    assert readout_update.name == "parameter_manager.readout"
+    assert readout_update.value.effective["pw.amp"] == {
+        "unit": "V",
+        "from_type": "pulse_window",
+    }
+    assert isinstance(qubit_update.value, PMTypeBluePrint)
+    assert qubit_update.name == "parameter_manager.qubit"
+    assert qubit_update.value.effective["readout.pw.amp"] == {
+        "unit": "V",
+        "from_type": "pulse_window",
+    }
+
+
+def test_add_type_parameter_emits_no_creation_for_kept_parameters(pm_with_sink):
+    # q01.readout.window exists already: the edit writes the entry into the
+    # registry only, and the kept parameter emits no parameter-creation
+    # (D22); readout's own Instance target and qubit's prefixed target are
+    # the same path, so nothing is created at all
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    pm.add_parameter("q01.readout.window", initial_value=3e-6, unit="s")
+    received.clear()
+
+    pm.add_type_parameter("readout", "window", default=2e-6, unit="s")
+
+    assert [bp.action for bp in received] == [PM_TYPE_UPDATE] * 2
+    readout_update, qubit_update = received
+    assert readout_update.name == "parameter_manager.readout"
+    assert qubit_update.name == "parameter_manager.qubit"
+    # the kept parameter kept its own value (D13)
+    assert pm.get("q01.readout.window") == 3e-6
+
+
 def test_remove_type_parameter_emits_updates_for_the_edited_and_nesting_types(
     pm_with_sink,
 ):
@@ -1953,6 +2013,27 @@ def test_add_nested_type_emits_the_creation_then_the_type_updates(pm_with_sink):
         "unit": "s",
         "from_type": "pulse_window",
     }
+
+
+def test_add_nested_type_emits_no_creation_for_kept_parameters(pm_with_sink):
+    # the nested entry's parameter exists already at the target path: the
+    # edit writes the Nested Type into the registry only, and the kept
+    # parameter emits no parameter-creation (D22)
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    pm.add_type("pulse_window")
+    pm.add_type_parameter("pulse_window", "duration", default=None, unit="s")
+    pm.add_parameter("q01.readout.pw.duration", initial_value=500e-9, unit="s")
+    received.clear()
+
+    pm.add_nested_type("readout", "pw", "pulse_window")
+
+    assert [bp.action for bp in received] == [PM_TYPE_UPDATE] * 2
+    readout_update, qubit_update = received
+    assert readout_update.name == "parameter_manager.readout"
+    assert qubit_update.name == "parameter_manager.qubit"
+    # the kept parameter kept its own value (D13)
+    assert pm.get("q01.readout.pw.duration") == 500e-9
 
 
 def test_remove_nested_type_emits_updates_for_the_edited_and_nesting_types(
