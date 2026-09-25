@@ -299,3 +299,53 @@ The root `ParameterManager` now has a Type registry, `self._types`, which maps e
 
 ### Process notes
 - Reviewers checked their findings with scratch scripts in `orchestration/2.2/` in both rounds. The orchestrator read each script before allowing it to run, and the reviewers deleted them afterwards. One scratch tempdir left under `round-0/` was removed by the orchestrator. There were no rejected permissions, no stalls and no nudges.
+
+## 2.3 Type edits with Instance side effects — 2026-09-24
+
+`ParameterManager` now has the six D16 Type edits: `add_type_parameter`, `remove_type_parameter`, `set_type_parameter_default`, `set_type_parameter_unit`, `add_nested_type` and `remove_nested_type`. Each one validates everything before it touches the registry or the tree. The side effects follow D13 and key off the Instances that exist before the edit (`_instances_before_edit`), both the edited Type's and those of every Type nesting it (`_nesting_prefixes`). Missing parameters are created once each through the root's `add_parameter`, with the entry's default and unit, and a parameter already at a target path is left alone. `_check_creation_targets` refuses targets that cannot be created. `_effective_parameters` now sits on the new `_expand_effective`/`_effective_entries`, which also carry the full `_TypeEntry` and the defining Type. The edits emit no Broadcast yet (2.5), and `_TypeEntry.target` stays `None` (Phase 3). `test/pytest/test_pm_types.py` grew from 38 to 75 server-free tests. They include one effect test per D13 row and `test_a_failed_validation_leaves_the_tree_and_registry_byte_identical`, which compares `list()`, every value and unit, and a deep copy of `_types` around each failing call.
+
+### Commit by commit
+- `6724148` The six methods, their helpers and 29 tests. The orchestrator wrote nine readings into the coder spec for points the plan leaves open:
+  - side effects target the Instances found before the edit, including those of outer Types
+  - an existing parameter is never overwritten
+  - `remove_type_parameter` and the two `set_type_parameter_*` methods act on the Type's own entries only, and a path reached only through a Nested Type raises, naming the Type that defines it
+  - `add_nested_type` refuses cycles (checked with `_nested_cycle` on a copied registry), an occupied submodule, `_globals` as the first submodule segment, and a duplicated path in the effective set of the Type or of any Type nesting it
+  - no Broadcasts and no Target handling
+
+  With cycles refused, the 2.1 self-nesting `remove_type` case can no longer be built through the API. `test_add_nested_type_refuses_a_self_nesting` pins that. The coder added three readings of its own: an empty entry path or empty segment is refused, a target whose final segment is an existing Parameter Group is refused, and dotted submodule names are accepted. All six reviewers judged these in scope. The 2.1/2.2 tests now build their Types through the public API. `put_type` is kept only for states the API refuses to build. Orchestrator run: ruff clean, 67 in `test_pm_types.py`, 305 in the full suite.
+- `bd4b457` Fix from round 0, seven items:
+  - `add_nested_type` could raise half-way through. When the Nested Type's effective set held a path and a dotted extension of it (`b` and `b.c`, buildable while the Type has no Instances), each target passed the pre-check on its own. The registry was written, `q01.s.b` was created, and then `q01.s.b.c` failed. plan-checker-glm and reviewer-glm both reproduced it (must-fix). `_check_creation_targets` now refuses a target that is a strict segment-prefix of another target of the same edit, and names both. The fix list also allowed refusing this shape when the Type is defined. The coder did not do that, because the fix list's own test scenario needs `{b, b.c}` to be buildable. New test: `test_add_nested_type_refuses_conflicting_creation_targets`.
+  - `add_type_parameter` checked the new path only against the edited Type's own effective set. If `qubit` nests the empty `readout` and owns `readout.window`, then `add_type_parameter("readout", "window")` succeeded, and every later `qubit` query raised the duplicated-path error. plan-checker-glm raised this (must-fix) and the orchestrator confirmed it in the code. The method now refuses `prefix + path` already in any nesting Type's effective set. New test: `test_add_type_parameter_refuses_a_path_that_collides_in_a_nesting_type`.
+  - Five test-only pins:
+    - `test_add_nested_type_refuses_a_target_blocked_by_a_parameter_group`: test-reviewer-glm, who showed by mutation that turning off the check left the suite green
+    - `test_add_nested_type_accepts_a_dotted_submodule_name`: both test reviewers
+    - `test_add_nested_type_refuses_a_submodule_name_with_empty_segments`: test-reviewer-glm and plan-checker-qwen
+    - `test_add_nested_type_builds_the_three_tier_case`: test-reviewer-qwen
+    - `test_add_nested_type_leaves_an_existing_parameter_at_the_target_alone`: reviewer-qwen
+
+    The byte-identical test gained five failing calls. The coder briefly turned off `_check_creation_targets` locally to show that a test catches it. The orchestrator checked that the commit left no trace of this.
+
+  Orchestrator run: ruff clean, 74 in `test_pm_types.py`, 312 in the full suite.
+- `bcaaa77` Fix from round 1: the nester check added in `bd4b457` raised on the first collision, so it named only one nester or one path. Plan rule 3 asks for all of them. Four reviewers in three roles caught it (plan-checker-glm, plan-checker-qwen, reviewer-qwen, test-reviewer-qwen). The round-0 fix list had asked for the singular ("naming the nester and the path"), and the orchestrator ruled that the plan rule wins. The check now collects every `(path, nester)` pair and raises once, in the same format `add_nested_type` uses. New test: `test_add_type_parameter_names_every_nesting_type_collision` (one nester nesting the edited Type at `a` and `b`). The byte-identical test's `holder` setup was widened to two submodules. In re-review all six approved, and all four raisers confirmed the fix. Orchestrator run: ruff clean, 75 in `test_pm_types.py`, 313 in the full suite.
+
+### Dropped findings
+- `_instances_before_edit` takes the Type → prefixes map but uses only its keys. The `new_path in new_paths` half of `add_nested_type`'s collision check can never be true. The `created` sets have a bare `set` annotation (reviewer-qwen, nits) → not sent.
+- The `elif shorter.startswith(...)` branch of `bd4b457`'s prefix check can never run, because the paths are sorted (reviewer-qwen, plan-checker-qwen, nits; plan-checker-glm noted it too) → not sent. It is still in `_check_creation_targets`.
+- No `isinstance(..., ManagedParameter)` assertion on the created parameters, and no test that the edits emit nothing (test-reviewer-glm, nits) → not sent; 2.5 tests the emissions.
+- No per-method test that `remove_type_parameter` and the two `set_type_parameter_*` methods refuse an unknown Type (plan-checker-qwen, nit) → not sent. They share `_require_type`, which is already pinned.
+- No dedicated test for two different nesters colliding on the same path (test-reviewer-qwen, round 2 nit) → not sent. The fix list allowed either case, the coder chose one nester at two submodules, and the code path is the same.
+
+### Questions to Marcos
+- The orchestrator flagged the nine coder-spec readings for the run report. It also flagged that a Type whose effective set holds both `b` and `b.c` can still be built while it has no Instances, and can never match. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 3.1: a Type entry path may contain a `_globals` segment (`add_type_parameter("qubit", "_globals.x")` is accepted), and a non-first `_globals` segment in a submodule name is accepted too. D12/D18 do not say whether this is allowed (plan-checker-qwen, reviewer-qwen). Side effects go through `add_parameter`, so 3.1's refusal there will reach them, but `add_type_parameter`'s own validation should match it.
+- A `{b, b.c}` Type stays in the registry without harm: every edit that would write it into the tree is now refused before it changes anything (reviewer-glm).
+- For `set_type_parameter_unit`, reaching the outer Types' Instances changes nothing that can be seen: every such Instance already contains an Instance of the nested Type. test-reviewer-glm recorded this so that nobody counts it as coverage.
+- The 2.2 question of whether a parameter without a unit (`None`) carries a declared `""` is still open. 2.3 creates side-effect parameters with the entry's unit, `""` by default.
+- Nothing from 2.3 is in `TEST_AUDIT.md`.
+
+### Process notes
+- The coder went idle after about 6 minutes of thinking, with no edits and no worker_done. The orchestrator nudged it to continue.
+- In round 1, all five reviewers still running stopped with "Cannot connect to API" during a short Lumen outage. The orchestrator nudged each of them to resume.
+- test-reviewer-qwen asked for `/tmp` in round 0. This was rejected, and it was told to use `orchestration/2.3/`. Reviewers used scratch scripts under `orchestration/2.3/` in every round, and each was checked for writes before it ran and deleted afterwards. reviewer-qwen made several read-only `python -c` qcodes lookups, which its role file advises against.

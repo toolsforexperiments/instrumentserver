@@ -484,7 +484,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   set. Tests: `test_pm_types.py` — the three-tier case from the mock (`qubit` nests `readout`
   nests `pulse_window`), unit mismatch excludes, extra parameters don't matter, two Types on
   one submodule, `q01.readout` is an Instance of `readout` on its own.
-- [ ] **2.3 Type edits with Instance side effects.** `add_type_parameter` (creates in every
+- [x] **2.3 Type edits with Instance side effects.** `add_type_parameter` (creates in every
   Instance lacking it, with default and unit; raises if in the effective set already),
   `remove_type_parameter`, `set_type_parameter_default`, `set_type_parameter_unit`
   (propagates to every Instance's parameter), `add_nested_type` (writes missing entries under
