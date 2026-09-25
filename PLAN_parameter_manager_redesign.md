@@ -510,7 +510,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   raise; `_globals` excluded from `instances_of`/`types_of` (already in 2.2, assert again);
   internal helper `_ensure_global_target(type, path)` creating `_globals.<type>.<path>` with
   the entry's default and unit. Tests: `test_pm_types.py`.
-- [ ] **3.2 `lock_type_parameter` / `unlock_type_parameter`.** Per D17: store `target` on the
+- [x] **3.2 `lock_type_parameter` / `unlock_type_parameter`.** Per D17: store `target` on the
   entry; default Target via 3.1; put a locked Lock on every current Instance's parameter,
   skipping those with a Lock on another Target (collect, `logger.warning`, return the list);
   `unlock_type_parameter` clears the rule only. `add_instance` and completing

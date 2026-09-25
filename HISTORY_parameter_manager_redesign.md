@@ -485,3 +485,52 @@ The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D
 
 ### Process notes
 - Two permissions were rejected. In round 0, reviewer-qwen tried an inline `python -c` script that changed into a `tempfile.mkdtemp()` outside the repo. It reran its check as a scanned script under `orchestration/3.1/round-0/`. In round 1, plan-checker-qwen tried a command that wrote to `/tmp/x`. Reviewers' scratch scripts and logs under `orchestration/3.1/` were scanned before they ran and deleted afterwards. There were no stalls and no nudges.
+
+## 3.2 `lock_type_parameter` / `unlock_type_parameter` — 2026-09-25
+
+`ParameterManager.lock_type_parameter(type_name, path, target=None)` declares a Type Lock on one of the Type's own entries (D17). It stores the Target on `_TypeEntry.target` in full form (`parameter_manager._globals.qubit.IF`), which `PMTypeBluePrint.parameters[path]["target"]` now shows. With no `target` it creates the default Globals Target through 3.1's `_ensure_global_target`. It then puts an ordinary locked Lock on that parameter in every current Instance through `lock()`/`relock()`. Instance parameters with a Lock on another Target are skipped, named in one `logger.warning` and returned as a list of relative paths. `unlock_type_parameter` clears the stored Target only, and every Lock stays. The new `_apply_type_locks_to_new_instances` runs at the end of `add_instance`, `add_type_parameter` and `add_nested_type`. It gives every submodule that became an Instance during the edit the Type Locks of its Type, pre-existing parameters included. Broadcasts go out in this order: `parameter-creation`s, then `pm-lock-update`s, then `pm-type-update`. `test/pytest/test_pm_types.py` grew from 124 to 161 tests.
+
+### Commit by commit
+- `682ab21` The two methods, `_classify_lock_application` (lock / relock / none / skip for one parameter), the creation-path application and 31 tests. The orchestrator's nine readings in the coder spec set these rules:
+  - full-form stored Target
+  - own entries only, via `_require_type_entry`
+  - validate first, with an up-front self-lock and cycle check across all Instances that names every offender
+  - a re-declare with a different Target skips the Followers still locked to the old one
+  - `unlock_type_parameter` on an entry with no Type Lock is an INFO no-op that emits nothing
+  - only the edited Type gets a `pm-type-update`
+
+  Two coder questions changed reading 6. It had said only *created* parameters get Type Locks. The orchestrator answered from D17 ("new Instances ... get it at creation") that the unit is the Instance. A submodule that becomes an Instance (instances after the edit minus instances before) gets the Type Locks on all its parameters at those paths, kept ones included. Second, `add_type_parameter` can never complete a new Instance under the 2.3 loops, because it only writes into existing Instances. So its test became a negative one (`test_add_type_parameter_applies_no_type_locks`). `add_nested_type` can complete one, so it walks the union of `_nesting_prefixes` of the outer Type and the Nested Type (`test_add_nested_type_applies_the_nested_type_lock_under_the_submodule`). The coder made one judgment call. On the creation path, a Lock that would close a cycle or hit a parameter that cannot carry a Lock is skipped with the warning, so the three creation methods never raise. `lock_type_parameter` raises up front instead, and also checks "cannot carry a Lock" there. The tests cover the plan's list and more:
+  - apply, the default Globals Target, skip-with-warning (`caplog`), no skips means no warning
+  - a new Instance auto-locked, a kept parameter locked with its value and unit unchanged, a missing stored Target skipped
+  - rule removal leaves the Locks (`test_unlock_type_parameter_leaves_every_lock_in_place`), `test_an_instance_falling_out_keeps_its_locks`
+  - re-declare re-applies, re-declare with a different Target, an explicit ordinary Target
+  - refusals: unknown Type, non-own entry, missing Target, self-lock, cycle, and `test_lock_type_parameter_names_every_offending_path`
+  - five sink tests on Broadcast order and silence
+  - two proxy tests: the skipped list and the full-form `target` over the wire, and a `SubClient` receiving the Type Lock Broadcasts from a second client
+
+  Orchestrator run: ruff clean, 155 in `test_pm_types.py`, 393 in the full suite.
+- `efbafc6` Fix from round 0, four items:
+  - `_apply_type_locks_to_new_instances` classified every application against the state before the batch, but each `lock()` checks again against the Locks that earlier applications in the same batch had already made. reviewer-qwen (must-fix) built a case: `z1` locked to `q05.b`, `z2` locked to `q05.a`, and Type Locks on `a`→`z1` and `b`→`z2`. There `add_instance("T","q05")` created `q05.c`, locked `q05.a`, then raised a cycle error, leaving the Instance half-locked. The orchestrator reproduced it. The loop now catches `ValueError` from `lock()`/`relock()` and records the exception text as that parameter's skip reason (`test_add_instance_skips_an_application_the_batch_made_a_cycle`).
+  - Tests for the coder's creation-path skips: `test_add_instance_skips_a_parameter_that_cannot_carry_a_lock` and `test_add_instance_skips_an_application_that_would_close_a_cycle` (both test reviewers).
+  - The `relock` branch at creation: `test_add_instance_relocks_a_follower_that_fell_out_and_came_back` (both test reviewers). The outer-side `add_nested_type` variant the fix list asked for cannot be built, because a submodule that carries the outer Type's full pre-nesting set is already an Instance. The orchestrator accepted the coder's three-tier substitute, `test_add_nested_type_locks_a_pre_existing_parameter_through_two_levels`.
+  - `test_lock_type_parameter_with_no_instances_stores_the_rule`: declare first, add the Instance later (test-reviewer-qwen, should-fix).
+
+  All six approved in re-review, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 161 in `test_pm_types.py`, 399 in the full suite.
+
+### Dropped findings
+- The `seen` set in `_apply_type_locks_to_new_instances` de-duplicates by parameter path alone. Two different defining entries with different Targets that reach one path in the same edit would drop the second without a warning (reviewer-glm, reviewer-qwen, nits) → not sent. reviewer-glm found no way to reach it through the public API. The plan does not say which Target should win. Flagged for Marcos.
+- "Only the rule goes" wording in the docstring and section comment, and "stores the rule" in the round-1 test name (reviewer-glm, plan-checker-glm, then five reviewers in round 1, nits) → not sent, because it mirrors D17. Reading 8 of the coder spec says "rule" alone is not a glossary term, and the wording is still in `params.py` and `test_pm_types.py`.
+- Self-lock and cycle messages are pinned with one offender only. Broadcast order is not pinned for `add_nested_type` or for a mixed re-declare (test reviewers, nits) → not sent.
+
+### Questions to Marcos
+- Both coder questions (Type Locks apply to the whole new Instance, kept parameters included; D17's "an `add_type_parameter` that completes them" has no reachable case) were answered by the orchestrator from D17 and flagged for Marcos, along with the nine readings and the `seen` de-dup. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 3.3: a stored Target that no longer exists is skipped with a warning on the creation path, until deletion clears Type Locks.
+- plan-checker-qwen: suppose a Nested Type sits at a dotted, deeper position (`add_nested_type("M", "s.s2", "N")`). A new Instance of `M` that this edit completes would not get `M`'s own-entry Type Locks. This is recorded in `decisions.md` only, not fixed and not tested.
+- Nothing from 3.2 is in `TEST_AUDIT.md`.
+
+### Process notes
+- Marcos told the run during 3.2 to continue through every phase instead of stopping at the end of Phase 3 (`orchestration/RUNS.md`).
+- The coder went idle after the orchestrator answered its first question, with no edits and no worker_done. One nudge got it moving again.
+- Four permissions were rejected. reviewer-qwen and test-reviewer-qwen each asked for opencode's temp directory outside the repo. Each also first ran a scratch script (`repro_cross_target.py`, `scratch-verify.py`) that changed into a temp directory outside the repo. Both scripts were rewritten to run from their round folder, and were scanned and allowed. All scratch files and logs under `orchestration/3.2/` were deleted afterwards.
