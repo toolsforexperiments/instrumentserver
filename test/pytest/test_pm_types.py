@@ -1566,6 +1566,24 @@ def test_add_instance_refuses_a_unit_conflict_naming_every_conflicting_path(pm):
     assert pm.instances_of("qubit") == []
 
 
+def test_add_instance_refuses_a_unit_conflict_on_a_nested_effective_path(pm):
+    # the conflict sits on readout.IF: an effective path of qubit reached
+    # through the Nested Type, so the scan must walk the expanded set
+    put_three_tier_registry(pm)
+    pm.add_parameter("q01.readout.IF", initial_value=1, unit="V")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("qubit", "q01")
+
+    # the full dotted path relative to the Parameter Manager, with both units
+    message = str(excinfo.value)
+    assert "cannot add an Instance of Type 'qubit' at 'q01'" in message
+    assert "'q01.readout.IF' carries unit 'V', the Type declares 'Hz'" in message
+    # the scan refuses before anything is created (D14)
+    assert pm.list() == ["q01.readout.IF"]
+    assert pm.instances_of("qubit") == []
+
+
 def test_add_instance_refuses_a_target_blocked_by_a_parameter(pm):
     pm.add_type("sensor")
     pm.add_type_parameter("sensor", "sub.x", default=1, unit="V")
@@ -1646,14 +1664,49 @@ def test_add_instance_refuses_the_globals_submodule(pm):
     pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
 
     with pytest.raises(
-        ValueError, match=re.escape("the Globals submodule name is reserved")
+        ValueError,
+        match=re.escape(
+            "'_globals' is not a valid submodule path for an Instance: "
+            "the Globals submodule name is reserved"
+        ),
     ):
         pm.add_instance("qubit", "_globals")
-    # anything under the Globals submodule is refused too (D18)
+    # anything under the Globals submodule is refused too, naming its own
+    # offending name (D18)
     with pytest.raises(
-        ValueError, match=re.escape("the Globals submodule name is reserved")
+        ValueError,
+        match=re.escape(
+            "'_globals.q01' is not a valid submodule path for an Instance: "
+            "the Globals submodule name is reserved"
+        ),
     ):
         pm.add_instance("qubit", "_globals.q01")
+
+    # nothing was created
+    assert pm.list() == []
+
+
+def test_add_instance_refuses_the_globals_submodule_on_an_empty_type(pm):
+    # the name refusals are unconditional: even an empty Type, which
+    # creates nothing anyway, refuses the reserved Globals name (D18)
+    pm.add_type("empty")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'_globals' is not a valid submodule path for an Instance: "
+            "the Globals submodule name is reserved"
+        ),
+    ):
+        pm.add_instance("empty", "_globals")
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "'_globals.q01' is not a valid submodule path for an Instance: "
+            "the Globals submodule name is reserved"
+        ),
+    ):
+        pm.add_instance("empty", "_globals.q01")
 
     # nothing was created
     assert pm.list() == []
