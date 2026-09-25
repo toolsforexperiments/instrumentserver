@@ -1,5 +1,5 @@
 """Client-side state and Broadcast handling of the Parameter Manager GUI
-(plan task 5.1).
+(plan task 5.1), plus its tabs, tints and gutter bands (plan task 5.2).
 
 The GUI keeps the Parameter Manager's Types and Locks in a ``PMState``
 (``ParameterManagerGui.state``), filled from the Parameter Manager on
@@ -7,14 +7,20 @@ construction and on every refresh, and kept current by the
 ``pm-lock-update`` and ``pm-type-update`` Broadcasts the model routes to it.
 A second Client's changes must reach that state and the tree's value
 widgets without any polling, so every cross-client assertion waits with
-``qtbot.waitUntil``.
+``qtbot.waitUntil``. The 5.2 tests cover the tab widget around the
+existing view, the pure ``compute_claims`` function and the tint palette
+without a Server, and the tints and gutter bands a second Client's Type
+edits produce live.
 
 Two shapes of the live path are deliberately avoided in these tests, both
 pre-existing and outside this task's scope:
 
 - a parameter another Client creates while the GUI is open makes the
   model's creation branch resolve it on the GUI's (stale) Proxy Instrument
-  blueprint, which raises;
+  blueprint, which raises. Every Type edit below therefore has no creation
+  side effect: the parameters (with the units the entries declare) exist
+  before the GUI is built, and the entries land on Instances that already
+  carry them;
 - ``lock_type_parameter`` without an explicit Target creates the Globals
   parameter ``_globals.<type>.<path>``, whose ``parameter-creation``
   Broadcast hits the same branch. The Type Lock test therefore declares an
@@ -26,15 +32,21 @@ import os
 import pytest
 from qcodes.instrument import InstrumentBase
 
+from instrumentserver import QtCore, QtWidgets
 from instrumentserver.blueprints import PMLockBluePrint, PMTypeBluePrint
 from instrumentserver.client.proxy import Client
 from instrumentserver.gui.base_instrument import InstrumentSortFilterProxyModel
 from instrumentserver.gui.instruments import (
+    GUTTER_ROLE,
+    TINT_COLOURS,
+    Claim,
     ItemParameters,
     ModelParameters,
     ParameterManagerGui,
     ParameterManagerTreeView,
     PMState,
+    TypePalette,
+    compute_claims,
 )
 
 PM_NAME = "parameter_manager"
@@ -442,5 +454,361 @@ def test_refresh_all_refills_the_state_from_the_server(
         assert gui.state.locks["rq02.x"] == PMLockBluePrint(
             target=f"{PM_NAME}.rq01.x", locked=True
         )
+    finally:
+        gui.model.stopListener()
+
+
+# ---------------------------------------------------------------------------
+# plan task 5.2: tabs, tints and gutter bands
+# ---------------------------------------------------------------------------
+
+
+def _type_blueprint(name, entries, nested=None, registry=None):
+    """A ``PMTypeBluePrint`` whose effective set is expanded the way
+    ``params.py`` expands it: the Type's own entries carry itself as
+    ``from_type``, and every Nested Type's effective set is mounted under
+    the submodule that requires it, keeping the defining Type."""
+    nested = dict(nested or {})
+    effective = {
+        path: {"unit": unit, "from_type": name} for path, unit in entries.items()
+    }
+    for submodule, nested_name in nested.items():
+        for path, spec in registry[nested_name].effective.items():
+            effective[f"{submodule}.{path}"] = dict(spec)
+    return PMTypeBluePrint(
+        name=name,
+        parameters={
+            path: {"default": None, "unit": unit, "target": None}
+            for path, unit in entries.items()
+        },
+        nested=nested,
+        effective=effective,
+    )
+
+
+def test_compute_claims_requires_every_path_with_the_declared_unit():
+    """A submodule is an Instance only when it carries every effective path
+    of the Type with the unit the Type declares (D12)."""
+    qubit = _type_blueprint("qubit", {"IF": "Hz", "bw": "Hz"})
+
+    # both paths, both units: q01 matches and claims its rows
+    claims = compute_claims({"qubit": qubit}, {"q01.IF": "Hz", "q01.bw": "Hz"})
+    assert claims["q01.IF"] == Claim(type="qubit", instance="q01", stack=["qubit"])
+    assert claims["q01.bw"] == Claim(type="qubit", instance="q01", stack=["qubit"])
+    assert claims["q01"] == Claim(type="qubit", instance="q01", stack=["qubit"])
+
+    # one path missing: no Instance, nothing claimed
+    assert compute_claims({"qubit": qubit}, {"q01.IF": "Hz"}) == {}
+
+    # a wrong unit excludes the submodule just the same
+    assert compute_claims({"qubit": qubit}, {"q01.IF": "Hz", "q01.bw": "V"}) == {}
+    assert compute_claims({"qubit": qubit}, {"q01.IF": "V", "q01.bw": "Hz"}) == {}
+
+
+def test_compute_claims_never_matches_globals_at_any_depth():
+    """The Globals submodule and everything under it are excluded from
+    matching (D12), wherever ``_globals`` appears in the tree."""
+    qubit = _type_blueprint("qubit", {"IF": "Hz"})
+    claims = compute_claims(
+        {"qubit": qubit},
+        {
+            "q01.IF": "Hz",
+            "_globals.qubit.IF": "Hz",
+            "q01._globals.IF": "Hz",
+        },
+    )
+    assert set(claims) == {"q01", "q01.IF"}
+
+
+def test_compute_claims_never_matches_the_root():
+    """The root of the Parameter Manager is never an Instance (D12): a
+    parameter at the root carries the shape, but claims nothing."""
+    qubit = _type_blueprint("qubit", {"IF": "Hz"})
+    claims = compute_claims({"qubit": qubit}, {"IF": "Hz", "q01.IF": "Hz"})
+    assert set(claims) == {"q01", "q01.IF"}
+
+
+def test_compute_claims_of_an_empty_type():
+    """An empty Type has no Instances (D12) and claims nothing."""
+    qubit = _type_blueprint("qubit", {})
+    assert compute_claims({"qubit": qubit}, {"q01.IF": "Hz"}) == {}
+
+
+def test_compute_claims_innermost_nested_type_wins():
+    """A Nested Type claims the rows it defines at and below its submodule
+    (the mock's owner credit): ``readout`` claims ``q01.readout.bw`` with
+    the ``qubit`` behind it in the stack."""
+    readout = _type_blueprint("readout", {"bw": "Hz"})
+    qubit = _type_blueprint(
+        "qubit", {"IF": "Hz"}, nested={"readout": "readout"}, registry={"readout": readout}
+    )
+    claims = compute_claims(
+        {"readout": readout, "qubit": qubit},
+        {"q01.IF": "Hz", "q01.readout.bw": "Hz"},
+    )
+    assert claims["q01.IF"] == Claim(type="qubit", instance="q01", stack=["qubit"])
+    assert claims["q01.readout.bw"] == Claim(
+        type="readout", instance="q01.readout", stack=["qubit", "readout"]
+    )
+    # the Instance row of the Nested Type is claimed by it as well
+    assert claims["q01.readout"] == Claim(
+        type="readout", instance="q01.readout", stack=["qubit", "readout"]
+    )
+    # the outer Instance row stays with the outer Type
+    assert claims["q01"] == Claim(type="qubit", instance="q01", stack=["qubit"])
+
+
+def test_compute_claims_of_a_nested_type_nested_two_levels_deep():
+    """A Nested Type's own Nested Type extends the submodule chain (the
+    mock's ``at``): ``pulse_window`` claims at ``q01.readout.pw``."""
+    pulse_window = _type_blueprint("pulse_window", {"win": "s"})
+    readout = _type_blueprint(
+        "readout",
+        {"bw": "Hz"},
+        nested={"pw": "pulse_window"},
+        registry={"pulse_window": pulse_window},
+    )
+    qubit = _type_blueprint(
+        "qubit", {"IF": "Hz"}, nested={"readout": "readout"}, registry={"readout": readout}
+    )
+    claims = compute_claims(
+        {"pulse_window": pulse_window, "readout": readout, "qubit": qubit},
+        {"q01.IF": "Hz", "q01.readout.bw": "Hz", "q01.readout.pw.win": "s"},
+    )
+    assert claims["q01.readout.pw.win"] == Claim(
+        type="pulse_window",
+        instance="q01.readout.pw",
+        stack=["qubit", "readout", "pulse_window"],
+    )
+    # the Nested Type's submodule row carries the same claim
+    assert claims["q01.readout.pw"] == Claim(
+        type="pulse_window",
+        instance="q01.readout.pw",
+        stack=["qubit", "readout", "pulse_window"],
+    )
+    assert claims["q01.readout.bw"].type == "readout"
+    assert claims["q01.IF"].type == "qubit"
+
+
+def test_compute_claims_larger_effective_set_wins():
+    """Two non-nested Types covering the same rows: the larger effective
+    set claims them, both carry the row in the stack."""
+    big = _type_blueprint("big", {"a": "Hz", "b": "Hz"})
+    small = _type_blueprint("small", {"a": "Hz"})
+    claims = compute_claims(
+        {"big": big, "small": small}, {"q01.a": "Hz", "q01.b": "Hz"}
+    )
+    assert claims["q01.a"] == Claim(type="big", instance="q01", stack=["big", "small"])
+    assert claims["q01.b"] == Claim(type="big", instance="q01", stack=["big"])
+    assert claims["q01"] == Claim(type="big", instance="q01", stack=["big", "small"])
+
+
+def test_compute_claims_breaks_ties_by_type_name():
+    """Two Types with the same Instance and the same effective set size:
+    the Type name decides, for determinism."""
+    aaa = _type_blueprint("aaa", {"x": "Hz"})
+    zzz = _type_blueprint("zzz", {"x": "Hz"})
+    claims = compute_claims({"zzz": zzz, "aaa": aaa}, {"q01.x": "Hz"})
+    assert claims["q01.x"] == Claim(type="aaa", instance="q01", stack=["aaa", "zzz"])
+
+
+def test_palette_assigns_slots_in_type_creation_order():
+    """The five palette slots go to the first five Types in creation order,
+    one new Type after the other as the GUI sees them."""
+    palette = TypePalette()
+    palette.sync(["qubit"])
+    assert palette.slots == {"qubit": 0}
+    palette.sync(["qubit", "readout"])
+    palette.sync(["qubit", "readout", "mixer", "attenuator", "script"])
+    assert palette.slots == {
+        "qubit": 0,
+        "readout": 1,
+        "mixer": 2,
+        "attenuator": 3,
+        "script": 4,
+    }
+
+
+def test_palette_recycles_slot_zero_when_exhausted():
+    """A sixth Type reuses slot 0 when all five slots are taken (the mock's
+    freeTint recycles when exhausted)."""
+    palette = TypePalette()
+    palette.sync([f"type{index}" for index in range(5)])
+    palette.sync([f"type{index}" for index in range(6)])
+    assert palette.slots["type5"] == 0
+
+
+def test_palette_frees_the_slot_of_a_removed_type():
+    """Removing a Type frees its slot and the next new Type takes the
+    lowest free slot."""
+    palette = TypePalette()
+    palette.sync(["a", "b", "c", "d", "e"])
+    palette.sync(["a", "b", "d", "e"])  # c was removed
+    palette.sync(["a", "b", "d", "e", "f"])  # a new Type arrives
+    assert palette.slots["f"] == 2
+
+
+def test_palette_keeps_the_slot_of_an_existing_type_across_updates():
+    """A ``pm-type-update`` for an existing Type never changes its colour:
+    the slot survives the update and an order change in the state."""
+    palette = TypePalette()
+    palette.sync(["a", "b", "c"])
+    before = dict(palette.slots)
+    palette.sync(["a", "b", "c"])  # the update itself
+    palette.sync(["c", "b", "a"])  # ... and a reordered state
+    assert palette.slots == before
+
+
+def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
+    """The existing widget becomes tab 0 ("Parameters") of a QTabWidget;
+    tab 1 ("Types") is an empty placeholder for its own task."""
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        assert gui.tabs.count() == 2
+        assert gui.tabs.tabText(0) == "Parameters"
+        assert gui.tabs.tabText(1) == "Types"
+        parameters_tab = gui.tabs.widget(0)
+        assert parameters_tab is gui.parametersTab
+        assert parameters_tab.isAncestorOf(gui.view)
+        types_tab = gui.tabs.widget(1)
+        assert types_tab is gui.typesTab
+        assert types_tab.findChildren(QtWidgets.QWidget) == []
+    finally:
+        gui.model.stopListener()
+
+
+def _row_items(gui, path):
+    """The four items of the row ``path``: name, unit, delegate, gutter."""
+    matches = gui.model.findItems(
+        path,
+        QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+        0,
+    )
+    assert matches, f"no row {path!r} in the model"
+    item = matches[0]
+    parent = item.parent()
+    if parent is None:
+        return [gui.model.item(item.row(), column) for column in range(4)]
+    return [parent.child(item.row(), column) for column in range(4)]
+
+
+def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_port):
+    """A Type the second Client adds tints the rows its Instances carry
+    (including the Instance row itself) and marks the gutter stack; when
+    its entries and then the Type are removed, the rows lose them again."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
+    pm.add_parameter("q01.readout.bw", initial_value=2.0, unit="Hz")
+    pm.add_parameter("q02.IF", initial_value=3.0, unit="V")
+    pm.add_parameter("other.x", initial_value=4.0, unit="s")
+    pm.update()  # the GUI's tree is built from the proxy's blueprint
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        # no creation side effect: q01 already carries IF with the unit the
+        # entry declares, and no other submodule matches
+        second_pm.add_type("qubit")
+        second_pm.add_type_parameter("qubit", "IF", unit="Hz")
+
+        def _tint(type_name):
+            slot = gui.typePalette.slots.get(type_name)
+            if slot is None:
+                return None
+            entry = TINT_COLOURS[slot]
+            return (entry["tint"], entry["tintAlt"])
+
+        qtbot.waitUntil(
+            lambda: _tint("qubit") is not None
+            and _row_items(gui, "q01.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in _tint("qubit"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        tint = _tint("qubit")
+        for path in ("q01", "q01.IF"):
+            for item in _row_items(gui, path)[:3]:  # name, unit, delegate
+                assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
+        assert _row_items(gui, "q01.IF")[3].data(GUTTER_ROLE) == ["qubit"]
+        # a wrong unit and an unrelated row carry no background
+        for path in ("q02.IF", "other.x"):
+            for item in _row_items(gui, path):
+                assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) is None
+
+        # q01 already carries readout.bw: no creation, and the row tints too
+        second_pm.add_type_parameter("qubit", "readout.bw", unit="Hz")
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q01.readout.bw")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in tint,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert (
+            _row_items(gui, "q01.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in tint
+        )
+
+        # emptying the Type takes the tint and the gutter band away again
+        second_pm.remove_type_parameter("qubit", "IF")
+        second_pm.remove_type_parameter("qubit", "readout.bw")
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q01.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            is None
+            and _row_items(gui, "q01.IF")[3].data(GUTTER_ROLE) == [],
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # removing the Type clears the last tint and frees the palette slot
+        second_pm.remove_type("qubit")
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q01.readout.bw")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            is None
+            and "qubit" not in gui.typePalette.slots,
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_refresh_all_recomputes_tints_after_a_model_reload(
+    qtbot, pm, second_client, server_port
+):
+    """With the listener stopped, a Type the second Client adds still tints
+    the rows once refreshAll reloads the model and the state."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.add_parameter("eq01.IF", initial_value=1.0, unit="Hz")
+    pm.update()
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.model.stopListener()
+        # no creation side effect: eq01 already carries IF with the unit the
+        # entry declares
+        second_pm.add_type("equbit")
+        second_pm.add_type_parameter("equbit", "IF", unit="Hz")
+        assert (
+            _row_items(gui, "eq01.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            is None
+        )
+
+        gui.refreshAll()
+        entry = TINT_COLOURS[gui.typePalette.slots["equbit"]]
+        for item in _row_items(gui, "eq01.IF")[:3]:
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in (
+                entry["tint"],
+                entry["tintAlt"],
+            )
+        assert _row_items(gui, "eq01.IF")[3].data(GUTTER_ROLE) == ["equbit"]
     finally:
         gui.model.stopListener()

@@ -1,6 +1,7 @@
 import inspect
 import logging
-from typing import Any, Callable, Dict, Optional, Union, cast
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union, cast
 
 from qcodes import Instrument
 
@@ -536,6 +537,62 @@ class ModelParameters(InstrumentModelBase):
             self.newItem.emit(item)
 
 
+class ModelParameterManager(ModelParameters):
+    #: Signal() --
+    #: Emitted after a Broadcast changed the tree's structure (a parameter
+    #: was created or removed), so the Parameter Manager GUI can recompute
+    #: the Type claims that the tints and gutter bands show.
+    structureChanged = QtCore.Signal()
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # ModelParameters pins the column count at 3 after loading; widen it
+        # again and give every loaded row the gutter item the narrow count
+        # dropped
+        self.setColumnCount(GUTTER_COLUMN + 1)
+        self.setHorizontalHeaderLabels([self.attr, "unit", "", ""])
+        self._ensureGutterItems(self.invisibleRootItem())
+
+    def _ensureGutterItems(self, parent: QtGui.QStandardItem) -> None:
+        """Give every row under ``parent`` its gutter item."""
+        for row in range(parent.rowCount()):
+            if parent.child(row, GUTTER_COLUMN) is None:
+                parent.setChild(row, GUTTER_COLUMN, QtGui.QStandardItem())
+            item = parent.child(row, 0)
+            if item is not None and item.hasChildren():
+                self._ensureGutterItems(item)
+
+    def insertItemTo(
+        self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
+    ) -> None:
+        if item is not None:
+            # A parameter might not have a unit
+            unit = ""
+            if item.element is not None:  # type: ignore[attr-defined]
+                unit = item.element.unit  # type: ignore[attr-defined]
+            unitItem = QtGui.QStandardItem(unit)
+            extraItem = QtGui.QStandardItem()
+            gutterItem = QtGui.QStandardItem()
+
+            if parent == self:
+                rowCount = self.rowCount()
+                self.setItem(rowCount, 0, item)
+                self.setItem(rowCount, 1, unitItem)
+                self.setItem(rowCount, 2, extraItem)
+                self.setItem(rowCount, GUTTER_COLUMN, gutterItem)
+            else:
+                parent.appendRow([item, unitItem, extraItem, gutterItem])
+
+            self.newItem.emit(item)
+
+    def updateParameter(self, bp: ParameterBroadcastBluePrint) -> None:
+        super().updateParameter(bp)
+        if bp.action in (PARAMETER_CREATION, PARAMETER_DELETION):
+            # matching depends on which parameters exist: the tints and
+            # gutter bands must be recomputed after a structural Broadcast
+            self.structureChanged.emit()
+
+
 class ParametersTreeView(InstrumentTreeViewBase):
     def __init__(
         self,
@@ -570,6 +627,7 @@ class InstrumentParameters(InstrumentDisplayBase):
         parent: Optional[QtWidgets.QWidget] = None,
         viewType: type = ParametersTreeView,
         callSignals: bool = True,
+        modelType: type = ModelParameters,
         **kwargs: Any,
     ) -> None:
         if "instrument" in kwargs:
@@ -595,7 +653,7 @@ class InstrumentParameters(InstrumentDisplayBase):
             parent=parent,
             attr="parameters",
             itemType=ItemParameters,
-            modelType=ModelParameters,
+            modelType=modelType,
             viewType=viewType,
             callSignals=callSignals,
             shortcutManager=shortcutManager,
@@ -670,6 +728,312 @@ class InstrumentParameters(InstrumentDisplayBase):
 # ----------------- Parameters Manager Classes - Beginning -----------------------------
 
 
+# ----------------- Parameter Manager tints - Beginning --------------------------------
+
+
+#: Logical index of the gutter column of :class:`ModelParameterManager`,
+#: whose items carry a row's stack of Types for the
+#: :class:`GutterDelegate` to draw. The existing columns keep their
+#: indexes: name (0), unit (1), delegate (2).
+GUTTER_COLUMN = 3
+
+#: Fixed pixel width of the gutter column in the view.
+GUTTER_WIDTH = 12
+
+#: Data role under which a row's stack of Type names is stored on its
+#: gutter item; :class:`GutterDelegate` reads it to draw the bands.
+GUTTER_ROLE = cast(
+    "QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 1
+)
+
+#: The mock's TINTS, light values only (D21: no dark theme): ``tint`` and
+#: ``tintAlt`` are the row background of a claimed row (``tintAlt`` for
+#: every other sibling row), ``bar`` the colour of its gutter band. The
+#: slot of a Type is its index in this list.
+TINT_PALETTE: List[Dict[str, str]] = [
+    {"tint": "#e8f1fb", "tintAlt": "#dfe9f6", "bar": "#4a7fc1"},
+    {"tint": "#e9f4e9", "tintAlt": "#e0ede0", "bar": "#4f9e57"},
+    {"tint": "#f6efe4", "tintAlt": "#efe7db", "bar": "#b98a3e"},
+    {"tint": "#f9ecec", "tintAlt": "#f2e3e3", "bar": "#b5605f"},
+    {"tint": "#e5f4f2", "tintAlt": "#dcece9", "bar": "#3f9490"},
+]
+
+#: The palette as QColors, in the same slot order.
+TINT_COLOURS: List[Dict[str, QtGui.QColor]] = [
+    {name: QtGui.QColor(value) for name, value in entry.items()}
+    for entry in TINT_PALETTE
+]
+
+
+@dataclass
+class Claim:
+    """What the tree shows for one row that Types carry (the mock's
+    ``claims()``): the Claiming Type whose tint the row shows, the Instance
+    submodule path that claims it, and every Type carrying the row,
+    outermost first (the gutter draws one band per Type, up to three)."""
+
+    type: str
+    instance: str
+    stack: List[str]
+
+
+def _nested_claim_prefixes(
+    blueprint: PMTypeBluePrint,
+    types: Mapping[str, PMTypeBluePrint],
+) -> Dict[str, str]:
+    """Map every effective path of the Type ``blueprint`` that a Nested
+    Type defines to the dotted submodule chain under which its defining
+    Type sits (the mock's ``at``): a ``qubit`` nesting a ``readout`` at its
+    submodule ``readout``, with the ``readout`` nesting a ``pulse_window``
+    at ``pw``, maps the effective path ``readout.pw.win`` to
+    ``readout.pw``.
+
+    Mirrors how ``params.py`` expands the effective set
+    (``_collect_effective``): the entries a Type defines itself are left
+    out (they claim at the Instance itself) and each Nested Type's own
+    entries are recorded under the chain that leads to it.
+    """
+    at_by_path: Dict[str, str] = {}
+
+    def walk(blueprint: PMTypeBluePrint, prefix: str, seen: Tuple[str, ...]) -> None:
+        for submodule, nested_name in blueprint.nested.items():
+            if nested_name in seen:
+                continue  # cycles are refused by the Parameter Manager
+            nested = types.get(nested_name)
+            if nested is None:
+                continue
+            at = prefix + submodule
+            for path, spec in nested.effective.items():
+                if spec.get("from_type") == nested_name:
+                    at_by_path[f"{at}.{path}"] = at
+            walk(nested, f"{at}.", seen + (nested_name,))
+
+    walk(blueprint, "", (blueprint.name,))
+    return at_by_path
+
+
+def _carries_effective_set(
+    instance: str,
+    effective: Mapping[str, Mapping[str, str]],
+    parameters: Mapping[str, str],
+) -> bool:
+    """Whether the candidate Instance ``instance`` carries every path of
+    the effective set ``effective`` with the unit the Type declares (D12):
+    matching requires existence and unit, compared as strings; values are
+    irrelevant."""
+    prefix = f"{instance}."
+    for path, spec in effective.items():
+        if parameters.get(prefix + path) != spec["unit"]:
+            return False
+    return True
+
+
+def compute_claims(
+    types: Mapping[str, PMTypeBluePrint],
+    parameters: Mapping[str, str],
+) -> Dict[str, Claim]:
+    """The mock's ``claims()`` ported to the client-side state (plan task
+    5.2): which Type claims each row of the Parameter Manager tree, and
+    which stack of Types carries it.
+
+    :param types: the Parameter Manager's Types (``PMState.types``), each
+        as its :class:`PMTypeBluePrint`.
+    :param parameters: every parameter row of the tree as ``{path relative
+        to the Parameter Manager: unit}``.
+    :return: for every claimed parameter path and submodule path, its
+        :class:`Claim`.
+
+    Matching mirrors ``ParameterManager.instances_of`` (D12) client-side:
+    a candidate is every submodule path derived from the parameter paths
+    (every proper dotted prefix; never the root, never anything under
+    Globals) and it is an Instance when it carries every effective path
+    with the declared unit. The Claiming Type is the innermost (the
+    longest Instance path), then the largest effective set, then the Type
+    name. A Nested Type claims at and below its submodule, so a row it
+    defines is claimed by it, with the outer Types behind it in the stack.
+    """
+    # candidate Instances: every proper dotted prefix of a parameter path
+    candidates = set()
+    for path in parameters:
+        segments = path.split(".")
+        for depth in range(1, len(segments)):
+            candidate = ".".join(segments[:depth])
+            if "_globals" in candidate.split("."):
+                continue  # Globals is excluded from matching at any depth
+            candidates.add(candidate)
+
+    claims_by_path: Dict[str, List[Tuple[str, str, int]]] = {}
+    winning: Dict[str, Tuple[str, str, int]] = {}
+
+    def put(path: str, type_name: str, instance: str, size: int) -> None:
+        # one (Type, Instance, effective set size) claim, as the mock's
+        # all/map pair; the winner keeps the innermost Instance, then the
+        # largest effective set, then the Type name
+        claim = (type_name, instance, size)
+        claims_by_path.setdefault(path, []).append(claim)
+        old = winning.get(path)
+        if old is None or (-len(instance), -size, type_name) < (
+            -len(old[1]),
+            -old[2],
+            old[0],
+        ):
+            winning[path] = claim
+
+    for type_name, blueprint in types.items():
+        effective = blueprint.effective
+        if not effective:
+            continue  # an empty Type has no Instances
+        size = len(effective)
+        at_by_path = _nested_claim_prefixes(blueprint, types)
+        for instance in sorted(candidates):
+            if not _carries_effective_set(instance, effective, parameters):
+                continue
+            # the Instance row itself is claimed by its Type, as in the mock
+            put(instance, type_name, instance, size)
+            for path in effective:
+                # every row at and above the parameter, down to the
+                # parameter itself, is claimed at the Instance
+                at = at_by_path.get(path, "")
+                spec = effective[path]
+                owner_instance = f"{instance}.{at}" if at else None
+                at_depth = len(at.split(".")) if at else 0
+                segments = path.split(".")
+                for depth in range(1, len(segments) + 1):
+                    row = f"{instance}.{'.'.join(segments[:depth])}"
+                    put(row, type_name, instance, size)
+                    if owner_instance is not None and depth >= at_depth:
+                        # the Nested Type claims at and below its submodule
+                        put(row, spec["from_type"], owner_instance, size)
+
+    claims: Dict[str, Claim] = {}
+    for path, path_claims in claims_by_path.items():
+        # the stack is every Type carrying the row, outermost first
+        # (shortest Instance path, then the larger effective set),
+        # de-duplicated by Type
+        stack: List[str] = []
+        for name in [
+            entry[0]
+            for entry in sorted(
+                path_claims, key=lambda entry: (len(entry[1]), -entry[2], entry[0])
+            )
+        ]:
+            if name not in stack:
+                stack.append(name)
+        type_name, instance, _ = winning[path]
+        claims[path] = Claim(type=type_name, instance=instance, stack=stack)
+    return claims
+
+
+class TypePalette:
+    """Assigns the fixed tint palette's slots to the Types the GUI knows.
+
+    A Type keeps its slot while it exists: the slot is assigned when the
+    GUI first sees the Type (in ``PMState.types`` order after a refresh,
+    then each new Type from a ``pm-type-update`` Broadcast), it never
+    changes while the Type is in the state, and it is freed when the Type
+    is removed. A new Type takes the lowest free slot, or slot 0 when all
+    five are used (the mock's ``freeTint`` recycles when exhausted).
+    """
+
+    def __init__(self) -> None:
+        self.slots: Dict[str, int] = {}
+
+    def sync(self, type_names: Any) -> None:
+        """Free the slots of Types that are gone and assign slots to new
+        ones, in the given creation order.
+
+        :param type_names: the names of the Types the GUI knows
+            (``PMState.types``).
+        """
+        names = list(type_names)
+        for name in [known for known in self.slots if known not in names]:
+            del self.slots[name]
+        used = set(self.slots.values())
+        for name in names:
+            if name in self.slots:
+                continue
+            slot = next(
+                (index for index in range(len(TINT_PALETTE)) if index not in used),
+                0,
+            )
+            self.slots[name] = slot
+            used.add(slot)
+
+    def colours(self, type_name: str) -> Optional[Dict[str, QtGui.QColor]]:
+        """The palette entry of the Type ``type_name`` (``tint``,
+        ``tintAlt`` and ``bar``), or ``None`` when it has no slot."""
+        slot = self.slots.get(type_name)
+        return None if slot is None else TINT_COLOURS[slot]
+
+    def bar_colour(self, type_name: str) -> Optional[QtGui.QColor]:
+        """The gutter band colour of the Type ``type_name``."""
+        colours = self.colours(type_name)
+        return None if colours is None else colours["bar"]
+
+
+class GutterDelegate(QtWidgets.QStyledItemDelegate):
+    """Draws the gutter bands of a row's stack of Types into the gutter
+    column: up to three vertical bands of equal width filling the cell,
+    one per Type of the stack, outermost first, left to right, in the
+    Types' ``bar`` colours. A row with no stack paints nothing beyond the
+    background."""
+
+    def __init__(self, parent: Optional[QtCore.QObject] = None) -> None:
+        super().__init__(parent)
+        # Owned by the Parameter Manager GUI and assigned after the view is
+        # built; the delegate only reads the Types' colours from it.
+        self.typePalette: Optional[TypePalette] = None
+
+    def paint(
+        self,
+        painter: QtGui.QPainter,
+        option: QtWidgets.QStyleOptionViewItem,
+        index: QtCore.QModelIndex,
+    ) -> None:
+        opt = QtWidgets.QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+        opt.text = ""
+        # the background first (alternating row or Type tint), then the bands
+        widget = opt.widget
+        style = (
+            widget.style() if widget is not None else QtWidgets.QApplication.style()
+        )
+        style.drawControl(
+            QtWidgets.QStyle.ControlElement.CE_ItemViewItem, opt, painter, widget
+        )
+        if self.typePalette is None:
+            return
+        stack = index.data(GUTTER_ROLE)
+        if not stack:
+            return
+        bandWidth = opt.rect.width() / len(stack)
+        for band, type_name in enumerate(stack):
+            colour = self.typePalette.bar_colour(type_name)
+            if colour is None:
+                continue
+            painter.fillRect(
+                QtCore.QRectF(
+                    opt.rect.x() + band * bandWidth,
+                    opt.rect.y(),
+                    bandWidth,
+                    opt.rect.height(),
+                ),
+                colour,
+            )
+
+    def sizeHint(
+        self,
+        option: QtWidgets.QStyleOptionViewItem,
+        index: QtCore.QModelIndex,
+    ) -> QtCore.QSize:
+        return QtCore.QSize(
+            GUTTER_WIDTH, super().sizeHint(option, index).height()
+        )
+
+
+# ----------------- Parameter Manager tints - Ending -----------------------------------
+
+
 class ParameterDeleteDelegate(ParameterDelegate):
     #: Signal(str)
     #: Emits the name of the parameter to be deleted when the user presses the delete button.
@@ -731,6 +1095,23 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         self.delegate.navFilter = ValueCellNavigationFilter(self)
 
         self.setItemDelegateForColumn(2, self.delegate)
+
+        # the gutter column exists only in the Parameter Manager's own model
+        # (ModelParameterManager)
+        self.gutterDelegate = GutterDelegate(self)
+        if self.model().columnCount() > GUTTER_COLUMN:
+            self.setItemDelegateForColumn(GUTTER_COLUMN, self.gutterDelegate)
+            header = self.header()
+            # the gutter moves to visual position 0 with a fixed width; the
+            # tree branches stay on the name column
+            header.moveSection(GUTTER_COLUMN, 0)
+            if header.minimumSectionSize() > GUTTER_WIDTH:
+                header.setMinimumSectionSize(GUTTER_WIDTH)
+            header.setSectionResizeMode(
+                GUTTER_COLUMN, QtWidgets.QHeaderView.ResizeMode.Fixed
+            )
+            header.resizeSection(GUTTER_COLUMN, GUTTER_WIDTH)
+        self.setTreePosition(0)
         self.setAllDelegatesPersistent()
 
     @QtCore.Slot(object, object)
@@ -862,18 +1243,34 @@ class ParameterManagerGui(InstrumentParameters):
             parent=None,
             viewType=ParameterManagerTreeView,
             callSignals=False,
+            modelType=ModelParameterManager,
             **kwargs,
         )
         # The client-side cache of the Parameter Manager's Types and Locks.
         # Created before connectSignals, which wires the model's Broadcast
         # routing into it.
         self.state = PMState()
+        # The tint palette: maps each Type to its slot in TINT_PALETTE; the
+        # view's gutter delegate reads the colours from it.
+        self.typePalette = TypePalette()
+        self.view.gutterDelegate.typePalette = self.typePalette
         self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
         layout = self.layout()
         assert isinstance(layout, QtWidgets.QVBoxLayout)
         layout.insertWidget(0, self.profileManager)
         layout.addWidget(self.addParam)
+        # The existing content becomes tab 0 of the tab widget; the Types
+        # tab stays an empty placeholder until its own task builds it.
+        self.parametersTab = QtWidgets.QWidget(self)
+        self.parametersTab.setLayout(self.layout())
+        self.typesTab = QtWidgets.QWidget(self)
+        self.tabs = QtWidgets.QTabWidget(self)
+        self.tabs.addTab(self.parametersTab, "Parameters")
+        self.tabs.addTab(self.typesTab, "Types")
+        outerLayout = QtWidgets.QVBoxLayout(self)
+        outerLayout.setContentsMargins(0, 0, 0, 0)
+        outerLayout.addWidget(self.tabs)
         self.connectSignals()
         self.loadProfile()
 
@@ -885,7 +1282,8 @@ class ParameterManagerGui(InstrumentParameters):
         self.parameterCreated.connect(self.addParam.clear)
         self.profileManager.indexChanged.connect(self.loadProfile)
         self.model.lockChanged.connect(self.state.apply_lock)
-        self.model.typeChanged.connect(self.state.apply_type)
+        self.model.typeChanged.connect(self._onTypeChanged)
+        self.model.structureChanged.connect(self.applyTints)
         self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
         self.shortcutManager.register("clear_add", self.addParam.clear, self)
         self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
@@ -924,6 +1322,7 @@ class ParameterManagerGui(InstrumentParameters):
         self.instrument.refresh_profiles()
         self.profileManager.refresh()
         self.state.refresh(self.instrument)
+        self.applyTints()
 
     def removeParameter(self, fullName: str) -> None:
         if self.instrument.has_param(fullName):
@@ -954,6 +1353,89 @@ class ParameterManagerGui(InstrumentParameters):
         # Broadcasts for the parameters it (re)creates, so the state of the
         # Types and Locks must be re-read from the Parameter Manager
         self.state.refresh(self.instrument)
+        self.applyTints()
+
+    @QtCore.Slot(str, object)
+    def _onTypeChanged(
+        self, name: str, type_blueprint: Optional[PMTypeBluePrint]
+    ) -> None:
+        """Record the change a ``pm-type-update`` Broadcast reports about
+        the Type ``name`` in the state, then recompute the tints and gutter
+        bands it may change."""
+        self.state.apply_type(name, type_blueprint)
+        self.applyTints()
+
+    @QtCore.Slot()
+    def applyTints(self) -> None:
+        """Recompute every row's Type claims and repaint the tints and
+        gutter bands (plan task 5.2).
+
+        Runs after the state was refreshed from the Parameter Manager (on a
+        model reload), on every ``pm-type-update`` Broadcast, and after a
+        parameter was created or removed by a Broadcast, since matching
+        depends on which parameters exist.
+        """
+        self.typePalette.sync(self.state.types)
+        claims = compute_claims(self.state.types, self._modelParameters())
+        self._applyTintsToRows(self.model.invisibleRootItem(), claims)
+
+    def _modelParameters(self) -> Dict[str, str]:
+        """Every parameter row of the source model as ``{path: unit}``."""
+        parameters: Dict[str, str] = {}
+        self._collectParameters(self.model.invisibleRootItem(), parameters)
+        return parameters
+
+    def _collectParameters(
+        self, parent: QtGui.QStandardItem, parameters: Dict[str, str]
+    ) -> None:
+        for row in range(parent.rowCount()):
+            item = parent.child(row, 0)
+            if item is None:
+                continue
+            if item.element is not None:  # type: ignore[attr-defined]
+                # a parameter row; a submodule row's element is None
+                unitItem = parent.child(row, 1)
+                parameters[item.name] = "" if unitItem is None else unitItem.text()
+            if item.hasChildren():
+                self._collectParameters(item, parameters)
+
+    def _applyTintsToRows(
+        self, parent: QtGui.QStandardItem, claims: Dict[str, Claim]
+    ) -> None:
+        """Tint every row of ``parent`` that has a Claim with the Claiming
+        Type's colour on all columns and store its Type stack on the gutter
+        item; clear the background of the rows without one."""
+        for row in range(parent.rowCount()):
+            rowItems = [parent.child(row, col) for col in range(GUTTER_COLUMN + 1)]
+            item = rowItems[0]
+            if item is None:
+                continue
+            gutterItem = rowItems[GUTTER_COLUMN]
+            if gutterItem is None:
+                gutterItem = QtGui.QStandardItem()
+                parent.setChild(row, GUTTER_COLUMN, gutterItem)
+            claim = claims.get(item.name)
+            colours = (
+                self.typePalette.colours(claim.type) if claim is not None else None
+            )
+            if claim is not None and colours is not None:
+                # claimed rows carry the Claiming Type's tint, alternating
+                # with tintAlt over the sibling rows so the striping survives
+                background = colours["tintAlt"] if item.row() % 2 else colours["tint"]
+                for rowItem in rowItems:
+                    if rowItem is not None:
+                        rowItem.setData(
+                            background, QtCore.Qt.ItemDataRole.BackgroundRole
+                        )
+                gutterItem.setData(claim.stack[:3], GUTTER_ROLE)
+            else:
+                # a lost claim reverts the row to the default look
+                for rowItem in rowItems:
+                    if rowItem is not None:
+                        rowItem.setData(None, QtCore.Qt.ItemDataRole.BackgroundRole)
+                gutterItem.setData([], GUTTER_ROLE)
+            if item.hasChildren():
+                self._applyTintsToRows(item, claims)
 
     @QtCore.Slot()
     def loadFromFile(self, loadFile: Optional[str] = None) -> None:
