@@ -617,3 +617,47 @@ The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D
 ### Process notes
 - Two permissions were rejected in round 0. test-reviewer-qwen and reviewer-qwen each tried an inline `uv run python - <<'EOF'` heredoc that could not be read in full. Each reran its check as a scanned probe script in `orchestration/4.1/round-0/` and deleted it afterwards.
 - The coder left a `mkdtemp` scratch folder under `orchestration/4.1/`, which the orchestrator removed. There were no stalls and no nudges.
+
+## 4.2 Reader — 2026-09-25
+
+`ParameterManager.fromParamDict` now loads the whole version-2 profile document through the new `_load_v2_document`, and `fromFile` inherits this. The legacy flat map (no `version`) still loads parameters only and leaves Types and Locks alone. `_collect_v2_document_problems` validates the document before anything changes and joins every problem into one `ValueError`. After that the load runs in D20's order: it drops the Locks of every parameter the document lists, loads the parameters, writes the Types straight into `_types` with no Instance side effects, and puts each stored Lock back as stored. The Broadcasts go out once, after the whole load succeeds. `test/pytest/test_pm_persistence.py` grew from 21 to 41 tests, with a new checked-in fixture, `test/pytest/fixtures/parameter_manager-legacy.json`.
+
+### Commit by commit
+- `b6ee025` The reader and 16 tests. The orchestrator's readings in the coder spec set these rules:
+  - Validation covers the schema (`validateParameterManagerV2`) and more. Every key must carry the `<name>.` prefix. Type names must not be `_globals` or empty. Every Nested Type must be a Type of the document, with no Nested Type cycle and no path twice in an effective set. Every `lock.target` and non-null Type `target` must be a `parameters` key of the document, and each missing Target is named with the Followers or `<type>.<entry>`s that refer to it. The document's Locks must hold no self-lock and no cycle.
+  - Load order: (a) the Locks on listed parameters go first, so setting a stored own value on a locked Follower cannot raise (D6; this was the 4.1 loose end); (b) the parameters, with the old `deleteMissing` semantics, and Globals through `_create_managed_parameter`; (c) the Types, and with `deleteMissing=True` every Type the document does not define is removed; (d) each Lock is set directly with its stored Target and `locked` state, after `_check_lock_allowed`.
+  - Broadcasts: one `pm-type-update` per Type written, one with `None` per Type removed, then one `pm-lock-update` per Lock that ended different from before, in tree order. Nothing is emitted for values, and no `parameter-creation`/`parameter-deletion` is re-emitted. The docstring says a GUI must refresh its structure after a profile load (for 5.1).
+  - `fromFile` still does not forward `deleteMissing` (rule 6, TEST_AUDIT row "Profiles — loading a file").
+
+  To validate the document's Types without touching the registry, `_require_type`, `_expand_effective` and `_collect_effective` gained an optional `types` argument. The reader passes them a candidate registry built from the document. During the load the coder detaches `_broadcast_sinks` and restores them in a `finally`, so `remove_parameter`'s own Broadcasts do not mix into the load's single report. The commit also corrects the wording of the TEST_AUDIT row "Profiles — loading Globals parameters": only `_globals.*` parameters take the internal path (reading 6). The coder reported one possible edge: with `deleteMissing=False`, step (d)'s `_check_lock_allowed` might raise mid-load. All six reviewers judged it unreachable, because validation requires every Target to be a key of the document and step (a) has already cleared those parameters' Locks. reviewer-glm and test-reviewer-glm each confirmed this with a probe. The tests cover:
+  - the four the plan names: `test_legacy_fixture_file_loads_values_and_units`, `test_version_two_document_round_trips_exactly` (document equality, pull-on-get, own values, both Lock states), `test_missing_targets_are_all_named_and_change_nothing` and `test_partial_instances_are_not_completed_and_get_no_type_lock`
+  - up-front refusals: a Nested Type missing from the document, a Nested Type cycle, a duplicated effective path, a Lock cycle, a self-lock, and a key of another instrument
+  - `test_a_listed_parameter_without_a_lock_entry_loses_its_lock` and `test_a_locked_follower_loads_its_own_value_and_the_files_lock_state`
+  - `deleteMissing` both ways, Broadcast order and content for one load, and `test_legacy_load_leaves_types_and_locks_untouched`
+
+  Orchestrator run: ruff clean, 50 in the two named files, 455 in the full suite.
+- `f99f580` Fix from round 0, six items:
+  - `test_a_complete_instance_gets_no_type_lock_on_load`: the document completes `q01` into a `qubit` Instance whose `octave_gain` entry has a Type Lock, and carries no `lock` entries. After the load, `instances_of("qubit") == ["q01"]`, `list_locks() == {}`, and `list()` holds exactly the document's four keys. test-reviewer-glm caught the gap (should-fix). The partial-Instance test could not catch Type Locks being applied on load, because its `q01` never matches the Type.
+  - `test_invalid_type_names_in_the_document_are_refused_up_front`: `_globals` and `""` are both named in one message, and nothing changes or is emitted. Both test reviewers caught it (should-fix): the check existed but no test ran it.
+  - `test_target_validation_is_document_relative` and `test_nested_type_validation_is_document_relative`: a Target or Nested Type that exists in-session but not in the document is refused. test-reviewer-glm caught it (should-fix). Every earlier refusal test used names that existed nowhere, so a regression to "accept it if it exists in-session" would have gone unnoticed. This is also the coder's reported edge.
+  - The 4.1 test `test_the_shim_ignores_the_lock_and_types_sections` became `test_parameters_load_with_own_values_from_a_v2_file_with_locks_and_types`, with its docstring reworded and its assertions unchanged. test-reviewer-glm raised it as should-fix, and plan-checker-glm, plan-checker-qwen and test-reviewer-qwen as nits. The `pm-type-update` payload check in `test_delete_missing_removes_absent_parameters_types_and_locks` went from `is not None` to `== pm.get_type("kept")` (test-reviewer-qwen, nit, folded in).
+  - The redundant `and deleteMissing` inside the `if deleteMissing:` loop is gone (reviewer-glm, reviewer-qwen, nits). It was sent because both reviewer models raised it and it is one line.
+  - `TEST_AUDIT.md`: the "Profiles — file validation" row now also mentions documents holding both `params.q01` and `params.q01.x`, or a bare `params._globals`. These pass validation and then fail mid-load or shadow a submodule, a hole inherited from the legacy reader (reviewer-glm). A new `gap` row, "Types — empty Type name": `add_type("")` succeeds, so such a manager is written by `toFile` and then refused by the reader (test-reviewer-glm, nit).
+
+  All six approved in re-review, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 54 in the two named files, 459 in the full suite.
+
+### Dropped findings
+- The `assert target_param is not None` in step (d) would be skipped under `python -O` (reviewer-qwen, nit) → not sent. The value cannot be `None` after validation, and the codebase already uses asserts for such states.
+- The loop variable `spec` for a document Type could be `type_spec` (plan-checker-qwen, nit) → not sent.
+- Round 1: the extended "Profiles — file validation" row puts the bare `params._globals` key under the wrong failure. It actually fails on the reserved Globals name in `add_parameter`, and the shadowing happens only when the dotted key comes first (reviewer-qwen, nit) → not sent. The wording is to be corrected when the row is next touched.
+
+### Questions to Marcos
+- The orchestrator flagged its coder-spec readings for Marcos: the validation list, the load order with Locks cleared first, `deleteMissing` also removing Types, Broadcasts after the load with no creation/deletion re-emission, and `fromFile` left not forwarding `deleteMissing`. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- For 5.1: a profile load emits no `parameter-creation`/`parameter-deletion`, so the GUI must refresh its structure after a load (stated in the `fromParamDict` docstring).
+- `TEST_AUDIT.md` gaps still open: "Profiles — loading a file" (`fromFile` drops `deleteMissing`), "Profiles — file validation" (now also key collisions), and "Types — empty Type name".
+- The decisions.md note on the coder's mid-load edge overstates it; the reviewers showed it cannot be reached. No test loads a changed unit onto an existing parameter, which was already the case before this task (test-reviewer-glm).
+
+### Process notes
+- Seven permissions were rejected in round 0. The coder asked for `/tmp`. reviewer-qwen asked for opencode's temp directory. plan-checker-qwen mistyped the repo path as `/Users/marcof2/...`. plan-checker-glm, test-reviewer-glm and reviewer-glm each tried an inline `uv run python - <<'EOF'` heredoc, and test-reviewer-qwen an inline `python -c`, none of which could be read in full. Each reran its check as a scanned probe under `orchestration/4.2/round-0/`. All probes and logs were deleted afterwards. There were no stalls and no nudges.

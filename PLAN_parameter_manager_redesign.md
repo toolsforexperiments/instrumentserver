@@ -534,7 +534,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   `schemas/parameter_manager_v2.json`. Update the flat-shape assertions in
   `test_param_manager.py` to `["parameters"][...]`. Tests: `test_pm_persistence.py` writer
   cases; `test_param_manager.py` green.
-- [ ] **4.2 Reader.** `fromParamDict`/`fromFile`: detect legacy (no `version`) vs 2; validate
+- [x] **4.2 Reader.** `fromParamDict`/`fromFile`: detect legacy (no `version`) vs 2; validate
   the whole document first (every `lock.target` and every Type `target` must be a key in
   `parameters`; otherwise `ValueError` listing **all** missing Targets, state untouched);
   then load parameters (existing `deleteMissing` semantics), then Types without Instance
