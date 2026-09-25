@@ -1908,9 +1908,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # a parameter on the way blocks the creation, and the target path
         # may not be an existing Parameter Group: the blocked-target
         # validation is the one ``_check_creation_targets`` already owns
-        # for the Type edits and ``add_instance`` — the single target here
-        # is an Instance at the reserved Globals submodule, whose missing
-        # Parameter Groups are created on the way
+        # for the Type edits and ``add_instance``. The single target here
+        # is ``<type_name>.<path>`` under the reserved Globals submodule —
+        # which is never an Instance (D18); the ``(Instance path,
+        # relative target)`` pair the helper takes is reused only for its
+        # walk, and missing Parameter Groups are created on the way
         self._check_creation_targets([("_globals", f"{type_name}.{path}")])
         parent = self._get_parent(global_path, create_parent=True)
         parent._add_own_parameter(
