@@ -66,7 +66,9 @@ entries (a kept parameter included, with its own value and unit
 untouched) and skips the ones it cannot lock with one warning, that
 ``add_nested_type`` applies the Nested Type's Type Lock under the
 submodule (a pre-existing parameter included) while ``add_type_parameter``
-applies none (its fresh entries carry no Target), and the refusals
+applies none (its fresh entries carry no Target), that a hand-inserted
+registry whose stored Target points nowhere makes the application skip
+with one warning, and the refusals
 (unknown Type, non-own entry, missing explicit Target, self-lock, cycle,
 parameters that cannot carry a Lock) each leaving the tree, the Locks and
 the registry byte-identical. The Broadcast part checks the order
@@ -90,7 +92,8 @@ entry's Type Lock with it, and that ``remove_all_parameters`` clears the
 Type Locks whose Targets it removes while the Type definitions stay. The
 Broadcast part pins the order: one ``pm-lock-update`` with ``None`` per
 dropped Follower, then one ``pm-type-update`` per affected Type in
-registry order, and nothing else; ``remove_type`` keeps its single
+registry order — one per Type even when two of its entries shared the
+removed Target — and nothing else; ``remove_type`` keeps its single
 ``None`` update with no ``pm-lock-update``; a refused removal and a
 Follower removal emit nothing. The proxy part removes a Globals Type Lock
 Target through a second client: the SubClient sees the ``pm-lock-update``
@@ -2348,6 +2351,35 @@ def test_after_a_deletion_cleared_the_type_lock_a_new_instance_gets_no_lock(
         )
 
 
+def test_add_instance_skips_a_hand_inserted_stale_target(pm, caplog):
+    # the public API cannot leave a stored Target pointing nowhere any
+    # more (remove_parameter clears the Type Lock whose Target it deletes,
+    # D18), but a registry inserted by hand still can: the application
+    # must skip that entry instead of raising
+    put_qubit_instances(pm)
+    pm._types["qubit"].parameters["IF"].target = "parameter_manager.gone"
+    caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        pm.add_instance("qubit", "q07")
+
+    # the creation itself still succeeds and q07 is an Instance
+    assert pm.instances_of("qubit") == ["q01", "q02", "q07"]
+    assert pm.has_param("q07.IF")
+    assert pm.get_lock("q07.IF") is None
+    assert pm.get("q07.IF") == 5e9
+    # one warning names the skipped path and the missing stored Target
+    warnings_ = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
+    ]
+    assert len(warnings_) == 1
+    message = warnings_[0].getMessage()
+    assert "'q07.IF'" in message
+    assert "does not exist" in message
+
+
 def test_add_instance_skips_an_application_the_batch_made_a_cycle(pm, caplog):
     # the Targets follow the q05 parameters crosswise: locking q05.a to z1
     # succeeds and only then makes locking q05.b to z2 a cycle — the
@@ -3638,6 +3670,42 @@ def test_removing_a_shared_target_emits_one_update_per_type_in_registry_order(
     for update in received[2:]:
         assert isinstance(update.value, PMTypeBluePrint)
         assert update.value.parameters["IF"]["target"] is None
+
+
+def test_two_entries_sharing_a_removed_target_emit_one_type_update(pm_with_sink):
+    # two entries of one Type both declaring their Type Lock on the same
+    # ordinary parameter: the emission is one pm-type-update per affected
+    # Type, not per cleared entry
+    pm, received = pm_with_sink
+    pm.add_parameter("shared_IF", initial_value=9e9, unit="Hz")
+    pm.add_parameter("q01.IF", initial_value=1e9, unit="Hz")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.lock_type_parameter("qubit", "IF", target="shared_IF")
+    pm.lock_type_parameter("qubit", "octave_gain", target="shared_IF")
+    received.clear()
+
+    pm.remove_parameter("shared_IF")
+
+    # one pm-lock-update with None per dropped Follower, then exactly one
+    # pm-type-update whose blueprint shows both entries' Targets cleared —
+    # nothing else
+    assert [bp.action for bp in received] == [
+        PM_LOCK_UPDATE,
+        PM_LOCK_UPDATE,
+        PM_TYPE_UPDATE,
+    ]
+    assert received[0].name == "parameter_manager.q01.IF"
+    assert received[0].value is None
+    assert received[1].name == "parameter_manager.q01.octave_gain"
+    assert received[1].value is None
+    update = received[2]
+    assert update.name == "parameter_manager.qubit"
+    assert isinstance(update.value, PMTypeBluePrint)
+    assert update.value.parameters["IF"]["target"] is None
+    assert update.value.parameters["octave_gain"]["target"] is None
 
 
 def test_removing_a_target_of_ordinary_and_type_locks_emits_both_cleanups(
