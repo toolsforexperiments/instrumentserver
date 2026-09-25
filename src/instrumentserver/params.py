@@ -1874,8 +1874,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
         Nested Type; own entries only, like
         :meth:`set_type_parameter_default`), when the parameter exists
         with a unit different from the entry's unit (naming the path and
-        both units; unit conflicts are refused like D14), when a segment
-        of ``_globals.<type_name>.<path>`` on the way is an existing
+        both units; unit conflicts are refused like D14), and — through
+        the same :meth:`_check_creation_targets` validation the Type
+        edits and :meth:`add_instance` run — when a segment of
+        ``_globals.<type_name>.<path>`` on the way is an existing
         parameter rather than a Parameter Group, or when the target path
         is an existing Parameter Group.
 
@@ -1904,31 +1906,15 @@ class ParameterManager(Broadcaster, ParameterGroup):
             # with its own value, and emits nothing (D18)
             return global_path
         # a parameter on the way blocks the creation, and the target path
-        # may not be an existing Parameter Group: both are checked before
-        # anything is created. A missing Parameter Group is created on the
-        # way, so nothing deeper along the path can clash behind it.
-        segments = global_path.split(".")
-        group: ParameterGroup = self
-        walked: List[str] = []
-        missing_group = False
-        for segment in segments[:-1]:
-            if segment in group.parameters:
-                blocked = ".".join([*walked, segment])
-                raise ValueError(
-                    f"'{blocked}' is a parameter, and cannot have "
-                    "child parameters"
-                )
-            submodule = group.submodules.get(segment)
-            if submodule is None:
-                missing_group = True
-                break
-            walked.append(segment)
-            group = submodule
-        if not missing_group and segments[-1] in group.submodules:
-            raise ValueError(f"'{global_path}' is already a Parameter Group")
+        # may not be an existing Parameter Group: the blocked-target
+        # validation is the one ``_check_creation_targets`` already owns
+        # for the Type edits and ``add_instance`` — the single target here
+        # is an Instance at the reserved Globals submodule, whose missing
+        # Parameter Groups are created on the way
+        self._check_creation_targets([("_globals", f"{type_name}.{path}")])
         parent = self._get_parent(global_path, create_parent=True)
         parent._add_own_parameter(
-            segments[-1],
+            global_path.split(".")[-1],
             parameter_class=ManagedParameter,
             path=self._full_path(global_path),
             initial_value=entry.default,
