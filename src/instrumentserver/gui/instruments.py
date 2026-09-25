@@ -12,7 +12,11 @@ from ..blueprints import (
     PARAMETER_CREATION,
     PARAMETER_DELETION,
     PARAMETER_UPDATE,
+    PM_LOCK_UPDATE,
+    PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
+    PMLockBluePrint,
+    PMTypeBluePrint,
 )
 from ..client import ProxyInstrument, SubClient
 from ..helpers import nestedAttributeFromString
@@ -414,6 +418,18 @@ class ModelParameters(InstrumentModelBase):
     #: name, second object is its new value
     itemNewValue = QtCore.Signal(object, object)
 
+    #: Signal(str, object) --
+    #: Emitted on a ``pm-lock-update`` Broadcast: the Follower's path relative
+    #: to the instrument, and its :class:`PMLockBluePrint` (``None`` when its
+    #: Lock was removed). No model item is touched for this action.
+    lockChanged = QtCore.Signal(str, object)
+
+    #: Signal(str, object) --
+    #: Emitted on a ``pm-type-update`` Broadcast: the Type's name (the part
+    #: after the instrument name), and its :class:`PMTypeBluePrint` (``None``
+    #: when the Type was removed). No model item is touched for this action.
+    typeChanged = QtCore.Signal(str, object)
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # make sure we pass the server ip and port properly to the subscriber when the values are not defaults.
         subClientArgs = {
@@ -488,6 +504,15 @@ class ModelParameters(InstrumentModelBase):
                 assert isinstance(item[0], ItemBase)
                 # The model can't actually modify the widget since it knows nothing about the view itself.
                 self.itemNewValue.emit(item[0].name, bp.value)
+
+        elif bp.action == PM_LOCK_UPDATE:
+            # Locks and Types claim no model item of their own: the Lock
+            # column and the Type tints are separate tasks. The Parameter
+            # Manager GUI records the change in its PMState (D22).
+            self.lockChanged.emit(fullName, bp.value)
+
+        elif bp.action == PM_TYPE_UPDATE:
+            self.typeChanged.emit(fullName, bp.value)
 
     def insertItemTo(
         self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
@@ -711,7 +736,13 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
     @QtCore.Slot(object, object)
     def onItemNewValue(self, itemName: str, value: Any) -> None:
         widget = self.delegate.parameters[itemName]
-        widget.paramWidget.setValue(value)
+        try:
+            # use the abstract set method defined in parameter widget so it works for different types of widgets
+            widget._setMethod(value)
+        except RuntimeError:
+            logger.debug(
+                f"Could not set value for {itemName} to {value}. Object is not being shown right now."
+            )
 
 
 class ProfilesManager(QtWidgets.QComboBox):
@@ -750,6 +781,67 @@ class ProfilesManager(QtWidgets.QComboBox):
             self.indexChanged.emit()
 
 
+class PMState:
+    """Client-side cache of a Parameter Manager's Types and Locks.
+
+    The Parameter Manager GUI owns one instance (``ParameterManagerGui.state``)
+    so its widgets can react to Types and Locks without querying the Server
+    again. It starts empty and is filled from the Parameter Manager — a Proxy
+    Instrument or a local one — with :meth:`refresh`; the ``pm-lock-update``
+    and ``pm-type-update`` Broadcasts then keep single entries current through
+    :meth:`apply_lock` and :meth:`apply_type` (D22).
+
+    ``types`` maps each Type's name to its :class:`PMTypeBluePrint`; ``locks``
+    maps each Follower's path relative to the Parameter Manager — the form
+    ``list_locks()`` returns — to its :class:`PMLockBluePrint`.
+    """
+
+    def __init__(self) -> None:
+        self.types: Dict[str, PMTypeBluePrint] = {}
+        self.locks: Dict[str, PMLockBluePrint] = {}
+
+    def refresh(self, instrument: Any) -> None:
+        """Re-read every Type and Lock from the Parameter Manager.
+
+        Works with a Proxy Instrument and with a local Parameter Manager:
+        both expose ``list_types``, ``get_type`` and ``list_locks``.
+
+        :param instrument: the Parameter Manager whose Types and Locks to
+            read.
+        """
+        self.types = {
+            type_name: instrument.get_type(type_name)
+            for type_name in instrument.list_types()
+        }
+        self.locks = dict(instrument.list_locks())
+
+    def apply_lock(self, path: str, lock: Optional[PMLockBluePrint]) -> None:
+        """Record the change a ``pm-lock-update`` Broadcast reports about
+        the Follower at ``path``.
+
+        :param path: the Follower's path relative to the Parameter Manager.
+        :param lock: the Follower's :class:`PMLockBluePrint`, or ``None``
+            when its Lock was removed (the entry is dropped then).
+        """
+        if lock is None:
+            self.locks.pop(path, None)
+        else:
+            self.locks[path] = lock
+
+    def apply_type(self, name: str, type_blueprint: Optional[PMTypeBluePrint]) -> None:
+        """Record the change a ``pm-type-update`` Broadcast reports about
+        the Type ``name``.
+
+        :param name: the Type's name.
+        :param type_blueprint: the Type's :class:`PMTypeBluePrint`, or
+            ``None`` when the Type was removed (the entry is dropped then).
+        """
+        if type_blueprint is None:
+            self.types.pop(name, None)
+        else:
+            self.types[name] = type_blueprint
+
+
 class ParameterManagerGui(InstrumentParameters):
     #: Signal(str) --
     #: emitted when there's an error during parameter creation.
@@ -772,6 +864,10 @@ class ParameterManagerGui(InstrumentParameters):
             callSignals=False,
             **kwargs,
         )
+        # The client-side cache of the Parameter Manager's Types and Locks.
+        # Created before connectSignals, which wires the model's Broadcast
+        # routing into it.
+        self.state = PMState()
         self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
         layout = self.layout()
@@ -780,6 +876,7 @@ class ParameterManagerGui(InstrumentParameters):
         layout.addWidget(self.addParam)
         self.connectSignals()
         self.loadProfile()
+        self.state.refresh(self.instrument)
 
     def connectSignals(self) -> None:
         super().connectSignals()
@@ -788,6 +885,8 @@ class ParameterManagerGui(InstrumentParameters):
         self.parameterCreationError.connect(self.addParam.setError)
         self.parameterCreated.connect(self.addParam.clear)
         self.profileManager.indexChanged.connect(self.loadProfile)
+        self.model.lockChanged.connect(self.state.apply_lock)
+        self.model.typeChanged.connect(self.state.apply_type)
         self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
         self.shortcutManager.register("clear_add", self.addParam.clear, self)
         self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
@@ -825,6 +924,7 @@ class ParameterManagerGui(InstrumentParameters):
         super().refreshAll()
         self.instrument.refresh_profiles()
         self.profileManager.refresh()
+        self.state.refresh(self.instrument)
 
     def removeParameter(self, fullName: str) -> None:
         if self.instrument.has_param(fullName):
@@ -851,12 +951,17 @@ class ParameterManagerGui(InstrumentParameters):
         self.instrument.switch_to_profile(profileName)
         super().refreshAll()
         self.instrument.refresh_profiles()
+        # a profile load emits no parameter-creation/parameter-deletion
+        # Broadcasts for the parameters it (re)creates, so the state of the
+        # Types and Locks must be re-read from the Parameter Manager
+        self.state.refresh(self.instrument)
 
     @QtCore.Slot()
     def loadFromFile(self, loadFile: Optional[str] = None) -> None:
         try:
             self.instrument.fromFile(filePath=loadFile, deleteMissing=False)
             self.refreshAll()
+            self.state.refresh(self.instrument)
 
         except Exception as e:
             logger.info(f"Loading failed. {type(e)}: {e.args}")
