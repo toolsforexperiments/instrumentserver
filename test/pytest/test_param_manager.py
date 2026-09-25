@@ -135,7 +135,7 @@ def test_saving_correct_profile(tmp_path):
     with open(file_path) as file:
         data = json.load(file)
 
-    assert data["params.my_param"]["value"] == 8888
+    assert data["parameters"]["params.my_param"]["value"] == 8888
 
 
 def test_loading_correct_profile(tmp_path):
@@ -150,7 +150,7 @@ def test_loading_correct_profile(tmp_path):
     with open(file_path) as file:
         data = json.load(file)
 
-    data["params.my_param"]["value"] = 9999
+    data["parameters"]["params.my_param"]["value"] = 9999
 
     with open(file_path, "w") as file:
         json.dump(data, file)
@@ -215,9 +215,9 @@ def test_switching_profiles_automatic_save(tmp_path):
     with open(tmp_path.joinpath("parameter_manager-second.json")) as file:
         second = json.load(file)
 
-    assert second["params.his_param"]["value"] == 111
-    assert second["params.nested_param.son1"]["value"] == 222
-    assert second["params.nested_param.son2"]["value"] == 333
+    assert second["parameters"]["params.his_param"]["value"] == 111
+    assert second["parameters"]["params.nested_param.son1"]["value"] == 222
+    assert second["parameters"]["params.nested_param.son2"]["value"] == 333
 
 
 def test_selectedProfile_only_changing_when_correct_name(tmp_path):

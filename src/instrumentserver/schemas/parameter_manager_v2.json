@@ -1,0 +1,88 @@
+{
+  "type": "object",
+  "title": "Parameter Manager profile, version 2",
+  "description": "This schema validates the version-2 profile document the Parameter Manager writes and reads (plan decision D19): the parameters with their own values and the Lock of each Follower, and the Type registry.",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "version": {
+      "const": 2,
+      "description": "File format version. Saving always writes version 2; a file without this key is the legacy flat parameter map."
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Map of full dotted parameter paths (with the instrument name) to the parameter's own value, its unit and -- only on Followers -- its Lock. Validated in depth against schemas/parameters.json by serialize.validateParameterManagerV2.",
+      "patternProperties": {
+        "^(\\w+)(\\.\\w+)*$": {
+          "type": "object",
+          "description": "One parameter: its own value, the metadata included by the writer, and its Lock when it is a Follower.",
+          "properties": {
+            "value": {
+              "type": ["string", "object", "null", "number", "boolean", "array"],
+              "description": "own value of the parameter"
+            },
+            "unit": {
+              "type": "string",
+              "description": "unit of the parameter"
+            },
+            "lock": {
+              "type": "object",
+              "description": "The parameter's Lock (present only on Followers, in either state).",
+              "properties": {
+                "target": {
+                  "type": "string",
+                  "description": "full dotted path of the Target"
+                },
+                "locked": {
+                  "type": "boolean",
+                  "description": "whether the Lock is currently locked"
+                }
+              },
+              "required": ["target", "locked"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["value"]
+        }
+      }
+    },
+    "types": {
+      "type": "object",
+      "description": "The Type registry: every Type with its entries and its Nested Types.",
+      "additionalProperties": {
+        "type": "object",
+        "description": "One Type: its own entries by relative parameter path, and its Nested Types.",
+        "properties": {
+          "parameters": {
+            "type": "object",
+            "description": "The Type's own entries by relative parameter path.",
+            "additionalProperties": {
+              "type": "object",
+              "description": "One entry: its default value, its unit, and the full dotted Target of its Type Lock (null when it has none).",
+              "properties": {
+                "default": {
+                  "description": "default value of the entry"
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "unit of the entry"
+                },
+                "target": {
+                  "type": ["string", "null"],
+                  "description": "Target of the entry's Type Lock, in the full dotted form, or null"
+                }
+              }
+            }
+          },
+          "nested": {
+            "type": "object",
+            "description": "Nested Types: the submodule name that requires them mapped to the nested Type's name.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["version", "parameters", "types"]
+}

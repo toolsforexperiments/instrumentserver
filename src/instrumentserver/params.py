@@ -507,6 +507,36 @@ class ParameterManager(Broadcaster, ParameterGroup):
         kw["path"] = f"{self.name}.{name}"
         super().add_parameter(name, **kw)
 
+    def _create_managed_parameter(
+        self, path: str, initial_value: Any, unit: str
+    ) -> None:
+        """Create the parameter at the dotted path ``path`` (relative to
+        this Parameter Manager) through the internal creation path —
+        ``_get_parent(..., create_parent=True)`` +
+        ``_add_own_parameter`` — as a :class:`ManagedParameter` whose
+        ``path`` is the full dotted form with the instrument name, exactly
+        like the public :meth:`add_parameter` creates its parameters.
+        Missing Parameter Groups on the way are created; a segment of
+        ``path`` that is an existing parameter raises ``ValueError``
+        (through :meth:`_get_parent`).
+
+        This is the shared creation path of the callers that must bypass
+        the public :meth:`add_parameter` refusal of the Globals name
+        (D18): :meth:`_ensure_global_target`, which creates the default
+        Target of a Type Lock declaration, and :meth:`fromParamDict`,
+        which creates the missing parameters a profile file asks for,
+        Globals parameters included. It emits nothing: the callers own
+        their Broadcasts.
+        """
+        parent = self._get_parent(path, create_parent=True)
+        parent._add_own_parameter(
+            path.split(".")[-1],
+            parameter_class=ManagedParameter,
+            path=self._full_path(path),
+            initial_value=initial_value,
+            unit=unit,
+        )
+
     def _root_for_new_groups(self) -> "ParameterManager":
         """Parameter Groups created under the Parameter Manager belong to
         it: it is their root."""
@@ -1955,8 +1985,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         default Target of a Type Lock declaration with.
         It bypasses the public :meth:`add_parameter` refusal of the
         Globals name through the internal creation path
-        (``_get_parent(..., create_parent=True)`` +
-        ``_add_own_parameter``), creating the parameter as a
+        (:meth:`_create_managed_parameter`, the
+        ``_get_parent(..., create_parent=True)`` +
+        ``_add_own_parameter`` pair), creating the parameter as a
         :class:`ManagedParameter` whose ``path`` is the full dotted form
         with the instrument name, like :meth:`add_parameter` does. A
         parameter that exists at the target path already is kept
@@ -2010,14 +2041,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # relative target)`` pair the helper takes is reused only for its
         # walk, and missing Parameter Groups are created on the way
         self._check_creation_targets([("_globals", f"{type_name}.{path}")])
-        parent = self._get_parent(global_path, create_parent=True)
-        parent._add_own_parameter(
-            global_path.split(".")[-1],
-            parameter_class=ManagedParameter,
-            path=self._full_path(global_path),
-            initial_value=entry.default,
-            unit=entry.unit,
-        )
+        self._create_managed_parameter(global_path, entry.default, entry.unit)
         self._broadcast_parameter_creation(global_path, entry.default, entry.unit)
         return global_path
 
@@ -2461,15 +2485,44 @@ class ParameterManager(Broadcaster, ParameterGroup):
     ) -> None:
         """Load parameters from a parameter dictionary (see :mod:`.serialize`).
 
-        :param paramDict: Parameter dictionary.
+        A dictionary without a top-level ``version`` key is the legacy flat
+        parameter map and loads exactly as before. A version-2 profile
+        document (the document :meth:`toParamDict` writes, plan decision
+        D19) is validated as a whole with
+        :func:`serialize.validateParameterManagerV2`, and its
+        ``parameters`` map is then loaded with the same semantics as the
+        legacy flat map: value, unit and ``deleteMissing``. Its ``lock``
+        entries and ``types`` section are ignored for now — task 4.2 loads
+        the Targets, the Types and the Locks in D20's order. Any other
+        ``version`` value raises ``ValueError`` naming it.
+
+        A parameter the file asks for that does not exist yet is created;
+        one under the Globals submodule is created through the internal
+        creation path (:meth:`_create_managed_parameter`), since the
+        public :meth:`add_parameter` refuses the Globals name (D18), so a
+        saved Globals parameter round-trips.
+
+        :param paramDict: Parameter dictionary — a legacy flat map or a
+            version-2 profile document.
         :param deleteMissing: If ``True``, delete parameters currently in the
             ParameterManager that are not listed in the file.
         """
-        serialize.validateParamDict(paramDict)
-        if serialize.isSimpleFormat(paramDict):
-            simple = True
-        else:
+        if "version" in paramDict:
+            version = paramDict["version"]
+            if version != 2:
+                raise ValueError(
+                    f"unsupported Parameter Manager profile version: "
+                    f"{version!r} (this reader reads version 2 and the "
+                    "legacy flat map, which carries no version key)"
+                )
+            serialize.validateParameterManagerV2(paramDict)
+            paramDict = paramDict["parameters"]
             simple = False
+        else:
+            # legacy flat parameter map: exactly the behaviour before the
+            # version-2 profile document existed
+            serialize.validateParamDict(paramDict)
+            simple = serialize.isSimpleFormat(paramDict)
 
         currentParams = self.list()
         fileParams = [
@@ -2493,6 +2546,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     assert hasattr(param, "unit")
                     param.unit = unit
 
+            elif pn.startswith("_globals."):
+                # the public add_parameter refuses the Globals name (D18);
+                # a saved Globals parameter round-trips through the
+                # internal creation path
+                self._create_managed_parameter(pn, val, unit)
+
             else:
                 self.add_parameter(pn, initial_value=val, unit=unit)
 
@@ -2503,10 +2562,76 @@ class ParameterManager(Broadcaster, ParameterGroup):
     def toParamDict(
         self, simpleFormat: bool = False, includeMeta: List[str] = ["unit"]
     ) -> Dict[str, Any]:
+        """Return the state of this Parameter Manager as a version-2
+        profile document (plan decision D19):
+        ``{"version": 2, "parameters": {...}, "types": {...}}``.
+
+        ``parameters`` maps every parameter's full dotted path (with the
+        instrument name, like the legacy flat files) to a dict holding the
+        parameter's **own** value — :meth:`ManagedParameter.own_value`
+        for the parameters that can carry a Lock, so a locked Follower
+        saves its own value and never the Target's (ADR-0002), the cached
+        snapshot value for any plain ``Parameter`` — the metadata
+        ``includeMeta`` selects (``unit`` by default; Globals parameters
+        are saved like any other, D18), and, only on a parameter that
+        carries a Lock in either state, a ``lock`` entry
+        ``{"target": <full dotted Target path>, "locked": <bool>}``.
+
+        ``types`` maps every Type of the Type registry to its own entries
+        as ``{path: {"default": ..., "unit": ..., "target": ...}}`` — the
+        stored full-form Target of the entry's Type Lock, or ``None`` —
+        and its Nested Types as ``{submodule: type}``; with no Types it is
+        ``{}``.
+
+        The values are read from the qcodes snapshot with ``update=False``
+        (the cache, never ``get``), like the legacy writer this replaces.
+
+        ``simpleFormat`` is kept for signature compatibility but has no
+        effect: a version-2 document always stores the per-parameter
+        dict. ``includeMeta`` still selects the per-parameter metadata
+        besides ``value``.
+
+        :param simpleFormat: Ignored (kept for signature compatibility).
+        :param includeMeta: List of parameter attributes to include
+            besides value. All keys occurring in snapshots are valid.
+        :return: The version-2 profile document.
+        """
         params = serialize.toParamDict(
-            [self], simpleFormat=simpleFormat, includeMeta=includeMeta
+            [self], simpleFormat=False, includeMeta=includeMeta
         )
-        return params
+        for rel_path, param in self._iter_params():
+            full_path = self._full_path(rel_path)
+            if full_path not in params:
+                continue
+            if isinstance(param, ManagedParameter):
+                # the snapshot of a locked Follower reports the Target's
+                # value (ADR-0002); the profile stores the own value, so
+                # unlocking exposes it again
+                params[full_path]["value"] = param.own_value()
+            lock = getattr(param, "lock", None)
+            if lock is not None:
+                params[full_path]["lock"] = {
+                    "target": lock.target,
+                    "locked": lock.locked,
+                }
+        return {
+            "version": 2,
+            "parameters": params,
+            "types": {
+                type_name: {
+                    "parameters": {
+                        path: {
+                            "default": entry.default,
+                            "unit": entry.unit,
+                            "target": entry.target,
+                        }
+                        for path, entry in definition.parameters.items()
+                    },
+                    "nested": dict(definition.nested),
+                }
+                for type_name, definition in self._types.items()
+            },
+        }
 
     def toFile(
         self,
@@ -2514,6 +2639,8 @@ class ParameterManager(Broadcaster, ParameterGroup):
         name: str | None = None,
     ) -> None:
         """Save parameters from the instrument into a json file.
+        The file holds the version-2 profile document :meth:`toParamDict`
+        returns (plan decision D19), dumped with ``indent=2, sort_keys=True``.
         If the file being saved is a profile file (starts with 'parameter_manager-' and ends with '.json'),
         the selectedProfile is changed to the filename.
 
