@@ -937,11 +937,18 @@ class ParameterManager(Broadcaster, ParameterGroup):
     # ``types_of``) and failed validations emit nothing.
     # ------------------------------------------------------------------
 
-    def _require_type(self, name: str) -> "_TypeDefinition":
+    def _require_type(
+        self, name: str, types: "Dict[str, _TypeDefinition] | None" = None
+    ) -> "_TypeDefinition":
         """The registry entry of the Type ``name``; raises ``ValueError``
-        naming the name when no such Type exists."""
+        naming the name when no such Type exists. ``types`` defaults to
+        the Type registry; the version-2 document reader passes the
+        candidate registry built from the document, so the expansion
+        helpers can run on it without touching the real one."""
+        if types is None:
+            types = self._types
         try:
-            return self._types[name]
+            return types[name]
         except KeyError:
             raise ValueError(f"no Type named '{name}' exists") from None
 
@@ -1045,22 +1052,29 @@ class ParameterManager(Broadcaster, ParameterGroup):
             for path, (entry, from_type) in expanded.items()
         }
 
-    def _expand_effective(self, type_name: str) -> Dict[str, Tuple["_TypeEntry", str]]:
+    def _expand_effective(
+        self,
+        type_name: str,
+        types: "Dict[str, _TypeDefinition] | None" = None,
+    ) -> Dict[str, Tuple["_TypeEntry", str]]:
         """The effective parameter set of the Type ``type_name`` in raw
         form: every expanded path mapped to the :class:`_TypeEntry` that
         defines it and the name of the Type defining it. Raises the same
         errors as :meth:`_effective_parameters` (unknown Type, a cycle,
-        a Nested Type missing from the registry, a path appearing twice)."""
-        definition = self._require_type(type_name)
+        a Nested Type missing from the registry, a path appearing twice).
+        ``types`` defaults to the Type registry; the version-2 document
+        reader passes the candidate registry built from the document, the
+        way :meth:`add_nested_type` validates a candidate."""
+        definition = self._require_type(type_name, types)
         # cycles first: the expansion below would not terminate
-        cycle = self._nested_cycle(definition)
+        cycle = self._nested_cycle(definition, types=types)
         if cycle is not None:
             raise ValueError(f"cycle in nested Types: {' -> '.join(cycle)}")
         # the cycle walk visited every Nested Type of the closure, so all
         # lookups below are known to exist
         expanded: Dict[str, Tuple[_TypeEntry, str]] = {}
         duplicated: List[str] = []
-        self._collect_effective(definition, "", expanded, duplicated)
+        self._collect_effective(definition, "", expanded, duplicated, types=types)
         if duplicated:
             paths = ", ".join(f"'{path}'" for path in sorted(duplicated))
             raise ValueError(
@@ -1120,12 +1134,16 @@ class ParameterManager(Broadcaster, ParameterGroup):
         prefix: str,
         effective: Dict[str, Tuple[_TypeEntry, str]],
         duplicated: List[str],
+        types: "Dict[str, _TypeDefinition] | None" = None,
     ) -> None:
         """Add every entry of ``definition`` — and, recursively, of its
         Nested Types under their submodule names — to ``effective`` as
         ``(entry, defining Type name)`` pairs, recording every path that
         appears more than once in ``duplicated`` instead of raising, so
-        one error can name them all."""
+        one error can name them all. ``types`` defaults to the Type
+        registry; see :meth:`_expand_effective`."""
+        if types is None:
+            types = self._types
         for path, entry in definition.parameters.items():
             full_path = f"{prefix}{path}"
             if full_path in effective:
@@ -1134,10 +1152,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 effective[full_path] = (entry, definition.name)
         for submodule, nested_name in definition.nested.items():
             self._collect_effective(
-                self._types[nested_name],
+                types[nested_name],
                 f"{prefix}{submodule}.",
                 effective,
                 duplicated,
+                types=types,
             )
 
     # ------------------------------------------------------------------
@@ -2444,7 +2463,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         filePath: str | None = None,
         deleteMissing: bool = True,
     ) -> None:
-        """Load parameters from a parameter json file
+        """Load parameters, Types and Locks from a parameter json file
         (see :mod:`.serialize`).
 
         If the filepath starts with 'parameter_manager-' and ends with '.json',
@@ -2483,29 +2502,72 @@ class ParameterManager(Broadcaster, ParameterGroup):
     def fromParamDict(
         self, paramDict: Dict[str, Any], deleteMissing: bool = True
     ) -> None:
-        """Load parameters from a parameter dictionary (see :mod:`.serialize`).
+        """Load parameters, Types and Locks from a parameter dictionary
+        (see :mod:`.serialize`).
 
         A dictionary without a top-level ``version`` key is the legacy flat
-        parameter map and loads exactly as before. A version-2 profile
-        document (the document :meth:`toParamDict` writes, plan decision
-        D19) is validated as a whole with
-        :func:`serialize.validateParameterManagerV2`, and its
-        ``parameters`` map is then loaded with the same semantics as the
-        legacy flat map: value, unit and ``deleteMissing``. Its ``lock``
-        entries and ``types`` section are ignored for now — task 4.2 loads
-        the Targets, the Types and the Locks in D20's order. Any other
-        ``version`` value raises ``ValueError`` naming it.
+        parameter map and loads exactly as before: parameters only, and the
+        Types and Locks of this Parameter Manager are untouched by the
+        legacy reader.
 
-        A parameter the file asks for that does not exist yet is created;
-        one under the Globals submodule is created through the internal
-        creation path (:meth:`_create_managed_parameter`), since the
-        public :meth:`add_parameter` refuses the Globals name (D18), so a
-        saved Globals parameter round-trips.
+        A version-2 profile document (the document :meth:`toParamDict`
+        writes, plan decision D19) is validated as a whole before anything
+        is loaded (plan decision D20). The schema is checked with
+        :func:`serialize.validateParameterManagerV2`; every remaining
+        problem is collected into one ``ValueError`` naming all of them
+        (rule 3): every file key must belong to this Parameter Manager
+        (the full-path form with the instrument name), every Type name
+        must be valid (non-empty, not the reserved Globals name
+        ``_globals``), every Nested Type must name a Type of the document,
+        the document's Types must form no Nested Type cycle and hold no
+        effective parameter path twice, every ``lock`` Target and every
+        non-null Type Lock Target must be a ``parameters`` key of the
+        document, and no ``lock`` may be a self-lock or close a cycle
+        among the document's Locks (walking Targets regardless of
+        locked/unlocked state, D7). A refused document changes nothing and
+        emits nothing. Any other ``version`` value raises ``ValueError``
+        naming it.
+
+        After the validation the document loads in order (D20): first the
+        Locks of every parameter it lists go away, so setting a stored own
+        value on a currently locked Follower cannot raise (D6); then the
+        parameters with the semantics the reader always had (an existing
+        one is set to its stored own value and unit, a missing one is
+        created — one under the Globals submodule through the internal
+        creation path :meth:`_create_managed_parameter`, since the public
+        :meth:`add_parameter` refuses the Globals name (D18) — and
+        ``deleteMissing=True`` removes the parameters the document does
+        not list, dropping their Locks and Type Locks exactly like
+        :meth:`remove_parameter` does); then the Types, written straight
+        into the registry as definitions — with ``deleteMissing=True``,
+        every Type the document does not define is removed — with **no**
+        Instance side effects (D20): no parameter is created for an
+        Instance and no Type Lock is applied on load, so a partial
+        Instance stays partial and an Instance's Locks come only from the
+        document's ``lock`` entries; then the Locks, each set directly to
+        the stored full-form Target and stored locked state (like
+        :meth:`lock` creates it after the cycle check, not through a
+        ``lock()``/``unlock()`` pair). A parameter the document lists
+        without a ``lock`` entry ends with no Lock; parameters it does not
+        list keep theirs when ``deleteMissing=False``.
+
+        The Broadcasts go out once, after the whole load succeeded (D22,
+        D10): one ``pm-type-update`` per Type the document wrote, then one
+        with a ``None`` payload per Type removed, then one
+        ``pm-lock-update`` per Lock that ended different from before the
+        load (``None`` when it was removed), in tree order. The load
+        emits nothing for the parameter values it sets, and it re-emits
+        **no** ``parameter-creation``/``parameter-deletion`` Broadcasts
+        for the parameters it creates and removes: the Server's
+        literal-name detection does not see them either, so a GUI watching
+        this Parameter Manager must refresh its structure after a profile
+        load.
 
         :param paramDict: Parameter dictionary — a legacy flat map or a
             version-2 profile document.
-        :param deleteMissing: If ``True``, delete parameters currently in the
-            ParameterManager that are not listed in the file.
+        :param deleteMissing: If ``True``, delete parameters currently in
+            the ParameterManager that are not listed in the file, and
+            remove the Types the file does not define.
         """
         if "version" in paramDict:
             version = paramDict["version"]
@@ -2515,14 +2577,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     f"{version!r} (this reader reads version 2 and the "
                     "legacy flat map, which carries no version key)"
                 )
-            serialize.validateParameterManagerV2(paramDict)
-            paramDict = paramDict["parameters"]
-            simple = False
-        else:
-            # legacy flat parameter map: exactly the behaviour before the
-            # version-2 profile document existed
-            serialize.validateParamDict(paramDict)
-            simple = serialize.isSimpleFormat(paramDict)
+            self._load_v2_document(paramDict, deleteMissing)
+            return
+
+        # legacy flat parameter map: exactly the behaviour before the
+        # version-2 profile document existed
+        serialize.validateParamDict(paramDict)
+        simple = serialize.isSimpleFormat(paramDict)
 
         currentParams = self.list()
         fileParams = [
@@ -2558,6 +2619,303 @@ class ParameterManager(Broadcaster, ParameterGroup):
         for pn in currentParams:
             if pn not in fileParams and deleteMissing:
                 self.remove_parameter(pn)
+
+    def _collect_v2_document_problems(self, document: Dict[str, Any]) -> List[str]:
+        """Collect every validation problem of a version-2 profile
+        document into one list of messages, so a refused document can be
+        named in full (rule 3, D20). The schema leg has already run when
+        this is called; nothing here changes any state."""
+        problems: List[str] = []
+        parameters = document["parameters"]
+        document_types = document["types"]
+        prefix = f"{self.name}."
+
+        # every file key belongs to this Parameter Manager: the full
+        # dotted form with the instrument name, like the writer stores it
+        for key in parameters:
+            if not key.startswith(prefix):
+                problems.append(
+                    f"parameter key '{key}' does not belong to this "
+                    f"Parameter Manager ('{self.name}')"
+                )
+
+        # every Type name is valid: non-empty, not the reserved Globals
+        # submodule name (D18)
+        for type_name in document_types:
+            if type_name == "_globals":
+                problems.append(
+                    f"'{type_name}' is not a valid Type name: "
+                    "the Globals submodule name is reserved"
+                )
+            elif not type_name:
+                problems.append("'' is not a valid Type name: it is empty")
+
+        # the candidate registry built from the document, the way
+        # add_nested_type validates a candidate: the expansion helpers run
+        # on it without touching the real registry
+        candidates = {
+            type_name: _TypeDefinition(
+                name=type_name,
+                parameters={
+                    path: _TypeEntry(
+                        default=entry["default"],
+                        unit=entry["unit"],
+                        target=entry["target"],
+                    )
+                    for path, entry in spec["parameters"].items()
+                },
+                nested=dict(spec["nested"]),
+            )
+            for type_name, spec in document_types.items()
+        }
+
+        # every Nested Type names a Type of the document
+        for type_name, definition in candidates.items():
+            for nested_name in definition.nested.values():
+                if nested_name not in candidates:
+                    problems.append(
+                        f"Type '{type_name}' nests '{nested_name}', which "
+                        "is not among the document's Types"
+                    )
+
+        def closure_complete(name: str) -> bool:
+            seen: set = set()
+            stack = [name]
+            while stack:
+                current = stack.pop()
+                if current in seen:
+                    continue
+                seen.add(current)
+                candidate = candidates.get(current)
+                if candidate is None:
+                    return False
+                stack.extend(candidate.nested.values())
+            return True
+
+        # no Nested Type cycle and no effective path twice, per the
+        # expansion helpers on the candidate registry; Types whose Nested
+        # Type closure the document does not define completely are skipped,
+        # the missing names are reported above
+        reported: set = set()
+        for type_name in candidates:
+            if not closure_complete(type_name):
+                continue
+            try:
+                self._expand_effective(type_name, types=candidates)
+            except ValueError as exc:
+                message = str(exc)
+                if message not in reported:
+                    reported.add(message)
+                    problems.append(message)
+
+        # every Lock Target and every non-null Type Lock Target is a
+        # parameters key of the document (D20); every missing Target is
+        # named with everything that refers to it
+        missing_targets: Dict[str, List[str]] = {}
+        for key, entry in parameters.items():
+            lock = entry.get("lock")
+            if lock is not None and lock["target"] not in parameters:
+                missing_targets.setdefault(lock["target"], []).append(
+                    f"the Lock on Follower '{key}'"
+                )
+        for type_name, spec in document_types.items():
+            for path, entry in spec["parameters"].items():
+                target = entry["target"]
+                if target is not None and target not in parameters:
+                    missing_targets.setdefault(target, []).append(
+                        f"the Type Lock on '{type_name}.{path}'"
+                    )
+        for target, referees in missing_targets.items():
+            problems.append(
+                f"Target '{target}' is not a parameter of the document: "
+                f"referred to by {', '.join(referees)}"
+            )
+
+        # no self-lock and no cycle among the document's Locks: the walk
+        # follows each Target's Lock within the document regardless of
+        # locked/unlocked state (D7)
+        document_locks = {
+            key: entry["lock"]
+            for key, entry in parameters.items()
+            if "lock" in entry
+        }
+        for follower_full, lock in document_locks.items():
+            target_full = lock["target"]
+            if target_full == follower_full:
+                problems.append(f"cannot lock {follower_full} to itself")
+                continue
+            chain = [target_full]
+            seen = {target_full}
+            current = target_full
+            while True:
+                next_lock = document_locks.get(current)
+                if next_lock is None:
+                    break
+                nxt = next_lock["target"]
+                if nxt == follower_full or nxt in seen:
+                    problems.append(
+                        f"cannot lock {follower_full} to {target_full}: "
+                        f"cycle in Lock targets: {' -> '.join(chain + [nxt])}"
+                    )
+                    break
+                seen.add(nxt)
+                chain.append(nxt)
+                current = nxt
+
+        return problems
+
+    def _load_v2_document(self, document: Dict[str, Any], deleteMissing: bool) -> None:
+        """Validate a version-2 profile document as a whole and load it in
+        D20's order: the Locks of the listed parameters, the parameters,
+        the Types without Instance side effects, the Locks — and emit the
+        load's Broadcasts once, after it succeeded (D22, D10)."""
+        serialize.validateParameterManagerV2(document)
+        problems = self._collect_v2_document_problems(document)
+        if problems:
+            raise ValueError(
+                "invalid version-2 Parameter Manager profile document: "
+                + "; ".join(problems)
+            )
+
+        parameters = document["parameters"]
+        document_types = document["types"]
+        file_params = [key[len(self.name) + 1 :] for key in parameters]
+        file_param_set = set(file_params)
+        # the pre-load Lock state, for the diff the load reports at the end
+        previous_locks = self.list_locks()
+
+        # The methods reused below announce their own state changes
+        # (remove_parameter drops Locks and clears Type Locks with one
+        # Broadcast each, D10/D22). The load reports the whole transition
+        # itself, once, after it succeeded, so the reused methods run with
+        # the sinks detached; the sinks are back before the load's own
+        # Broadcasts go out.
+        saved_sinks = self._broadcast_sinks
+        self._broadcast_sinks = []
+        try:
+            # (a) the Locks of every parameter the document lists go
+            # first: setting a stored own value on a currently locked
+            # Follower would raise otherwise (D6); the Locks are
+            # re-created from the document in step (d)
+            for pn in file_params:
+                if self.has_param(pn):
+                    param = self.parameter(pn)
+                    if isinstance(param, ManagedParameter) and param.lock is not None:
+                        param.lock = None
+                        param._target = None
+
+            # (b) the parameters, with the semantics the reader always had
+            current_params = self.list()
+            for pn in file_params:
+                entry = parameters[f"{self.name}.{pn}"]
+                val = entry["value"]
+                unit = entry.get("unit", "")
+
+                if self.has_param(pn):
+                    self.parameter(pn)(val)
+                    if unit is not None:
+                        param = self.parameter(pn)
+                        assert hasattr(param, "unit")
+                        param.unit = unit
+
+                elif pn.startswith("_globals."):
+                    # the public add_parameter refuses the Globals name
+                    # (D18); a saved Globals parameter round-trips through
+                    # the internal creation path
+                    self._create_managed_parameter(pn, val, unit)
+
+                else:
+                    self.add_parameter(pn, initial_value=val, unit=unit)
+
+            if deleteMissing:
+                for pn in current_params:
+                    if pn not in file_param_set and deleteMissing:
+                        self.remove_parameter(pn)
+
+            # (c) the Types, written straight into the registry with no
+            # Instance side effects (D20): no parameter is created for an
+            # Instance and no Type Lock is applied on load
+            written_types: List[str] = []
+            removed_types: List[str] = []
+            if deleteMissing:
+                for type_name in list(self._types):
+                    if type_name not in document_types:
+                        del self._types[type_name]
+                        removed_types.append(type_name)
+            for type_name, spec in document_types.items():
+                self._types[type_name] = _TypeDefinition(
+                    name=type_name,
+                    parameters={
+                        path: _TypeEntry(
+                            default=entry["default"],
+                            unit=entry["unit"],
+                            target=entry["target"],
+                        )
+                        for path, entry in spec["parameters"].items()
+                    },
+                    nested=dict(spec["nested"]),
+                )
+                written_types.append(type_name)
+
+            # (d) the Locks, each set directly to the stored full-form
+            # Target and stored locked state — like lock() creates it
+            # after the cycle check, not through a lock()/unlock() pair
+            for pn in file_params:
+                lock_entry = parameters[f"{self.name}.{pn}"].get("lock")
+                if lock_entry is None:
+                    continue
+                param = self.parameter(pn)
+                if not isinstance(param, ManagedParameter):
+                    raise ValueError(f"{self._full_path(pn)} cannot carry a Lock")
+                follower_full = self._full_path(pn)
+                target_full = lock_entry["target"]
+                self._check_lock_allowed(follower_full, target_full)
+                target_param = self._param_by_full_path(target_full)
+                assert target_param is not None, (
+                    "the validated Target is not a parameter of this "
+                    "Parameter Manager"
+                )
+                param._target = target_param
+                param.lock = PMLockBluePrint(
+                    target=target_full, locked=lock_entry["locked"]
+                )
+        finally:
+            self._broadcast_sinks = saved_sinks
+
+        # the load's Broadcasts, after the whole load succeeded (D22,
+        # D10): one pm-type-update per Type written, one with a None
+        # payload per Type removed, then one pm-lock-update per Lock that
+        # ended different from before the load, in tree order. Values set
+        # during the load and the created and removed parameters emit
+        # nothing (see fromParamDict).
+        for type_name in written_types:
+            self._broadcast_type_update(type_name)
+        for type_name in removed_types:
+            self.broadcast(
+                ParameterBroadcastBluePrint(
+                    name=f"{self.name}.{type_name}",
+                    action=PM_TYPE_UPDATE,
+                    value=None,
+                )
+            )
+        after_locks = self.list_locks()
+        tree_paths = [rel_path for rel_path, _ in self._iter_params()]
+        tree_set = set(tree_paths)
+        ordered_paths = [
+            rel_path
+            for rel_path in tree_paths
+            if rel_path in previous_locks or rel_path in after_locks
+        ]
+        # a Follower whose parameter the load removed is no longer in the
+        # tree; its Lock still ended removed and is reported last
+        ordered_paths += [
+            rel_path for rel_path in previous_locks if rel_path not in tree_set
+        ]
+        for rel_path in ordered_paths:
+            before = previous_locks.get(rel_path)
+            after = after_locks.get(rel_path)
+            if before != after:
+                self._broadcast_lock_update(rel_path, after)
 
     def toParamDict(
         self, simpleFormat: bool = False, includeMeta: List[str] = ["unit"]
