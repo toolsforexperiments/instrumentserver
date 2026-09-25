@@ -441,3 +441,47 @@ The Type API in `src/instrumentserver/params.py` now emits its own Broadcasts (D
 
 ### Process notes
 - reviewer-qwen's `git -C` commands with a line-wrapped path slipped past the whitelist several times and needed manual approval. They were read-only and all were allowed. Its scratch script under `orchestration/2.5/` was re-scanned before each of its three runs and deleted afterwards. Reviewers and the coder ran the suite to log files in the folder and removed them. There were no rejected permissions, no stalls and no nudges.
+
+## 3.1 `_globals` rules — 2026-09-24
+
+`ParameterManager.add_parameter` now refuses, with a `ValueError` naming the path and creating nothing, any name that is `_globals` or starts with `_globals.` (D18). Parameter Groups route `add_parameter` to the root, so the refusal covers `pm._globals.add_parameter(...)` style calls too. The new private `_ensure_global_target(type_name, path)` creates `_globals.<type_name>.<path>` on demand for one of the Type's own entries. It creates it as a `ManagedParameter` with the entry's default and unit and a full-form `path`, emits one `parameter-creation`, and returns the relative path. An existing parameter is kept with its value and emits nothing. Nothing public calls it yet (3.2 will). `add_instance`'s 2.4 refusal and 2.2's matching exclusion are asserted again. `test/pytest/test_pm_types.py` grew from 111 to 124 tests: twelve unit tests and one proxy test.
+
+### Commit by commit
+- `8daf195` The refusal, the helper and 13 tests. The orchestrator's six readings in the coder spec set these rules:
+  - "under `_globals`" means the first dotted segment, and a `_globals` segment after the first stays allowed (not widened)
+  - the refusal lives on the root `add_parameter`
+  - the helper acts on the Type's own entries only (a path reached only through a Nested Type raises, naming the defining Type, as in `set_type_parameter_default`)
+  - it is idempotent and refuses a unit conflict on an existing Globals parameter, naming the path and both units
+  - it bypasses the public refusal through `_get_parent(..., create_parent=True)` + `_add_own_parameter`
+  - it emits one `parameter-creation` when it creates and no `pm-type-update`
+
+  The coder added one reading of its own: a target path that is an existing Parameter Group is refused too. Every refusal test also checks that `list()` is unchanged. The tests include:
+  - `test_add_parameter_refusal_covers_the_parameter_group_routing`
+  - `test_add_instance_still_refuses_the_globals_submodule`
+  - `test_globals_parameters_stay_excluded_from_matching`, which builds a full Instance shape at `_globals.qubit` and `_globals.deep.qubit`
+  - `test_ensure_global_target_emits_one_creation_and_is_idempotent`
+  - `test_a_globals_parameter_is_an_ordinary_parameter` (set, read, and a Lock Target)
+  - `test_add_parameter_refusal_over_the_wire`, which catches a bare `Exception`, because the Client rebuilds a plain `Exception` from the Server's error message
+
+  Orchestrator run: ruff clean, 124 in `test_pm_types.py`, 362 in the full suite.
+- `175ff5a` Fix from round 0, two items:
+  - `_ensure_global_target` had its own segment walk for a parameter on the way and a Parameter Group at the target. That repeated `_check_creation_targets` line for line. reviewer-qwen (should-fix) and reviewer-glm (nit) raised it. The walk is now `self._check_creation_targets([("_globals", f"{type_name}.{path}")])`. The two affected tests pass unchanged, because the helper only wraps the same reasons in "cannot create parameter '<path>': ...".
+  - A `TEST_AUDIT.md` row, "Profiles — loading Globals parameters". `fromParamDict`/`fromFile` create missing parameters through the public `add_parameter`, so a profile with a `_globals.*` key now raises on load. reviewer-qwen reproduced it and reviewer-glm noted it. It is left for the Phase 4 reader (4.2) per plan rule 6.
+- `402e53d` Fix from round 1, comment only. The new comment in `175ff5a` called the Globals target "an Instance at the reserved Globals submodule". That breaks D18 and plan rule 2. reviewer-qwen (should-fix) and both test reviewers (nit) caught it. The comment now says the target sits under the Globals submodule, "which is never an Instance (D18)", and that the `(Instance path, relative target)` pair is reused only for the walk. All six approved in re-review with no findings. Orchestrator run: ruff clean, 124 in `test_pm_types.py`, 362 in the full suite.
+
+### Dropped findings
+- Globals parameters are created without the `vals=Anything()` and `set_cmd=None` that the public `add_parameter` path gives (reviewer-glm, reviewer-qwen, nits) → not sent. Only the snapshot's `vals` meta differs, and nothing reads it. The orchestrator suggested folding both paths into one internal creation helper later.
+- No positive test that a non-first `_globals` segment (`add_parameter("q01._globals.x")`) is still allowed (test-reviewer-qwen, nit) → not sent. A later task that widens the check will break no test.
+- No test for a root parameter named `_globals` blocking the helper (reviewer-qwen, nit) → not sent. That case can now be built only through the internal path.
+- The `add_parameter` docstring says a name "starts with it" where the code checks `startswith("_globals.")` (plan-checker-qwen, nit) → not sent. The wording is still in `params.py`.
+
+### Questions to Marcos
+- The orchestrator flagged its six coder-spec readings for the run report, especially keeping non-first `_globals` segments allowed. It also flagged the `vals` difference and the profile-load gap. No answer is recorded yet, in the working folder or in `orchestration/RUNS.md`.
+
+### Loose ends
+- The RUNS.md question for 3.1 is not settled. A `_globals` segment after the first is still accepted in `add_parameter` names, Type entry paths, `add_nested_type` submodule names and `add_instance` names, and matching then skips that submodule without saying so.
+- For 4.2: the reader must create `_globals.*` parameters through the internal path (`TEST_AUDIT.md`, "Profiles — loading Globals parameters").
+- For 3.2: `_ensure_global_target` is ready for the Type Lock declaration to call.
+
+### Process notes
+- Two permissions were rejected. In round 0, reviewer-qwen tried an inline `python -c` script that changed into a `tempfile.mkdtemp()` outside the repo. It reran its check as a scanned script under `orchestration/3.1/round-0/`. In round 1, plan-checker-qwen tried a command that wrote to `/tmp/x`. Reviewers' scratch scripts and logs under `orchestration/3.1/` were scanned before they ran and deleted afterwards. There were no stalls and no nudges.

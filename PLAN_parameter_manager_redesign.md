@@ -506,7 +506,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 3 — Type Locks and `_globals`
 
-- [ ] **3.1 `_globals` rules.** Per D18: `add_parameter` and `add_instance` under `_globals`
+- [x] **3.1 `_globals` rules.** Per D18: `add_parameter` and `add_instance` under `_globals`
   raise; `_globals` excluded from `instances_of`/`types_of` (already in 2.2, assert again);
   internal helper `_ensure_global_target(type, path)` creating `_globals.<type>.<path>` with
   the entry's default and unit. Tests: `test_pm_types.py`.
