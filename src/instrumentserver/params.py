@@ -15,7 +15,9 @@ from qcodes.parameters import ParameterBase
 from . import serialize
 from .base import Broadcaster
 from .blueprints import (
+    PARAMETER_CREATION,
     PM_LOCK_UPDATE,
+    PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
     PMLockBluePrint,
     PMTypeBluePrint,
@@ -416,7 +418,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
     Station. Every Lock method that changes a Lock emits one
     ``pm-lock-update`` Broadcast per affected Follower (D10), and
     ``remove_parameter`` emits them for the Locks that deleting a Target
-    drops; Type editing will emit through it too.
+    drops. Every Type-editing method emits ``pm-type-update`` with the
+    edited Type's fresh ``PMTypeBluePrint`` (D22), and the parameters the
+    Type edits and :meth:`add_instance` create as side effects are
+    re-emitted as ``parameter-creation`` Broadcasts (ADR-0003); direct
+    ``add_parameter`` calls keep being announced by the Server, so nothing
+    is announced twice.
 
     For the parameter manager to recognize other profiles in disk,
     the profile filename needs to start with 'parameter_manager-'
@@ -546,6 +553,40 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 name=self._full_path(follower_path),
                 action=PM_LOCK_UPDATE,
                 value=lock,
+            )
+        )
+
+    def _broadcast_type_update(self, type_name: str) -> None:
+        """Emit one ``pm-type-update`` Broadcast about the Type ``type_name``
+        (D22): ``name`` is the Type's full dotted name and the payload is
+        its fresh :class:`PMTypeBluePrint`, so a GUI can replace that one
+        Type locally with no follow-up fetch. With no sink registered,
+        :meth:`broadcast` is a no-op, so standalone use of the Parameter
+        Manager emits nothing."""
+        self.broadcast(
+            ParameterBroadcastBluePrint(
+                name=f"{self.name}.{type_name}",
+                action=PM_TYPE_UPDATE,
+                value=self.get_type(type_name),
+            )
+        )
+
+    def _broadcast_parameter_creation(
+        self, parameter_path: str, value: Any, unit: str
+    ) -> None:
+        """Re-emit one ``parameter-creation`` Broadcast for a parameter this
+        Parameter Manager created as a side effect of a Type edit or of
+        :meth:`add_instance` (D22, ADR-0003), in the same shape the Server
+        emits for a direct ``add_parameter`` call: the full dotted path as
+        ``name``, the initial value as ``value`` and the unit as ``unit``.
+        Direct ``add_parameter`` calls are announced by the Server and emit
+        nothing here, so nothing is announced twice."""
+        self.broadcast(
+            ParameterBroadcastBluePrint(
+                name=self._full_path(parameter_path),
+                action=PARAMETER_CREATION,
+                value=value,
+                unit=unit,
             )
         )
 
@@ -789,9 +830,19 @@ class ParameterManager(Broadcaster, ParameterGroup):
     # unit; its Nested Types map the submodule name that requires them to
     # the nested Type's name. Type names are refused for the reserved
     # Globals submodule ``_globals``. Methods validate before mutating and
-    # name every offending path or Type in an error. No Type method emits
-    # a Broadcast yet: the ``pm-type-update`` emissions arrive with the
-    # Type-editing broadcasts task.
+    # name every offending path or Type in an error.
+    #
+    # Every Type-editing method emits its Broadcasts only after the whole
+    # mutation succeeded (D22): one ``parameter-creation`` Broadcast per
+    # parameter the edit created as a side effect, in creation order,
+    # followed by one ``pm-type-update`` Broadcast per affected Type — the
+    # edited Type first, then every Type nesting it, whose effective
+    # parameter set the edit changed too — carrying that Type's fresh
+    # ``PMTypeBluePrint``; ``remove_type`` emits exactly one
+    # ``pm-type-update`` with a ``None`` payload. ``set_type_parameter_default``
+    # changes no effective set, so only the edited Type is named. The
+    # read-only queries (``list_types``, ``get_type``, ``instances_of``,
+    # ``types_of``) and failed validations emit nothing.
     # ------------------------------------------------------------------
 
     def _require_type(self, name: str) -> "_TypeDefinition":
@@ -809,6 +860,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         Globals name ``_globals`` or when a Type with that name exists
         already; nothing is changed then. A fresh Type has no entries and
         no Nested Types, so it has no Instances until entries are added.
+        Emits one ``pm-type-update`` Broadcast carrying the new Type's
+        :class:`PMTypeBluePrint` after it is created (D22); a failed
+        validation emits nothing.
 
         :param name: Name of the Type.
         """
@@ -822,6 +876,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         if name in self._types:
             raise ValueError(f"a Type named '{name}' already exists")
         self._types[name] = _TypeDefinition(name=name)
+        self._broadcast_type_update(name)
 
     def remove_type(self, name: str) -> None:
         """Remove the Type ``name`` from the Type registry.
@@ -829,7 +884,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
         The parameters of Instances are untouched (D13). Raises
         ``ValueError`` when no such Type exists, and — naming every Type
         that nests it — while any other Type still requires ``name`` as a
-        Nested Type; nothing is removed then.
+        Nested Type; nothing is removed then. Emits exactly one
+        ``pm-type-update`` Broadcast with a ``None`` payload after the
+        Type is removed (D22): nobody nests it, so no other Type is
+        affected; a failed validation emits nothing.
 
         :param name: Name of the Type.
         """
@@ -845,6 +903,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 f"cannot remove Type '{name}': nested in Type(s) {nesters}"
             )
         del self._types[name]
+        self.broadcast(
+            ParameterBroadcastBluePrint(
+                name=f"{self.name}.{name}", action=PM_TYPE_UPDATE, value=None
+            )
+        )
 
     def list_types(self) -> List[str]:
         """Names of every Type in the Type registry."""
@@ -1125,9 +1188,15 @@ class ParameterManager(Broadcaster, ParameterGroup):
     # ordinary ``add_parameter`` path, as a ``ManagedParameter`` with the
     # entry's default value and unit. A parameter that already exists at
     # a target path is left alone: the submodule it lives in simply stops
-    # being an Instance when its unit differs (D1). No edit emits a
-    # Broadcast yet: ``pm-type-update`` and the re-emitted
-    # ``parameter-creation`` arrive with the Type-editing broadcasts task.
+    # being an Instance when its unit differs (D1).
+    #
+    # The Broadcasts go out only after the whole edit succeeded (D22):
+    # one ``parameter-creation`` per created parameter, in creation
+    # order, then one ``pm-type-update`` per affected Type — the edited
+    # Type first, then every Type nesting it, whose effective parameter
+    # set the edit changed too. The affected Types are the keys of
+    # ``_nesting_prefixes``, which the side-effect computation already
+    # walks. A refused edit emits nothing.
     # ------------------------------------------------------------------
 
     def _nesting_prefixes(self, type_name: str) -> Dict[str, List[str]]:
@@ -1312,6 +1381,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
         is an existing Parameter Group, or another target of the same
         edit is a strict segment-prefix of it.
 
+        After the edit succeeds it emits one ``parameter-creation``
+        Broadcast per parameter it created, in creation order, followed
+        by one ``pm-type-update`` Broadcast per affected Type — the
+        edited Type first, then every Type nesting it, whose effective
+        parameter set the new entry extends (D22, ADR-0003); a failed
+        validation emits nothing.
+
         :param type_name: Name of the Type.
         :param path: Relative parameter path of the entry.
         :param default: Default value the created parameters start with.
@@ -1366,6 +1442,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         self._check_creation_targets(targets)
         definition.parameters[path] = _TypeEntry(default=default, unit=unit)
         created: set = set()
+        creations: List[Tuple[str, Any, str]] = []
         for instance_path, relative_target in targets:
             full = f"{instance_path}.{relative_target}"
             if full in created:
@@ -1373,6 +1450,16 @@ class ParameterManager(Broadcaster, ParameterGroup):
             created.add(full)
             if not self.has_param(full):
                 self.add_parameter(full, initial_value=default, unit=unit)
+                creations.append((full, default, unit))
+        # broadcasts after the whole edit succeeded (D22): one
+        # parameter-creation per created parameter in creation order,
+        # then one pm-type-update per affected Type, the edited Type first
+        for created_path, initial_value, created_unit in creations:
+            self._broadcast_parameter_creation(
+                created_path, initial_value, created_unit
+            )
+        for name in affected:
+            self._broadcast_type_update(name)
 
     def remove_type_parameter(self, type_name: str, path: str) -> None:
         """Remove the entry at ``path`` from the Type ``type_name``'s own
@@ -1384,13 +1471,20 @@ class ParameterManager(Broadcaster, ParameterGroup):
         when ``path`` is not an entry of the Type itself — naming the
         Type that defines it, when the path only reaches the effective
         parameter set through a Nested Type — and when it is in no
-        effective set at all. Nothing is removed then.
+        effective set at all. Nothing is removed then. Emits one
+        ``pm-type-update`` Broadcast per affected Type — the edited Type
+        first, then every Type nesting it, whose effective parameter set
+        loses the path — after the entry is removed (D22); a failed
+        validation emits nothing.
 
         :param type_name: Name of the Type.
         :param path: Relative parameter path of the entry.
         """
         self._require_type_entry(type_name, path)
+        affected = self._nesting_prefixes(type_name)
         del self._types[type_name].parameters[path]
+        for name in affected:
+            self._broadcast_type_update(name)
 
     def set_type_parameter_default(
         self, type_name: str, path: str, value: Any
@@ -1401,7 +1495,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
         new default.
 
         Raises ``ValueError`` naming the path under the same conditions
-        as :meth:`remove_type_parameter`; nothing is changed then.
+        as :meth:`remove_type_parameter`; nothing is changed then. Emits
+        one ``pm-type-update`` Broadcast carrying the edited Type's fresh
+        blueprint after the default is set (D22); no Broadcast names a
+        nesting Type, since a Type's effective parameter set carries
+        units and defining Types, not defaults, so their blueprints are
+        unchanged. A failed validation emits nothing.
 
         :param type_name: Name of the Type.
         :param path: Relative parameter path of the entry.
@@ -1409,6 +1508,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         """
         entry = self._require_type_entry(type_name, path)
         entry.default = value
+        self._broadcast_type_update(type_name)
 
     def set_type_parameter_unit(
         self, type_name: str, path: str, unit: str
@@ -1421,7 +1521,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
         parameter already carrying the new unit is simply set again.
 
         Raises ``ValueError`` naming the path under the same conditions
-        as :meth:`remove_type_parameter`; nothing is changed then.
+        as :meth:`remove_type_parameter`; nothing is changed then. Emits
+        one ``pm-type-update`` Broadcast per affected Type — the edited
+        Type first, then every Type nesting it, whose effective parameter
+        set carries the changed unit — after the unit is set and
+        propagated (D22); a failed validation emits nothing.
 
         :param type_name: Name of the Type.
         :param path: Relative parameter path of the entry.
@@ -1443,6 +1547,8 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     propagated.add(full)
                     if self.has_param(full):
                         self.parameter(full).unit = unit
+        for name in affected:
+            self._broadcast_type_update(name)
 
     def add_nested_type(
         self, type_name: str, submodule: str, nested_type: str
@@ -1465,6 +1571,13 @@ class ParameterManager(Broadcaster, ParameterGroup):
         cannot be created because an intermediate segment is an existing
         parameter, the final segment is an existing Parameter Group, or
         another target of the same edit is a strict segment-prefix of it.
+
+        After the edit succeeds it emits one ``parameter-creation``
+        Broadcast per parameter it created, in creation order, followed
+        by one ``pm-type-update`` Broadcast per affected Type — the
+        edited Type first, then every Type nesting it, whose effective
+        parameter set the nested entries extend (D22, ADR-0003); a failed
+        validation emits nothing.
 
         :param type_name: Name of the outer Type.
         :param submodule: Name of the submodule that requires the Nested
@@ -1552,6 +1665,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         )
         definition.nested[submodule] = nested_type
         created: set = set()
+        creations: List[Tuple[str, Any, str]] = []
         for instance_path, relative_target, entry in targets:
             full = f"{instance_path}.{relative_target}"
             if full in created:
@@ -1561,6 +1675,16 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 self.add_parameter(
                     full, initial_value=entry.default, unit=entry.unit
                 )
+                creations.append((full, entry.default, entry.unit))
+        # broadcasts after the whole edit succeeded (D22): one
+        # parameter-creation per created parameter in creation order,
+        # then one pm-type-update per affected Type, the edited Type first
+        for created_path, initial_value, created_unit in creations:
+            self._broadcast_parameter_creation(
+                created_path, initial_value, created_unit
+            )
+        for name in affected:
+            self._broadcast_type_update(name)
 
     def remove_nested_type(self, type_name: str, submodule: str) -> None:
         """Remove the Nested Type required at the submodule ``submodule``
@@ -1570,7 +1694,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
         Raises ``ValueError`` naming the Type and the submodule when no
         such Type exists or the submodule requires no Nested Type;
-        nothing is removed then.
+        nothing is removed then. Emits one ``pm-type-update`` Broadcast
+        per affected Type — the edited Type first, then every Type nesting
+        it, whose effective parameter set loses the nested paths — after
+        the Nested Type is removed (D22); a failed validation emits
+        nothing.
 
         :param type_name: Name of the Type.
         :param submodule: Name of the submodule that requires the Nested
@@ -1582,7 +1710,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 f"submodule '{submodule}' of Type '{type_name}' has no "
                 "Nested Type"
             )
+        affected = self._nesting_prefixes(type_name)
         del definition.nested[submodule]
+        for name in affected:
+            self._broadcast_type_update(name)
 
     # ------------------------------------------------------------------
     # Instances (plan decision D14)
@@ -1592,10 +1723,12 @@ class ParameterManager(Broadcaster, ParameterGroup):
     # It validates everything first: the Type, the name, a unit conflict
     # on any existing parameter, and the creation targets through
     # ``_check_creation_targets``; on an error nothing is created. An
-    # empty Type creates nothing and has no Instances (D12). Like the
-    # Type edits, it emits no Broadcast yet: the ``pm-type-update`` and
-    # re-emitted ``parameter-creation`` arrive with the Type-editing
-    # broadcasts task.
+    # empty Type creates nothing and has no Instances (D12).
+    #
+    # After the whole call succeeded it emits one ``parameter-creation``
+    # Broadcast per parameter it created, in creation order (D22,
+    # ADR-0003); it edits no Type, so it emits no ``pm-type-update``. A
+    # refused call emits nothing.
     # ------------------------------------------------------------------
 
     def add_instance(self, type_name: str, name: str) -> None:
@@ -1623,6 +1756,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
         created because a segment of ``name`` or of the target is an
         existing parameter, or the final segment of a target is an
         existing Parameter Group.
+
+        After the Instance is created it emits one ``parameter-creation``
+        Broadcast per parameter it created, in creation order (D22,
+        ADR-0003); the call edits no Type, so it emits no
+        ``pm-type-update``. A failed validation emits nothing.
 
         :param type_name: Name of the Type.
         :param name: Dotted submodule path of the Instance, relative to
@@ -1664,12 +1802,20 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 f"'{name}': " + "; ".join(conflicts)
             )
         self._check_creation_targets([(name, path) for path in effective])
+        creations: List[Tuple[str, Any, str]] = []
         for path, entry in effective.items():
             full = f"{name}.{path}"
             if not self.has_param(full):
                 self.add_parameter(
                     full, initial_value=entry.default, unit=entry.unit
                 )
+                creations.append((full, entry.default, entry.unit))
+        # one parameter-creation per created parameter, in creation order
+        # (D22); no pm-type-update: the call edits no Type
+        for created_path, initial_value, created_unit in creations:
+            self._broadcast_parameter_creation(
+                created_path, initial_value, created_unit
+            )
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":

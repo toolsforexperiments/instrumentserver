@@ -1,7 +1,8 @@
 """Tests for the Type registry and definitions (plan task 2.1), the
 duck-typed Instance matching (plan task 2.2), the Type edits with
-Instance side effects (plan task 2.3) and ``add_instance`` (plan task
-2.4).
+Instance side effects (plan task 2.3), ``add_instance`` (plan task 2.4)
+and the ``pm-type-update`` and side-effect creation Broadcasts (plan task
+2.5).
 
 The definition and editing methods are exercised through the public API:
 ``add_type`` / ``add_type_parameter`` / ``add_nested_type`` and friends.
@@ -22,6 +23,18 @@ and units, keeping existing ones with value and unit, dotted names, the
 three-tier Type of the mock, the up-front unit-conflict scan, blocked
 targets, the Globals refusal, unknown and empty Types) — every refusal
 leaving the registry and the parameter tree byte-identical.
+The Broadcast part checks, on a local Parameter Manager with a sink, that
+every Type-editing method emits ``pm-type-update`` (one per affected
+Type, the edited one first; ``None`` on ``remove_type``) after the
+mutation, that the parameters created as side effects are re-emitted as
+``parameter-creation`` in creation order before the Type updates, and
+that read-only queries and refused calls emit nothing. The last part
+exercises the Type API through a client proxy against a live Server:
+every method callable over the wire, ``get_type``/``list_types``
+deserialising, and a SubClient receiving ``pm-type-update`` and the
+per-parameter ``parameter-creation`` Broadcasts of an ``add_instance``
+issued from a second client, whose creations the first client's proxy
+shows after ``update()``.
 """
 
 import copy
@@ -29,7 +42,14 @@ import re
 
 import pytest
 
-from instrumentserver.blueprints import PMTypeBluePrint, deserialize_obj
+from instrumentserver.blueprints import (
+    PARAMETER_CREATION,
+    PM_TYPE_UPDATE,
+    ParameterBroadcastBluePrint,
+    PMTypeBluePrint,
+    deserialize_obj,
+)
+from instrumentserver.client.proxy import Client
 from instrumentserver.params import (
     ManagedParameter,
     ParameterManager,
@@ -1746,3 +1766,527 @@ def test_add_instance_on_an_empty_type_creates_nothing(pm):
     assert pm.list() == []
     assert "q01" not in pm.submodules
     assert pm.instances_of("empty") == []
+
+
+# ---------------------------------------------------------------------------
+# pm-type-update and side-effect creation Broadcasts (plan task 2.5, D22)
+#
+# One pm-type-update per affected Type — the edited Type first, then every
+# Type nesting it, whose effective parameter set the edit changed —
+# carrying that Type's fresh PMTypeBluePrint; remove_type emits exactly
+# one with a None payload. The parameters a Type edit or add_instance
+# creates as side effects are re-emitted as one parameter-creation each,
+# in creation order, before the Type updates. Read-only queries, refused
+# calls and kept parameters emit nothing.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def pm_with_sink(pm):
+    """The Type API fixture with a Broadcast sink attached, recording
+    every Broadcast the Parameter Manager emits."""
+    received = []
+    pm.add_broadcast_sink(received.append)
+    return pm, received
+
+
+def put_nested_instance(pm):
+    """``readout`` (entry IF) nested in ``qubit``, with the Instance q01
+    carrying the whole shape: an edit to readout reaches qubit's effective
+    parameter set too, so both Types are affected."""
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_nested_type("qubit", "readout", "readout")
+    pm.add_parameter("q01.readout.IF", initial_value=10e6, unit="Hz")
+    pm.add_parameter("q01.octave_gain", initial_value=10, unit="dB")
+
+
+def test_add_type_emits_one_pm_type_update_with_the_fresh_blueprint(pm_with_sink):
+    pm, received = pm_with_sink
+
+    pm.add_type("qubit")
+
+    assert len(received) == 1
+    bp = received[0]
+    assert isinstance(bp, ParameterBroadcastBluePrint)
+    assert bp.name == "parameter_manager.qubit"
+    assert bp.action == PM_TYPE_UPDATE
+    assert isinstance(bp.value, PMTypeBluePrint)
+    assert bp.value == PMTypeBluePrint(
+        name="qubit", parameters={}, nested={}, effective={}
+    )
+
+
+def test_remove_type_emits_one_none_payload(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.add_type("readout")
+    pm.add_type("qubit")
+    pm.add_nested_type("qubit", "readout", "readout")
+    received.clear()
+
+    pm.remove_type("qubit")
+
+    # qubit nests readout, not the other way round: removing it affects no
+    # other Type, so exactly one Broadcast with a None payload goes out
+    assert len(received) == 1
+    bp = received[0]
+    assert bp.name == "parameter_manager.qubit"
+    assert bp.action == PM_TYPE_UPDATE
+    assert bp.value is None
+
+
+def test_add_type_parameter_emits_the_creation_then_the_type_updates(pm_with_sink):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    received.clear()
+
+    pm.add_type_parameter("readout", "window", default=2e-6, unit="s")
+
+    # the side-effect creation first, then one pm-type-update per affected
+    # Type: the edited readout first, then qubit, whose effective set the
+    # new entry extends
+    assert len(received) == 3
+    creation, readout_update, qubit_update = received
+    assert creation.name == "parameter_manager.q01.readout.window"
+    assert creation.action == PARAMETER_CREATION
+    assert creation.value == 2e-6
+    assert creation.unit == "s"
+    assert readout_update.name == "parameter_manager.readout"
+    assert readout_update.action == PM_TYPE_UPDATE
+    assert isinstance(readout_update.value, PMTypeBluePrint)
+    assert readout_update.value.parameters["window"] == {
+        "default": 2e-6,
+        "unit": "s",
+        "target": None,
+    }
+    assert qubit_update.name == "parameter_manager.qubit"
+    assert qubit_update.action == PM_TYPE_UPDATE
+    assert qubit_update.value.effective["readout.window"] == {
+        "unit": "s",
+        "from_type": "readout",
+    }
+
+
+def test_remove_type_parameter_emits_updates_for_the_edited_and_nesting_types(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    pm.add_type_parameter("readout", "window", default=2e-6, unit="s")
+    received.clear()
+
+    pm.remove_type_parameter("readout", "window")
+
+    # no parameter is removed (D13), so no creations: one pm-type-update
+    # per affected Type, the edited readout first
+    assert len(received) == 2
+    readout_update, qubit_update = received
+    assert readout_update.name == "parameter_manager.readout"
+    assert readout_update.action == PM_TYPE_UPDATE
+    assert "window" not in readout_update.value.parameters
+    assert qubit_update.name == "parameter_manager.qubit"
+    assert qubit_update.action == PM_TYPE_UPDATE
+    assert "readout.window" not in qubit_update.value.effective
+
+
+def test_set_type_parameter_default_emits_one_update_for_the_edited_type(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    received.clear()
+
+    pm.set_type_parameter_default("readout", "IF", 20e6)
+
+    # only the edited Type is named: a nesting Type's blueprint is
+    # unchanged, since the effective parameter set carries units and
+    # defining Types, not defaults
+    assert len(received) == 1
+    update = received[0]
+    assert update.name == "parameter_manager.readout"
+    assert update.action == PM_TYPE_UPDATE
+    assert update.value.parameters["IF"]["default"] == 20e6
+
+
+def test_set_type_parameter_unit_emits_updates_for_every_affected_type(pm_with_sink):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    received.clear()
+
+    pm.set_type_parameter_unit("readout", "IF", "V")
+
+    # the unit reaches every Instance and the effective parameter set of
+    # every Type nesting the edited one, so both Types are named
+    assert len(received) == 2
+    readout_update, qubit_update = received
+    assert readout_update.name == "parameter_manager.readout"
+    assert readout_update.value.effective["IF"]["unit"] == "V"
+    assert qubit_update.name == "parameter_manager.qubit"
+    assert qubit_update.value.effective["readout.IF"]["unit"] == "V"
+    # the propagation itself happened (D13)
+    assert pm.parameter("q01.readout.IF").unit == "V"
+
+
+def test_add_nested_type_emits_the_creation_then_the_type_updates(pm_with_sink):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    pm.add_type("pulse_window")
+    pm.add_type_parameter("pulse_window", "duration", default=None, unit="s")
+    received.clear()
+
+    pm.add_nested_type("readout", "pw", "pulse_window")
+
+    assert len(received) == 3
+    creation, readout_update, qubit_update = received
+    assert creation.name == "parameter_manager.q01.readout.pw.duration"
+    assert creation.action == PARAMETER_CREATION
+    assert creation.value is None
+    assert creation.unit == "s"
+    assert readout_update.name == "parameter_manager.readout"
+    assert readout_update.action == PM_TYPE_UPDATE
+    assert readout_update.value.nested == {"pw": "pulse_window"}
+    assert qubit_update.name == "parameter_manager.qubit"
+    assert qubit_update.action == PM_TYPE_UPDATE
+    assert qubit_update.value.effective["readout.pw.duration"] == {
+        "unit": "s",
+        "from_type": "pulse_window",
+    }
+
+
+def test_remove_nested_type_emits_updates_for_the_edited_and_nesting_types(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    pm.add_type("pulse_window")
+    pm.add_type_parameter("pulse_window", "duration", default=None, unit="s")
+    pm.add_nested_type("readout", "pw", "pulse_window")
+    received.clear()
+
+    pm.remove_nested_type("readout", "pw")
+
+    assert len(received) == 2
+    readout_update, qubit_update = received
+    assert readout_update.name == "parameter_manager.readout"
+    assert readout_update.action == PM_TYPE_UPDATE
+    assert readout_update.value.nested == {}
+    assert qubit_update.name == "parameter_manager.qubit"
+    assert qubit_update.action == PM_TYPE_UPDATE
+    assert "readout.pw.duration" not in qubit_update.value.effective
+
+
+def test_add_instance_emits_one_creation_per_created_parameter(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    received.clear()
+
+    pm.add_instance("qubit", "q01")
+
+    # one parameter-creation per created parameter, in creation order;
+    # add_instance edits no Type, so no pm-type-update goes out (D22)
+    assert len(received) == 2
+    first, second = received
+    assert first.name == "parameter_manager.q01.IF"
+    assert first.action == PARAMETER_CREATION
+    assert first.value == 5e9
+    assert first.unit == "Hz"
+    assert second.name == "parameter_manager.q01.octave_gain"
+    assert second.action == PARAMETER_CREATION
+    assert second.value == 10
+    assert second.unit == "dB"
+
+
+def test_add_instance_emits_nothing_for_kept_parameters(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.IF", initial_value=6e9, unit="Hz")
+    received.clear()
+
+    pm.add_instance("qubit", "q01")
+
+    # the kept q01.IF emits nothing; only the created octave_gain does
+    assert len(received) == 1
+    assert received[0].name == "parameter_manager.q01.octave_gain"
+    assert received[0].action == PARAMETER_CREATION
+
+
+def test_add_instance_of_an_empty_type_emits_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+    pm.add_type("empty")
+    received.clear()
+
+    pm.add_instance("empty", "q01")
+
+    # an empty Type creates nothing, so nothing is broadcast
+    assert received == []
+    assert pm.list() == []
+
+
+def test_read_only_type_queries_emit_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    received.clear()
+
+    assert pm.list_types() == ["readout", "qubit"]
+    assert isinstance(pm.get_type("qubit"), PMTypeBluePrint)
+    assert pm.instances_of("qubit") == ["q01"]
+    assert pm.types_of("q01.octave_gain") == ["qubit"]
+
+    assert received == []
+
+
+def test_failed_type_validations_emit_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+    put_nested_instance(pm)
+    received.clear()
+
+    # definitions
+    with pytest.raises(ValueError):
+        pm.add_type("_globals")
+    with pytest.raises(ValueError):
+        pm.add_type("readout")  # duplicate name
+    with pytest.raises(ValueError):
+        pm.remove_type("nope")
+    with pytest.raises(ValueError):
+        pm.remove_type("readout")  # nested in qubit
+    # edits
+    with pytest.raises(ValueError):
+        pm.add_type_parameter("readout", "IF")  # already in the effective set
+    with pytest.raises(ValueError):
+        pm.add_type_parameter("nope", "x")
+    with pytest.raises(ValueError):
+        pm.remove_type_parameter("readout", "nope")
+    with pytest.raises(ValueError):
+        pm.set_type_parameter_default("readout", "nope", 1)
+    with pytest.raises(ValueError):
+        pm.set_type_parameter_unit("readout", "nope", "V")
+    # nesting
+    with pytest.raises(ValueError):
+        pm.add_nested_type("readout", "self", "readout")
+    with pytest.raises(ValueError):
+        pm.add_nested_type("qubit", "readout", "readout")  # occupied submodule
+    with pytest.raises(ValueError):
+        pm.add_nested_type("qubit", "_globals", "readout")
+    with pytest.raises(ValueError):
+        pm.remove_nested_type("readout", "pw")  # no Nested Type there
+    # instances
+    with pytest.raises(ValueError):
+        pm.add_instance("nope", "q09")
+    with pytest.raises(ValueError):
+        pm.add_instance("qubit", "_globals")
+    with pytest.raises(ValueError):
+        pm.add_instance("qubit", "")
+    pm.add_parameter("q09.octave_gain", initial_value=1, unit="V")
+    with pytest.raises(ValueError):
+        pm.add_instance("qubit", "q09")  # unit conflict on q09.octave_gain
+    pm.add_parameter("q10.octave_gain.sub", initial_value=0, unit="s")
+    with pytest.raises(ValueError):
+        pm.add_instance("qubit", "q10")  # target q10.octave_gain is a Parameter Group
+
+    assert received == []
+
+
+def test_type_broadcast_payloads_are_snapshots_of_their_time(pm_with_sink):
+    # every pm-type-update carries a blueprint built at emit time: a sink
+    # that keeps payloads must not see an earlier Type grow when entries
+    # are added later
+    pm, received = pm_with_sink
+
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+
+    assert len(received) == 3
+    first, second, third = (bp.value for bp in received)
+    assert isinstance(first, PMTypeBluePrint)
+    assert first.parameters == {}
+    assert list(second.parameters) == ["IF"]
+    assert list(third.parameters) == ["IF", "octave_gain"]
+
+
+# ---------------------------------------------------------------------------
+# Type API and Broadcasts through a client proxy against a live Server
+# (plan task 2.5)
+#
+# The Server registers itself as a Broadcast sink on the Parameter Manager
+# (task 0.3), so every Type-editing method call over the wire also emits
+# its Broadcasts on the PUB socket. The server-side Parameter Manager is
+# shared by all tests of this module, so every test removes the parameters
+# and Types it created again.
+# ---------------------------------------------------------------------------
+
+PROXY_TYPE = "ptype_qubit"
+PROXY_NESTED_TYPE = "ptype_readout"
+PROXY_INSTANCE = "ptype_q01"
+
+
+def _cleanup_proxy_types(params):
+    """Remove every parameter and Type the proxy tests create, so the
+    module's shared server-side Parameter Manager starts each test clean.
+    ``remove_type`` refuses while a Type nests another, so the nested map
+    is emptied and the outer Type is removed first."""
+    for path in list(params.list()):
+        if path.split(".")[0].startswith("ptype_"):
+            params.remove_parameter(path)
+    for name in (PROXY_TYPE, PROXY_NESTED_TYPE):
+        if name in params.list_types():
+            bp = params.get_type(name)
+            for submodule in list(bp.nested):
+                params.remove_nested_type(name, submodule)
+            params.remove_type(name)
+
+
+def test_every_type_method_is_callable_through_the_proxy(param_manager):
+    cli, params = param_manager
+    _cleanup_proxy_types(params)
+    try:
+        params.add_type(PROXY_NESTED_TYPE)
+        params.add_type_parameter(PROXY_NESTED_TYPE, "IF", default=10e6, unit="Hz")
+        params.add_type(PROXY_TYPE)
+        params.add_type_parameter(PROXY_TYPE, "octave_gain", default=10, unit="dB")
+        params.add_nested_type(PROXY_TYPE, "ro", PROXY_NESTED_TYPE)
+
+        assert sorted(params.list_types()) == [PROXY_TYPE, PROXY_NESTED_TYPE]
+
+        params.set_type_parameter_default(PROXY_NESTED_TYPE, "IF", 20e6)
+        params.set_type_parameter_unit(PROXY_NESTED_TYPE, "IF", "V")
+
+        params.add_instance(PROXY_NESTED_TYPE, PROXY_INSTANCE)
+        assert params.instances_of(PROXY_NESTED_TYPE) == [PROXY_INSTANCE]
+        assert params.types_of(f"{PROXY_INSTANCE}.IF") == [PROXY_NESTED_TYPE]
+        # the proxy method call does not refresh the proxy itself: after
+        # update() the created Instance shows up with the entry default
+        # and the propagated unit
+        params.update()
+        assert params.ptype_q01.IF() == 20e6
+        assert params.ptype_q01.IF.unit == "V"
+
+        # the removals work over the wire too
+        params.remove_type_parameter(PROXY_NESTED_TYPE, "IF")
+        assert params.get_type(PROXY_NESTED_TYPE).parameters == {}
+        params.remove_nested_type(PROXY_TYPE, "ro")
+        assert params.get_type(PROXY_TYPE).nested == {}
+        params.remove_type(PROXY_TYPE)
+        params.remove_type(PROXY_NESTED_TYPE)
+        assert params.list_types() == []
+    finally:
+        _cleanup_proxy_types(params)
+
+
+def test_get_type_and_list_types_deserialise_over_the_wire(param_manager):
+    cli, params = param_manager
+    _cleanup_proxy_types(params)
+    try:
+        params.add_type(PROXY_NESTED_TYPE)
+        params.add_type_parameter(PROXY_NESTED_TYPE, "IF", default=10e6, unit="Hz")
+        params.add_type(PROXY_TYPE)
+        params.add_type_parameter(PROXY_TYPE, "octave_gain", default=10, unit="dB")
+        params.add_nested_type(PROXY_TYPE, "ro", PROXY_NESTED_TYPE)
+
+        types = params.list_types()
+        assert isinstance(types, list)
+        assert sorted(types) == [PROXY_TYPE, PROXY_NESTED_TYPE]
+
+        bp = params.get_type(PROXY_TYPE)
+        assert isinstance(bp, PMTypeBluePrint)
+        assert bp.name == PROXY_TYPE
+        assert bp.parameters == {
+            "octave_gain": {"default": 10, "unit": "dB", "target": None},
+        }
+        assert bp.nested == {"ro": PROXY_NESTED_TYPE}
+        assert bp.effective == {
+            "octave_gain": {"unit": "dB", "from_type": PROXY_TYPE},
+            "ro.IF": {"unit": "Hz", "from_type": PROXY_NESTED_TYPE},
+        }
+
+        nested_bp = params.get_type(PROXY_NESTED_TYPE)
+        assert isinstance(nested_bp, PMTypeBluePrint)
+        assert nested_bp.parameters == {
+            "IF": {"default": 10e6, "unit": "Hz", "target": None},
+        }
+    finally:
+        _cleanup_proxy_types(params)
+
+
+def test_subclient_sees_pm_type_update_and_creations_from_a_second_client(
+    param_manager, server_port, capture_broadcasts, wait_for_broadcasts
+):
+    cli, params = param_manager
+    _cleanup_proxy_types(params)
+    second_cli = Client(port=server_port)
+    try:
+        second_params = second_cli.find_or_create_instrument(
+            "parameter_manager", "instrumentserver.params.ParameterManager"
+        )
+        with capture_broadcasts(["parameter_manager"], server_port + 1) as received:
+            # a Type edit from the second client: the SubClient sees the
+            # pm-type-update with the fresh blueprint
+            second_params.add_type(PROXY_NESTED_TYPE)
+            wait_for_broadcasts(received)
+            assert len(received) == 1
+            bp = received[0]
+            assert isinstance(bp, ParameterBroadcastBluePrint)
+            assert bp.name == f"parameter_manager.{PROXY_NESTED_TYPE}"
+            assert bp.action == PM_TYPE_UPDATE
+            assert isinstance(bp.value, PMTypeBluePrint)
+            assert bp.value.parameters == {}
+
+            second_params.add_type_parameter(
+                PROXY_NESTED_TYPE, "IF", default=5, unit="Hz"
+            )
+            wait_for_broadcasts(received, n=2)
+            assert len(received) == 2
+            assert received[1].action == PM_TYPE_UPDATE
+            assert received[1].value.parameters == {
+                "IF": {"default": 5, "unit": "Hz", "target": None},
+            }
+            received.clear()
+
+            # add_instance from the second client: exactly one
+            # parameter-creation per created parameter, and no
+            # pm-type-update, since the call edits no Type
+            second_params.add_instance(PROXY_NESTED_TYPE, PROXY_INSTANCE)
+            wait_for_broadcasts(received)
+            assert len(received) == 1
+            creation = received[0]
+            assert creation.action == PARAMETER_CREATION
+            assert creation.name == f"parameter_manager.{PROXY_INSTANCE}.IF"
+            assert creation.value == 5
+            assert creation.unit == "Hz"
+    finally:
+        second_cli.disconnect()
+        _cleanup_proxy_types(params)
+
+
+def test_the_first_clients_proxy_shows_the_created_parameters_after_update(
+    param_manager, server_port
+):
+    cli, params = param_manager
+    _cleanup_proxy_types(params)
+    second_cli = Client(port=server_port)
+    try:
+        second_params = second_cli.find_or_create_instrument(
+            "parameter_manager", "instrumentserver.params.ParameterManager"
+        )
+        # the second client adds the Type, one entry and an Instance
+        second_params.add_type(PROXY_TYPE)
+        second_params.add_type_parameter(PROXY_TYPE, "IF", default=5, unit="Hz")
+        second_params.add_instance(PROXY_TYPE, PROXY_INSTANCE)
+
+        # the first client's proxy predates the creations
+        assert PROXY_INSTANCE not in params.submodules
+
+        # update() invalidates the cached blueprint and rebuilds the proxy
+        params.update()
+        assert PROXY_INSTANCE in params.submodules
+        assert params.ptype_q01.IF() == 5
+        assert params.ptype_q01.IF.unit == "Hz"
+    finally:
+        second_cli.disconnect()
+        _cleanup_proxy_types(params)
