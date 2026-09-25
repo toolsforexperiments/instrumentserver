@@ -1157,33 +1157,26 @@ class ParameterManager(Broadcaster, ParameterGroup):
         walk(type_name, "", (type_name,))
         return prefixes
 
-    def _group_at(self, path: str) -> "ParameterGroup":
-        """The Parameter Group at a dotted path relative to this Parameter
-        Manager (the root itself for the empty path)."""
-        group: ParameterGroup = self
-        for segment in path.split("."):
-            if segment:
-                submodule = group.submodules[segment]
-                assert isinstance(submodule, ParameterGroup)
-                group = submodule
-        return group
-
     def _check_creation_targets(
         self, targets: List[Tuple[str, str]]
     ) -> None:
-        """Validate the parameters a Type edit is about to create as side
-        effects, before anything is mutated. ``targets`` holds
+        """Validate the parameters a Type edit or :meth:`add_instance` is
+        about to create, before anything is mutated. ``targets`` holds
         ``(Instance path, relative target path)`` pairs. An intermediate
         segment of a target may not be an existing parameter (a parameter
         cannot have child parameters) and the final segment may not be an
         existing Parameter Group (a Parameter Group cannot become a
         parameter); a target whose final segment is an existing parameter
-        is fine — it is left alone. One de-duplicated target path may also
-        not be a strict segment-prefix of another target of the same edit:
-        creating the shorter parameter would take the Parameter Group the
-        longer one needs, so the edit could never carry out its own
-        pre-check. Raises ``ValueError`` naming every offending full
-        path."""
+        is fine — it is left alone. The Instance path itself is walked
+        first: a segment of it that is an existing parameter blocks every
+        target below it, while a Parameter Group missing along it is
+        created on the way, so nothing below it can clash (this is how
+        ``add_instance`` names Parameter Groups that do not exist yet).
+        One de-duplicated target path may also not be a strict
+        segment-prefix of another target of the same edit: creating the
+        shorter parameter would take the Parameter Group the longer one
+        needs, so the edit could never carry out its own pre-check.
+        Raises ``ValueError`` naming every offending full path."""
         offending: Dict[str, str] = {}
         seen: set = set()
         for instance_path, relative_target in targets:
@@ -1191,7 +1184,35 @@ class ParameterManager(Broadcaster, ParameterGroup):
             if full in seen:
                 continue
             seen.add(full)
-            group = self._group_at(instance_path)
+            # walk the Instance path: every segment must be a Parameter
+            # Group, a missing one is created on the way, and an existing
+            # parameter blocks everything below it
+            group: ParameterGroup | None = self
+            blocked: str | None = None
+            walked: List[str] = []
+            for segment in instance_path.split("."):
+                if not segment:
+                    continue
+                assert group is not None  # cleared only with an immediate break
+                if segment in group.parameters:
+                    blocked = ".".join([*walked, segment])
+                    break
+                submodule = group.submodules.get(segment)
+                if submodule is None:
+                    # missing Parameter Group on the Instance path: it is
+                    # created on the way, so nothing below it can clash
+                    group = None
+                    break
+                walked.append(segment)
+                group = submodule
+            if blocked is not None:
+                offending[full] = (
+                    f"'{blocked}' is a parameter, and cannot have "
+                    "child parameters"
+                )
+                continue
+            if group is None:
+                continue
             segments = relative_target.split(".")
             for index, segment in enumerate(segments):
                 last = index == len(segments) - 1
@@ -1562,6 +1583,93 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 "Nested Type"
             )
         del definition.nested[submodule]
+
+    # ------------------------------------------------------------------
+    # Instances (plan decision D14)
+    #
+    # ``add_instance`` writes a Type's effective parameter set into one
+    # named Parameter Group, creating the Parameter Groups on the way.
+    # It validates everything first: the Type, the name, a unit conflict
+    # on any existing parameter, and the creation targets through
+    # ``_check_creation_targets``; on an error nothing is created. An
+    # empty Type creates nothing and has no Instances (D12). Like the
+    # Type edits, it emits no Broadcast yet: the ``pm-type-update`` and
+    # re-emitted ``parameter-creation`` arrive with the Type-editing
+    # broadcasts task.
+    # ------------------------------------------------------------------
+
+    def add_instance(self, type_name: str, name: str) -> None:
+        """Create the Instance ``name`` of the Type ``type_name`` (D14):
+        every effective parameter path of the Type that is missing under
+        ``name`` — together with the Parameter Groups on the way — is
+        created with the entry's default value and unit through the
+        ordinary :meth:`add_parameter` path, and every parameter that
+        exists at a target path already is kept untouched, with its own
+        value and unit. ``name`` is a dotted submodule path relative to
+        this Parameter Manager (``"q01"`` or ``"q01.readout"``), so
+        nested Instances are allowed. After a successful call ``name``
+        carries the whole effective set with the units the Type declares,
+        so it is an Instance in :meth:`instances_of` — unless the Type is
+        empty: an empty Type has no Instances (D12), creates nothing and
+        raises nothing, and the submodule is not created for it.
+
+        Raises ``ValueError`` — creating nothing — naming every offending
+        path when no such Type exists, when ``name`` is empty or has an
+        empty segment, when ``name`` starts with the reserved Globals
+        name ``_globals`` (D18), when a parameter already exists at an
+        effective path with a unit different from the one the Type
+        declares (the unit-conflict scan runs over every effective path
+        before anything is created, D14), or when a target path cannot be
+        created because a segment of ``name`` or of the target is an
+        existing parameter, or the final segment of a target is an
+        existing Parameter Group.
+
+        :param type_name: Name of the Type.
+        :param name: Dotted submodule path of the Instance, relative to
+            this Parameter Manager.
+        """
+        # validate-then-mutate: every check below runs before the tree is
+        # touched
+        self._require_type(type_name)
+        if not name or any(segment == "" for segment in name.split(".")):
+            raise ValueError(
+                f"'{name}' is not a valid submodule path for an Instance"
+            )
+        if name.split(".")[0] == "_globals":
+            raise ValueError(
+                f"'{name}' is not a valid submodule path for an Instance: "
+                "the Globals submodule name is reserved"
+            )
+        effective = self._effective_entries(type_name)
+        if not effective:
+            # an empty Type has no Instances (D12): there is nothing to
+            # create, and the submodule is not created for it
+            return
+        # the unit-conflict scan runs over every effective path before
+        # anything is created (D14); every conflict is collected, so one
+        # error can name them all (rule 3)
+        conflicts: List[str] = []
+        for path, entry in effective.items():
+            full = f"{name}.{path}"
+            if self.has_param(full):
+                existing_unit = getattr(self.parameter(full), "unit", None)
+                if existing_unit != entry.unit:
+                    conflicts.append(
+                        f"'{full}' carries unit '{existing_unit}', the "
+                        f"Type declares '{entry.unit}'"
+                    )
+        if conflicts:
+            raise ValueError(
+                f"cannot add an Instance of Type '{type_name}' at "
+                f"'{name}': " + "; ".join(conflicts)
+            )
+        self._check_creation_targets([(name, path) for path in effective])
+        for path, entry in effective.items():
+            full = f"{name}.{path}"
+            if not self.has_param(full):
+                self.add_parameter(
+                    full, initial_value=entry.default, unit=entry.unit
+                )
 
     @staticmethod
     def createFromParamDict(paramDict: Dict[str, Any], name: str) -> "ParameterManager":

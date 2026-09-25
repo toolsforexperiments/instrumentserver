@@ -1,6 +1,7 @@
 """Tests for the Type registry and definitions (plan task 2.1), the
-duck-typed Instance matching (plan task 2.2) and the Type edits with
-Instance side effects (plan task 2.3).
+duck-typed Instance matching (plan task 2.2), the Type edits with
+Instance side effects (plan task 2.3) and ``add_instance`` (plan task
+2.4).
 
 The definition and editing methods are exercised through the public API:
 ``add_type`` / ``add_type_parameter`` / ``add_nested_type`` and friends.
@@ -15,8 +16,12 @@ refusal), the content of the ``PMTypeBluePrint`` ``get_type`` returns,
 its round-trip through the blueprint serialization, the Instance matching
 queries ``instances_of`` and ``types_of`` (existence and unit, any depth,
 never the root, never the Globals submodule, ordering of the claiming
-Types), and the six editing methods with their D13 Instance side effects,
-every refusal leaving the registry and the parameter tree byte-identical.
+Types), the six editing methods with their D13 Instance side effects, and
+``add_instance`` (creating the missing effective entries with defaults
+and units, keeping existing ones with value and unit, dotted names, the
+three-tier Type of the mock, the up-front unit-conflict scan, blocked
+targets, the Globals refusal, unknown and empty Types) — every refusal
+leaving the registry and the parameter tree byte-identical.
 """
 
 import copy
@@ -25,7 +30,12 @@ import re
 import pytest
 
 from instrumentserver.blueprints import PMTypeBluePrint, deserialize_obj
-from instrumentserver.params import ParameterManager, _TypeDefinition, _TypeEntry
+from instrumentserver.params import (
+    ManagedParameter,
+    ParameterManager,
+    _TypeDefinition,
+    _TypeEntry,
+)
 
 
 @pytest.fixture
@@ -1386,6 +1396,13 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
     pm.add_type("outer")
     pm.add_type_parameter("outer", "top", default=0, unit="")
     pm.add_parameter("q01.top", initial_value=0, unit="")
+    # shapes and parameters for the add_instance refusals below
+    pm.add_type("sensor")
+    pm.add_type_parameter("sensor", "sub.x", default=1, unit="V")
+    pm.add_type_parameter("sensor", "sub.y", default=2, unit="A")
+    pm.add_parameter("q03.octave_gain", initial_value=1, unit="V")
+    pm.add_parameter("q04.sub", initial_value=0, unit="V")
+    pm.add_parameter("q05.readout.window.sub", initial_value=0, unit="s")
 
     def state():
         return (
@@ -1429,6 +1446,21 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
         lambda: pm.add_nested_type("qubit", "x..y", "readout"),
         lambda: pm.remove_nested_type("qubit", "pw"),
         lambda: pm.remove_nested_type("nope", "readout"),
+        # add_instance refusals (task 2.4): an unknown Type, an invalid
+        # name, the reserved Globals name, a unit conflict (q03.octave_gain
+        # carries unit V where qubit declares dB), a target blocked by a
+        # parameter (q04.sub), a target occupied by a Parameter Group
+        # (q05.readout.window), and the conflicting targets b / b.c of
+        # branched
+        lambda: pm.add_instance("nope", "q01"),
+        lambda: pm.add_instance("qubit", ""),
+        lambda: pm.add_instance("qubit", "x..y"),
+        lambda: pm.add_instance("qubit", "_globals"),
+        lambda: pm.add_instance("qubit", "_globals.deep"),
+        lambda: pm.add_instance("qubit", "q03"),
+        lambda: pm.add_instance("sensor", "q04"),
+        lambda: pm.add_instance("qubit", "q05"),
+        lambda: pm.add_instance("branched", "q06"),
     ]
     for call in failing_calls:
         with pytest.raises(ValueError):
@@ -1436,3 +1468,228 @@ def test_a_failed_validation_leaves_the_tree_and_registry_byte_identical(pm):
         # the refused call left list, every value and unit, and the Type
         # registry byte-identical
         assert state() == before
+
+
+# ---------------------------------------------------------------------------
+# add_instance (plan task 2.4, D14)
+# ---------------------------------------------------------------------------
+
+
+def test_add_instance_creates_the_missing_entries_with_defaults_and_units(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+
+    pm.add_instance("qubit", "q01")
+
+    # every effective path is created with the entry default and unit
+    assert pm.get("q01.IF") == 5e9
+    assert pm.parameter("q01.IF").unit == "Hz"
+    assert pm.get("q01.octave_gain") == 10
+    assert pm.parameter("q01.octave_gain").unit == "dB"
+    # created through the ordinary add_parameter path: ManagedParameters
+    # that can carry a Lock, with the full dotted path
+    assert isinstance(pm.parameter("q01.IF"), ManagedParameter)
+    assert pm.parameter("q01.IF").path == "parameter_manager.q01.IF"
+    # after the call the submodule carries the whole shape (D14)
+    assert pm.instances_of("qubit") == ["q01"]
+
+
+def test_add_instance_keeps_existing_entries_with_value_and_unit(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.IF", initial_value=6e9, unit="Hz")
+
+    pm.add_instance("qubit", "q01")
+
+    # the existing parameter keeps its own value and unit
+    assert pm.get("q01.IF") == 6e9
+    assert pm.parameter("q01.IF").unit == "Hz"
+    # the missing one is created
+    assert pm.get("q01.octave_gain") == 10
+    assert pm.instances_of("qubit") == ["q01"]
+
+
+def test_add_instance_accepts_a_dotted_name(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+
+    pm.add_instance("readout", "q02.ro")
+
+    # the Parameter Groups on the way are created
+    assert pm.get("q02.ro.IF") == 10e6
+    assert pm.parameter("q02.ro.IF").unit == "Hz"
+    assert pm.instances_of("readout") == ["q02.ro"]
+
+
+def test_add_instance_builds_the_three_tier_case(pm):
+    put_three_tier_registry(pm)
+
+    pm.add_instance("qubit", "q01")
+
+    # every effective path of the whole nesting chain is created with the
+    # entry default and unit
+    assert pm.get("q01.IF") is None
+    assert pm.parameter("q01.IF").unit == "Hz"
+    assert pm.get("q01.octave_gain") == 10
+    assert pm.parameter("q01.octave_gain").unit == "dB"
+    assert pm.get("q01.readout.IF") is None
+    assert pm.parameter("q01.readout.IF").unit == "Hz"
+    assert pm.get("q01.readout.window") is None
+    assert pm.parameter("q01.readout.window").unit == "s"
+    assert pm.get("q01.readout.pw.duration") is None
+    assert pm.parameter("q01.readout.pw.duration").unit == "s"
+    # q01 matches at every tier
+    assert pm.instances_of("qubit") == ["q01"]
+    assert pm.instances_of("readout") == ["q01.readout"]
+    assert pm.instances_of("pulse_window") == ["q01.readout.pw"]
+
+
+def test_add_instance_refuses_a_unit_conflict_naming_every_conflicting_path(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_parameter("q01.IF", initial_value=1, unit="V")
+    pm.add_parameter("q01.octave_gain", initial_value=2, unit="W")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("qubit", "q01")
+
+    # every conflicting path with both units, not the first (rule 3)
+    message = str(excinfo.value)
+    assert "cannot add an Instance of Type 'qubit' at 'q01'" in message
+    assert "'q01.IF' carries unit 'V', the Type declares 'Hz'" in message
+    assert "'q01.octave_gain' carries unit 'W', the Type declares 'dB'" in message
+    # the scan refuses before anything is created (D14)
+    assert pm.list() == ["q01.IF", "q01.octave_gain"]
+    assert pm.instances_of("qubit") == []
+
+
+def test_add_instance_refuses_a_target_blocked_by_a_parameter(pm):
+    pm.add_type("sensor")
+    pm.add_type_parameter("sensor", "sub.x", default=1, unit="V")
+    pm.add_type_parameter("sensor", "sub.y", default=2, unit="A")
+    pm.add_parameter("q01.sub", initial_value=0, unit="V")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("sensor", "q01")
+
+    # every offending target path, not the first (rule 3)
+    message = str(excinfo.value)
+    assert "cannot create parameter 'q01.sub.x'" in message
+    assert "cannot create parameter 'q01.sub.y'" in message
+    assert "'q01.sub' is a parameter, and cannot have child parameters" in message
+    # nothing was created
+    assert pm.list() == ["q01.sub"]
+
+
+def test_add_instance_refuses_a_name_blocked_by_a_parameter(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    # the root parameter q01 takes the place the Instance needs
+    pm.add_parameter("q01", initial_value=0, unit="s")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("qubit", "q01")
+
+    message = str(excinfo.value)
+    assert "cannot create parameter 'q01.IF'" in message
+    assert "'q01' is a parameter, and cannot have child parameters" in message
+    # a deeper name is blocked by the same parameter
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("qubit", "q01.ro")
+    assert "cannot create parameter 'q01.ro.IF'" in str(excinfo.value)
+
+    assert pm.list() == ["q01"]
+
+
+def test_add_instance_refuses_a_target_blocked_by_a_parameter_group(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    # the Parameter Group q01.IF occupies the target path of the entry IF
+    pm.add_parameter("q01.IF.sub", unit="s")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("qubit", "q01")
+
+    message = str(excinfo.value)
+    assert "cannot create parameter 'q01.IF'" in message
+    assert "'q01.IF' is already a Parameter Group" in message
+    # nothing was created
+    assert pm.list() == ["q01.IF.sub"]
+
+
+def test_add_instance_refuses_conflicting_creation_targets(pm):
+    # the Type's effective set holds b and the strict extension b.c
+    # (buildable while the Type has no Instances): the one call would
+    # create q01.b and need it as a Parameter Group for q01.b.c
+    pm.add_type("leaf")
+    pm.add_type_parameter("leaf", "c", default=1, unit="V")
+    pm.add_type("branched")
+    pm.add_type_parameter("branched", "b", default=2, unit="A")
+    pm.add_nested_type("branched", "b", "leaf")
+
+    with pytest.raises(ValueError) as excinfo:
+        pm.add_instance("branched", "q01")
+
+    message = str(excinfo.value)
+    assert "cannot create parameter 'q01.b.c'" in message
+    assert "'q01.b' is also created by this edit" in message
+    # nothing was created
+    assert pm.list() == []
+
+
+def test_add_instance_refuses_the_globals_submodule(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=None, unit="Hz")
+
+    with pytest.raises(
+        ValueError, match=re.escape("the Globals submodule name is reserved")
+    ):
+        pm.add_instance("qubit", "_globals")
+    # anything under the Globals submodule is refused too (D18)
+    with pytest.raises(
+        ValueError, match=re.escape("the Globals submodule name is reserved")
+    ):
+        pm.add_instance("qubit", "_globals.q01")
+
+    # nothing was created
+    assert pm.list() == []
+
+
+def test_add_instance_refuses_a_name_with_empty_segments(pm):
+    pm.add_type("qubit")
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'' is not a valid submodule path for an Instance"),
+    ):
+        pm.add_instance("qubit", "")
+    with pytest.raises(
+        ValueError,
+        match=re.escape("'x..y' is not a valid submodule path for an Instance"),
+    ):
+        pm.add_instance("qubit", "x..y")
+
+    assert pm.list() == []
+
+
+def test_add_instance_with_an_unknown_type_raises_naming_it(pm):
+    with pytest.raises(ValueError, match="no Type named 'qubit' exists"):
+        pm.add_instance("qubit", "q01")
+
+    assert pm.list() == []
+
+
+def test_add_instance_on_an_empty_type_creates_nothing(pm):
+    pm.add_type("empty")
+
+    pm.add_instance("empty", "q01")
+
+    # no parameter and no Parameter Group was created; an empty Type has
+    # no Instances (D12), so q01 is not listed either
+    assert pm.list() == []
+    assert "q01" not in pm.submodules
+    assert pm.instances_of("empty") == []
