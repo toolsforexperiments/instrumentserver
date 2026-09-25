@@ -508,7 +508,7 @@ class ModelParameters(InstrumentModelBase):
         elif bp.action == PM_LOCK_UPDATE:
             # Locks and Types claim no model item of their own: the Lock
             # column and the Type tints are separate tasks. The Parameter
-            # Manager GUI records the change in its PMState (D22).
+            # Manager GUI records the change in its PMState (D10).
             self.lockChanged.emit(fullName, bp.value)
 
         elif bp.action == PM_TYPE_UPDATE:
@@ -876,7 +876,6 @@ class ParameterManagerGui(InstrumentParameters):
         layout.addWidget(self.addParam)
         self.connectSignals()
         self.loadProfile()
-        self.state.refresh(self.instrument)
 
     def connectSignals(self) -> None:
         super().connectSignals()
@@ -961,7 +960,6 @@ class ParameterManagerGui(InstrumentParameters):
         try:
             self.instrument.fromFile(filePath=loadFile, deleteMissing=False)
             self.refreshAll()
-            self.state.refresh(self.instrument)
 
         except Exception as e:
             logger.info(f"Loading failed. {type(e)}: {e.args}")

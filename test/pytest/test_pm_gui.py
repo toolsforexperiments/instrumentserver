@@ -24,10 +24,18 @@ pre-existing and outside this task's scope:
 import os
 
 import pytest
+from qcodes.instrument import InstrumentBase
 
 from instrumentserver.blueprints import PMLockBluePrint, PMTypeBluePrint
 from instrumentserver.client.proxy import Client
-from instrumentserver.gui.instruments import ParameterManagerGui, PMState
+from instrumentserver.gui.base_instrument import InstrumentSortFilterProxyModel
+from instrumentserver.gui.instruments import (
+    ItemParameters,
+    ModelParameters,
+    ParameterManagerGui,
+    ParameterManagerTreeView,
+    PMState,
+)
 
 PM_NAME = "parameter_manager"
 PM_CLASS = "instrumentserver.params.ParameterManager"
@@ -177,6 +185,51 @@ def test_pm_state_helpers_work_without_a_server():
     state.apply_type("gone", None)
 
 
+class _StubParamWidget:
+    """Stands in for a ParameterWidget's inner widget of a kind that has no
+    ``setValue`` (e.g. the QLineEdit of a string parameter or a read-only
+    QLabel): only the ParameterWidget's ``_setMethod`` reaches it."""
+
+    def __init__(self):
+        self.set_via_set_method = []
+
+    def _setMethod(self, value):
+        self.set_via_set_method.append(value)
+
+
+class _StubDelegateWidget:
+    """Stands in for the delegate's ParameterWidget."""
+
+    def __init__(self):
+        self.paramWidget = _StubParamWidget()
+        self.set_via_set_method = []
+
+    def _setMethod(self, value):
+        self.set_via_set_method.append(value)
+
+
+def test_on_item_new_value_uses_the_parameter_widget_set_method(qtbot):
+    """D24 item three: ``ParameterManagerTreeView.onItemNewValue`` delivers
+    the value through the widget's ``_setMethod``, which every
+    ParameterWidget kind has — not through ``paramWidget.setValue``, which
+    only the input widgets have. The stub's paramWidget deliberately has no
+    ``setValue``, so the old code would raise AttributeError here."""
+    stub_instrument = InstrumentBase("pm_tree_stub")
+    model = ModelParameters(stub_instrument, "parameters", ItemParameters)
+    view = ParameterManagerTreeView(InstrumentSortFilterProxyModel(model))
+    qtbot.addWidget(view)
+
+    widget = _StubDelegateWidget()
+    assert not hasattr(widget.paramWidget, "setValue")
+    view.delegate.parameters["stub.x"] = widget
+    try:
+        view.onItemNewValue("stub.x", 42)
+    finally:
+        model.stopListener()
+
+    assert widget.set_via_set_method == [42]
+
+
 def test_state_on_construction_holds_types_and_locks_created_before(
     qtbot, pm, server_port
 ):
@@ -278,6 +331,27 @@ def test_type_broadcasts_from_a_second_client_update_the_state(
             lambda: "qubit" not in gui.state.types,
             timeout=BROADCAST_TIMEOUT,
         )
+    finally:
+        gui.model.stopListener()
+
+
+def test_load_profile_refreshes_the_state_without_broadcasts(
+    qtbot, pm, second_client, server_port
+):
+    """loadProfile re-reads the Types and Locks from the Parameter Manager
+    even while the listener is stopped, so no Broadcast can fill the
+    state: a Type the second Client created before the load must be in
+    gui.state afterwards."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.model.stopListener()
+        second_pm.add_type("pt")
+        assert "pt" not in gui.state.types  # no listener, no Broadcast
+
+        gui.loadProfile()
+        assert "pt" in gui.state.types
     finally:
         gui.model.stopListener()
 
