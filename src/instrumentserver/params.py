@@ -428,7 +428,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
     :meth:`unlock_type_parameter` do both: they emit the
     ``pm-lock-update`` Broadcasts of the Locks the declaration creates and
     the ``pm-type-update`` of the edited Type, and every new Instance gets
-    the existing Type Locks of its Type at creation (D17).
+    the existing Type Locks of its Type at creation (D17). Removing a
+    parameter that is the stored Target of Type Locks drops the Locks
+    pointing at it and clears those Type Locks, emitting one
+    ``pm-type-update`` per affected Type (D18).
 
     For the parameter manager to recognize other profiles in disk,
     the profile filename needs to start with 'parameter_manager-'
@@ -515,12 +518,27 @@ class ParameterManager(Broadcaster, ParameterGroup):
         with their own values again. One ``pm-lock-update`` Broadcast with a
         ``None`` value is emitted per dropped Lock (D10).
 
+        When the removed parameter is the stored Target of one or more Type
+        Locks — a Globals parameter, or any parameter an explicit Type Lock
+        points at — the Type Lock is cleared as well (D18): every own entry
+        of every Type whose stored Target it was gets ``target=None``, and
+        one ``pm-type-update`` Broadcast per affected Type, in registry
+        order and carrying the Type's fresh :class:`PMTypeBluePrint`, is
+        emitted after the ``pm-lock-update``s (D22). The Locks a cleared
+        Type Lock had put on Instance parameters are ordinary Locks
+        pointing at the removed parameter, so the same cleanup drops them;
+        a parameter that is no Type Lock Target emits no
+        ``pm-type-update``.
+
         Same signature and deletion behaviour as
         :meth:`ParameterGroup.remove_parameter`; the path is relative to
-        this Parameter Manager.
+        this Parameter Manager. The deletion itself emits nothing here:
+        the Server announces a direct ``remove_parameter`` call with a
+        ``parameter-deletion`` Broadcast (ADR-0003).
         """
-        # validate-then-mutate: the parameter must exist before any Lock is
-        # touched. The checks mirror what the deletion itself would raise.
+        # validate-then-mutate: the parameter must exist before any Lock or
+        # Type Lock is touched. The checks mirror what the deletion itself
+        # would raise.
         parent = self._get_parent(param_name)
         pname = param_name.split(".")[-1]
         if pname not in parent.parameters:
@@ -538,8 +556,31 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 param.lock = None
                 param._target = None
                 dropped_followers.append(rel_path)
+
+        # every Type Lock whose stored Target the removed parameter was is
+        # cleared with it (D18): the entry keeps no Target that points
+        # nowhere, so no later Instance is locked to a missing parameter.
+        # Own entries only: a nesting Type's effective set carries units
+        # and defining Types, not Targets, so only the Type owning the
+        # entry is affected (like lock_type_parameter).
+        affected_types: List[str] = []
+        for type_name, definition in self._types.items():
+            touched = False
+            for entry in definition.parameters.values():
+                if entry.target == target_full:
+                    entry.target = None
+                    touched = True
+            if touched:
+                affected_types.append(type_name)
+
+        # broadcasts after the mutation, in order: one pm-lock-update with
+        # None per dropped Follower (D10), then one pm-type-update per
+        # affected Type, in registry order (D22); the deletion itself
+        # emits nothing here
         for rel_path in dropped_followers:
             self._broadcast_lock_update(rel_path, None)
+        for type_name in affected_types:
+            self._broadcast_type_update(type_name)
 
         super().remove_parameter(param_name, cleanup)
 
@@ -1899,8 +1940,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
     # the same one the public ``add_parameter`` ends in. A Globals
     # parameter is otherwise ordinary (D18): it can be set and read, it
     # may itself carry a Lock and be a Lock Target, and it is saved with
-    # the profile. Removing one is allowed; the Lock and Type Lock
-    # cleanup it triggers is task 3.3.
+    # the profile. Removing one is allowed; :meth:`remove_parameter` then
+    # drops the Locks pointing at it and clears the Type Lock it was the
+    # stored Target of (D18).
     # ------------------------------------------------------------------
 
     def _ensure_global_target(self, type_name: str, path: str) -> str:
@@ -2175,8 +2217,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
 
         Per parameter an unlocked Lock remembering the same Target is
         locked again, an already locked one is left as it is, and a Lock
-        on another Target is skipped. A Target that no longer exists
-        (possible until task 3.3 clears the stored Target on deletion), a
+        on another Target is skipped. A Target that no longer exists —
+        not reachable through the public API, since
+        :meth:`remove_parameter` clears the Type Lock whose stored Target
+        it deletes (D18), but possible in a registry inserted by hand — a
         parameter that cannot carry a Lock and one whose Lock application
         would be a self-lock or close a cycle are skipped too — including
         a cycle that another application of the same batch creates, since

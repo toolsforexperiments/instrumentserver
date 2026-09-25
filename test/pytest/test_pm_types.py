@@ -77,6 +77,27 @@ methods over the wire (the skipped list round-tripping, the full-form
 Target in ``get_type``, a locked Instance parameter pulling the Globals
 value) and a SubClient receiving the declaration Broadcasts made by a
 second client.
+The deletion interplay part (3.3) checks that removing a parameter that is
+the stored Target of Type Locks — the default Globals one or an explicit
+ordinary one, carried by one Type or shared by two — drops every Lock
+pointing at it (the Followers answer ``get`` with their own values again)
+and clears the Type Locks (``get_type`` shows ``target`` ``None``), that
+removing a Target of ordinary Locks touches no Type Lock, that removing a
+Follower touches none either, that a refused removal leaves Locks and
+Types untouched, that ``remove_type`` leaves the Globals parameters and
+every Instance Lock alone while ``remove_type_parameter`` takes the
+entry's Type Lock with it, and that ``remove_all_parameters`` clears the
+Type Locks whose Targets it removes while the Type definitions stay. The
+Broadcast part pins the order: one ``pm-lock-update`` with ``None`` per
+dropped Follower, then one ``pm-type-update`` per affected Type in
+registry order, and nothing else; ``remove_type`` keeps its single
+``None`` update with no ``pm-lock-update``; a refused removal and a
+Follower removal emit nothing. The proxy part removes a Globals Type Lock
+Target through a second client: the SubClient sees the ``pm-lock-update``
+(``None``) per Follower, the ``pm-type-update`` with the cleared Target
+and the Server's ``parameter-deletion``, the first client's proxy shows
+the Follower unlocked after ``update()``, and ``get_type`` over the wire
+shows ``target`` ``None``.
 """
 
 import copy
@@ -87,6 +108,7 @@ import pytest
 
 from instrumentserver.blueprints import (
     PARAMETER_CREATION,
+    PARAMETER_DELETION,
     PM_LOCK_UPDATE,
     PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
@@ -2298,31 +2320,32 @@ def test_add_instance_skips_a_kept_parameter_locked_to_another_target(pm, caplog
     assert "parameter_manager.q00.IF" in message
 
 
-def test_add_instance_skips_the_type_lock_when_the_target_is_gone(pm, caplog):
+def test_after_a_deletion_cleared_the_type_lock_a_new_instance_gets_no_lock(
+    pm,
+):
     put_qubit_instances(pm)
     pm.lock_type_parameter("qubit", "IF")
-    # the Globals Target is removed; until task 3.3 the entry keeps the
-    # stored Target, and the application must skip instead of raising
+
+    # removing the Globals Target clears the Type Lock (D18, task 3.3)
     pm.remove_parameter("_globals.qubit.IF")
-    caplog.clear()
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
 
-    with caplog.at_level(logging.WARNING):
-        pm.add_instance("qubit", "q07")
-
-    # the creation itself still succeeds; the created parameter carries
-    # no Lock
+    # no stored Target remains, so a later Instance applies no Lock for
+    # that entry
+    pm.add_instance("qubit", "q07")
     assert pm.instances_of("qubit") == ["q01", "q02", "q07"]
     assert pm.get_lock("q07.IF") is None
     assert pm.get("q07.IF") == 5e9
-    warnings_ = [
-        r
-        for r in caplog.records
-        if r.levelno == logging.WARNING and r.name == "instrumentserver.params"
-    ]
-    assert len(warnings_) == 1
-    message = warnings_[0].getMessage()
-    assert "'q07.IF'" in message
-    assert "does not exist" in message
+
+    # declaring the Type Lock again recreates the Globals Target on demand
+    # (3.1) and locks every Instance parameter
+    pm.lock_type_parameter("qubit", "IF")
+    assert pm.has_param("_globals.qubit.IF")
+    assert pm.get("_globals.qubit.IF") == 5e9
+    for inst in ("q01", "q02", "q07"):
+        assert pm.get_lock(f"{inst}.IF") == PMLockBluePrint(
+            target="parameter_manager._globals.qubit.IF", locked=True
+        )
 
 
 def test_add_instance_skips_an_application_the_batch_made_a_cycle(pm, caplog):
@@ -2789,6 +2812,206 @@ def test_lock_type_parameter_names_every_offending_path(pm):
     assert "parameter_manager.q02.IF cannot carry a Lock" in message
     assert lock_state(pm) == before
     assert not pm.has_param("_globals.qubit.IF")
+
+
+# ---------------------------------------------------------------------------
+# Deletion interplay (plan task 3.3, D17/D18)
+#
+# Removing a parameter that is the stored Target of Type Locks — a Globals
+# parameter, or any parameter an explicit Type Lock points at — drops
+# every Lock pointing at it and clears those Type Locks (the entries'
+# Targets go back to None). remove_type takes the Type and its Type Locks
+# but leaves the Globals parameters and every Instance Lock alone;
+# remove_type_parameter takes the entry's Type Lock with it under the
+# same reservations. After a deletion cleared a Type Lock, a later
+# add_instance applies no Lock for that entry and a re-declared
+# lock_type_parameter recreates the Globals Target on demand.
+# ---------------------------------------------------------------------------
+
+
+def test_removing_the_globals_target_drops_every_lock_and_clears_the_type_lock(
+    pm,
+):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.set("_globals.qubit.IF", 7e9)
+
+    pm.remove_parameter("_globals.qubit.IF")
+
+    # every Follower is unlocked and answers get with its own value again
+    assert pm.get_lock("q01.IF") is None
+    assert pm.get_lock("q02.IF") is None
+    assert pm.get("q01.IF") == 5e9
+    assert pm.get("q02.IF") == 6e9
+    # the Type Lock is cleared
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
+
+
+def test_removing_a_shared_target_clears_the_type_locks_of_every_type(pm):
+    # two Types declaring their Type Lock on one explicit Target; the
+    # Target is a root parameter, which is never an Instance (D12), and
+    # the two Instances differ in unit so each matches only its own Type
+    pm.add_parameter("shared_IF", initial_value=9e9, unit="Hz")
+    pm.add_parameter("q01.IF", initial_value=1e9, unit="Hz")
+    pm.add_parameter("q02.IF", initial_value=2e9, unit="V")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type("qubit2")
+    pm.add_type_parameter("qubit2", "IF", default=6e9, unit="V")
+    pm.lock_type_parameter("qubit", "IF", target="shared_IF")
+    pm.lock_type_parameter("qubit2", "IF", target="shared_IF")
+
+    pm.remove_parameter("shared_IF")
+
+    assert pm.get_lock("q01.IF") is None
+    assert pm.get_lock("q02.IF") is None
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
+    assert pm.get_type("qubit2").parameters["IF"]["target"] is None
+
+
+def test_removing_an_ordinary_explicit_target_does_the_same(pm):
+    put_qubit_instances(pm)
+    pm.add_parameter("shared.IF", initial_value=9e9, unit="Hz")
+    pm.lock_type_parameter("qubit", "IF", target="shared.IF")
+
+    pm.remove_parameter("shared.IF")
+
+    assert pm.get_lock("q01.IF") is None
+    assert pm.get_lock("q02.IF") is None
+    assert pm.get("q01.IF") == 5e9
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
+
+
+def test_removing_a_target_of_ordinary_locks_only_touches_no_type_lock(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.add_parameter("q01Data.IF", initial_value=1e9, unit="Hz")
+    pm.lock("q02.octave_gain", "q01Data.IF")
+
+    pm.remove_parameter("q01Data.IF")
+
+    # the ordinary Lock is dropped, the Type Lock and its Followers are
+    # untouched
+    assert pm.get_lock("q02.octave_gain") is None
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager._globals.qubit.IF"
+    )
+
+
+def test_removing_a_target_of_ordinary_and_type_locks_cleans_both_up(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    # an ordinary Follower of the Globals Target on top of the Type Lock
+    # Followers
+    pm.add_parameter("q01Data.IF", initial_value=1e9, unit="Hz")
+    pm.lock("q01Data.IF", "_globals.qubit.IF")
+
+    pm.remove_parameter("_globals.qubit.IF")
+
+    assert pm.get_lock("q01Data.IF") is None
+    assert pm.get_lock("q01.IF") is None
+    assert pm.get_lock("q02.IF") is None
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
+
+
+def test_removing_a_follower_touches_no_type_lock(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+
+    pm.remove_parameter("q01.IF")  # a Follower, not the Target
+
+    # q01 stops matching and its Lock is gone with the parameter, but the
+    # Type Lock and the other Follower are untouched
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager._globals.qubit.IF"
+    )
+    assert pm.get_lock("q02.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.instances_of("qubit") == ["q02"]
+
+
+def test_the_removal_refusal_leaves_locks_and_types_untouched(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    before = lock_state(pm)
+
+    with pytest.raises(KeyError):
+        pm.remove_parameter("q01.nope")
+    with pytest.raises(ValueError):
+        pm.remove_parameter("nope.IF")
+
+    assert lock_state(pm) == before
+    assert pm.has_param("_globals.qubit.IF")
+
+
+def test_remove_type_leaves_the_globals_parameters_and_instance_locks(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.unlock("q02.IF")  # one Follower unlocked individually
+
+    pm.remove_type("qubit")
+
+    # the Type and with it its Type Locks are gone, but the Globals
+    # parameters stay, ordinary as ever (D13, D18)
+    assert pm.list_types() == []
+    assert pm.has_param("_globals.qubit.IF")
+    assert pm.get("_globals.qubit.IF") == 5e9
+    assert pm.parameter("_globals.qubit.IF").unit == "Hz"
+    # every Instance Lock stays, locked or unlocked
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get_lock("q02.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=False
+    )
+    assert pm.get("q01.IF") == 5e9
+    assert pm.get("q02.IF") == 6e9
+
+
+def test_remove_type_parameter_takes_the_type_lock_with_it(pm):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+
+    pm.remove_type_parameter("qubit", "IF")
+
+    # the entry and with it the Type Lock are gone (D13)
+    assert pm.get_type("qubit").parameters == {
+        "octave_gain": {"default": 10, "unit": "dB", "target": None},
+    }
+    # the Locks and the Globals parameter stay
+    assert pm.get_lock("q01.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.get_lock("q02.IF") == PMLockBluePrint(
+        target="parameter_manager._globals.qubit.IF", locked=True
+    )
+    assert pm.has_param("_globals.qubit.IF")
+    # the Instances keep the parameter and still carry the remaining
+    # entry, so they keep matching (D13, D1: extra parameters don't
+    # matter, and octave_gain is still required and present)
+    assert pm.has_param("q01.IF")
+    assert pm.instances_of("qubit") == ["q01", "q02"]
+
+
+def test_remove_all_parameters_clears_the_type_locks_whose_targets_it_removes(
+    pm,
+):
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+
+    pm.remove_all_parameters()
+
+    # remove_all_parameters routes through remove_parameter, so removing
+    # the Globals Target clears the Type Lock as a consequence (D18); the
+    # Type definitions themselves stay (task 4.3 clears them when
+    # switching profiles)
+    assert pm.list() == []
+    assert pm.list_types() == ["qubit"]
+    assert pm.get_type("qubit").parameters["IF"]["target"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -3343,6 +3566,156 @@ def test_failed_type_lock_calls_emit_nothing(pm_with_sink):
 
 
 # ---------------------------------------------------------------------------
+# Deletion Broadcasts (plan task 3.3, D10/D18/D22)
+#
+# Removing a Type Lock Target emits one pm-lock-update with None per
+# dropped Follower (tree order), then one pm-type-update per affected
+# Type (registry order, Target cleared) — and nothing else; the deletion
+# itself is announced by the Server only. remove_type still emits exactly
+# one pm-type-update with None and no pm-lock-update. A refused removal
+# emits nothing.
+# ---------------------------------------------------------------------------
+
+
+def test_removing_a_type_lock_target_emits_lock_updates_then_type_updates(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    pm.remove_parameter("_globals.qubit.IF")
+
+    # two pm-lock-updates with None, one per dropped Follower in tree
+    # order, then one pm-type-update for the affected Type — nothing else
+    assert len(received) == 3
+    first, second, type_update = received
+    assert first.name == "parameter_manager.q01.IF"
+    assert first.action == PM_LOCK_UPDATE
+    assert first.value is None
+    assert second.name == "parameter_manager.q02.IF"
+    assert second.action == PM_LOCK_UPDATE
+    assert second.value is None
+    assert type_update.name == "parameter_manager.qubit"
+    assert type_update.action == PM_TYPE_UPDATE
+    assert isinstance(type_update.value, PMTypeBluePrint)
+    assert type_update.value.parameters["IF"]["target"] is None
+
+
+def test_removing_a_shared_target_emits_one_update_per_type_in_registry_order(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    # two Types sharing one explicit Target, one Instance each; the
+    # Target is a root parameter, which is never an Instance (D12), and
+    # the two Instances differ in unit so each matches only its own Type
+    pm.add_parameter("shared_IF", initial_value=9e9, unit="Hz")
+    pm.add_parameter("q01.IF", initial_value=1e9, unit="Hz")
+    pm.add_parameter("q02.IF", initial_value=2e9, unit="V")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type("qubit2")
+    pm.add_type_parameter("qubit2", "IF", default=6e9, unit="V")
+    pm.lock_type_parameter("qubit", "IF", target="shared_IF")
+    pm.lock_type_parameter("qubit2", "IF", target="shared_IF")
+    received.clear()
+
+    pm.remove_parameter("shared_IF")
+
+    # one pm-lock-update per dropped Follower, then one pm-type-update per
+    # affected Type in registry order (qubit was created before qubit2)
+    assert [bp.action for bp in received] == [
+        PM_LOCK_UPDATE,
+        PM_LOCK_UPDATE,
+        PM_TYPE_UPDATE,
+        PM_TYPE_UPDATE,
+    ]
+    assert received[0].name == "parameter_manager.q01.IF"
+    assert received[1].name == "parameter_manager.q02.IF"
+    assert received[2].name == "parameter_manager.qubit"
+    assert received[3].name == "parameter_manager.qubit2"
+    for update in received[2:]:
+        assert isinstance(update.value, PMTypeBluePrint)
+        assert update.value.parameters["IF"]["target"] is None
+
+
+def test_removing_a_target_of_ordinary_and_type_locks_emits_both_cleanups(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    pm.add_parameter("q01Data.IF", initial_value=1e9, unit="Hz")
+    pm.lock("q01Data.IF", "_globals.qubit.IF")  # an ordinary Follower too
+    received.clear()
+
+    pm.remove_parameter("_globals.qubit.IF")
+
+    # three dropped Followers in tree order — q01Data is a Parameter Group
+    # created after the Instances and the Globals submodule, so its
+    # Follower comes last — then one pm-type-update
+    assert [bp.action for bp in received] == [
+        PM_LOCK_UPDATE,
+        PM_LOCK_UPDATE,
+        PM_LOCK_UPDATE,
+        PM_TYPE_UPDATE,
+    ]
+    assert received[0].name == "parameter_manager.q01.IF"
+    assert received[1].name == "parameter_manager.q02.IF"
+    assert received[2].name == "parameter_manager.q01Data.IF"
+    assert received[3].name == "parameter_manager.qubit"
+
+
+def test_remove_all_parameters_emits_the_type_lock_clearing(pm_with_sink):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    pm.remove_all_parameters()
+
+    # remove_all_parameters deletes the Followers before the Globals
+    # Target, so no pm-lock-update is left to emit when the Target goes;
+    # the Type Lock clearing itself still emits its pm-type-update
+    assert [bp.action for bp in received] == [PM_TYPE_UPDATE]
+    assert received[0].name == "parameter_manager.qubit"
+    assert received[0].value.parameters["IF"]["target"] is None
+
+
+def test_remove_type_emits_no_lock_update_and_leaves_everything_else(pm_with_sink):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    pm.remove_type("qubit")
+
+    # exactly one pm-type-update with None and no pm-lock-update: the
+    # Globals parameters and every Instance Lock stay
+    assert len(received) == 1
+    assert received[0].name == "parameter_manager.qubit"
+    assert received[0].action == PM_TYPE_UPDATE
+    assert received[0].value is None
+    assert pm.has_param("_globals.qubit.IF")
+    assert pm.list_locks() != {}
+
+
+def test_a_refused_parameter_removal_emits_nothing(pm_with_sink):
+    pm, received = pm_with_sink
+    put_qubit_instances(pm)
+    pm.lock_type_parameter("qubit", "IF")
+    received.clear()
+
+    with pytest.raises(KeyError):
+        pm.remove_parameter("q01.nope")
+    with pytest.raises(ValueError):
+        pm.remove_parameter("nope.IF")
+
+    assert received == []
+
+
+# ---------------------------------------------------------------------------
 # Type API and Broadcasts through a client proxy against a live Server
 # (plan task 2.5)
 #
@@ -3663,3 +4036,93 @@ def test_subclient_receives_the_type_lock_broadcasts_from_a_second_client(
     finally:
         second_cli.disconnect()
         _cleanup_proxy_lock_types(params)
+
+
+# ---------------------------------------------------------------------------
+# Deletion interplay through a client proxy against a live Server
+# (plan task 3.3)
+#
+# The Server registers itself as a Broadcast sink on the Parameter Manager
+# (task 0.3) and announces direct remove_parameter calls with a
+# parameter-deletion Broadcast, so removing a Globals Type Lock Target
+# over the wire reaches a SubClient as one pm-lock-update with None per
+# dropped Follower, the pm-type-update with the cleared Target, and the
+# parameter-deletion — in this order. The server-side Parameter Manager
+# is shared by all tests of this module, so every test removes the
+# parameters and Types it created again.
+# ---------------------------------------------------------------------------
+
+PROXY_DEL_TYPE = "ptd_qubit"
+PROXY_DEL_INSTANCES = ("ptd_q01", "ptd_q02")
+
+
+def _cleanup_proxy_deletion_types(params):
+    """Remove every parameter (the Globals Targets included) and the Type
+    the deletion-interplay proxy tests create, so the module's shared
+    server-side Parameter Manager starts each test clean."""
+    for path in list(params.list()):
+        top = path.split(".")[0]
+        if top.startswith("ptd_") or top == "_globals":
+            params.remove_parameter(path)
+    if PROXY_DEL_TYPE in params.list_types():
+        params.remove_type(PROXY_DEL_TYPE)
+
+
+def test_removing_a_globals_type_lock_target_over_the_wire(
+    param_manager, server_port, capture_broadcasts, wait_for_broadcasts
+):
+    cli, params = param_manager
+    _cleanup_proxy_deletion_types(params)
+    second_cli = Client(port=server_port)
+    try:
+        second_params = second_cli.find_or_create_instrument(
+            "parameter_manager", "instrumentserver.params.ParameterManager"
+        )
+        second_params.add_type(PROXY_DEL_TYPE)
+        second_params.add_type_parameter(PROXY_DEL_TYPE, "IF", default=5e9, unit="Hz")
+        for name in PROXY_DEL_INSTANCES:
+            second_params.add_instance(PROXY_DEL_TYPE, name)
+        second_params.lock_type_parameter(PROXY_DEL_TYPE, "IF")
+        params.update()
+
+        # the first client's Follower pulls the Globals Target's value
+        # while it exists (the Target is set through the server-side
+        # Parameter Group's set; the client proxy's own set is qcodes'
+        # local, deprecated one)
+        cli.call("parameter_manager.set", f"_globals.{PROXY_DEL_TYPE}.IF", 7e9)
+        assert getattr(params, PROXY_DEL_INSTANCES[0]).IF() == 7e9
+
+        with capture_broadcasts(["parameter_manager"], server_port + 1) as received:
+            second_params.remove_parameter(f"_globals.{PROXY_DEL_TYPE}.IF")
+            wait_for_broadcasts(received, n=4)
+
+            # one pm-lock-update with None per dropped Follower, then the
+            # pm-type-update with the cleared Target, then the Server's
+            # parameter-deletion for the removed parameter
+            assert [bp.action for bp in received] == [
+                PM_LOCK_UPDATE,
+                PM_LOCK_UPDATE,
+                PM_TYPE_UPDATE,
+                PARAMETER_DELETION,
+            ]
+            assert received[0].name == f"parameter_manager.{PROXY_DEL_INSTANCES[0]}.IF"
+            assert received[0].value is None
+            assert received[1].name == f"parameter_manager.{PROXY_DEL_INSTANCES[1]}.IF"
+            assert received[1].value is None
+            assert received[2].name == f"parameter_manager.{PROXY_DEL_TYPE}"
+            assert isinstance(received[2].value, PMTypeBluePrint)
+            assert received[2].value.parameters["IF"]["target"] is None
+            assert received[3].name == (
+                f"parameter_manager._globals.{PROXY_DEL_TYPE}.IF"
+            )
+
+        # the first client's proxy shows the Follower unlocked after
+        # update(): it answers get with its own value again and its Lock
+        # is gone, and get_type over the wire shows the cleared Target
+        params.update()
+        assert getattr(params, PROXY_DEL_INSTANCES[0]).IF() == 5e9
+        assert params.get_lock(f"{PROXY_DEL_INSTANCES[0]}.IF") is None
+        assert params.get_type(PROXY_DEL_TYPE).parameters["IF"]["target"] is None
+    finally:
+        second_cli.disconnect()
+        _cleanup_proxy_deletion_types(params)
