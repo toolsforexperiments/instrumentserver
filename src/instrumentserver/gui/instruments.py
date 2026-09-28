@@ -551,16 +551,16 @@ class ModelParameterManager(ModelParameters):
         # dropped
         self.setColumnCount(GUTTER_COLUMN + 1)
         self.setHorizontalHeaderLabels([self.attr, "unit", "", ""])
-        self._ensureGutterItems(self.invisibleRootItem())
+        self._ensure_gutter_items(self.invisibleRootItem())
 
-    def _ensureGutterItems(self, parent: QtGui.QStandardItem) -> None:
+    def _ensure_gutter_items(self, parent: QtGui.QStandardItem) -> None:
         """Give every row under ``parent`` its gutter item."""
         for row in range(parent.rowCount()):
             if parent.child(row, GUTTER_COLUMN) is None:
                 parent.setChild(row, GUTTER_COLUMN, QtGui.QStandardItem())
             item = parent.child(row, 0)
             if item is not None and item.hasChildren():
-                self._ensureGutterItems(item)
+                self._ensure_gutter_items(item)
 
     def insertItemTo(
         self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
@@ -1282,8 +1282,8 @@ class ParameterManagerGui(InstrumentParameters):
         self.parameterCreated.connect(self.addParam.clear)
         self.profileManager.indexChanged.connect(self.loadProfile)
         self.model.lockChanged.connect(self.state.apply_lock)
-        self.model.typeChanged.connect(self._onTypeChanged)
-        self.model.structureChanged.connect(self.applyTints)
+        self.model.typeChanged.connect(self._on_type_changed)
+        self.model.structureChanged.connect(self.apply_tints)
         self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
         self.shortcutManager.register("clear_add", self.addParam.clear, self)
         self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
@@ -1322,7 +1322,7 @@ class ParameterManagerGui(InstrumentParameters):
         self.instrument.refresh_profiles()
         self.profileManager.refresh()
         self.state.refresh(self.instrument)
-        self.applyTints()
+        self.apply_tints()
 
     def removeParameter(self, fullName: str) -> None:
         if self.instrument.has_param(fullName):
@@ -1353,20 +1353,20 @@ class ParameterManagerGui(InstrumentParameters):
         # Broadcasts for the parameters it (re)creates, so the state of the
         # Types and Locks must be re-read from the Parameter Manager
         self.state.refresh(self.instrument)
-        self.applyTints()
+        self.apply_tints()
 
     @QtCore.Slot(str, object)
-    def _onTypeChanged(
+    def _on_type_changed(
         self, name: str, type_blueprint: Optional[PMTypeBluePrint]
     ) -> None:
         """Record the change a ``pm-type-update`` Broadcast reports about
         the Type ``name`` in the state, then recompute the tints and gutter
         bands it may change."""
         self.state.apply_type(name, type_blueprint)
-        self.applyTints()
+        self.apply_tints()
 
     @QtCore.Slot()
-    def applyTints(self) -> None:
+    def apply_tints(self) -> None:
         """Recompute every row's Type claims and repaint the tints and
         gutter bands (plan task 5.2).
 
@@ -1376,16 +1376,16 @@ class ParameterManagerGui(InstrumentParameters):
         depends on which parameters exist.
         """
         self.typePalette.sync(self.state.types)
-        claims = compute_claims(self.state.types, self._modelParameters())
-        self._applyTintsToRows(self.model.invisibleRootItem(), claims)
+        claims = compute_claims(self.state.types, self._model_parameters())
+        self._apply_tints_to_rows(self.model.invisibleRootItem(), claims)
 
-    def _modelParameters(self) -> Dict[str, str]:
+    def _model_parameters(self) -> Dict[str, str]:
         """Every parameter row of the source model as ``{path: unit}``."""
         parameters: Dict[str, str] = {}
-        self._collectParameters(self.model.invisibleRootItem(), parameters)
+        self._collect_parameters(self.model.invisibleRootItem(), parameters)
         return parameters
 
-    def _collectParameters(
+    def _collect_parameters(
         self, parent: QtGui.QStandardItem, parameters: Dict[str, str]
     ) -> None:
         for row in range(parent.rowCount()):
@@ -1397,9 +1397,9 @@ class ParameterManagerGui(InstrumentParameters):
                 unitItem = parent.child(row, 1)
                 parameters[item.name] = "" if unitItem is None else unitItem.text()
             if item.hasChildren():
-                self._collectParameters(item, parameters)
+                self._collect_parameters(item, parameters)
 
-    def _applyTintsToRows(
+    def _apply_tints_to_rows(
         self, parent: QtGui.QStandardItem, claims: Dict[str, Claim]
     ) -> None:
         """Tint every row of ``parent`` that has a Claim with the Claiming
@@ -1435,7 +1435,7 @@ class ParameterManagerGui(InstrumentParameters):
                         rowItem.setData(None, QtCore.Qt.ItemDataRole.BackgroundRole)
                 gutterItem.setData([], GUTTER_ROLE)
             if item.hasChildren():
-                self._applyTintsToRows(item, claims)
+                self._apply_tints_to_rows(item, claims)
 
     @QtCore.Slot()
     def loadFromFile(self, loadFile: Optional[str] = None) -> None:

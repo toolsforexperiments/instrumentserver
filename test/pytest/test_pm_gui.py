@@ -37,9 +37,12 @@ from instrumentserver.blueprints import PMLockBluePrint, PMTypeBluePrint
 from instrumentserver.client.proxy import Client
 from instrumentserver.gui.base_instrument import InstrumentSortFilterProxyModel
 from instrumentserver.gui.instruments import (
+    GUTTER_COLUMN,
     GUTTER_ROLE,
+    GUTTER_WIDTH,
     TINT_COLOURS,
     Claim,
+    GutterDelegate,
     ItemParameters,
     ModelParameters,
     ParameterManagerGui,
@@ -661,7 +664,9 @@ def test_palette_keeps_the_slot_of_an_existing_type_across_updates():
 
 def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
     """The existing widget becomes tab 0 ("Parameters") of a QTabWidget;
-    tab 1 ("Types") is an empty placeholder for its own task."""
+    tab 1 ("Types") is an empty placeholder for its own task; the gutter
+    column is wired into the view: visual position 0, fixed width, its own
+    delegate reading the GUI's palette, tree branches on the name column."""
     gui = _make_gui(qtbot, pm, server_port)
     try:
         assert gui.tabs.count() == 2
@@ -673,6 +678,15 @@ def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
         types_tab = gui.tabs.widget(1)
         assert types_tab is gui.typesTab
         assert types_tab.findChildren(QtWidgets.QWidget) == []
+
+        header = gui.view.header()
+        assert header.visualIndex(GUTTER_COLUMN) == 0
+        assert header.sectionSize(GUTTER_COLUMN) == GUTTER_WIDTH
+        assert isinstance(
+            gui.view.itemDelegateForColumn(GUTTER_COLUMN), GutterDelegate
+        )
+        assert gui.view.gutterDelegate.typePalette is gui.typePalette
+        assert gui.view.treePosition() == 0
     finally:
         gui.model.stopListener()
 
@@ -690,6 +704,16 @@ def _row_items(gui, path):
     if parent is None:
         return [gui.model.item(item.row(), column) for column in range(4)]
     return [parent.child(item.row(), column) for column in range(4)]
+
+
+def _type_tint(gui, type_name):
+    """The (tint, tintAlt) pair of the Type's palette slot, or ``None``
+    while the GUI has not assigned the Type a slot."""
+    slot = gui.typePalette.slots.get(type_name)
+    if slot is None:
+        return None
+    entry = TINT_COLOURS[slot]
+    return (entry["tint"], entry["tintAlt"])
 
 
 def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_port):
@@ -712,24 +736,19 @@ def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_por
         second_pm.add_type("qubit")
         second_pm.add_type_parameter("qubit", "IF", unit="Hz")
 
-        def _tint(type_name):
-            slot = gui.typePalette.slots.get(type_name)
-            if slot is None:
-                return None
-            entry = TINT_COLOURS[slot]
-            return (entry["tint"], entry["tintAlt"])
-
         qtbot.waitUntil(
-            lambda: _tint("qubit") is not None
+            lambda: _type_tint(gui, "qubit") is not None
             and _row_items(gui, "q01.IF")[0].data(
                 QtCore.Qt.ItemDataRole.BackgroundRole
             )
-            in _tint("qubit"),
+            in _type_tint(gui, "qubit"),
             timeout=BROADCAST_TIMEOUT,
         )
-        tint = _tint("qubit")
+        tint = _type_tint(gui, "qubit")
         for path in ("q01", "q01.IF"):
-            for item in _row_items(gui, path)[:3]:  # name, unit, delegate
+            # every column of a claimed row carries the tint: name, unit,
+            # delegate and gutter
+            for item in _row_items(gui, path):
                 assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
         assert _row_items(gui, "q01.IF")[3].data(GUTTER_ROLE) == ["qubit"]
         # a wrong unit and an unrelated row carry no background
@@ -746,12 +765,10 @@ def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_por
             in tint,
             timeout=BROADCAST_TIMEOUT,
         )
-        assert (
-            _row_items(gui, "q01.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in tint
-        )
+        for item in _row_items(gui, "q01.readout.bw"):
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
+        for item in _row_items(gui, "q01.IF"):
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
 
         # emptying the Type takes the tint and the gutter band away again
         second_pm.remove_type_parameter("qubit", "IF")
@@ -804,11 +821,77 @@ def test_refresh_all_recomputes_tints_after_a_model_reload(
 
         gui.refreshAll()
         entry = TINT_COLOURS[gui.typePalette.slots["equbit"]]
-        for item in _row_items(gui, "eq01.IF")[:3]:
+        for item in _row_items(gui, "eq01.IF"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in (
                 entry["tint"],
                 entry["tintAlt"],
             )
         assert _row_items(gui, "eq01.IF")[3].data(GUTTER_ROLE) == ["equbit"]
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_deletion_broadcast_recomputes_the_tints(
+    qtbot, pm, second_client, server_port
+):
+    """A parameter-deletion Broadcast from a second Client removes the row
+    and recomputes the tints: the submodule that stops carrying the whole
+    set loses its Claim, so the surviving rows show no tint and no gutter
+    band. Deletion is safe live (the model's deletion branch touches no
+    Proxy blueprint); creation stays off-limits (TEST_AUDIT trap)."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
+    pm.add_parameter("q01.bw", initial_value=2.0, unit="Hz")
+    pm.update()  # the GUI's tree is built from the proxy's blueprint
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        # no creation side effect: q01 already carries IF and bw with the
+        # units the entries declare
+        second_pm.add_type("qubit")
+        second_pm.add_type_parameter("qubit", "IF", unit="Hz")
+        second_pm.add_type_parameter("qubit", "bw", unit="Hz")
+
+        qtbot.waitUntil(
+            lambda: _type_tint(gui, "qubit") is not None
+            and _row_items(gui, "q01.bw")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in _type_tint(gui, "qubit"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        tint = _type_tint(gui, "qubit")
+        for item in _row_items(gui, "q01.IF"):
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
+
+        # removing the parameter makes q01 stop matching, so the whole Type
+        # claim is gone: the row is removed and the survivors untint
+        second_pm.remove_parameter("q01.bw")
+
+        def _q01_bw_gone_and_q01_untinted():
+            matches = gui.model.findItems(
+                "q01.bw",
+                QtCore.Qt.MatchFlag.MatchExactly
+                | QtCore.Qt.MatchFlag.MatchRecursive,
+                0,
+            )
+            if matches:
+                return False
+            items = _row_items(gui, "q01.IF")
+            return (
+                all(
+                    item.data(QtCore.Qt.ItemDataRole.BackgroundRole) is None
+                    for item in items
+                )
+                and items[3].data(GUTTER_ROLE) == []
+            )
+
+        qtbot.waitUntil(
+            _q01_bw_gone_and_q01_untinted, timeout=BROADCAST_TIMEOUT
+        )
+        for item in _row_items(gui, "q01"):
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) is None
     finally:
         gui.model.stopListener()
