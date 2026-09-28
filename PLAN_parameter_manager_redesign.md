@@ -588,7 +588,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   (`unlock_type_parameter`). "Lock selection to…" button arms for the tree's current row.
   Tests: `test_pm_gui.py` — panel rows reflect `list_locks`; remove from panel removes on
   server; live update when a second client locks.
-- [ ] **5.5 Types tab.** Three panes per the Design reference: type list (name, #instances,
+- [x] **5.5 Types tab.** Three panes per the Design reference: type list (name, #instances,
   #params; New type strip → `add_type`); entries of the selected Type as a tree (own entries
   editable default → `set_type_parameter_default`, Remove → `remove_type_parameter`, Type
   Lock toggle → `lock_type_parameter`/`unlock_type_parameter`, re-target via arm; entries

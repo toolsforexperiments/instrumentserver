@@ -887,3 +887,55 @@ The Parameters tab now holds `gui.view` and a new `LocksPanel` side by side in a
 ### Process notes
 - The coder sat idle for about 15 minutes after its read pass, and one nudge got it going, the same pattern as in 2.3 and 5.3.
 - Two permission requests were rejected. The coder's `rm -rf orchestration/5.4` would have deleted the orchestrator's files (the 2.4 coder tried the same), so it deleted its own logs by name instead. plan-checker-qwen asked to access opencode's temp directory under `/var/folders`, outside the repo.
+
+## 5.5 Types tab — 2026-09-28
+
+The "Types" tab (`self.typesTab`) now holds a `TypesPane` (`self.typesPane`). It is a horizontal `QSplitter` with three panes: the type list (`typeList`: name, number of Instances, number of effective parameters, tinted from `gui.typePalette`); the entries of the selected Type as a tree (`entriesView`); and its Instances (`instancesView`). Each pane has its own strip and note line. The pane only emits camelCase signals, and `ParameterManagerGui` slots (`_on_pane_*`, `arm_type_lock`) make the Server calls. The rows come from new pure functions: `type_entry_rows` (returning `EntryRow`s), `instances_of_type`, `also_types` and `parse_default_text`. The task also fixed the pre-existing crash in `ModelParameters.updateParameter`'s `parameter-creation` branch, which Marcos approved as an exception to plan rule 6 (see Questions to Marcos). `test_pm_gui.py` grew from 53 to 71 tests.
+
+### Commit by commit
+- `7c92542` The creation-branch fix, `TypesPane`, the pure functions, the Type Lock re-target and 17 tests. The orchestrator's coder spec set twelve readings. The main ones:
+  - Reading 0, the creation fix. The branch now resolves the element first. On `AttributeError` it calls `self.instrument.update()` (only if the instrument has `update`, that is, a Proxy Instrument) and resolves again. If that also fails, it logs at debug level and adds no row. Before the fix, `update()` ran only when the path was missing from `self.instrument.list()`. That is a remote call, and it already contained the new parameter, so the stale Proxy was never refreshed. The `TEST_AUDIT.md` row "Parameter Manager GUI — live creation from another client" became `fixed`. The module docstring no longer describes the creation trap. reviewer-glm and reviewer-qwen checked the fix against `client/proxy.py` and `helpers.py`.
+  - The pane widgets are named attributes, and every string comes from the mock with "source" changed to "target" and "include" changed to "nested type". Own entries get an editable default, whose text goes through `ast.literal_eval` and falls back to the raw string, plus Remove and a Type Lock toggle. The toggle calls `lock_type_parameter` with the Globals default, or `unlock_type_parameter`. While an entry is locked it also shows a re-target button and the relative Target. Nested entries are read-only and show "defined by <type>". Nested submodule rows show `type: <t>`, and a Remove button for the selected Type's own Nested Types.
+  - The re-target goes through the arm strip. `arm_type_lock` sets `armed_type_lock`, switches to the Parameters tab and arms the strip with "Target for type <type> · <path>". The candidates are ranked by `rank_lock_targets` with a new optional `arm_rel`. On a pick, `pick_lock_target` calls `lock_type_parameter(type, path, target=picked)`. `arm_lock` and `cancel_arm` clear both kinds of arm. Skipped Locks from either the toggle or the re-target show as `skipped: …` on `entriesNote`.
+  - `refresh_types_pane` runs at the end of `apply_tints`. So `refreshAll`, `loadProfile`, `typeChanged` and `structureChanged` all rebuild the panes. The panes also rebuild after every pane action, and the selected Type is kept across rebuilds.
+
+  The coder's own choices:
+  - It extracted `_instance_candidates` from `compute_claims` so the new matching could share it; the behaviour of `compute_claims` is unchanged.
+  - `type_entry_rows` has a third argument, `instrument_name=""`, used to make stored Targets relative.
+  - `requestedType` carries a just-added Type across the gap before its `pm-type-update` Broadcast arrives.
+  - A `_building` guard keeps the selection slot quiet during a rebuild.
+  - The entries pane calls `deleteLater` on its index widgets before `removeRows`. The instances pane does not (see Dropped findings).
+
+  The tests:
+  - Seven no-server tests of `type_entry_rows` (the segment-sorted tree, deeper Nested Types, an unknown Type), `instances_of_type`, `also_types`, `parse_default_text` and `rank_lock_targets` with a Type Lock arm.
+  - Four live regression tests for reading 0: a second Client's parameter under an existing submodule and in a new submodule, a second Client's `add_instance` (rows, widgets and tint), and the GUI's own Proxy calling `add_instance`.
+  - Six live Types-tab tests. `test_the_types_tab_creates_a_type_and_an_instance` is the plan's named test. It creates Type `qubit`, entry `IF` and Instance `q10` through the widgets, checks `get_type` and `pm.q10.IF` on the Server and the tint on the `q10.IF` tree row, and then shows that a second Client's entry `bw` appears in the pane and as `q10.bw`. The others are `…_edits_entries_and_nested_types`, `…_type_locks_toggle_and_retarget` (the Globals-default Type Lock, now testable live), `…_names_skipped_locks_on_the_note`, `…_show_button_and_also_types` and `…_shows_server_errors_and_empty_names`.
+
+  Orchestrator run: ruff clean, 80 in the three named GUI files, 536 in the full suite.
+- `edceebc` Fix from round 0, five items:
+  - The named test now inlines the widget steps and asserts the type list's counts: parameters `1`, then `2` after the second Client's `bw`; Instances `0`, then `1` after `q10`. Nothing had asserted those columns before. Both test reviewers raised it (should-fix).
+  - The Type Lock re-target failure path: `pick_lock_target("no.such.path")` shows the Server's text on the strip, which stays armed with `armed_type_lock == ("qubit", "IF")`, and the entry's Target is unchanged. test-reviewer-glm raised it as should-fix and test-reviewer-qwen as a nit.
+  - The nested strip's "Submodule must not be empty." guard, which had no test (test-reviewer-qwen, should-fix).
+  - New `test_instances_of_type_with_a_nested_type`: the Instance matches only when the nested entry is present with the right unit. There is also a truly empty Type in the registry. Before, the empty-Type check passed an unknown name and so tested a different branch. test-reviewer-qwen raised it as should-fix and test-reviewer-glm as a nit.
+  - `TypesPane._request_add_entry` now strips the unit text. D12 compares units exactly, so a trailing space would silently leave the Type with no Instances. The edit test types `"Hz "` and checks that the Server stores `"Hz"`. reviewer-qwen called it a nit. The orchestrator kept it because it is a silent matching failure and a one-line fix.
+
+  All six approved in re-review with no new findings. Orchestrator run: ruff clean, 81 in the three named GUI files, 537 in the full suite.
+
+### Dropped findings
+- reviewer-qwen said (should-fix) that the instances pane's Show buttons pile up, because `_rebuild_instances` removes rows without deleting their index widgets. reviewer-glm's probe said Qt deletes them. The orchestrator ran its own probe: once deferred deletes are flushed, no widgets pile up. reviewer-qwen's probe had only called `processEvents`. Not sent. In round 1, reviewer-qwen agreed after a probe with a real event loop. Its matching note about the 5.4 `LocksPanel` fell with it. The entries pane's `deleteLater` is therefore redundant but harmless.
+- Not sent: the creation branch's "cannot resolve → no row" guard is untested, and several one-line cell checks are missing: the unit column, the Target label, the Return commit, and `.locked` after toggle-off (test-reviewer-glm N2, N3).
+- Also not sent: the nested-Type combo offers Types that would form a cycle, and the Server's refusal shows instead (plan-checker-qwen). The word "source" in `arm_type_lock`'s docstring means Qt's source model (plan-checker-qwen). Width comments quote the mock's numbers (plan-checker-glm).
+
+### Questions to Marcos
+- The named test needs parameters created while the GUI is open, which hits the 5.1 crash logged in `TEST_AUDIT.md`. The orchestrator's probe showed that every creation shape failed and that a forced `update()` fixed them all. Should 5.5 fix it as an exception to plan rule 6? → "fix it in 5.5".
+
+### Loose ends
+- The entries note is not cleared after a clean re-target, so a stale error or `skipped:` line can stay (reviewer-glm, reviewer-qwen). With no Type selected, the strips silently do nothing, and the labels read "parameters of " (reviewer-glm). All three are logged in `decisions.md` for 5.6 polish, next to 5.4's stale-note loose end.
+- `test_a_deletion_broadcast_recomputes_the_tints` still has a stale docstring saying creation "stays off-limits" (test-reviewer-qwen).
+- 5.2's loose end about stale units after `set_type_parameter_unit` is still open. The Types tab has no unit editor, so the GUI cannot reach it yet.
+- A stray untracked profile, `parameter_manager-parameter_manager.json`, sat in the repo root: parameters `hello.salud`/`salud`, unit `q`, a Lock, apparently from a manual GUI run. Every `ParameterManager` built in the repo root loads it, which made `test_pm_locks.py` fail (2 failures). The coder asked whether to delete it. The orchestrator said no, because it is Marcos's data, and kept it moved aside at `orchestration/5.5/stray-parameter_manager-parameter_manager.json` (git-ignored). It is flagged for Marcos: a profile file in the repo root breaks the suite.
+
+### Process notes
+- The coder sat idle after its read pass, and one nudge got it going, the same pattern as in 5.3 and 5.4.
+- The coder moved the stray profile out of the repo root first and asked about it afterwards. The orchestrator had allowed the move because it could be undone.
+- Three permission requests were rejected: test-reviewer-qwen (twice) and plan-checker-glm asked to access opencode's temp directory under `/var/folders`, outside the repo.
