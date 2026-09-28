@@ -45,6 +45,7 @@ from instrumentserver.gui.instruments import (
     GUTTER_ROLE,
     GUTTER_WIDTH,
     LOCK_COLUMN,
+    LOCK_COLUMN_WIDTH,
     TINT_COLOURS,
     Claim,
     GutterDelegate,
@@ -698,6 +699,13 @@ def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
         )
         assert gui.view.gutterDelegate.typePalette is gui.typePalette
         assert gui.view.treePosition() == 0
+        # the Lock column sits between the unit and the delegate column
+        # (visual order: gutter, name, unit, locked to, delegate), with a
+        # resizable default width and its header label
+        assert header.visualIndex(LOCK_COLUMN) == 3
+        assert header.visualIndex(2) == 4
+        assert header.sectionSize(LOCK_COLUMN) == LOCK_COLUMN_WIDTH
+        assert gui.model.horizontalHeaderItem(LOCK_COLUMN).text() == "locked to"
     finally:
         gui.model.stopListener()
 
@@ -1034,11 +1042,22 @@ def test_lock_arm_strip_picks_cancels_and_shows_errors(qtbot):
     qtbot.keyClick(strip.lineEdit, QtCore.Qt.Key.Key_Return)
     assert picked == ["q02.IF"]
 
-    # a text that is no path picks the first ranked candidate
+    # the completer popup's pick path (the activated signal) emits too
+    strip.arm("q01.IF", ["q02.IF", "q03.IF"])
+    strip.completer.activated[str].emit("q03.IF")
+    assert picked == ["q02.IF", "q03.IF"]
+
+    # a text that matches no candidate picks nothing (no unrelated Target)
     strip.arm("q01.IF", ["q02.IF", "q03.IF"])
     strip.lineEdit.setText("garbage")
     qtbot.keyClick(strip.lineEdit, QtCore.Qt.Key.Key_Return)
-    assert picked == ["q02.IF", "q02.IF"]
+    assert picked == ["q02.IF", "q03.IF"]
+
+    # a partial text that matches picks the first filtered completion
+    strip.arm("q01.IF", ["q02.IF", "q03.IF"])
+    strip.lineEdit.setText("q03")
+    qtbot.keyClick(strip.lineEdit, QtCore.Qt.Key.Key_Return)
+    assert picked == ["q02.IF", "q03.IF", "q03.IF"]
 
     # the error label shows the Server's text until the next disarm
     strip.show_error("cycle: cannot lock q02.IF to q01.IF")
@@ -1163,6 +1182,13 @@ def test_arm_via_context_menu_pick_a_row_and_toggle(
         assert button.property("locked") is True
         assert not follower_widget.paramWidget.isEnabled()
 
+        # locking repaints the Follower's value: while locked it answers
+        # get with the Target's value (D3)
+        qtbot.waitUntil(
+            lambda: follower_widget._getMethod() == 2.0,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
         # toggle with the lock button: unlock first …
         button.click()
         qtbot.waitUntil(
@@ -1176,6 +1202,12 @@ def test_arm_via_context_menu_pick_a_row_and_toggle(
         assert button.property("locked") is False
         assert follower_widget.paramWidget.isEnabled()
 
+        # unlocking exposes the Follower's own value again (D3, D5)
+        qtbot.waitUntil(
+            lambda: follower_widget._getMethod() == 1.0,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
         # … and lock again to the remembered Target
         button.click()
         qtbot.waitUntil(
@@ -1187,6 +1219,10 @@ def test_arm_via_context_menu_pick_a_row_and_toggle(
             timeout=BROADCAST_TIMEOUT,
         )
         assert button.property("locked") is True
+        qtbot.waitUntil(
+            lambda: follower_widget._getMethod() == 2.0,
+            timeout=BROADCAST_TIMEOUT,
+        )
 
         # the context menu's Unlock unlocks on the Server
         gui.view.lastSelectedItem = _row_items(gui, "q01.IF")[0]
@@ -1233,9 +1269,19 @@ def test_a_cycle_attempt_shows_the_error_and_stays_armed(
         assert gui.armed_follower == "q02.IF"
         assert pm.get_lock("q02.IF") is None
 
-        # Escape disarms the pick
+        # Escape over the tree disarms the pick too (the view's Escape
+        # shortcut calls cancel_arm)
         gui.show()
         qtbot.waitExposed(gui)
+        gui.view.setFocus()
+        qtbot.wait(20)
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_Escape)
+        assert gui.armStrip.isHidden()
+        assert gui.armed_follower is None
+
+        # re-arm: Escape in the strip's line edit disarms as well
+        gui.arm_lock("q02.IF")
+        assert gui.armed_follower == "q02.IF"
         gui.armStrip.activateWindow()
         gui.armStrip.lineEdit.setFocus()
         qtbot.wait(20)
@@ -1313,6 +1359,51 @@ def test_a_second_clients_lock_shows_in_the_column_and_button(
         gui.model.stopListener()
 
 
+def test_the_context_menu_lock_actions_enable_by_the_lock_state(
+    qtbot, pm, second_client, server_port
+):
+    """The aboutToShow rule: "Lock to…" is enabled for every parameter
+    row, "Unlock" only while that row's Lock in the state is locked, and
+    both are disabled on a submodule row."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.lock("q03.IF", "q02.IF")
+        qtbot.waitUntil(
+            lambda: _lock_item(gui, "q03.IF").text() == "locked to q02.IF",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # (a) a parameter row with a locked Lock: both enabled
+        gui.view.lastSelectedItem = _row_items(gui, "q03.IF")[0]
+        gui.view.contextMenu.aboutToShow.emit()
+        assert gui.view.lockToAction.isEnabled()
+        assert gui.view.unlockAction.isEnabled()
+
+        # (b) the same row after the second Client unlocks: only "Lock
+        # to…" stays enabled
+        second_pm.unlock("q03.IF")
+        qtbot.waitUntil(
+            lambda: _lock_item(gui, "q03.IF").text() == "unlocked · q02.IF",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.view.contextMenu.aboutToShow.emit()
+        assert gui.view.lockToAction.isEnabled()
+        assert not gui.view.unlockAction.isEnabled()
+
+        # (c) a submodule row: both disabled
+        gui.view.lastSelectedItem = _row_items(gui, "q03")[0]
+        gui.view.contextMenu.aboutToShow.emit()
+        assert not gui.view.lockToAction.isEnabled()
+        assert not gui.view.unlockAction.isEnabled()
+    finally:
+        gui.model.stopListener()
+
+
 def test_refresh_all_shows_a_lock_made_while_the_listener_was_stopped(
     qtbot, pm, second_client, server_port
 ):
@@ -1333,6 +1424,54 @@ def test_refresh_all_shows_a_lock_made_while_the_listener_was_stopped(
         widget = gui.view.delegate.parameters["q03.IF"]
         assert not widget.lockButton.isHidden()
         assert widget.lockButton.property("locked") is True
+        assert not widget.paramWidget.isEnabled()
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_filter_cycle_re_applies_the_lock_state(
+    qtbot, pm, second_client, server_port
+):
+    """A filter cycle re-opens the hidden rows' persistent editors as
+    fresh ParameterWidgets; apply_locks runs on filterFinished, so a
+    locked Follower comes back with its lock button and read-only input."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.lock("q01.IF", "q02.IF")
+        qtbot.waitUntil(
+            lambda: _lock_item(gui, "q01.IF").text() == "locked to q02.IF",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        def _q01_if_is_mapped(mapped: bool):
+            matches = gui.model.findItems(
+                "q01.IF",
+                QtCore.Qt.MatchFlag.MatchExactly
+                | QtCore.Qt.MatchFlag.MatchRecursive,
+                0,
+            )
+            proxy_index = gui.proxyModel.mapFromSource(
+                gui.model.indexFromItem(matches[0])
+            )
+            return proxy_index.isValid() is mapped
+
+        # the filter hides the q01.IF row …
+        gui.lineEdit.setText("other")
+        qtbot.waitUntil(lambda: _q01_if_is_mapped(False), timeout=BROADCAST_TIMEOUT)
+
+        # … and clearing it brings the row back with its Lock state
+        gui.lineEdit.setText("")
+        widget = gui.view.delegate.parameters["q01.IF"]
+        qtbot.waitUntil(
+            lambda: widget.lockButton.property("locked") is True
+            and not widget.lockButton.isHidden(),
+            timeout=BROADCAST_TIMEOUT,
+        )
         assert not widget.paramWidget.isEnabled()
     finally:
         gui.model.stopListener()

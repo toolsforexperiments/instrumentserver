@@ -1258,19 +1258,25 @@ class LockArmStrip(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def _on_return_pressed(self) -> None:
-        """Pick the exact typed path, or the first ranked candidate when
-        the typed text is not a path itself (the mock's Enter picks the
-        first match)."""
+        """Pick the exact typed path, or the first completion the
+        completer filters for the typed text (the mock's Enter picks the
+        first match); a text that matches no candidate picks nothing."""
         text = self.lineEdit.text().strip()
         if not text:
             return
-        candidates = self.completerModel.stringList()
-        if text in candidates:
+        if text in self.completerModel.stringList():
             self.targetPicked.emit(text)
-        elif candidates:
-            self.targetPicked.emit(candidates[0])
-        else:
-            self.targetPicked.emit(text)
+            return
+        # the completer's filtered matches for what was typed, in ranked
+        # order; its filter mode (MatchContains) and case sensitivity apply
+        self.completer.setCompletionPrefix(text)
+        if self.completer.completionCount() > 0:
+            first = self.completer.completionModel().index(0, 0)
+            self.targetPicked.emit(
+                self.completer.completionModel().data(
+                    first, QtCore.Qt.ItemDataRole.DisplayRole
+                )
+            )
 
     def arm(self, follower: str, candidates: List[str]) -> None:
         """Arm the strip for the Follower at ``follower``: name it in the
@@ -1327,7 +1333,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
         element = item.element  # type: ignore[attr-defined]
         rw = self.makeRemoveWidget(item.name, widget)  # type: ignore[attr-defined]
-        lw = self.makeLockWidget(item.name, widget)
+        lw = self.make_lock_widget(item.name, widget)
 
         ret = ParameterWidget(
             parameter=element, parent=widget, additionalWidgets=[lw, rw]
@@ -1348,7 +1354,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
         return ret
 
-    def makeLockWidget(
+    def make_lock_widget(
         self, fullName: str, widget: QtWidgets.QWidget
     ) -> QtWidgets.QPushButton:
         """The per-row lock button. It stays hidden until the row carries a
@@ -1437,15 +1443,15 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         # before the menu opens); the Parameter Manager GUI enables and
         # disables them in its aboutToShow slot
         self.lockToAction = QtWidgets.QAction("Lock to…")
-        self.lockToAction.triggered.connect(self.onLockToActionTrigger)
+        self.lockToAction.triggered.connect(self._on_lock_to_action_trigger)
         self.unlockAction = QtWidgets.QAction("Unlock")
-        self.unlockAction.triggered.connect(self.onUnlockActionTrigger)
+        self.unlockAction.triggered.connect(self._on_unlock_action_trigger)
         self.contextMenu.addSeparator()
         self.contextMenu.addAction(self.lockToAction)
         self.contextMenu.addAction(self.unlockAction)
 
     @QtCore.Slot()
-    def onLockToActionTrigger(self) -> None:
+    def _on_lock_to_action_trigger(self) -> None:
         """The context menu's "Lock to…": arm the target picker for the
         row's parameter; a submodule row has no Lock to arm."""
         item = self.lastSelectedItem
@@ -1453,7 +1459,7 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
             self.lockToRequested.emit(item.name)
 
     @QtCore.Slot()
-    def onUnlockActionTrigger(self) -> None:
+    def _on_unlock_action_trigger(self) -> None:
         """The context menu's "Unlock": unlock the row's Lock; a submodule
         row has no Lock to unlock."""
         item = self.lastSelectedItem
@@ -1650,6 +1656,12 @@ class ParameterManagerGui(InstrumentParameters):
         self.model.structureChanged.connect(self.apply_tints)
         self.model.structureChanged.connect(self.apply_locks)
         self.model.itemNewValue.connect(self._on_item_new_value)
+        # the filter (and the trash toggle) hides rows; when they come
+        # back, restoreCollapsedDict has re-opened their persistent
+        # editors, so createEditor has built fresh ParameterWidgets whose
+        # lock button is hidden and whose input is editable — re-apply the
+        # Lock state to them
+        self.proxyModel.filterFinished.connect(self.apply_locks)
         self.view.lockToRequested.connect(self.arm_lock)
         self.view.unlockRequested.connect(self._unlock)
         self.view.contextMenu.aboutToShow.connect(self._update_lock_actions)
