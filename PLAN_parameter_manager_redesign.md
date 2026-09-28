@@ -600,13 +600,14 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   `lock_type_parameter` shown in the pane's note line. Live update on `typeChanged`. Tests:
   `test_pm_gui.py` — create a Type and an Instance through the widgets; server state
   matches; second-client edits appear.
-- [ ] **5.6 Delete-Target confirmation and polish.** Deleting a parameter (row delete button
+- [x] **5.6 Delete-Target confirmation and polish.** Deleting a parameter (row delete button
   or shortcut) that has Followers pops a `QMessageBox` listing the Locks that will be removed
   (from `followers_of`) with OK/Cancel. Verify `resource.qrc` has `lock`/`unlock`; add
   shortcuts to `gui/shortcuts.py` for the new actions following its conventions; run
   `instrumentserver-param-manager` against a server on a non-default port and confirm live
   updates end to end (manual check, note the result under this task). Tests:
   `test_pm_gui.py` — the confirmation appears and Cancel leaves the server untouched.
+  Result (2026-09-28): the end-to-end check was run as a script equivalent to `instrumentserver-param-manager` against an in-process Server on a free non-default port: PASS 5/5 (listener probe, tree row appears, value widget repaints, Lock column and button update, tint appears). See `HISTORY_parameter_manager_redesign.md`, section 5.6.
 
 ### Phase 6 — Documentation
 

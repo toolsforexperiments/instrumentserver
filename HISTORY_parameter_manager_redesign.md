@@ -939,3 +939,49 @@ The "Types" tab (`self.typesTab`) now holds a `TypesPane` (`self.typesPane`). It
 - The coder sat idle after its read pass, and one nudge got it going, the same pattern as in 5.3 and 5.4.
 - The coder moved the stray profile out of the repo root first and asked about it afterwards. The orchestrator had allowed the move because it could be undone.
 - Three permission requests were rejected: test-reviewer-qwen (twice) and plan-checker-glm asked to access opencode's temp directory under `/var/folders`, outside the repo.
+
+## 5.6 Delete-Target confirmation and polish — 2026-09-28
+
+`ParameterManagerGui.removeParameter`, where both the row's delete button and the `delete_item` shortcut end up, now asks the Server for `followers_of(fullName)`. When the parameter has Followers, it shows a `QMessageBox` (`self.removalDialog`, object name `removalDialog`, title "Remove Target?") with the text "Removing <path> also removes the Locks of:" and one `<follower> (locked|unlocked)` line per Follower. The box has Ok and Cancel, Cancel is the default, and Cancel returns without calling the Server. Three REGISTRY entries were added to `gui/shortcuts.py`: `lock_to` (Ctrl+L, `_lock_current_item`), `unlock_item` (Ctrl+U, `_unlock_current_item`) and `show_types` (Ctrl+Shift+Y, `_toggle_tabs`). The task also closed the polish loose ends that 5.3–5.5 had logged for it. `resource.qrc` already listed `lock.svg`/`unlock.svg`, so it was not changed. This task closes Phase 5.
+
+### Commit by commit
+- `f4923e3` The confirmation, the shortcuts, the polish and five new tests. The orchestrator's coder spec set seven readings. The main ones:
+  - If the `followers_of` call raises, the Followers are computed on the client instead, from `self.state.locks` (locked and unlocked alike, with Targets compared through `relative_path`). The locked/unlocked label on each line comes from the state.
+  - The shortcuts are appended after `toggle_locks`, so `jump_filter` stays the first key. `register_tooltip` puts the key in the tooltips of `view.lockToAction` and `view.unlockAction`. Ctrl+L and Ctrl+U do nothing on a submodule row or when nothing is selected, and Ctrl+U also does nothing unless the Lock is locked. None of the three keys collides with a REGISTRY entry or a hard-coded `QShortcut`.
+  - Polish:
+    - (a) `ModelParameterManager.updateParameter` now emits `structureChanged` when a `parameter-update` adds a row the model did not know. It compares the new `_has_row` before and after, so the new row gets its tint and gutter band right away.
+    - (b) A successful "Lock selection to…" resets `locksPanel`'s note, and a Type Lock re-target that skips nothing resets `typesPane`'s entries note.
+    - (c) With no Type selected, the three Types-tab strips are disabled and the labels read "parameters"/"instances".
+    - (d) Four stale docstrings were fixed: `LockArmStrip`, the arm-strip test, `LocksPanel`, and `test_a_deletion_broadcast_recomputes_the_tints`.
+
+  The tests:
+  - `test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched`, the plan's named test. It cancels on both delete paths and checks that `has_param`, `get_lock` and the state are unchanged after a wait. The Ok path then drops the Target, the Lock and the Lock column. A parameter without Followers is removed with no dialog.
+  - `test_the_lock_shortcuts_are_in_the_registry` and `test_the_lock_shortcuts_arm_unlock_and_switch_tabs`, which uses real `qtbot.keyClick`s.
+  - `test_lock_and_unlock_icons_ship_in_the_resources`, which runs without a server.
+  - `test_a_parameter_update_for_an_unknown_row_recomputes_the_tints`.
+  - One-line assertions for (b) and (c) in existing tests.
+
+  The plan's manual end-to-end check was done as a script instead, because no worker can run a GUI by hand (see Loose ends). The scratch script `orchestration/5.6/e2e_param_manager.py` started an in-process Server on a free non-default port and built the GUI with the same wiring as `apps.parameterManagerScript`. A second Client then made changes, and all five checks passed ("e2e PASS 5/5"): the broadcast-listener probe, the tree row appearing, the value widget repainting, the Lock column and lock button updating, and the tint appearing. The script was deleted afterwards. Orchestrator run: ruff clean, 103 in the four named GUI files, 542 in the full suite.
+- `e32078a` Fix from round 0, four items:
+  - New `test_removing_a_target_falls_back_to_the_client_side_followers`. It monkeypatches the Proxy Instrument's `followers_of` to raise, and checks that the dialog still names `q01.IF (locked)` and that Cancel leaves the Server untouched. test-reviewer-glm raised it as should-fix and test-reviewer-qwen as a nit.
+  - The named test gains a second Follower, `q03.IF`, whose Lock is unlocked. It asserts `q03.IF (unlocked)` and that Cancel is the default button. test-reviewer-qwen raised it as should-fix and test-reviewer-glm as a nit. test-reviewer-qwen's round-1 probe confirmed that under PyQt5 `defaultButton()` returns the widget, so the identity check is valid.
+  - `removalDialog` goes back to `None` once `exec()` returns, on both paths, as its docstring says. reviewer-glm, reviewer-qwen and plan-checker-qwen all raised it as a nit. The orchestrator sent it because the code stated something false.
+  - The `known_row`/`added_row` guard now treats `PARAMETER_CALL` like `PARAMETER_UPDATE`, since the base branch adds a row for both. The `structureChanged` docstring now names both cases, and the polish test also drives a `parameter-call` for `q03.IF`. Both general reviewers raised it as a nit. Reading 5(a) had named only `parameter-update`, and plan-checker-qwen noted the same gap as out of scope.
+
+  All six approved in re-review. The round-1 fix list is empty. Orchestrator run: ruff clean, 104 in the four named GUI files, 543 in the full suite.
+
+### Dropped findings
+- Not sent (test-reviewer-glm F3): Ctrl+L with no current row at all is untested (only the submodule-row no-op is), and the key hints in the two actions' tooltips are not asserted.
+- Not sent (test-reviewer-qwen F3): the second Ctrl+U press, the one on an already-unlocked Follower, does not set the current row again first, so it might pass without testing anything. test-reviewer-glm noted that it could not fail anyway, because the Server's `unlock` of an unlocked Lock is a no-op.
+- Round-1 nit (test-reviewer-qwen): the GUI test does not assert that `q03.IF`'s unlocked Lock is dropped on Ok. The 3.3 deletion-interplay tests cover that at the API layer.
+
+### Questions to Marcos
+- The coder asked (through the orchestrator) what to do because macOS ignores `QMessageBox.setWindowTitle`, so asserting the title would fail there. → Answered by the orchestrator, not Marcos: keep the `setWindowTitle` call, and have the tests check the object name `removalDialog`, the text and the standard buttons instead.
+
+### Loose ends
+- Flagged for Marcos: the plan asked for a manual end-to-end check, and a script stood in for it. A by-hand run is still worth doing once: `instrumentserver --port 5600`, then `instrumentserver-param-manager --port 5600`, and a second Client changing a value. The plan asks for the result to be noted under the task. It is recorded in `orchestration/5.6/decisions.md`, but it was not yet in the plan at `e32078a`, where the task still reads `[~]`.
+- Still open from earlier tasks: 5.2's stale units after `set_type_parameter_unit`, and 5.4's text lost from a panel editor on rebuild.
+
+### Process notes
+- The coder's first named-test run hung, because a modal dialog blocked pytest before the `QTimer`-driven canceler was in place. The coder profiled its own pytest with `sample` and killed it by pid.
+- The orchestrator deleted run logs the coder had left behind.
