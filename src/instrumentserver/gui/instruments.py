@@ -1,7 +1,18 @@
 import inspect
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 from qcodes import Instrument
 
@@ -548,19 +559,21 @@ class ModelParameterManager(ModelParameters):
         super().__init__(*args, **kwargs)
         # ModelParameters pins the column count at 3 after loading; widen it
         # again and give every loaded row the gutter item the narrow count
-        # dropped
-        self.setColumnCount(GUTTER_COLUMN + 1)
-        self.setHorizontalHeaderLabels([self.attr, "unit", "", ""])
-        self._ensure_gutter_items(self.invisibleRootItem())
+        # dropped, and the Lock column item (plan task 5.3)
+        self.setColumnCount(LOCK_COLUMN + 1)
+        self.setHorizontalHeaderLabels([self.attr, "unit", "", "", "locked to"])
+        self._ensure_extra_items(self.invisibleRootItem())
 
-    def _ensure_gutter_items(self, parent: QtGui.QStandardItem) -> None:
-        """Give every row under ``parent`` its gutter item."""
+    def _ensure_extra_items(self, parent: QtGui.QStandardItem) -> None:
+        """Give every row under ``parent`` its gutter item and its Lock
+        column item."""
         for row in range(parent.rowCount()):
-            if parent.child(row, GUTTER_COLUMN) is None:
-                parent.setChild(row, GUTTER_COLUMN, QtGui.QStandardItem())
+            for column in (GUTTER_COLUMN, LOCK_COLUMN):
+                if parent.child(row, column) is None:
+                    parent.setChild(row, column, QtGui.QStandardItem())
             item = parent.child(row, 0)
             if item is not None and item.hasChildren():
-                self._ensure_gutter_items(item)
+                self._ensure_extra_items(item)
 
     def insertItemTo(
         self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
@@ -573,6 +586,7 @@ class ModelParameterManager(ModelParameters):
             unitItem = QtGui.QStandardItem(unit)
             extraItem = QtGui.QStandardItem()
             gutterItem = QtGui.QStandardItem()
+            lockItem = QtGui.QStandardItem()
 
             if parent == self:
                 rowCount = self.rowCount()
@@ -580,8 +594,9 @@ class ModelParameterManager(ModelParameters):
                 self.setItem(rowCount, 1, unitItem)
                 self.setItem(rowCount, 2, extraItem)
                 self.setItem(rowCount, GUTTER_COLUMN, gutterItem)
+                self.setItem(rowCount, LOCK_COLUMN, lockItem)
             else:
-                parent.appendRow([item, unitItem, extraItem, gutterItem])
+                parent.appendRow([item, unitItem, extraItem, gutterItem, lockItem])
 
             self.newItem.emit(item)
 
@@ -1034,10 +1049,270 @@ class GutterDelegate(QtWidgets.QStyledItemDelegate):
 # ----------------- Parameter Manager tints - Ending -----------------------------------
 
 
+# ----------------- Parameter Manager Locks - Beginning --------------------------------
+
+
+#: Logical index of the Lock column of :class:`ModelParameterManager`
+#: (plan task 5.3). The existing columns keep their indexes: name (0),
+#: unit (1), delegate (2), gutter (3). The view shows the Lock column
+#: between the unit and the delegate column.
+LOCK_COLUMN = 4
+
+#: Fixed default pixel width of the Lock column in the view (the user can
+#: resize it: the section is Interactive).
+LOCK_COLUMN_WIDTH = 140
+
+#: The mock's one purple (its ``--log-value`` token): the fill of a row's
+#: lock button while its Lock is locked.
+LOCK_COLOUR = "#7e5bef"
+
+
+def relative_path(full: str, instrument_name: str) -> str:
+    """The path relative to the Parameter Manager: ``full`` with the
+    ``<instrument_name>.`` prefix stripped. ``PMLockBluePrint.target``
+    stores the full dotted path, while model item names and every string
+    the GUI shows the user are relative to the Parameter Manager."""
+    prefix = f"{instrument_name}."
+    return full[len(prefix):] if full.startswith(prefix) else full
+
+
+def lock_column_text(
+    path: str,
+    locks: Mapping[str, PMLockBluePrint],
+    instrument_name: str,
+) -> str:
+    """The text the Lock column shows for the parameter row ``path`` (a
+    path relative to the Parameter Manager), computed client-side over the
+    state's Locks (plan task 5.3; the mock's lock cell).
+
+    A Follower shows its own Lock state: ``locked to <target>`` while
+    locked, ``unlocked · <target>`` (middle dot) while unlocked, with the
+    Target relative to the Parameter Manager. A parameter that is no
+    Follower but the Target of ``N`` Locks — locked and unlocked alike,
+    the way :meth:`ParameterManager.followers_of` counts — shows
+    ``target ×N`` (multiplication sign). Every other row shows nothing.
+
+    A row that is both Follower and Target shows its Follower text, which
+    wins over the Target note (the mock's ``rec.lockedTo || srcNote(p)``).
+    """
+    lock = locks.get(path)
+    if lock is not None:
+        # the Follower's own Lock state wins over the Target note
+        target = relative_path(lock.target, instrument_name)
+        if lock.locked:
+            return f"locked to {target}"
+        return f"unlocked · {target}"
+    full_path = f"{instrument_name}.{path}"
+    count = sum(1 for other in locks.values() if other.target == full_path)
+    if count:
+        return f"target ×{count}"
+    return ""
+
+
+def followers_reaching(
+    path: str,
+    locks: Mapping[str, PMLockBluePrint],
+    instrument_name: str,
+) -> List[str]:
+    """Paths (relative to the Parameter Manager) of every Follower whose
+    locked Lock targets the parameter at ``path``, directly or over a
+    chain of locked Locks.
+
+    Only locked hops count (D7): an unlocked Lock answers ``get`` with its
+    own value, so the Followers behind it do not see an update made past
+    it. The walk follows each hop's Target and stops there — no infinite
+    loop on a cycle, and every Follower appears once.
+    """
+    prefix = f"{instrument_name}."
+    found: List[str] = []
+    seen: set = set()
+    targets = [prefix + path]
+    index = 0
+    while index < len(targets):
+        current = targets[index]
+        index += 1
+        for follower, lock in locks.items():
+            if not lock.locked or lock.target != current or follower in seen:
+                continue
+            seen.add(follower)
+            found.append(follower)
+            targets.append(prefix + follower)
+    return found
+
+
+def rank_lock_targets(
+    follower: str,
+    candidates: Iterable[str],
+    claims: Mapping[str, Claim],
+) -> List[str]:
+    """The arm strip's Target candidates in the mock's completer order.
+
+    ``arm_rel`` is the Follower's path relative to its Instance (the part
+    behind the Claiming Type's Instance path), or ``None`` when the
+    Follower is claimed by no Type. Rank 0: the candidate's own relative
+    path equals ``arm_rel`` (the same leaf on a sibling Instance, the
+    mock's first pick). Rank 1: ``.<arm_rel>`` occurs in the candidate
+    (a submodule on the way). Rank 2: everything else. Equal ranks order
+    alphabetically; the Follower itself is never a candidate. Cycles are
+    not filtered here: the Server refuses them and the arm strip shows its
+    error text.
+    """
+    follower_claim = claims.get(follower)
+    arm_rel = (
+        follower[len(follower_claim.instance) + 1:]
+        if follower_claim is not None
+        else None
+    )
+
+    def own_rel(candidate: str) -> Optional[str]:
+        claim = claims.get(candidate)
+        if claim is None:
+            return None
+        return candidate[len(claim.instance) + 1:]
+
+    ranked: List[Tuple[int, str]] = []
+    for candidate in candidates:
+        if candidate == follower:
+            continue  # the Follower itself is never a candidate
+        rel = own_rel(candidate)
+        if arm_rel is not None and rel == arm_rel:
+            rank = 0
+        elif arm_rel is not None and f".{arm_rel}" in candidate:
+            rank = 1
+        else:
+            rank = 2
+        ranked.append((rank, candidate))
+    ranked.sort(key=lambda entry: (entry[0], entry[1]))
+    return [path for _, path in ranked]
+
+
+class LockArmStrip(QtWidgets.QWidget):
+    """The arm strip under the toolbar while a Lock's Target is being
+    picked (plan task 5.3): a label naming the Follower, a line edit with
+    a completer over the ranked candidate paths, a Cancel button and an
+    error label for the Server's refusal text.
+
+    Picking works three ways: a completion from the popup, Return with the
+    exact typed path (or the first ranked candidate when the text is not a
+    path), and clicking a tree row — the last one is wired by the
+    Parameter Manager GUI, which owns the strip. Cancel is the button or
+    Escape while the strip or one of its children has focus."""
+
+    #: Signal(str)
+    #: Emitted when a Target was picked. The path is relative to the
+    #: Parameter Manager.
+    targetPicked = QtCore.Signal(str)
+
+    #: Signal()
+    #: Emitted when the user cancels the pick (Cancel button or Escape).
+    cancelled = QtCore.Signal()
+
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.label = QtWidgets.QLabel(self)
+
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.lineEdit.setPlaceholderText("type part of the target path, or click a row")
+
+        # the completer keeps the ranked candidate order (UnsortedModel)
+        # and filters it by what the user typed
+        self.completerModel = QtCore.QStringListModel(self)
+        self.completer = QtWidgets.QCompleter(self)
+        self.completer.setModel(self.completerModel)
+        self.completer.setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
+        self.completer.setCaseSensitivity(
+            QtCore.Qt.CaseSensitivity.CaseInsensitive
+        )
+        self.completer.setModelSorting(
+            QtWidgets.QCompleter.ModelSorting.UnsortedModel
+        )
+        self.lineEdit.setCompleter(self.completer)
+
+        self.cancelButton = QtWidgets.QPushButton("Cancel", self)
+
+        self.errorLabel = QtWidgets.QLabel(self)
+        self.errorLabel.setStyleSheet(
+            "QLabel { background-color: red; color: white; font-weight: bold }"
+        )
+        self.errorLabel.setVisible(False)
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.lineEdit, 1)
+        layout.addWidget(self.cancelButton)
+        layout.addWidget(self.errorLabel)
+        self.setLayout(layout)
+
+        self.completer.activated[str].connect(self.targetPicked)  # type: ignore[index]
+        self.lineEdit.returnPressed.connect(self._on_return_pressed)
+        self.cancelButton.clicked.connect(self.cancelled)
+
+        self.escShortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Escape"), self)
+        self.escShortcut.setContext(
+            QtCore.Qt.ShortcutContext.WidgetWithChildrenShortcut
+        )
+        self.escShortcut.activated.connect(self.cancelled)
+
+    @QtCore.Slot()
+    def _on_return_pressed(self) -> None:
+        """Pick the exact typed path, or the first ranked candidate when
+        the typed text is not a path itself (the mock's Enter picks the
+        first match)."""
+        text = self.lineEdit.text().strip()
+        if not text:
+            return
+        candidates = self.completerModel.stringList()
+        if text in candidates:
+            self.targetPicked.emit(text)
+        elif candidates:
+            self.targetPicked.emit(candidates[0])
+        else:
+            self.targetPicked.emit(text)
+
+    def arm(self, follower: str, candidates: List[str]) -> None:
+        """Arm the strip for the Follower at ``follower``: name it in the
+        label, load the ranked candidates into the completer, clear the
+        line edit and any error, show the strip and focus the line edit."""
+        self.label.setText(f"Target for {follower}")
+        self.completerModel.setStringList(candidates)
+        self.lineEdit.clear()
+        self.clear_error()
+        self.setVisible(True)
+        self.lineEdit.setFocus()
+
+    def show_error(self, text: str) -> None:
+        """Show the Server's error text on the error label."""
+        self.errorLabel.setText(text)
+        self.errorLabel.setVisible(True)
+
+    def clear_error(self) -> None:
+        """Hide and clear the error label (the next pick or cancel does
+        this)."""
+        self.errorLabel.setText("")
+        self.errorLabel.setVisible(False)
+
+    def disarm(self) -> None:
+        """Hide the strip and clear it."""
+        self.setVisible(False)
+        self.lineEdit.clear()
+        self.clear_error()
+
+
+# ----------------- Parameter Manager Locks - Ending -----------------------------------
+
+
 class ParameterDeleteDelegate(ParameterDelegate):
     #: Signal(str)
     #: Emits the name of the parameter to be deleted when the user presses the delete button.
     removeParameter = QtCore.Signal(str)
+
+    #: Signal(str)
+    #: Emits the name of the parameter whose lock button the user pressed;
+    #: the Parameter Manager GUI toggles that parameter's Lock.
+    toggleLock = QtCore.Signal(str)
 
     def createEditor(  # type: ignore[override]
         self,
@@ -1052,8 +1327,14 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
         element = item.element  # type: ignore[attr-defined]
         rw = self.makeRemoveWidget(item.name, widget)  # type: ignore[attr-defined]
+        lw = self.makeLockWidget(item.name, widget)
 
-        ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
+        ret = ParameterWidget(
+            parameter=element, parent=widget, additionalWidgets=[lw, rw]
+        )
+        # the lock button is kept on the row's ParameterWidget so the
+        # Parameter Manager GUI can restyle it with the Lock state
+        ret.lockButton = lw
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
         ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
@@ -1066,6 +1347,24 @@ class ParameterDeleteDelegate(ParameterDelegate):
             self.navFilter.registerWidget(input_widget, index)
 
         return ret
+
+    def makeLockWidget(
+        self, fullName: str, widget: QtWidgets.QWidget
+    ) -> QtWidgets.QPushButton:
+        """The per-row lock button. It stays hidden until the row carries a
+        Lock (a Lock-less row shows no button, as the mock), fills purple
+        while the Lock is locked, and only :meth:`ParameterManagerGui.
+        apply_locks` changes its state."""
+        w = QtWidgets.QPushButton(QtGui.QIcon(":/icons/lock.svg"), "", parent=widget)
+        w.setProperty("locked", False)
+        w.setStyleSheet(
+            f"QPushButton[locked=\"true\"] {{ background-color: {LOCK_COLOUR} }}"
+        )
+        w.setVisible(False)
+        keepSmallHorizontally(w)
+
+        w.pressed.connect(lambda: self.toggleLock.emit(fullName))
+        return w
 
     def makeRemoveWidget(
         self, fullName: str, widget: QtWidgets.QWidget
@@ -1083,6 +1382,15 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
 # TODO: Make sure that the refresh button refreshes the profiles as well as the model
 class ParameterManagerTreeView(InstrumentTreeViewBase):
+    #: Signal(str)
+    #: Emitted when the user picks "Lock to…" in the context menu; the
+    #: Parameter Manager GUI arms the target picker for that parameter.
+    lockToRequested = QtCore.Signal(str)
+
+    #: Signal(str)
+    #: Emitted when the user picks "Unlock" in the context menu.
+    unlockRequested = QtCore.Signal(str)
+
     def __init__(
         self,
         model: QtCore.QAbstractItemModel,
@@ -1111,8 +1419,46 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
                 GUTTER_COLUMN, QtWidgets.QHeaderView.ResizeMode.Fixed
             )
             header.resizeSection(GUTTER_COLUMN, GUTTER_WIDTH)
+            if self.model().columnCount() > LOCK_COLUMN:
+                # the Lock column moves between the unit and the delegate
+                # column, with a resizable default width
+                header.moveSection(
+                    header.visualIndex(LOCK_COLUMN), header.visualIndex(2)
+                )
+                header.setSectionResizeMode(
+                    LOCK_COLUMN, QtWidgets.QHeaderView.ResizeMode.Interactive
+                )
+                header.resizeSection(LOCK_COLUMN, LOCK_COLUMN_WIDTH)
         self.setTreePosition(0)
         self.setAllDelegatesPersistent()
+
+        # the lock actions act on the row the context menu was opened for
+        # (self.lastSelectedItem, set by the base onContextMenuRequested
+        # before the menu opens); the Parameter Manager GUI enables and
+        # disables them in its aboutToShow slot
+        self.lockToAction = QtWidgets.QAction("Lock to…")
+        self.lockToAction.triggered.connect(self.onLockToActionTrigger)
+        self.unlockAction = QtWidgets.QAction("Unlock")
+        self.unlockAction.triggered.connect(self.onUnlockActionTrigger)
+        self.contextMenu.addSeparator()
+        self.contextMenu.addAction(self.lockToAction)
+        self.contextMenu.addAction(self.unlockAction)
+
+    @QtCore.Slot()
+    def onLockToActionTrigger(self) -> None:
+        """The context menu's "Lock to…": arm the target picker for the
+        row's parameter; a submodule row has no Lock to arm."""
+        item = self.lastSelectedItem
+        if item is not None and item.element is not None:
+            self.lockToRequested.emit(item.name)
+
+    @QtCore.Slot()
+    def onUnlockActionTrigger(self) -> None:
+        """The context menu's "Unlock": unlock the row's Lock; a submodule
+        row has no Lock to unlock."""
+        item = self.lastSelectedItem
+        if item is not None and item.element is not None:
+            self.unlockRequested.emit(item.name)
 
     @QtCore.Slot(object, object)
     def onItemNewValue(self, itemName: str, value: Any) -> None:
@@ -1271,19 +1617,45 @@ class ParameterManagerGui(InstrumentParameters):
         outerLayout = QtWidgets.QVBoxLayout(self)
         outerLayout.setContentsMargins(0, 0, 0, 0)
         outerLayout.addWidget(self.tabs)
+        # The arm strip sits right under the toolbar and stays hidden until
+        # a Lock's Target is being picked (plan task 5.3). The Follower the
+        # pick is armed for is kept here.
+        self.armed_follower: Optional[str] = None
+        self.armStrip = LockArmStrip(self.parametersTab)
+        parametersLayout = self.parametersTab.layout()
+        assert isinstance(parametersLayout, QtWidgets.QVBoxLayout)
+        toolbar_index = parametersLayout.indexOf(self.toolbar)
+        parametersLayout.insertWidget(toolbar_index + 1, self.armStrip)
+        self.armStrip.setVisible(False)
+        # Escape over the tree cancels the pick too (harmless when the
+        # strip is not armed)
+        self.viewEscShortcut = QtWidgets.QShortcut(
+            QtGui.QKeySequence("Escape"), self.view
+        )
+        self.viewEscShortcut.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
+        self.viewEscShortcut.activated.connect(self.cancel_arm)
         self.connectSignals()
         self.loadProfile()
 
     def connectSignals(self) -> None:
         super().connectSignals()
         self.view.delegate.removeParameter.connect(self.removeParameter)
+        self.view.delegate.toggleLock.connect(self._toggle_lock)
         self.addParam.newParamRequested.connect(self.addParameter)
         self.parameterCreationError.connect(self.addParam.setError)
         self.parameterCreated.connect(self.addParam.clear)
         self.profileManager.indexChanged.connect(self.loadProfile)
-        self.model.lockChanged.connect(self.state.apply_lock)
+        self.model.lockChanged.connect(self._on_lock_changed)
         self.model.typeChanged.connect(self._on_type_changed)
         self.model.structureChanged.connect(self.apply_tints)
+        self.model.structureChanged.connect(self.apply_locks)
+        self.model.itemNewValue.connect(self._on_item_new_value)
+        self.view.lockToRequested.connect(self.arm_lock)
+        self.view.unlockRequested.connect(self._unlock)
+        self.view.contextMenu.aboutToShow.connect(self._update_lock_actions)
+        self.view.clicked.connect(self._on_view_clicked)
+        self.armStrip.targetPicked.connect(self.pick_lock_target)
+        self.armStrip.cancelled.connect(self.cancel_arm)
         self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
         self.shortcutManager.register("clear_add", self.addParam.clear, self)
         self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
@@ -1323,6 +1695,7 @@ class ParameterManagerGui(InstrumentParameters):
         self.profileManager.refresh()
         self.state.refresh(self.instrument)
         self.apply_tints()
+        self.apply_locks()
 
     def removeParameter(self, fullName: str) -> None:
         if self.instrument.has_param(fullName):
@@ -1354,6 +1727,7 @@ class ParameterManagerGui(InstrumentParameters):
         # Types and Locks must be re-read from the Parameter Manager
         self.state.refresh(self.instrument)
         self.apply_tints()
+        self.apply_locks()
 
     @QtCore.Slot(str, object)
     def _on_type_changed(
@@ -1364,6 +1738,198 @@ class ParameterManagerGui(InstrumentParameters):
         bands it may change."""
         self.state.apply_type(name, type_blueprint)
         self.apply_tints()
+
+    @QtCore.Slot(str, object)
+    def _on_lock_changed(
+        self, path: str, lock: Optional[PMLockBluePrint]
+    ) -> None:
+        """Record the change a ``pm-lock-update`` Broadcast reports about
+        the Follower at ``path``, then recompute the Lock column and the
+        row widgets, and repaint the values the change alters: the
+        Follower's own and every row whose chain of locked Locks reaches
+        it, since locking and unlocking change what ``get`` answers."""
+        self.state.apply_lock(path, lock)
+        self.apply_locks()
+        for follower in [path, *followers_reaching(path, self.state.locks, self.instrument.name)]:
+            self._refresh_row_widget(follower)
+
+    @QtCore.Slot(object, object)
+    def _on_item_new_value(self, path: object, value: object) -> None:
+        """Repaint every Follower whose locked Lock chain reaches the
+        parameter a ``parameter-update`` Broadcast names (D3: a locked
+        Follower answers ``get`` with the Target's value, and the
+        Parameter Manager emits nothing for values). The Broadcast's own
+        row is refreshed by the base wiring to
+        ``view.onItemNewValue``; this slot handles the rows behind it."""
+        for follower in followers_reaching(
+            str(path), self.state.locks, self.instrument.name
+        ):
+            self._refresh_row_widget(follower)
+
+    def _refresh_row_widget(self, path: str) -> None:
+        """Re-read the parameter behind the row at ``path`` through the
+        Proxy, which pulls the Target's value for a locked Follower, and
+        show it on the row's widget."""
+        widget = self.view.delegate.parameters.get(path)
+        if widget is None:
+            return
+        try:
+            widget.setWidgetFromParameter()
+        except RuntimeError:
+            logger.debug(
+                f"Could not refresh the value of {path}. "
+                "Object is not being shown right now."
+            )
+
+    @QtCore.Slot()
+    def apply_locks(self) -> None:
+        """Recompute every parameter row's Lock state from the client-side
+        state (plan task 5.3): the Lock column text, the lock button's
+        visibility, tooltip and purple fill, and whether the value renders
+        read-only.
+
+        Runs after the state was refreshed from the Parameter Manager (on a
+        model reload), on every ``pm-lock-update`` Broadcast, and after a
+        parameter was created or removed by a Broadcast. Recomputing all
+        rows on every change is fine — the tree is small — and keeps one
+        clear path."""
+        self._apply_locks_to_rows(self.model.invisibleRootItem())
+
+    def _apply_locks_to_rows(self, parent: QtGui.QStandardItem) -> None:
+        """Walk the source model (never the proxy) and set each row's Lock
+        column text, lock button state and read-only flag."""
+        for row in range(parent.rowCount()):
+            item = parent.child(row, 0)
+            if item is None:
+                continue
+            lockItem = parent.child(row, LOCK_COLUMN)
+            if lockItem is None:
+                lockItem = QtGui.QStandardItem()
+                parent.setChild(row, LOCK_COLUMN, lockItem)
+            if item.element is None:
+                # a submodule row carries no Lock state of its own
+                lockItem.setText("")
+            else:
+                lockItem.setText(
+                    lock_column_text(
+                        item.name, self.state.locks, self.instrument.name
+                    )
+                )
+                widget = self.view.delegate.parameters.get(item.name)
+                if widget is not None:
+                    self._update_row_lock_widget(item.name, widget)
+            if item.hasChildren():
+                self._apply_locks_to_rows(item)
+
+    def _update_row_lock_widget(
+        self, path: str, widget: "ParameterWidget"
+    ) -> None:
+        """Set one row's lock button and read-only state from the Lock the
+        state holds for ``path``. A row without a Lock shows no button and
+        renders its value editable."""
+        button = getattr(widget, "lockButton", None)
+        lock = self.state.locks.get(path)
+        if lock is None:
+            if button is not None:
+                button.setVisible(False)
+            widget.set_read_only(False)
+            return
+        target = relative_path(lock.target, self.instrument.name)
+        if lock.locked:
+            tooltip = (
+                f"locked to {target} — unlock and go back to its own value"
+            )
+        else:
+            tooltip = f"unlocked — lock to {target} again"
+        if button is not None:
+            button.setToolTip(tooltip)
+            button.setProperty("locked", lock.locked)
+            # re-polish so the locked property restyles the button
+            button.style().unpolish(button)
+            button.style().polish(button)
+            button.setVisible(True)
+        widget.set_read_only(lock.locked)
+
+    @QtCore.Slot(str)
+    def _toggle_lock(self, path: str) -> None:
+        """Toggle the Lock of the parameter at ``path`` (the row's lock
+        button). A refused toggle — relocking would close a cycle (D7) —
+        shows the Server's error text on the row's alert widget."""
+        widget = self.view.delegate.parameters.get(path)
+        try:
+            self.instrument.toggle_lock(path)
+        except Exception as e:
+            if widget is not None:
+                widget.alertWidget.setAlert(str(e))
+
+    @QtCore.Slot(str)
+    def _unlock(self, path: str) -> None:
+        """Unlock the Lock of the parameter at ``path`` (the context
+        menu's "Unlock"). A refused unlock shows the Server's error text
+        on the row's alert widget."""
+        widget = self.view.delegate.parameters.get(path)
+        try:
+            self.instrument.unlock(path)
+        except Exception as e:
+            if widget is not None:
+                widget.alertWidget.setAlert(str(e))
+
+    @QtCore.Slot()
+    def _update_lock_actions(self) -> None:
+        """Enable the context menu's lock actions for the row the menu was
+        opened on: "Lock to…" for every parameter row, "Unlock" only for a
+        parameter whose Lock in the state is locked."""
+        item = self.view.lastSelectedItem
+        is_parameter = item is not None and item.element is not None
+        self.view.lockToAction.setEnabled(is_parameter)
+        self.view.unlockAction.setEnabled(
+            is_parameter
+            and item.name in self.state.locks  # type: ignore[union-attr]
+            and self.state.locks[item.name].locked  # type: ignore[union-attr]
+        )
+
+    def arm_lock(self, follower: str) -> None:
+        """Arm the target picker for the Follower at ``follower``: the
+        candidates are every other parameter row of the source model,
+        ranked like the mock's completer (same relative path inside its
+        Instance first), and the strip shows under the toolbar. Arming
+        while already armed re-arms for the new Follower."""
+        parameters = self._model_parameters()
+        claims = compute_claims(self.state.types, parameters)
+        self.armed_follower = follower
+        self.armStrip.arm(follower, rank_lock_targets(follower, parameters, claims))
+
+    def pick_lock_target(self, target: str) -> None:
+        """Pick ``target`` as the Target of the armed Follower's Lock. A
+        refused Lock — a cycle (D7) among them — shows the Server's error
+        text on the strip and stays armed so another target can be picked;
+        a successful Lock disarms the strip."""
+        if self.armed_follower is None:
+            return
+        try:
+            self.instrument.lock(self.armed_follower, target)
+        except Exception as exc:
+            self.armStrip.show_error(str(exc))
+        else:
+            self.cancel_arm()
+
+    def cancel_arm(self) -> None:
+        """Disarm the target picker without picking anything."""
+        self.armed_follower = None
+        self.armStrip.disarm()
+
+    @QtCore.Slot(QtCore.QModelIndex)
+    def _on_view_clicked(self, index: QtCore.QModelIndex) -> None:
+        """A row click while the pick is armed chooses that row's parameter
+        as the Target (the mock's rowClick); a submodule click does
+        nothing."""
+        if self.armed_follower is None:
+            return
+        source_index = self.proxyModel.mapToSource(index)
+        source_index = source_index.sibling(source_index.row(), 0)
+        item = self.model.itemFromIndex(source_index)
+        if item is not None and item.element is not None:
+            self.pick_lock_target(item.name)
 
     @QtCore.Slot()
     def apply_tints(self) -> None:
@@ -1406,7 +1972,7 @@ class ParameterManagerGui(InstrumentParameters):
         Type's colour on all columns and store its Type stack on the gutter
         item; clear the background of the rows without one."""
         for row in range(parent.rowCount()):
-            rowItems = [parent.child(row, col) for col in range(GUTTER_COLUMN + 1)]
+            rowItems = [parent.child(row, col) for col in range(LOCK_COLUMN + 1)]
             item = rowItems[0]
             if item is None:
                 continue
