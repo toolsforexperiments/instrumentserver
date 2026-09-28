@@ -2233,7 +2233,7 @@ def test_instances_of_type_matches_like_compute_claims():
     unit, the root never, Globals never, an empty Type never, extra
     parameters do not matter."""
     qubit = _type_blueprint("qubit", {"IF": "Hz", "bw": "Hz"})
-    types = {"qubit": qubit}
+    types = {"qubit": qubit, "empty_type": _type_blueprint("empty_type", {})}
     parameters = {
         "q10.IF": "Hz",
         "q10.bw": "Hz",
@@ -2249,7 +2249,32 @@ def test_instances_of_type_matches_like_compute_claims():
     # one path missing or one unit off: no Instance
     assert instances_of_type("qubit", types, {"q10.IF": "Hz"}) == []
     assert instances_of_type("qubit", types, {"q10.IF": "Hz", "q10.bw": "V"}) == []
+    # a genuinely empty Type in the registry has no Instances (D12)
+    assert instances_of_type("empty_type", types, parameters) == []
     assert instances_of_type("empty", types, parameters) == []
+
+
+def test_instances_of_type_with_a_nested_type():
+    """The client-side matching expands Nested Types the way the Server's
+    ``instances_of`` does (D12): the submodule must carry the outer
+    Type's entries and the Nested Type's entries under their submodule,
+    each with the unit the declaring Type declares."""
+    readout = _type_blueprint("readout", {"bw": "Hz"})
+    qubit = _type_blueprint(
+        "qubit",
+        {"IF": "Hz"},
+        nested={"readout": "readout"},
+        registry={"readout": readout},
+    )
+    types = {"qubit": qubit}
+    parameters = {"q10.IF": "Hz", "q10.readout.bw": "Hz"}
+    assert instances_of_type("qubit", types, parameters) == ["q10"]
+    # the nested entry's unit is off: no Instance
+    assert instances_of_type(
+        "qubit", types, {"q10.IF": "Hz", "q10.readout.bw": "V"}
+    ) == []
+    # the nested entry is missing: no Instance
+    assert instances_of_type("qubit", types, {"q10.IF": "Hz"}) == []
 
 
 def test_also_types_lists_every_type_the_submodule_carries():
@@ -2427,16 +2452,45 @@ def test_the_types_tab_creates_a_type_and_an_instance(
     qtbot, pm, second_client, server_port
 ):
     """The plan's named flow: a Type and an Instance created through the
-    Types pane's widgets, with the Server state matching; the new
-    Instance's tree row carries the Type's tint; a second Client's entry
-    appears in the panes and the tree without any GUI action."""
+    Types pane's widgets, with the Server state matching and the type
+    list's Instances and parameter counts following; the new Instance's
+    tree row carries the Type's tint; a second Client's entry appears in
+    the panes and the tree without any GUI action."""
     second_pm = _second_parameter_manager(second_client)
 
     gui = _make_gui(qtbot, pm, server_port)
     try:
         _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
 
-        _create_type_with_instance(qtbot, gui, pm)
+        # create the Type through the widgets
+        gui.tabs.setCurrentIndex(1)
+        gui.typesPane.newTypeEdit.setText("qubit")
+        gui.typesPane.addTypeButton.click()
+        qtbot.waitUntil(
+            lambda: "qubit" in pm.list_types(), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.selectedType == "qubit"
+            and _type_list_row(gui, "qubit") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # add the entry through the widgets
+        gui.typesPane.entryNameEdit.setText("IF")
+        gui.typesPane.entryDefaultEdit.setText("1.0")
+        gui.typesPane.entryUnitEdit.setText("Hz")
+        gui.typesPane.addEntryButton.click()
+        qtbot.waitUntil(
+            lambda: _state_type_has(gui, "qubit", "IF"), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("editor")
+            is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # the type list counts: one effective parameter, no Instances yet
+        assert _type_list_row(gui, "qubit")[2].text() == "1"
+        assert _type_list_row(gui, "qubit")[1].text() == "0"
 
         # the Server holds the entry with its default and unit
         assert pm.get_type("qubit").parameters["IF"] == {
@@ -2454,6 +2508,22 @@ def test_the_types_tab_creates_a_type_and_an_instance(
         assert gui.typesPane.selectedType == "qubit"
         # the entry row is in the pane
         assert _entry_row_items(gui, "IF") is not None
+
+        # create the Instance through the widgets
+        gui.typesPane.newInstanceEdit.setText("q10")
+        gui.typesPane.addInstanceButton.click()
+        qtbot.waitUntil(
+            lambda: pm.has_param("q10.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: _instance_row_items(gui, "q10") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # the Instances count follows the created Instance
+        qtbot.waitUntil(
+            lambda: _type_list_row(gui, "qubit")[1].text() == "1",
+            timeout=BROADCAST_TIMEOUT,
+        )
         # the Instance was created with the entry's default and unit
         qtbot.waitUntil(lambda: _row_exists(gui, "q10.IF"), timeout=BROADCAST_TIMEOUT)
         assert pm.q10.IF.get() == 1.0
@@ -2470,11 +2540,13 @@ def test_the_types_tab_creates_a_type_and_an_instance(
             timeout=BROADCAST_TIMEOUT,
         )
 
-        # a second Client's entry appears without any GUI action
+        # a second Client's entry appears without any GUI action, and the
+        # effective parameter count follows it
         second_pm.add_type_parameter("qubit", "bw", default=2.0, unit="Hz")
         qtbot.waitUntil(
             lambda: _entry_row_items(gui, "bw") is not None
-            and _row_exists(gui, "q10.bw"),
+            and _row_exists(gui, "q10.bw")
+            and _type_list_row(gui, "qubit")[2].text() == "2",
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -2505,10 +2577,12 @@ def test_the_types_tab_edits_entries_and_nested_types(
             timeout=BROADCAST_TIMEOUT,
         )
 
-        # a second entry via the strip, then Remove via the row button
+        # a second entry via the strip, then Remove via the row button;
+        # the unit is typed with a trailing space, which the strip strips
+        # (D12 compares units exactly, so "Hz " would match no Instance)
         gui.typesPane.entryNameEdit.setText("bw")
         gui.typesPane.entryDefaultEdit.setText("2.0")
-        gui.typesPane.entryUnitEdit.setText("Hz")
+        gui.typesPane.entryUnitEdit.setText("Hz ")
         gui.typesPane.addEntryButton.click()
         qtbot.waitUntil(
             lambda: gui.typesPane.entryWidgets.get("bw", {}).get("remove")
@@ -2516,6 +2590,7 @@ def test_the_types_tab_edits_entries_and_nested_types(
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.get_type("qubit").parameters["bw"]["default"] == 2.0
+        assert pm.get_type("qubit").parameters["bw"]["unit"] == "Hz"
         gui.typesPane.entryWidgets["bw"]["remove"].click()
         qtbot.waitUntil(
             lambda: "bw" not in pm.get_type("qubit").parameters,
@@ -2657,6 +2732,19 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         assert gui.armed_type_lock == ("qubit", "IF")
         assert gui.armed_follower is None
 
+        # a Target the Server refuses: the error text on the strip, which
+        # stays armed, and the entry's Target unchanged on the Server
+        gui.pick_lock_target("no.such.path")
+        qtbot.waitUntil(
+            lambda: "no.such.path" in gui.armStrip.errorLabel.text(),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert not gui.armStrip.errorLabel.isHidden()
+        assert not gui.armStrip.isHidden()
+        assert gui.armed_type_lock == ("qubit", "IF")
+        assert gui.armed_follower is None
+        assert pm.get_type("qubit").parameters["IF"]["target"] == globals_target
+
         gui.pick_lock_target("tshared")
         qtbot.waitUntil(
             lambda: pm.get_type("qubit").parameters["IF"]["target"]
@@ -2786,5 +2874,24 @@ def test_the_types_tab_shows_server_errors_and_empty_names(
         gui.typesPane.entryNameEdit.setText("")
         gui.typesPane.addEntryButton.click()
         assert gui.typesPane.entriesNote.text() == "Name must not be empty."
+
+        # the "Nested type" strip refuses an empty submodule before any
+        # Server call: a second Type is created so the combo has the
+        # other Type to offer
+        gui.typesPane.newTypeEdit.setText("errtype2")
+        gui.typesPane.addTypeButton.click()
+        qtbot.waitUntil(
+            lambda: gui.typesPane.selectedType == "errtype2",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.nestedTypeCombo.currentText() == "errtype",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.typesPane.nestedAtEdit.setText("")
+        gui.typesPane.addNestedButton.click()
+        assert gui.typesPane.entriesNote.text() == "Submodule must not be empty."
+        # the Server's Nested Types are untouched
+        assert pm.get_type("errtype2").nested == {}
     finally:
         gui.model.stopListener()

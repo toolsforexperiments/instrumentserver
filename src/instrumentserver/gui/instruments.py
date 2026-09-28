@@ -2769,11 +2769,13 @@ class TypesPane(QtWidgets.QWidget):
             return
         if self.selectedType is None:
             return
+        # the unit is stripped: matching compares units exactly (D12), and
+        # a trailing space would make the Type match no Instance
         self.addEntryRequested.emit(
             self.selectedType,
             path,
             self.entryDefaultEdit.text(),
-            self.entryUnitEdit.text(),
+            self.entryUnitEdit.text().strip(),
         )
 
     @QtCore.Slot()
