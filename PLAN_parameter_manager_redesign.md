@@ -567,7 +567,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   reload. Tests: `test_pm_gui.py` — after `add_type` + entries from a second client, rows
   under a matching submodule carry the Type's tint; after `remove_type_parameter`, the
   parameter's row loses it.
-- [ ] **5.3 Lock column, toggle, context menu, arm strip.** New model column "locked to"
+- [x] **5.3 Lock column, toggle, context menu, arm strip.** New model column "locked to"
   (text: `locked to <target>` / `unlocked · <target>` / `target ×N` from `followers_of`
   computed client-side over `PMState.locks`). Per-row lock button in the delegate widget
   (visible when a Lock exists; purple fill while locked) calling `toggle_lock`. Context menu

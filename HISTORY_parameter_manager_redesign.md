@@ -797,3 +797,53 @@ The Parameter Manager GUI now keeps a client-side copy of the Types and Locks. `
   - reviewer-qwen's inline Qt heredoc, which came through truncated in the prompt
   - a mistyped path outside the repository from test-reviewer-qwen
 - The orchestrator session stopped in fix round 1, after the 2026-09-25 implementation commit, while the coder was waiting on a permission prompt. It resumed on 2026-09-28, and the fix commit and re-reviews followed that day.
+
+## 5.3 Lock column, toggle, context menu, arm strip — 2026-09-28
+
+`ModelParameterManager` gains a fifth logical column, `LOCK_COLUMN = 4` ("locked to"), shown between the unit and the delegate column. Its text comes from the pure function `lock_column_text` over `PMState.locks`: `locked to <target>`, `unlocked · <target>` or `target ×N`. Each row's delegate widget has a `lockButton`, visible when the row has a Lock and filled with `LOCK_COLOUR` while locked, which calls `toggle_lock`. The context menu gets "Lock to…" and "Unlock". The new `LockArmStrip` sits under the toolbar and offers the Targets ranked by `rank_lock_targets`, and `ParameterManagerGui.pick_lock_target` shows the Server's error text in it. `ParameterWidget.set_read_only` renders a locked Follower read-only, and `followers_reaching` finds the rows to repaint on a `parameter-update`. `test_pm_gui.py` grew from 25 to 42 tests.
+
+### Commit by commit
+- `c215c5c` The column, button, menu entries, arm strip, repaint and 15 tests. The orchestrator's coder spec set sixteen readings. The main ones:
+  - Every displayed or compared Target goes through `relative_path`, because `PMLockBluePrint.target` is the full path while `PMState.locks` keys are relative. The Follower text wins over the `target ×N` note, as the mock's `rec.lockedTo || srcNote(p)` does. `target ×N` counts unlocked Locks too, as `followers_of` does.
+  - The Lock column is added without renumbering columns 0–3, and `moveSection` puts it at visual index 3. The setup is guarded on `columnCount()` for 5.1's 3-column D24 stub test. `_ensure_gutter_items` became `_ensure_extra_items`, and the tints now cover all five columns.
+  - `apply_locks()` is the only writer of the column text, the button's visibility, tooltip and `locked` property, and the read-only flag. It runs after `state.refresh` in `refreshAll`/`loadProfile`, on `structureChanged`, and from the new `_on_lock_changed`, which then repaints the Follower and every row that `followers_reaching` returns.
+  - `followers_reaching` follows locked hops only (D7), de-duplicates, and stops on a cycle. `_on_item_new_value` uses it to refresh Follower rows with `setWidgetFromParameter`. The base `onItemNewValue` wiring is unchanged.
+  - Cycles are not filtered client-side. The Server's refusal is shown instead.
+  - The plan's Design reference says lock.svg/unlock.svg are already in `resource/icons/`. They were not, so the coder copied them from the mock's assets, added them to `resource.qrc` and regenerated `resource.py` with pyrcc5. reviewer-glm found it byte-identical to a fresh run.
+
+  The coder's own interpretations: `LOCK_COLOUR = "#7e5bef"`, the mock's `--log-value` token, taken from its `colors.css` (the spec's fallback `#7b3fa0` was not used). `set_read_only` skips the no-set `QLabel` case so it never re-enables a set button that construction disabled. The menu actions are enabled in an `aboutToShow` slot. `unlock.svg` is registered but unused. The spec said a server-side `ValueError` comes back as the same type. It actually arrives as a generic `Exception`, so `pick_lock_target` catches `Exception`. On Return with a text that matched no candidate, the strip picked `candidates[0]`. The fix commit replaced that.
+
+  The tests: eight no-server tests of `relative_path`, `lock_column_text`, `followers_reaching` (chain, unlocked middle hop, cycle) and `rank_lock_targets`; `test_lock_arm_strip_picks_cancels_and_shows_errors`; `test_parameter_widget_set_read_only`; and five live tests. Those are `test_arm_via_context_menu_pick_a_row_and_toggle` (the plan's named flow: arm via the menu, click the `q02.IF` row, `get_lock` on the Server, toggle both ways, menu Unlock), `test_a_cycle_attempt_shows_the_error_and_stays_armed`, `test_setting_the_target_from_a_second_client_repaints_the_followers` (with the chained `q03.IF`), `test_a_second_clients_lock_shows_in_the_column_and_button` and `test_refresh_all_shows_a_lock_made_while_the_listener_was_stopped`. All parameters are created before the GUI, to avoid the 5.1 `parameter-creation` crash. Orchestrator run: ruff clean, 50 in the three named GUI files, 506 in the full suite.
+- `5e83ead` Fix from round 0, nine items:
+  - `self.proxyModel.filterFinished.connect(self.apply_locks)`. A filter cycle, or the trash toggle, makes `restoreCollapsedDict` reopen the persistent editors as fresh `ParameterWidget`s, so a locked Follower came back with its button hidden and its input editable. reviewer-glm found it with a Qt probe, and the orchestrator confirmed it in `base_instrument.py`. New test: `test_a_filter_cycle_re_applies_the_lock_state`.
+  - `LockArmStrip._on_return_pressed` now ports the mock's `armKeyDown`. An exact candidate is picked; otherwise the completer's first filtered match (`setCompletionPrefix`, then row 0 of `completionModel()`); with no match, nothing. The old code locked "garbage" to the first ranked candidate. reviewer-qwen raised it as should-fix and reviewer-glm as a nit. The orchestrator ruled that reading 10's "first completion" meant the filtered list. The strip test now checks `"garbage"` → nothing and `"q03"` → `q03.IF`.
+  - Plan rule 8: `makeLockWidget`, `onLockToActionTrigger`, `onUnlockActionTrigger` → `make_lock_widget`, `_on_lock_to_action_trigger`, `_on_unlock_action_trigger`. plan-checker-glm raised it as must-fix, reviewer-glm as should-fix and plan-checker-qwen as a nit. The pre-existing `makeRemoveWidget`/`onStarActionTrigger` are grandfathered.
+  - Test gaps raised by the test reviewers:
+    - the `lockChanged` value repaint: `_getMethod()` goes 2.0 → 1.0 → 2.0 across lock, unlock and relock in the named flow (both test reviewers, should-fix)
+    - the Lock column's visual index, width (`LOCK_COLUMN_WIDTH`) and header text in the tab test (test-reviewer-qwen should-fix, test-reviewer-glm nit)
+    - Escape pressed on the tree, not only in the line edit (test-reviewer-qwen)
+    - the completer's `activated` path (both)
+    - the `aboutToShow` enabling rule, in the new `test_the_context_menu_lock_actions_enable_by_the_lock_state` (both)
+  - A `gap` row in `TEST_AUDIT.md` (see Loose ends).
+
+  All six approved in re-review, and every raiser confirmed their item fixed. test-reviewer-qwen checked that the new `filterFinished` connection runs after the base class's `restoreCollapsedDict` one. Orchestrator run: ruff clean, 52 in the three named GUI files, 508 in the full suite.
+
+### Dropped findings
+- The two copied SVGs each carry about 8 KB of C2PA/JUMBF provenance metadata (reviewer-glm, nit) → not sent. It does not change behaviour, and stripping it means regenerating `resource.py`. It is still in both files.
+- No test pins the error label's colour to "the existing alert colour" (plan-checker-qwen). The reading was under-specified; reviewer-glm checked that the `red` used matches the design system's `#ff0000` token.
+- Round-0 test nits, not sent: the lock button tooltips are unasserted, the diamond de-dup case in `followers_reaching`, and clicking a submodule row while armed.
+- Round-1 nits, none sent: the empty-text early return in `_on_return_pressed` is untested (test-reviewer-glm). The `LockArmStrip` class docstring and the strip test's docstring still describe the old Return rule, and the module docstring omits the two new live tests (plan-checker-qwen, test-reviewer-qwen).
+
+### Loose ends
+- `TEST_AUDIT.md`, "Parameter Manager GUI — `parameter-update` for a row with no widget": the pre-existing `ParameterManagerTreeView.onItemNewValue` indexes `self.delegate.parameters[itemName]` without a guard and raises `KeyError`. The new `_on_item_new_value` uses `.get` (reviewer-qwen).
+- The stale Return docstrings above are still there. The orchestrator suggested that a later task touching `LockArmStrip` refresh them.
+- The icons: `decisions.md` flags for Marcos that the plan's Design reference was wrong about lock.svg/unlock.svg. 5.6's qrc check now only has to verify them. No answer from Marcos is recorded.
+- The convention from 5.2 was extended: the `on…Trigger` slot family gets no exemption from snake_case in 5.4–5.6.
+- 5.2's loose end, where a `parameter-update` for an unknown row adds an untinted row, is untouched.
+
+### Process notes
+- The coder sat idle for about 20 minutes after its read pass, with no edits and no message. One nudge in the terminal got it going again, the same pattern as in 2.3.
+- The first test-reviewer-glm terminal had no opencode on its PATH, so the dispatch failed with `agent_unconfigured`. The orchestrator closed it and started a new terminal.
+- The orchestrator blanked its own list of reviewer handles with a bad shell pipeline. Five reviewers waited on permission prompts for about 10 minutes until the orchestrator swept them.
+- Five permission requests were rejected, all inline Python probes that came through truncated in the prompt: one from the coder, and one each from reviewer-glm, reviewer-qwen, plan-checker-glm and plan-checker-qwen. Each reran its probe as a scratch file under `orchestration/5.3/`.
+- The watcher's mkdir-prefix rule let the coder's icon `cp` through automatically. The orchestrator would have allowed it anyway, and it tightened the rule afterwards.
