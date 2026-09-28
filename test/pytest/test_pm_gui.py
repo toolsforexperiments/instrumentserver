@@ -1,6 +1,7 @@
 """Client-side state and Broadcast handling of the Parameter Manager GUI
-(plan task 5.1), its tabs, tints and gutter bands (plan task 5.2), and its
-Lock column, lock toggle, context menu and arm strip (plan task 5.3).
+(plan task 5.1), its tabs, tints and gutter bands (plan task 5.2), its
+Lock column, lock toggle, context menu and arm strip (plan task 5.3), and
+its Locks panel (plan task 5.4).
 
 The GUI keeps the Parameter Manager's Types and Locks in a ``PMState``
 (``ParameterManagerGui.state``), filled from the Parameter Manager on
@@ -14,7 +15,10 @@ without a Server, and the tints and gutter bands a second Client's Type
 edits produce live. The 5.3 tests cover the pure Lock helpers, the arm
 strip and the read-only rendering without a Server, and the arm-via-context-menu
 flow, the toggle, the refused cycle, the Follower repaint on a second
-Client's Target update, and the model reload path live.
+Client's Target update, and the model reload path live. The 5.4 tests cover
+the pure Locks-panel row model without a Server, the toolbar action and
+splitter, and the panel's rows, remove and lock-all actions, value editor
+and "Lock selection to…" flow live.
 
 Two shapes of the live path are deliberately avoided in these tests, both
 pre-existing and outside this task's scope:
@@ -46,6 +50,8 @@ from instrumentserver.gui.instruments import (
     GUTTER_WIDTH,
     LOCK_COLUMN,
     LOCK_COLUMN_WIDTH,
+    LOCK_PANEL_NOTE,
+    LOCK_ROW_ROLE,
     TINT_COLOURS,
     Claim,
     GutterDelegate,
@@ -56,13 +62,16 @@ from instrumentserver.gui.instruments import (
     ParameterManagerTreeView,
     PMState,
     TypePalette,
+    build_lock_rows,
     compute_claims,
     followers_reaching,
     lock_column_text,
+    lock_root,
     rank_lock_targets,
     relative_path,
 )
 from instrumentserver.gui.parameters import ParameterWidget
+from instrumentserver.gui.shortcuts import KeyboardShortcutManager
 
 PM_NAME = "parameter_manager"
 PM_CLASS = "instrumentserver.params.ParameterManager"
@@ -1473,5 +1482,418 @@ def test_a_filter_cycle_re_applies_the_lock_state(
             timeout=BROADCAST_TIMEOUT,
         )
         assert not widget.paramWidget.isEnabled()
+    finally:
+        gui.model.stopListener()
+
+
+# ---------------------------------------------------------------------------
+# plan task 5.4: the Locks panel
+# ---------------------------------------------------------------------------
+
+
+def test_build_lock_rows_groups_followers_under_a_plain_target():
+    """A plain Target with two Followers — one of them unlocked — builds
+    one root with two children, each child carrying its own Lock (locked
+    and unlocked alike, D5), and the root carrying none."""
+    locks = {
+        "q02.IF": PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=True),
+        "q03.IF": PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=False),
+    }
+    rows = build_lock_rows(locks, {}, PM_NAME)
+    assert [row.path for row in rows] == ["q01.IF"]
+    root = rows[0]
+    assert root.lock is None
+    assert root.type_locks == []
+    assert [child.path for child in root.children] == ["q02.IF", "q03.IF"]
+    assert root.children[0].lock == locks["q02.IF"]
+    assert root.children[1].lock == locks["q03.IF"]
+    assert root.children[0].children == []
+
+
+def test_build_lock_rows_walks_a_chain_nested_and_once():
+    """A chain q03 → q02 → q01 nests two levels deep and the middle hop
+    q02 appears once."""
+    locks = {
+        "q03.IF": PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+        "q02.IF": PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=True),
+    }
+    rows = build_lock_rows(locks, {}, PM_NAME)
+    assert [row.path for row in rows] == ["q01.IF"]
+    root = rows[0]
+    assert [child.path for child in root.children] == ["q02.IF"]
+    assert [
+        grandchild.path for grandchild in root.children[0].children
+    ] == ["q03.IF"]
+
+
+def test_build_lock_rows_sorts_the_type_lock_target_first():
+    """A Type Lock Target sorts before a plain Target and carries the
+    (Type, entry) pairs whose stored Target it is."""
+    dqubit = PMTypeBluePrint(
+        name="dqubit",
+        parameters={
+            "IF": {
+                "default": None,
+                "unit": "Hz",
+                "target": f"{PM_NAME}.tshared",
+            }
+        },
+        nested={},
+        effective={"IF": {"unit": "Hz", "from_type": "dqubit"}},
+    )
+    locks = {
+        "q02.IF": PMLockBluePrint(target=f"{PM_NAME}.plain.x", locked=True),
+        "dq01.IF": PMLockBluePrint(target=f"{PM_NAME}.tshared", locked=True),
+    }
+    rows = build_lock_rows(locks, {"dqubit": dqubit}, PM_NAME)
+    assert [row.path for row in rows] == ["tshared", "plain.x"]
+    assert rows[0].type_locks == [("dqubit", "IF")]
+    assert rows[1].type_locks == []
+    assert [child.path for child in rows[0].children] == ["dq01.IF"]
+
+
+def test_lock_root_follows_locked_hops_only():
+    """lock_root walks locked Locks to the end of the chain and stops at
+    an unlocked hop, which answers ``get`` with its own value (D7)."""
+    locks = {
+        "q03.IF": PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+        "q02.IF": PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=False),
+    }
+    assert lock_root("q03.IF", locks, PM_NAME) == "q02.IF"
+    assert lock_root("q02.IF", locks, PM_NAME) == "q02.IF"
+    assert lock_root("q01.IF", locks, PM_NAME) == "q01.IF"
+
+    all_locked = {
+        "q03.IF": PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+        "q02.IF": PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=True),
+    }
+    assert lock_root("q03.IF", all_locked, PM_NAME) == "q01.IF"
+
+
+def _panel_row_items(gui, path):
+    """The three items of the Locks panel row ``path``: label, value and
+    buttons."""
+    matches = []
+
+    def walk(parent):
+        for row in range(parent.rowCount()):
+            item = parent.child(row, 0)
+            if item is None:
+                continue
+            if item.data(LOCK_ROW_ROLE) == path:
+                matches.append(
+                    [parent.child(row, column) for column in range(3)]
+                )
+            walk(item)
+
+    walk(gui.locksPanel.model.invisibleRootItem())
+    assert matches, f"no Locks panel row {path!r}"
+    return matches[0]
+
+
+def _panel_root_paths(gui):
+    """The paths of the Locks panel's depth-0 rows."""
+    root = gui.locksPanel.model.invisibleRootItem()
+    return [root.child(row, 0).data(LOCK_ROW_ROLE) for row in range(root.rowCount())]
+
+
+def _panel_child_paths(gui, path):
+    """The paths of the Locks panel row ``path``'s children."""
+    item = _panel_row_items(gui, path)[0]
+    return [item.child(row, 0).data(LOCK_ROW_ROLE) for row in range(item.rowCount())]
+
+
+def test_the_locks_action_toggles_the_panel(qtbot, pm, server_port):
+    """The toolbar action is checkable and unchecked, the panel starts
+    hidden as the splitter's second pane, and the shortcut is registered;
+    triggering the action shows the panel."""
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        assert gui.locksAction.isCheckable()
+        assert not gui.locksAction.isChecked()
+        assert gui.locksPanel.isHidden()
+        assert gui.locksSplitter.widget(0) is gui.view
+        assert gui.locksSplitter.widget(1) is gui.locksPanel
+        assert gui.parametersTab.isAncestorOf(gui.locksSplitter)
+        assert KeyboardShortcutManager.REGISTRY["toggle_locks"] == (
+            "Ctrl+Shift+L",
+            "Show or hide the Locks panel",
+        )
+
+        gui.locksAction.trigger()
+        assert gui.locksAction.isChecked()
+        assert not gui.locksPanel.isHidden()
+
+        gui.locksAction.trigger()
+        assert not gui.locksAction.isChecked()
+        assert gui.locksPanel.isHidden()
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_panel_rows_reflect_list_locks_and_remove_from_the_panel(
+    qtbot, pm, second_client, server_port
+):
+    """The plan's named tests: a second Client's locked chain shows in the
+    panel as one root with its Followers beneath; the remove button removes
+    the Lock on the Server and the row disappears; a Lock the second Client
+    makes while the panel is open appears live; and the second Client
+    unlocking a Follower flips its toggle and gives it its editor back."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+    second_pm.lock("q01.IF", "q02.IF")
+    second_pm.lock("q03.IF", "q01.IF")
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        assert gui.state.locks == pm.list_locks()
+
+        gui.locksAction.trigger()  # shows the panel and rebuilds its rows
+        qtbot.waitUntil(
+            lambda: _panel_root_paths(gui) == ["q02.IF"],
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert _panel_child_paths(gui, "q02.IF") == ["q01.IF"]
+        assert _panel_child_paths(gui, "q01.IF") == ["q03.IF"]
+
+        # the root is a plain Target: no buttons and a ParameterWidget
+        # value editor; its Followers are locked: a read-only label and the
+        # toggle and remove buttons
+        root_entry = gui.locksPanel.rowWidgets["q02.IF"]
+        assert isinstance(root_entry["editor"], ParameterWidget)
+        assert root_entry["toggle"] is None and root_entry["remove"] is None
+        follower_entry = gui.locksPanel.rowWidgets["q01.IF"]
+        assert follower_entry["label"] is not None
+        assert follower_entry["editor"] is None
+        assert follower_entry["toggle"] is not None
+        assert follower_entry["remove"] is not None
+        grandchild_entry = gui.locksPanel.rowWidgets["q03.IF"]
+        assert grandchild_entry["label"] is not None
+
+        # press the remove button of q03.IF: the Lock goes on the Server
+        gui.locksPanel.rowWidgets["q03.IF"]["remove"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q03.IF") is None, timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: "q03.IF" not in _panel_child_paths(gui, "q01.IF"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert "q03.IF" not in gui.locksPanel.rowWidgets
+
+        # live update: a Lock the second Client makes appears as a new
+        # child row
+        second_pm.lock("other.x", "q02.IF")
+        qtbot.waitUntil(
+            lambda: "other.x" in _panel_child_paths(gui, "q02.IF"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # the second Client unlocks q01.IF: the toggle goes unlocked and
+        # the value cell becomes an editor again
+        second_pm.unlock("q01.IF")
+
+        def _q01_unlocked_in_panel():
+            entry = gui.locksPanel.rowWidgets.get("q01.IF")
+            return (
+                entry is not None
+                and entry["toggle"] is not None
+                and entry["toggle"].property("locked") is False
+                and entry["editor"] is not None
+            )
+
+        qtbot.waitUntil(_q01_unlocked_in_panel, timeout=BROADCAST_TIMEOUT)
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_type_lock_rows_lock_all_and_remove_rule(
+    qtbot, pm, second_client, server_port
+):
+    """A Type Lock Target is the panel's first root, labelled with its
+    Type; "remove rule" clears only the rule and leaves the Locks; and
+    "lock all" locks an unlocked Follower again through the stored
+    Target."""
+    second_pm = _second_parameter_manager(second_client)
+    second_pm.add_parameter("dq01.IF", initial_value=1.0, unit="Hz")
+    second_pm.add_parameter("dq02.IF", initial_value=2.0, unit="Hz")
+    # a root-level parameter: the root is never an Instance, so targeting
+    # it cannot self-lock an Instance parameter
+    second_pm.add_parameter("tshared", initial_value=0.0, unit="Hz")
+    second_pm.add_type("dqubit")
+    second_pm.add_type_parameter("dqubit", "IF", default=1.0, unit="Hz")
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        # an explicit Target, so no Globals parameter is created and no
+        # parameter-creation Broadcast hits the model's creation branch
+        second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
+        qtbot.waitUntil(
+            lambda: gui.state.types.get("dqubit") is not None
+            and gui.state.types["dqubit"].parameters["IF"]["target"]
+            == f"{PM_NAME}.tshared",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.locksAction.trigger()
+        qtbot.waitUntil(
+            lambda: _panel_root_paths(gui) == ["tshared"],
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert _panel_row_items(gui, "tshared")[0].text() == "[type: dqubit] tshared"
+        assert _panel_child_paths(gui, "tshared") == ["dq01.IF", "dq02.IF"]
+
+        # "remove rule": only the rule goes; both Locks stay
+        gui.locksPanel.rowWidgets["tshared"]["removeRule"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_type("dqubit").parameters["IF"]["target"] is None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert set(pm.list_locks()) == {"dq01.IF", "dq02.IF"}
+        qtbot.waitUntil(
+            lambda: _panel_row_items(gui, "tshared")[0].text() == "tshared",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # re-declare the Type Lock from the second Client, then unlock
+        # dq01.IF from there too; the panel's row carries its "lock all"
+        # button again once the Type Broadcast arrived and the rebuild ran
+        second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
+        second_pm.unlock("dq01.IF")
+        qtbot.waitUntil(
+            lambda: pm.get_lock("dq01.IF") is not None
+            and pm.get_lock("dq01.IF").locked is False,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: (
+                gui.locksPanel.rowWidgets.get("tshared") is not None
+                and gui.locksPanel.rowWidgets["tshared"]["lockAll"] is not None
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # ... and "lock all" locks it again through the stored Target
+        gui.locksPanel.rowWidgets["tshared"]["lockAll"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_lock("dq01.IF") is not None
+            and pm.get_lock("dq01.IF").locked,
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_panel_value_editor_sets_the_target(
+    qtbot, pm, second_client, server_port
+):
+    """Typing a value into the root Target's editor and pressing its set
+    button sets the parameter on the Server, and the tree's Follower row
+    repaints to it (5.3's repaint path)."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.lock("q01.IF", "q02.IF")
+        qtbot.waitUntil(
+            lambda: gui.state.locks.get("q01.IF")
+            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.locksAction.trigger()
+        qtbot.waitUntil(
+            lambda: _panel_root_paths(gui) == ["q02.IF"],
+            timeout=BROADCAST_TIMEOUT,
+        )
+        editor = gui.locksPanel.rowWidgets["q02.IF"]["editor"]
+        assert editor is not None
+
+        editor.paramWidget.input.setText("11")
+        editor.setButton.click()
+        qtbot.waitUntil(
+            lambda: pm.q02.IF.get() == 11, timeout=BROADCAST_TIMEOUT
+        )
+        tree_widget = gui.view.delegate.parameters["q01.IF"]
+        qtbot.waitUntil(
+            lambda: tree_widget._getMethod() == 11, timeout=BROADCAST_TIMEOUT
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_port):
+    """"Lock selection to…" shows the tree's current parameter in the
+    selected label and arms the pick for it; on a submodule row it says so
+    on the note label and arms nothing."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        gui.locksAction.trigger()
+        assert gui.locksPanel.selectedLabel.text() == "no parameter selected"
+
+        # select the other.x row in the tree: the label follows it
+        source_index = gui.model.indexFromItem(_row_items(gui, "other.x")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        qtbot.waitUntil(
+            lambda: gui.locksPanel.selectedLabel.text() == "other.x",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.locksPanel.lockSelectionButton.click()
+        assert gui.armed_follower == "other.x"
+        assert not gui.armStrip.isHidden()
+
+        # a fresh pick, then a submodule row: the label shows that no
+        # parameter is selected and pressing arms nothing
+        gui.cancel_arm()
+        source_index = gui.model.indexFromItem(_row_items(gui, "other")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        qtbot.waitUntil(
+            lambda: gui.locksPanel.selectedLabel.text() == "no parameter selected",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.locksPanel.lockSelectionButton.click()
+        assert (
+            "Select a parameter in the tree first."
+            in gui.locksPanel.noteLabel.text()
+        )
+        assert gui.armed_follower is None
+        assert gui.armStrip.isHidden()
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_panel_action_error_shows_on_the_note_label(qtbot, pm, server_port):
+    """A refused panel action shows the Server's error text on the note
+    label, and the next successful action restores the default note."""
+    pm.add_parameter("q01.x", initial_value=1.0, unit="Hz")
+    pm.add_parameter("q02.x", initial_value=2.0, unit="Hz")
+    pm.lock("q02.x", "q01.x")
+    pm.update()  # the GUI's tree is built from the proxy's blueprint
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.locksAction.trigger()
+
+        gui.locksPanel.toggleLockRequested.emit("no.such")
+        assert "no.such" in gui.locksPanel.noteLabel.text()
+
+        # a successful action restores the default note
+        gui.locksPanel.toggleLockRequested.emit("q02.x")
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q02.x").locked is False,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert gui.locksPanel.noteLabel.text() == LOCK_PANEL_NOTE
     finally:
         gui.model.stopListener()

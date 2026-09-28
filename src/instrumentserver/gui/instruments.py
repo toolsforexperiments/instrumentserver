@@ -1067,6 +1067,38 @@ LOCK_COLUMN_WIDTH = 140
 LOCK_COLOUR = "#7e5bef"
 
 
+def lock_button_tooltip(locked: bool, target: str) -> str:
+    """The lock/relock button's tooltip for one Lock state (the mock's
+    strings), with ``target`` relative to the Parameter Manager. Shared by
+    the tree's per-row widget (plan task 5.3) and the Locks panel (plan
+    task 5.4)."""
+    if locked:
+        return f"locked to {target} — unlock and go back to its own value"
+    return f"unlocked — lock to {target} again"
+
+
+def make_lock_button(
+    parent: QtWidgets.QWidget, locked: bool, target: Optional[str] = None
+) -> QtWidgets.QPushButton:
+    """The lock/relock toggle button shared by the tree's per-row widget
+    (plan task 5.3) and the Locks panel (plan task 5.4): the lock icon and
+    the purple ``locked`` fill. ``target`` is the Target relative to the
+    Parameter Manager for the state tooltip; the tree's delegate passes
+    ``None`` and leaves the tooltip to
+    :meth:`ParameterManagerGui._update_row_lock_widget`."""
+    button = QtWidgets.QPushButton(
+        QtGui.QIcon(":/icons/lock.svg"), "", parent=parent
+    )
+    button.setProperty("locked", locked)
+    button.setStyleSheet(
+        f"QPushButton[locked=\"true\"] {{ background-color: {LOCK_COLOUR} }}"
+    )
+    if target is not None:
+        button.setToolTip(lock_button_tooltip(locked, target))
+    keepSmallHorizontally(button)
+    return button
+
+
 def relative_path(full: str, instrument_name: str) -> str:
     """The path relative to the Parameter Manager: ``full`` with the
     ``<instrument_name>.`` prefix stripped. ``PMLockBluePrint.target``
@@ -1184,6 +1216,138 @@ def rank_lock_targets(
         ranked.append((rank, candidate))
     ranked.sort(key=lambda entry: (entry[0], entry[1]))
     return [path for _, path in ranked]
+
+
+@dataclass
+class LockRow:
+    """One row of the Locks panel (plan task 5.4): a Target of one or more
+    Locks — plain, or the Target of a Type Lock — and the Followers beneath
+    it, recursively for chains. ``type_locks`` holds every ``(Type name,
+    entry path)`` whose Type Lock Target the row is; ``lock`` is the row's
+    own Lock (``None`` for a plain Target)."""
+
+    path: str
+    type_locks: List[Tuple[str, str]]
+    lock: Optional[PMLockBluePrint]
+    children: List["LockRow"]
+
+
+def lock_root(
+    path: str,
+    locks: Mapping[str, PMLockBluePrint],
+    instrument_name: str,
+) -> str:
+    """The end of the chain of locked Locks that starts at ``path`` (the
+    mock's ``root``): the parameter a locked read at ``path`` finally asks.
+    Only locked hops count (D7): an unlocked Lock answers ``get`` with its
+    own value, so the walk stops there. A ``seen`` set guards against a
+    cycle. Paths are relative to the Parameter Manager, except the stored
+    ``PMLockBluePrint.target``, which is relativized on the way."""
+    current = path
+    seen: set = set()
+    while current not in seen:
+        seen.add(current)
+        lock = locks.get(current)
+        if lock is None or not lock.locked:
+            return current
+        current = relative_path(lock.target, instrument_name)
+    return current
+
+
+def build_lock_rows(
+    locks: Mapping[str, PMLockBluePrint],
+    types: Mapping[str, PMTypeBluePrint],
+    instrument_name: str,
+) -> List[LockRow]:
+    """The Locks panel's rows from the client-side state (plan task 5.4;
+    the mock's locks-panel walk).
+
+    ``locks`` maps each Follower's path (relative to the Parameter
+    Manager) to its :class:`PMLockBluePrint`; ``types`` maps each Type's
+    name to its :class:`PMTypeBluePrint`. An unlocked Lock still
+    remembers its Target (D5), so a Follower's link is its Lock's Target
+    whether the Lock is locked or not.
+
+    The Targets are the unique links in ``locks`` order. The roots are the
+    Targets that carry no Lock of their own, the Type Lock Targets first
+    (a stable sort, like the mock's "group rows first"), each walked
+    recursively into its Followers — a ``seen`` set guards against loops —
+    and then any Target the first walk did not reach (the mock's second
+    pass, e.g. a cycle among Followers). Every row carries its own Lock
+    (``None`` for a plain Target) and its ``(Type, entry)`` pairs.
+    """
+
+    def link(follower: str) -> Optional[str]:
+        lock = locks.get(follower)
+        return (
+            None if lock is None else relative_path(lock.target, instrument_name)
+        )
+
+    targets: List[str] = []
+    for follower in locks:
+        target = link(follower)
+        if target is not None and target not in targets:
+            targets.append(target)
+
+    def type_locks_at(path: str) -> List[Tuple[str, str]]:
+        found: List[Tuple[str, str]] = []
+        for type_name, blueprint in types.items():
+            for entry_path, spec in blueprint.parameters.items():
+                entry_target = spec.get("target")
+                if (
+                    entry_target is not None
+                    and relative_path(entry_target, instrument_name) == path
+                ):
+                    found.append((type_name, entry_path))
+        return found
+
+    def followers(path: str) -> List[str]:
+        return [
+            follower for follower in locks if link(follower) == path
+        ]
+
+    rows: List[LockRow] = []
+    seen: set = set()
+
+    def walk(path: str) -> Optional[LockRow]:
+        if path in seen:
+            return None
+        seen.add(path)
+        row = LockRow(
+            path=path,
+            type_locks=type_locks_at(path),
+            lock=locks.get(path),
+            children=[],
+        )
+        for child_path in followers(path):
+            child = walk(child_path)
+            if child is not None:
+                row.children.append(child)
+        return row
+
+    # Group rows first: a Type Lock Target is the headline, single links
+    # follow (the mock's stable sort).
+    roots = [target for target in targets if target not in locks]
+    roots.sort(key=lambda target: 0 if type_locks_at(target) else 1)
+    for target in roots:
+        row = walk(target)
+        if row is not None:
+            rows.append(row)
+    # the mock's second pass: any Target the first walk did not reach
+    for target in targets:
+        row = walk(target)
+        if row is not None:
+            rows.append(row)
+    return rows
+
+
+def _lock_row_paths(rows: List[LockRow]) -> List[str]:
+    """Every row path of the built rows, depth first."""
+    paths: List[str] = []
+    for row in rows:
+        paths.append(row.path)
+        paths.extend(_lock_row_paths(row.children))
+    return paths
 
 
 class LockArmStrip(QtWidgets.QWidget):
@@ -1307,6 +1471,341 @@ class LockArmStrip(QtWidgets.QWidget):
         self.clear_error()
 
 
+#: The Locks panel's default note (the mock's ``lockNote``, in glossary
+#: words): shown until an action error or a skipped-Lock warning replaces
+#: it.
+LOCK_PANEL_NOTE = (
+    "A Type Lock row — marked with its Type — holds one value for every "
+    "Instance of that Type. Unlock a Follower to let it keep its own "
+    "value, remove its Lock to take it out; the lock button on the Type "
+    "Lock row locks them all again."
+)
+
+#: Fixed pixel width of the Locks panel's value column (the mock's value
+#: column) and of its buttons column.
+LOCK_PANEL_VALUE_WIDTH = 200
+LOCK_PANEL_BUTTONS_WIDTH = 84
+
+#: Data role under which a Locks panel row's path (relative to the
+#: Parameter Manager) is stored on its first item, so the rows can be
+#: found again after a rebuild.
+LOCK_ROW_ROLE = cast(
+    "QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 2
+)
+
+
+class LocksPanel(QtWidgets.QWidget):
+    """The Locks panel right of the Parameter Manager tree (plan task 5.4;
+    the mock's locks panel): one root row per Target — the Type Lock
+    Targets first, labelled with their Type — with each Target's Followers
+    beneath it, recursively for chains.
+
+    A Target row holds a value editor (a plain ``set`` on the Target); a
+    locked Follower row shows its value read-only, and every Follower row
+    carries the lock/relock toggle and the remove button. A Type Lock row
+    carries "lock all" and "remove rule". The panel never talks to the
+    Server itself: every action is emitted as a signal —
+    ``toggleLockRequested``, ``removeLockRequested``, ``lockAllRequested``,
+    ``removeRuleRequested`` and ``lockSelectionRequested`` — and the
+    Parameter Manager GUI, which owns the panel, performs it and reports
+    errors and skipped Locks on the note label."""
+
+    #: Signal(str)
+    #: Emitted when the user presses a Follower row's lock/relock button;
+    #: the path is relative to the Parameter Manager.
+    toggleLockRequested = QtCore.Signal(str)
+
+    #: Signal(str)
+    #: Emitted when the user presses a Follower row's remove button; the
+    #: path is relative to the Parameter Manager.
+    removeLockRequested = QtCore.Signal(str)
+
+    #: Signal(str, str, str)
+    #: Emitted when the user presses a Type Lock row's "lock all" button:
+    #: the Type's name, the entry path, and the entry's stored Target
+    #: relative to the Parameter Manager.
+    lockAllRequested = QtCore.Signal(str, str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses a Type Lock row's "remove rule"
+    #: button: the Type's name and the entry path.
+    removeRuleRequested = QtCore.Signal(str, str)
+
+    #: Signal()
+    #: Emitted when the user presses "Lock selection to…".
+    lockSelectionRequested = QtCore.Signal()
+
+    def __init__(
+        self, instrument_name: str, parent: Optional[QtWidgets.QWidget] = None
+    ) -> None:
+        super().__init__(parent)
+        self.instrument_name = instrument_name
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.model = QtGui.QStandardItemModel(0, 3, self)
+        self.model.setHorizontalHeaderLabels(["locks", "value", ""])
+
+        self.view = QtWidgets.QTreeView(self)
+        self.view.setModel(self.model)
+        self.view.setHeaderHidden(False)
+        self.view.setAlternatingRowColors(True)
+        self.view.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        header = self.view.header()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(1, LOCK_PANEL_VALUE_WIDTH)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(2, LOCK_PANEL_BUTTONS_WIDTH)
+
+        self.lockSelectionButton = QtWidgets.QPushButton(
+            "Lock selection to…", self
+        )
+        self.selectedLabel = QtWidgets.QLabel(self)
+        self.selectedLabel.setText("no parameter selected")
+
+        self.noteLabel = QtWidgets.QLabel(self)
+        self.noteLabel.setWordWrap(True)
+        self.noteLabel.setText(LOCK_PANEL_NOTE)
+
+        layout.addWidget(self.view, 1)
+        selectionRow = QtWidgets.QHBoxLayout()
+        selectionRow.setContentsMargins(0, 0, 0, 0)
+        selectionRow.addWidget(self.lockSelectionButton)
+        selectionRow.addWidget(self.selectedLabel, 1)
+        layout.addLayout(selectionRow)
+        layout.addWidget(self.noteLabel)
+        self.setLayout(layout)
+
+        # The widgets of every panel row, keyed by the row path (relative
+        # to the Parameter Manager); :meth:`refresh_values` re-reads the
+        # values without a rebuild.
+        self.rowWidgets: Dict[str, Dict[str, Any]] = {}
+
+        self.lockSelectionButton.clicked.connect(self.lockSelectionRequested)
+
+    def rebuild(
+        self,
+        rows: List[LockRow],
+        elements: Mapping[str, Any],
+        types: Mapping[str, PMTypeBluePrint],
+        locks: Mapping[str, PMLockBluePrint],
+    ) -> None:
+        """Rebuild every row from ``rows`` (see :func:`build_lock_rows`).
+
+        ``elements`` maps each row path to the row's parameter object (the
+        GUI resolves it through the Proxy or the local instrument);
+        ``types`` and ``locks`` are the client-side state the "lock all"
+        Target and the tooltips come from. Every row is expanded after the
+        rebuild; no collapsed state is kept."""
+        self.model.removeRows(0, self.model.rowCount())
+        self.rowWidgets = {}
+        self._build_rows(rows, elements, types, locks, self.model.invisibleRootItem())
+        self.view.expandAll()
+
+    def refresh_values(self, paths: Iterable[str]) -> None:
+        """Re-read the value of every named row the panel holds:
+        editors through :meth:`ParameterWidget.setWidgetFromParameter`,
+        the read-only labels of locked rows through a fresh ``get``. A row
+        whose widget is gone — a rebuild replaced it — is skipped."""
+        for path in paths:
+            entry = self.rowWidgets.get(path)
+            if entry is None:
+                continue
+            try:
+                if entry.get("editor") is not None:
+                    entry["editor"].setWidgetFromParameter()
+                elif (
+                    entry.get("label") is not None
+                    and entry.get("element") is not None
+                ):
+                    entry["label"].setText(str(entry["element"].get()))
+            except RuntimeError:
+                logger.debug(
+                    f"Could not refresh the value of {path}. "
+                    "Object is not being shown right now."
+                )
+
+    def show_error(self, text: str) -> None:
+        """Show an action error (the mock's ``lockError``) in red on the
+        note label."""
+        self.noteLabel.setStyleSheet("QLabel { color: red }")
+        self.noteLabel.setText(text)
+
+    def show_note(self, text: str) -> None:
+        """Show ``text`` on the note label in the normal colour (a
+        skipped-Lock warning, for example)."""
+        self.noteLabel.setStyleSheet("")
+        self.noteLabel.setText(text)
+
+    def reset_note(self) -> None:
+        """Restore the default explanatory note."""
+        self.show_note(LOCK_PANEL_NOTE)
+
+    def _build_rows(
+        self,
+        rows: List[LockRow],
+        elements: Mapping[str, Any],
+        types: Mapping[str, PMTypeBluePrint],
+        locks: Mapping[str, PMLockBluePrint],
+        parent_item: QtGui.QStandardItem,
+    ) -> None:
+        for row in rows:
+            if row.type_locks:
+                label = (
+                    f"[type: {', '.join(t for t, _ in row.type_locks)}] {row.path}"
+                )
+            else:
+                label = row.path
+            name_item = QtGui.QStandardItem(label)
+            name_item.setData(row.path, LOCK_ROW_ROLE)
+            value_item = QtGui.QStandardItem()
+            buttons_item = QtGui.QStandardItem()
+            parent_item.appendRow([name_item, value_item, buttons_item])
+            self._build_row_widgets(
+                row,
+                elements.get(row.path),
+                types,
+                locks,
+                value_item,
+                buttons_item,
+            )
+            self._build_rows(
+                row.children, elements, types, locks, name_item
+            )
+
+    def _build_row_widgets(
+        self,
+        row: LockRow,
+        element: Any,
+        types: Mapping[str, PMTypeBluePrint],
+        locks: Mapping[str, PMLockBluePrint],
+        value_item: QtGui.QStandardItem,
+        buttons_item: QtGui.QStandardItem,
+    ) -> None:
+        """Build one row's value cell (a read-only label for a locked
+        Follower, a value editor for every other row with a parameter) and
+        its buttons cell (the Type Lock controls, or the Follower's toggle
+        and remove), and record the widgets in ``rowWidgets``."""
+        path = row.path
+        entry: Dict[str, Any] = {
+            "element": element,
+            "editor": None,
+            "label": None,
+            "toggle": None,
+            "remove": None,
+            "lockAll": None,
+            "removeRule": None,
+        }
+        self.rowWidgets[path] = entry
+
+        if row.lock is not None and row.lock.locked:
+            # a locked Follower reads its Target's value (D3) and refuses
+            # writes: a read-only label, like the mock's
+            target = relative_path(row.lock.target, self.instrument_name)
+            root = lock_root(path, locks, self.instrument_name)
+            label = QtWidgets.QLabel(self.view.viewport())
+            value = ""
+            if element is not None:
+                try:
+                    value = element.get()
+                except Exception as exc:
+                    logger.debug(f"could not read the value of {path}: {exc}")
+            label.setText(str(value))
+            label.setToolTip(f"locked to {target} — set the value on {root}")
+            self.view.setIndexWidget(self.model.indexFromItem(value_item), label)
+            entry["label"] = label
+        elif element is not None:
+            editor = ParameterWidget(element, self.view.viewport())
+            if row.type_locks:
+                tooltip = (
+                    f"set the value — every Instance of "
+                    f"{row.type_locks[0][0]} follows it"
+                )
+            else:
+                tooltip = "set the Target value — every locked Follower follows it"
+            editor.setButton.setToolTip(tooltip)
+            self.view.setIndexWidget(self.model.indexFromItem(value_item), editor)
+            entry["editor"] = editor
+
+        container: Optional[QtWidgets.QWidget] = None
+        if row.type_locks:
+            # the Type Lock controls; like the mock, the first (Type,
+            # entry) pair acts when several share the Target
+            type_name, entry_path = row.type_locks[0]
+            blueprint = types.get(type_name)
+            spec = (
+                blueprint.parameters.get(entry_path, {})
+                if blueprint is not None
+                else {}
+            )
+            stored = spec.get("target")
+            stored_relative = (
+                relative_path(stored, self.instrument_name)
+                if stored is not None
+                else path
+            )
+            container = QtWidgets.QWidget(self.view.viewport())
+            buttons_layout = QtWidgets.QHBoxLayout(container)
+            buttons_layout.setContentsMargins(0, 0, 0, 0)
+            lock_all = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/lock.svg"), "", parent=container
+            )
+            lock_all.setToolTip(f"lock every Instance of {type_name} to this again")
+            keepSmallHorizontally(lock_all)
+            lock_all.pressed.connect(
+                lambda: self.lockAllRequested.emit(
+                    type_name, entry_path, stored_relative
+                )
+            )
+            remove_rule = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/delete.svg"), "", parent=container
+            )
+            remove_rule.setStyleSheet("QPushButton { background-color: salmon }")
+            remove_rule.setToolTip(
+                "remove the Type Lock — the Instances' Locks stay until "
+                "removed one by one"
+            )
+            keepSmallHorizontally(remove_rule)
+            remove_rule.pressed.connect(
+                lambda: self.removeRuleRequested.emit(type_name, entry_path)
+            )
+            buttons_layout.addWidget(lock_all)
+            buttons_layout.addWidget(remove_rule)
+            entry["lockAll"] = lock_all
+            entry["removeRule"] = remove_rule
+        elif row.lock is not None:
+            # a Follower's lock/relock toggle and remove button
+            container = QtWidgets.QWidget(self.view.viewport())
+            buttons_layout = QtWidgets.QHBoxLayout(container)
+            buttons_layout.setContentsMargins(0, 0, 0, 0)
+            target = relative_path(row.lock.target, self.instrument_name)
+            toggle = make_lock_button(container, row.lock.locked, target)
+            toggle.pressed.connect(
+                lambda follower=path: self.toggleLockRequested.emit(follower)
+            )
+            remove = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/delete.svg"), "", parent=container
+            )
+            remove.setStyleSheet("QPushButton { background-color: salmon }")
+            remove.setToolTip(f"remove the Lock — {path} keeps its own value")
+            keepSmallHorizontally(remove)
+            remove.pressed.connect(
+                lambda follower=path: self.removeLockRequested.emit(follower)
+            )
+            buttons_layout.addWidget(toggle)
+            buttons_layout.addWidget(remove)
+            entry["toggle"] = toggle
+            entry["remove"] = remove
+        if container is not None:
+            self.view.setIndexWidget(
+                self.model.indexFromItem(buttons_item), container
+            )
+
+
 # ----------------- Parameter Manager Locks - Ending -----------------------------------
 
 
@@ -1361,13 +1860,8 @@ class ParameterDeleteDelegate(ParameterDelegate):
         Lock (a Lock-less row shows no button, as the mock), fills purple
         while the Lock is locked, and only :meth:`ParameterManagerGui.
         apply_locks` changes its state."""
-        w = QtWidgets.QPushButton(QtGui.QIcon(":/icons/lock.svg"), "", parent=widget)
-        w.setProperty("locked", False)
-        w.setStyleSheet(
-            f"QPushButton[locked=\"true\"] {{ background-color: {LOCK_COLOUR} }}"
-        )
+        w = make_lock_button(widget, locked=False)
         w.setVisible(False)
-        keepSmallHorizontally(w)
 
         w.pressed.connect(lambda: self.toggleLock.emit(fullName))
         return w
@@ -1612,6 +2106,22 @@ class ParameterManagerGui(InstrumentParameters):
         assert isinstance(layout, QtWidgets.QVBoxLayout)
         layout.insertWidget(0, self.profileManager)
         layout.addWidget(self.addParam)
+        # The Locks panel (plan task 5.4) sits right of the tree in a
+        # splitter: the view keeps its identity, so every existing layout
+        # consumer and test keeps working. The panel starts hidden and
+        # costs nothing until the toolbar action shows it.
+        self.locksPanel = LocksPanel(self.instrument.name, parent=self)
+        view_index = layout.indexOf(self.view)
+        layout.removeWidget(self.view)
+        self.locksSplitter = QtWidgets.QSplitter(
+            QtCore.Qt.Orientation.Horizontal, self
+        )
+        self.locksSplitter.addWidget(self.view)
+        self.locksSplitter.addWidget(self.locksPanel)
+        self.locksSplitter.setStretchFactor(0, 3)
+        self.locksSplitter.setStretchFactor(1, 2)
+        layout.insertWidget(view_index, self.locksSplitter)
+        self.locksPanel.setVisible(False)
         # The existing content becomes tab 0 of the tab widget; the Types
         # tab stays an empty placeholder until its own task builds it.
         self.parametersTab = QtWidgets.QWidget(self)
@@ -1668,11 +2178,25 @@ class ParameterManagerGui(InstrumentParameters):
         self.view.clicked.connect(self._on_view_clicked)
         self.armStrip.targetPicked.connect(self.pick_lock_target)
         self.armStrip.cancelled.connect(self.cancel_arm)
+        # the Locks panel (plan task 5.4): its actions run through this GUI,
+        # and the tree's current row drives the panel's selected label
+        self.locksAction.toggled.connect(self._on_locks_action_toggled)
+        self.locksPanel.toggleLockRequested.connect(self._on_panel_toggle_lock)
+        self.locksPanel.removeLockRequested.connect(self._on_panel_remove_lock)
+        self.locksPanel.lockAllRequested.connect(self._on_panel_lock_all)
+        self.locksPanel.removeRuleRequested.connect(self._on_panel_remove_rule)
+        self.locksPanel.lockSelectionRequested.connect(
+            self._lock_selection_from_panel
+        )
+        self.view.selectionModel().currentChanged.connect(
+            self._on_tree_current_changed
+        )
         self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
         self.shortcutManager.register("clear_add", self.addParam.clear, self)
         self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
         self.shortcutManager.register("load_items", self.loadFromFile, self)
         self.shortcutManager.register("save_items", self.saveToFile, self)
+        self.shortcutManager.register("toggle_locks", self.locksAction.toggle, self)
 
     @QtCore.Slot()
     def _deleteCurrentItem(self) -> None:
@@ -1698,6 +2222,16 @@ class ParameterManagerGui(InstrumentParameters):
         )
         saveParamAction.triggered.connect(lambda x: self.saveToFile())  # type: ignore[union-attr]
         self.shortcutManager.register_tooltip("save_items", saveParamAction)
+
+        # the Locks panel toggle (plan task 5.4); the toggled connection
+        # and the shortcut are wired in connectSignals, where the panel
+        # exists
+        self.locksAction = toolbar.addAction(
+            QtGui.QIcon(":/icons/lock.svg"),
+            "Show the Locks panel",
+        )
+        self.locksAction.setCheckable(True)
+        self.shortcutManager.register_tooltip("toggle_locks", self.locksAction)
 
         return toolbar
 
@@ -1747,9 +2281,11 @@ class ParameterManagerGui(InstrumentParameters):
     ) -> None:
         """Record the change a ``pm-type-update`` Broadcast reports about
         the Type ``name`` in the state, then recompute the tints and gutter
-        bands it may change."""
+        bands it may change, and rebuild the Locks panel (its Type Lock
+        rows depend on the Types)."""
         self.state.apply_type(name, type_blueprint)
         self.apply_tints()
+        self.refresh_locks_panel()
 
     @QtCore.Slot(str, object)
     def _on_lock_changed(
@@ -1759,11 +2295,18 @@ class ParameterManagerGui(InstrumentParameters):
         the Follower at ``path``, then recompute the Lock column and the
         row widgets, and repaint the values the change alters: the
         Follower's own and every row whose chain of locked Locks reaches
-        it, since locking and unlocking change what ``get`` answers."""
+        it, since locking and unlocking change what ``get`` answers — in
+        the tree and, while it is shown, in the Locks panel."""
         self.state.apply_lock(path, lock)
         self.apply_locks()
-        for follower in [path, *followers_reaching(path, self.state.locks, self.instrument.name)]:
+        refreshed = [
+            path,
+            *followers_reaching(path, self.state.locks, self.instrument.name),
+        ]
+        for follower in refreshed:
             self._refresh_row_widget(follower)
+        if not self.locksPanel.isHidden():
+            self.locksPanel.refresh_values(refreshed)
 
     @QtCore.Slot(object, object)
     def _on_item_new_value(self, path: object, value: object) -> None:
@@ -1772,11 +2315,15 @@ class ParameterManagerGui(InstrumentParameters):
         Follower answers ``get`` with the Target's value, and the
         Parameter Manager emits nothing for values). The Broadcast's own
         row is refreshed by the base wiring to
-        ``view.onItemNewValue``; this slot handles the rows behind it."""
-        for follower in followers_reaching(
+        ``view.onItemNewValue``; this slot handles the rows behind it —
+        and, while the Locks panel is shown, the same paths there."""
+        followers = followers_reaching(
             str(path), self.state.locks, self.instrument.name
-        ):
+        )
+        for follower in followers:
             self._refresh_row_widget(follower)
+        if not self.locksPanel.isHidden():
+            self.locksPanel.refresh_values([str(path), *followers])
 
     def _refresh_row_widget(self, path: str) -> None:
         """Re-read the parameter behind the row at ``path`` through the
@@ -1804,8 +2351,10 @@ class ParameterManagerGui(InstrumentParameters):
         model reload), on every ``pm-lock-update`` Broadcast, and after a
         parameter was created or removed by a Broadcast. Recomputing all
         rows on every change is fine — the tree is small — and keeps one
-        clear path."""
+        clear path. The Locks panel is rebuilt with the same state at the
+        end, but only while it is shown."""
         self._apply_locks_to_rows(self.model.invisibleRootItem())
+        self.refresh_locks_panel()
 
     def _apply_locks_to_rows(self, parent: QtGui.QStandardItem) -> None:
         """Walk the source model (never the proxy) and set each row's Lock
@@ -1847,12 +2396,7 @@ class ParameterManagerGui(InstrumentParameters):
             widget.set_read_only(False)
             return
         target = relative_path(lock.target, self.instrument.name)
-        if lock.locked:
-            tooltip = (
-                f"locked to {target} — unlock and go back to its own value"
-            )
-        else:
-            tooltip = f"unlocked — lock to {target} again"
+        tooltip = lock_button_tooltip(lock.locked, target)
         if button is not None:
             button.setToolTip(tooltip)
             button.setProperty("locked", lock.locked)
@@ -1942,6 +2486,127 @@ class ParameterManagerGui(InstrumentParameters):
         item = self.model.itemFromIndex(source_index)
         if item is not None and item.element is not None:
             self.pick_lock_target(item.name)
+
+    # ------------------------------------------------------------------
+    # the Locks panel (plan task 5.4)
+    # ------------------------------------------------------------------
+
+    @QtCore.Slot(bool)
+    def _on_locks_action_toggled(self, checked: bool) -> None:
+        """Show or hide the Locks panel with the toolbar action, and
+        rebuild its rows when it becomes visible (a hidden panel costs
+        nothing)."""
+        self.locksPanel.setVisible(checked)
+        if checked:
+            self.refresh_locks_panel()
+
+    @QtCore.Slot()
+    def refresh_locks_panel(self) -> None:
+        """Rebuild the Locks panel's rows from the client-side state (plan
+        task 5.4): the rows from ``PMState.locks`` and ``PMState.types``,
+        each row's parameter resolved through the instrument.
+
+        Runs at the end of :meth:`apply_locks` and of
+        :meth:`_on_type_changed` — the Type Lock rows depend on the Types —
+        and when the toolbar action shows the panel, but only while the
+        panel is shown, so a hidden panel costs nothing."""
+        if self.locksPanel.isHidden():
+            return
+        rows = build_lock_rows(
+            self.state.locks, self.state.types, self.instrument.name
+        )
+        elements: Dict[str, Any] = {}
+        for path in _lock_row_paths(rows):
+            try:
+                elements[path] = nestedAttributeFromString(self.instrument, path)
+            except (AttributeError, RuntimeError) as exc:
+                logger.debug(
+                    f"could not resolve the parameter of the Locks panel "
+                    f"row {path}: {exc}"
+                )
+        self.locksPanel.rebuild(
+            rows, elements, self.state.types, self.state.locks
+        )
+
+    @QtCore.Slot(str)
+    def _on_panel_toggle_lock(self, path: str) -> None:
+        """The Locks panel's lock/relock toggle: toggle the Lock of the
+        parameter at ``path``. A refused toggle shows the Server's error
+        text on the panel's note label."""
+        try:
+            self.instrument.toggle_lock(path)
+        except Exception as exc:
+            self.locksPanel.show_error(str(exc))
+        else:
+            self.locksPanel.reset_note()
+
+    @QtCore.Slot(str)
+    def _on_panel_remove_lock(self, path: str) -> None:
+        """The Locks panel's remove button: remove the Lock of the
+        parameter at ``path``. A refused removal shows the Server's error
+        text on the panel's note label."""
+        try:
+            self.instrument.remove_lock(path)
+        except Exception as exc:
+            self.locksPanel.show_error(str(exc))
+        else:
+            self.locksPanel.reset_note()
+
+    @QtCore.Slot(str, str, str)
+    def _on_panel_lock_all(self, type_name: str, entry: str, target: str) -> None:
+        """The Type Lock row's "lock all" button: declare the Type Lock
+        again with the entry's stored Target — called with ``target=None``
+        the Server would re-point the rule to the Globals default (D17).
+        Instance parameters the declaration skips, because they carry a
+        Lock on another Target (D17), are named on the note label."""
+        try:
+            skipped = self.instrument.lock_type_parameter(
+                type_name, entry, target=target
+            )
+        except Exception as exc:
+            self.locksPanel.show_error(str(exc))
+        else:
+            if skipped:
+                self.locksPanel.show_note(f"skipped: {', '.join(skipped)}")
+            else:
+                self.locksPanel.reset_note()
+
+    @QtCore.Slot(str, str)
+    def _on_panel_remove_rule(self, type_name: str, entry: str) -> None:
+        """The Type Lock row's "remove rule" button: remove only the rule
+        (D17); the Locks it created stay until they are removed one by
+        one. A refused removal shows the Server's error text on the
+        panel's note label."""
+        try:
+            self.instrument.unlock_type_parameter(type_name, entry)
+        except Exception as exc:
+            self.locksPanel.show_error(str(exc))
+        else:
+            self.locksPanel.reset_note()
+
+    @QtCore.Slot()
+    def _lock_selection_from_panel(self) -> None:
+        """The panel's "Lock selection to…": arm the target picker for the
+        tree's current parameter row. With no parameter row current, the
+        note label says so and nothing is armed."""
+        item = self._getCurrentItem()
+        if item is None or item.element is None:
+            self.locksPanel.show_error("Select a parameter in the tree first.")
+            return
+        self.arm_lock(item.name)
+
+    @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def _on_tree_current_changed(
+        self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex
+    ) -> None:
+        """Keep the panel's selected label on the tree's current row: a
+        parameter row shows its path, a submodule row or no selection shows
+        "no parameter selected"."""
+        item = self._getCurrentItem()
+        if item is not None and item.element is not None:
+            self.locksPanel.selectedLabel.setText(item.name)
+        else:
+            self.locksPanel.selectedLabel.setText("no parameter selected")
 
     @QtCore.Slot()
     def apply_tints(self) -> None:
