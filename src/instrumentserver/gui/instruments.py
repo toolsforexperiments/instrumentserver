@@ -567,9 +567,10 @@ class ModelParameters(InstrumentModelBase):
 
 class ModelParameterManager(ModelParameters):
     #: Signal() --
-    #: Emitted after a Broadcast changed the tree's structure (a parameter
-    #: was created or removed), so the Parameter Manager GUI can recompute
-    #: the Type claims that the tints and gutter bands show.
+    #: Emitted after a Broadcast changed the tree's structure: a parameter
+    #: was created or removed, or a ``parameter-update``/``parameter-call``
+    #: added a row the model did not know. The Parameter Manager GUI
+    #: recomputes the Type claims that the tints and gutter bands show.
     structureChanged = QtCore.Signal()
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -634,18 +635,15 @@ class ModelParameterManager(ModelParameters):
 
     def updateParameter(self, bp: ParameterBroadcastBluePrint) -> None:
         fullName = ".".join(bp.name.split(".")[1:])
-        known_row = bp.action == PARAMETER_UPDATE and self._has_row(fullName)
+        value_update = bp.action in (PARAMETER_UPDATE, PARAMETER_CALL)
+        known_row = value_update and self._has_row(fullName)
         super().updateParameter(bp)
-        # a parameter-update for a row the model did not know adds one
-        # through the base update branch; matching depends on which
-        # parameters exist, so the tints and gutter bands must be
+        # a parameter-update or parameter-call for a row the model did not
+        # know adds one through the base update branch; matching depends
+        # on which parameters exist, so the tints and gutter bands must be
         # recomputed for it too (plan task 5.6), or the new row would
         # stay untinted until the next recompute
-        added_row = (
-            bp.action == PARAMETER_UPDATE
-            and not known_row
-            and self._has_row(fullName)
-        )
+        added_row = value_update and not known_row and self._has_row(fullName)
         if bp.action in (PARAMETER_CREATION, PARAMETER_DELETION) or added_row:
             self.structureChanged.emit()
 
@@ -3395,7 +3393,12 @@ class ParameterManagerGui(InstrumentParameters):
             )
             box.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Cancel)
             self.removalDialog = box
-            if box.exec() != QtWidgets.QMessageBox.StandardButton.Ok:
+            clicked = box.exec()
+            # the box is closed on both paths: the attribute matches its
+            # docstring again (the tests' QTimer callbacks read it while
+            # the box is open, so they keep working)
+            self.removalDialog = None
+            if clicked != QtWidgets.QMessageBox.StandardButton.Ok:
                 return
         self.instrument.remove_parameter(fullName)
 

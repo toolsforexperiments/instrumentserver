@@ -49,6 +49,7 @@ from qcodes.instrument import InstrumentBase
 
 from instrumentserver import QtCore, QtWidgets
 from instrumentserver.blueprints import (
+    PARAMETER_CALL,
     PARAMETER_UPDATE,
     ParameterBroadcastBluePrint,
     PMLockBluePrint,
@@ -2999,10 +3000,11 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
 ):
     """The plan's named test: deleting a Target — through the row's delete
     button or the delete_item shortcut — pops a QMessageBox naming the
-    Followers that will lose their Locks; Cancel leaves the Server
-    untouched and no pm-lock-update is emitted, Ok removes the Target and
-    drops the Locks, and a parameter without Followers is removed without
-    a dialog."""
+    Followers that will lose their Locks (locked and unlocked alike, with
+    Cancel as the default button); Cancel leaves the Server untouched and
+    no pm-lock-update is emitted, Ok removes the Target and drops the
+    Locks, and a parameter without Followers is removed without a
+    dialog."""
     second_pm = _second_parameter_manager(second_client)
     _make_live_parameters(pm)
 
@@ -3013,6 +3015,15 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
         qtbot.waitUntil(
             lambda: gui.state.locks.get("q01.IF")
             == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # a second Follower whose Lock the second Client unlocked: the
+        # dialog names both states
+        second_pm.lock("q03.IF", "q02.IF")
+        second_pm.unlock("q03.IF")
+        qtbot.waitUntil(
+            lambda: gui.state.locks.get("q03.IF")
+            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=False),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.removalDialog is None
@@ -3027,6 +3038,7 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
                 "Removing q02.IF also removes the Locks of:"
             )
             assert "q01.IF (locked)" in dialog.text()
+            assert "q03.IF (unlocked)" in dialog.text()
             assert (
                 dialog.standardButtons()
                 & QtWidgets.QMessageBox.StandardButton.Ok
@@ -3034,6 +3046,10 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
             assert (
                 dialog.standardButtons()
                 & QtWidgets.QMessageBox.StandardButton.Cancel
+            )
+            assert (
+                dialog.defaultButton()
+                is dialog.button(QtWidgets.QMessageBox.StandardButton.Cancel)
             )
             dialog.button(QtWidgets.QMessageBox.StandardButton.Cancel).click()
 
@@ -3080,11 +3096,67 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
             timeout=BROADCAST_TIMEOUT,
         )
         assert "q01.IF" not in gui.state.locks
+        # the closed dialog no longer sits on the GUI
+        assert gui.removalDialog is None
 
         # a parameter without Followers is removed with no dialog
         gui.removeParameter("other.x")
         qtbot.waitUntil(
             lambda: not pm.has_param("other.x"), timeout=BROADCAST_TIMEOUT
+        )
+        assert gui.removalDialog is None
+    finally:
+        gui.model.stopListener()
+
+
+def test_removing_a_target_falls_back_to_the_client_side_followers(
+    qtbot, pm, second_client, server_port, monkeypatch
+):
+    """When the Server call for ``followers_of`` fails, the confirmation
+    falls back to the client-side list computed from the state — locked
+    and unlocked alike, the Targets compared through ``relative_path``:
+    the dialog still names the Followers, and Cancel leaves the Server
+    untouched."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        second_pm.lock("q01.IF", "q02.IF")
+        qtbot.waitUntil(
+            lambda: gui.state.locks.get("q01.IF")
+            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("the Server call failed")
+
+        # the instance attribute shadows the Proxy Instrument's proxied
+        # method, so removeParameter's Server call fails
+        monkeypatch.setattr(gui.instrument, "followers_of", _raise)
+
+        def _cancel_dialog():
+            dialog = gui.removalDialog
+            assert dialog is not None
+            assert dialog.text().startswith(
+                "Removing q02.IF also removes the Locks of:"
+            )
+            assert "q01.IF (locked)" in dialog.text()
+            dialog.button(QtWidgets.QMessageBox.StandardButton.Cancel).click()
+
+        # the row's delete button path: the dialog is built from the
+        # state, and Cancel keeps the Target and the Lock untouched
+        QtCore.QTimer.singleShot(0, _cancel_dialog)
+        _row_remove_button(gui, "q02.IF").click()
+        qtbot.wait(300)  # a pm-lock-update would have arrived by now
+        assert pm.has_param("q02.IF")
+        assert pm.get_lock("q01.IF") == PMLockBluePrint(
+            target=f"{PM_NAME}.q02.IF", locked=True
+        )
+        assert gui.state.locks.get("q01.IF") == PMLockBluePrint(
+            target=f"{PM_NAME}.q02.IF", locked=True
         )
         assert gui.removalDialog is None
     finally:
@@ -3168,11 +3240,11 @@ def test_the_lock_shortcuts_arm_unlock_and_switch_tabs(
 def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
     qtbot, pm, second_client, server_port
 ):
-    """A parameter-update Broadcast for a parameter the model does not
-    know adds the row through the base update branch; the tints are
-    recomputed for it too (plan task 5.6), so the new row carries the
-    claiming Type's tint right away instead of staying untinted until the
-    next recompute."""
+    """A parameter-update or parameter-call Broadcast for a parameter the
+    model does not know adds the row through the base update branch; the
+    tints are recomputed for it too (plan task 5.6), so the new row
+    carries the claiming Type's tint right away instead of staying
+    untinted until the next recompute."""
     second_pm = _second_parameter_manager(second_client)
     pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
     pm.add_type("qubit")
@@ -3188,8 +3260,10 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
         # Proxy (without reloading the model) makes the parameter resolve
         # when the update Broadcast arrives
         second_pm.add_parameter("q02.IF", initial_value=2.0, unit="Hz")
+        second_pm.add_parameter("q03.IF", initial_value=3.0, unit="Hz")
         pm.update()
         assert not _row_exists(gui, "q02.IF")
+        assert not _row_exists(gui, "q03.IF")
 
         gui.model.updateParameter(
             ParameterBroadcastBluePrint(
@@ -3207,5 +3281,22 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
         for item in _row_items(gui, "q02.IF"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
         assert _row_items(gui, "q02.IF")[3].data(GUTTER_ROLE) == ["qubit"]
+
+        # the base branch treats a parameter-call the same way: the row it
+        # adds is recomputed too
+        gui.model.updateParameter(
+            ParameterBroadcastBluePrint(
+                name=f"{PM_NAME}.q03.IF",
+                action=PARAMETER_CALL,
+                value=3.0,
+                unit="Hz",
+            )
+        )
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "q03.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        for item in _row_items(gui, "q03.IF"):
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
+        assert _row_items(gui, "q03.IF")[3].data(GUTTER_ROLE) == ["qubit"]
     finally:
         gui.model.stopListener()
