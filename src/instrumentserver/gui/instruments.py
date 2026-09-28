@@ -1,3 +1,4 @@
+import ast
 import inspect
 import logging
 from dataclasses import dataclass
@@ -477,13 +478,29 @@ class ModelParameters(InstrumentModelBase):
         fullName = ".".join(bp.name.split(".")[1:])
 
         if bp.action == PARAMETER_CREATION:
-            if fullName not in self.instrument.list():
-                self.instrument.update()
-            if fullName in self.instrument.list():
-                self.addItem(
-                    fullName,
-                    element=nestedAttributeFromString(self.instrument, fullName),
-                )
+            # Resolve the parameter on the instrument first: a parameter
+            # another Client created while the GUI is open is already in the
+            # Proxy's remote list(), so only a fresh resolution tells whether
+            # the (Proxy) instrument's blueprint is stale. On a stale one,
+            # update() refreshes it and the element resolves on the second
+            # attempt (TEST_AUDIT.md, "Parameter Manager GUI — live creation
+            # from another client"; fixed in plan task 5.5 by Marcos's
+            # decision, an explicit exception to plan rule 6).
+            try:
+                element = nestedAttributeFromString(self.instrument, fullName)
+            except AttributeError:
+                if hasattr(self.instrument, "update"):
+                    self.instrument.update()
+                try:
+                    element = nestedAttributeFromString(self.instrument, fullName)
+                except AttributeError:
+                    logger.debug(
+                        f"Ignoring parameter-creation broadcast for a "
+                        f"parameter that cannot be resolved: {fullName}"
+                    )
+                    element = None
+            if element is not None:
+                self.addItem(fullName, element=element)
 
         elif bp.action == PARAMETER_DELETION:
             self.removeItem(fullName)
@@ -843,6 +860,22 @@ def _carries_effective_set(
     return True
 
 
+def _instance_candidates(parameters: Mapping[str, str]) -> List[str]:
+    """Every submodule path the parameter rows imply, sorted: every proper
+    dotted prefix of a parameter path, never the root and never anything
+    under the Globals submodule (D12). This is the candidate set both
+    :func:`compute_claims` and :func:`instances_of_type` match against."""
+    candidates = set()
+    for path in parameters:
+        segments = path.split(".")
+        for depth in range(1, len(segments)):
+            candidate = ".".join(segments[:depth])
+            if "_globals" in candidate.split("."):
+                continue  # Globals is excluded from matching at any depth
+            candidates.add(candidate)
+    return sorted(candidates)
+
+
 def compute_claims(
     types: Mapping[str, PMTypeBluePrint],
     parameters: Mapping[str, str],
@@ -868,14 +901,7 @@ def compute_claims(
     defines is claimed by it, with the outer Types behind it in the stack.
     """
     # candidate Instances: every proper dotted prefix of a parameter path
-    candidates = set()
-    for path in parameters:
-        segments = path.split(".")
-        for depth in range(1, len(segments)):
-            candidate = ".".join(segments[:depth])
-            if "_globals" in candidate.split("."):
-                continue  # Globals is excluded from matching at any depth
-            candidates.add(candidate)
+    candidates = _instance_candidates(parameters)
 
     claims_by_path: Dict[str, List[Tuple[str, str, int]]] = {}
     winning: Dict[str, Tuple[str, str, int]] = {}
@@ -900,7 +926,7 @@ def compute_claims(
             continue  # an empty Type has no Instances
         size = len(effective)
         at_by_path = _nested_claim_prefixes(blueprint, types)
-        for instance in sorted(candidates):
+        for instance in candidates:
             if not _carries_effective_set(instance, effective, parameters):
                 continue
             # the Instance row itself is claimed by its Type, as in the mock
@@ -1176,25 +1202,30 @@ def rank_lock_targets(
     follower: str,
     candidates: Iterable[str],
     claims: Mapping[str, Claim],
+    arm_rel: Optional[str] = None,
 ) -> List[str]:
     """The arm strip's Target candidates in the mock's completer order.
 
     ``arm_rel`` is the Follower's path relative to its Instance (the part
     behind the Claiming Type's Instance path), or ``None`` when the
-    Follower is claimed by no Type. Rank 0: the candidate's own relative
-    path equals ``arm_rel`` (the same leaf on a sibling Instance, the
-    mock's first pick). Rank 1: ``.<arm_rel>`` occurs in the candidate
+    Follower is claimed by no Type; an explicit ``arm_rel`` argument
+    overrides it, which the Types tab's Type Lock re-target (plan task
+    5.5) uses to rank for a Type's entry path — there is no claimed
+    Follower and so nothing to exclude. Rank 0: the candidate's own
+    relative path equals ``arm_rel`` (the same leaf on a sibling Instance,
+    the mock's first pick). Rank 1: ``.<arm_rel>`` occurs in the candidate
     (a submodule on the way). Rank 2: everything else. Equal ranks order
     alphabetically; the Follower itself is never a candidate. Cycles are
     not filtered here: the Server refuses them and the arm strip shows its
     error text.
     """
-    follower_claim = claims.get(follower)
-    arm_rel = (
-        follower[len(follower_claim.instance) + 1:]
-        if follower_claim is not None
-        else None
-    )
+    if arm_rel is None:
+        follower_claim = claims.get(follower)
+        arm_rel = (
+            follower[len(follower_claim.instance) + 1:]
+            if follower_claim is not None
+            else None
+        )
 
     def own_rel(candidate: str) -> Optional[str]:
         claim = claims.get(candidate)
@@ -1809,6 +1840,1008 @@ class LocksPanel(QtWidgets.QWidget):
 # ----------------- Parameter Manager Locks - Ending -----------------------------------
 
 
+# ----------------- Parameter Manager Types tab - Beginning ----------------------------
+
+
+@dataclass
+class EntryRow:
+    """One row of the Types tab's entries pane (plan task 5.5; the mock's
+    ``tParamRows``): a submodule row of the selected Type's tree, or one
+    entry of it.
+
+    ``kind`` is ``"submodule"`` or ``"entry"``. A submodule row carries
+    ``nested_type`` — the Type required at that submodule, or ``None`` for
+    a structural row that only carries the rows below it. An entry row
+    carries
+    the effective entry's ``unit`` and defining Type (``from_type``),
+    whether the selected Type defines the entry itself (``own``), its
+    ``default`` — an own entry's stored default, a Nested Type entry's
+    default as stored on the defining Type — and, own entries only, the
+    ``target`` of the entry's Type Lock relative to the Parameter Manager
+    (``None`` while it has none).
+    """
+
+    path: str
+    kind: str
+    unit: str = ""
+    nested_type: Optional[str] = None
+    own: bool = False
+    from_type: Optional[str] = None
+    default: Any = None
+    target: Optional[str] = None
+
+
+def _nested_type_at(
+    blueprint: PMTypeBluePrint,
+    types: Mapping[str, PMTypeBluePrint],
+    submodule: str,
+) -> Optional[str]:
+    """The Type required at the submodule ``submodule`` (a dotted path
+    relative to the Type ``blueprint``): the walk follows the ``nested``
+    maps down the segments, the way :func:`_nested_claim_prefixes` walks.
+    ``None`` when no Nested Type is required there — a structural row —
+    or when a nested Type of the chain is missing from ``types``."""
+    current = blueprint
+    for segment in submodule.split("."):
+        if current is None:
+            return None
+        nested_name = current.nested.get(segment)
+        if nested_name is None:
+            return None
+        current = types.get(nested_name)
+    return current.name if current is not None else None
+
+
+def type_entry_rows(
+    type_name: str,
+    types: Mapping[str, PMTypeBluePrint],
+    instrument_name: str = "",
+) -> List[EntryRow]:
+    """The entries-pane rows of the Type ``type_name`` (plan task 5.5):
+    its effective parameter set as a segment-sorted tree of submodule and
+    entry rows.
+
+    The sort is segment-wise like the mock's (paths order by their dotted
+    segments), so a submodule row sorts directly before the rows below it
+    and the list reads as a tree in order.
+
+    An entry the Type defines itself (``from_type == type_name``) is
+    ``own``: its ``default`` and ``target`` come from the Type's own
+    entry, with the stored Type Lock Target relativized with
+    ``instrument_name``. An entry a Nested Type defines shows that Type
+    as ``from_type`` and the defining Type's own default for the path
+    relative to it (the mock's ``ownerRel``).
+
+    :param type_name: the selected Type's name.
+    :param types: the Parameter Manager's Types (``PMState.types``).
+    :param instrument_name: the Parameter Manager's name, for
+        relativizing the stored Type Lock Targets; without it the stored
+        full-form Targets are returned unchanged.
+    :return: the rows, parents before children.
+    """
+    blueprint = types.get(type_name)
+    if blueprint is None:
+        return []
+    at_by_path = _nested_claim_prefixes(blueprint, types)
+    rows: List[EntryRow] = []
+    submodule_paths: set = set()
+    for path in sorted(blueprint.effective, key=lambda entry: entry.split(".")):
+        segments = path.split(".")
+        for depth in range(1, len(segments)):
+            submodule = ".".join(segments[:depth])
+            if submodule in submodule_paths:
+                continue
+            submodule_paths.add(submodule)
+            rows.append(
+                EntryRow(
+                    path=submodule,
+                    kind="submodule",
+                    nested_type=_nested_type_at(blueprint, types, submodule),
+                )
+            )
+        spec = blueprint.effective[path]
+        from_type = spec["from_type"]
+        own = from_type == type_name
+        if own:
+            entry = blueprint.parameters.get(path, {})
+            default = entry.get("default")
+            target = entry.get("target")
+            if target is not None and instrument_name:
+                target = relative_path(target, instrument_name)
+        else:
+            at = at_by_path.get(path, "")
+            relative = path[len(at) + 1:] if at else path
+            defining = types.get(from_type)
+            default = (
+                defining.parameters.get(relative, {}).get("default")
+                if defining is not None
+                else None
+            )
+            target = None
+        rows.append(
+            EntryRow(
+                path=path,
+                kind="entry",
+                unit=spec["unit"],
+                own=own,
+                from_type=from_type,
+                default=default,
+                target=target,
+            )
+        )
+    return rows
+
+
+def instances_of_type(
+    type_name: str,
+    types: Mapping[str, PMTypeBluePrint],
+    parameters: Mapping[str, str],
+) -> List[str]:
+    """Paths (relative to the Parameter Manager) of every Instance of the
+    Type ``type_name``, computed client-side over the model's parameter
+    rows (plan task 5.5; the mock's ``instancesOf``): the same candidate
+    rules :func:`compute_claims` matches by — every proper dotted prefix,
+    never the root, never anything under Globals — carrying every
+    effective path with the declared unit (D12). An empty Type has no
+    Instances. The Instances are sorted, for a stable pane order."""
+    blueprint = types.get(type_name)
+    if blueprint is None:
+        return []
+    effective = blueprint.effective
+    if not effective:
+        return []
+    return [
+        candidate
+        for candidate in _instance_candidates(parameters)
+        if _carries_effective_set(candidate, effective, parameters)
+    ]
+
+
+def also_types(
+    instance: str,
+    types: Mapping[str, PMTypeBluePrint],
+    parameters: Mapping[str, str],
+) -> List[str]:
+    """Every Type the submodule ``instance`` is an Instance of (plan task
+    5.5; the mock's ``also`` cell), in ``types`` order. The Types pane
+    shows the ones besides the selected Type as ``also <t1>, <t2>``."""
+    return [
+        type_name
+        for type_name in types
+        if instance in instances_of_type(type_name, types, parameters)
+    ]
+
+
+def parse_default_text(text: str) -> Any:
+    """The value a default line edit's text stands for: ``None`` when the
+    text is empty, otherwise the text parsed with ``ast.literal_eval``,
+    falling back to the raw string when it does not parse."""
+    if text.strip() == "":
+        return None
+    try:
+        return ast.literal_eval(text)
+    except (ValueError, SyntaxError):
+        return text
+
+
+#: Fixed pixel widths of the entries pane's unit, "locked to" and default
+#: columns (the mock's 60/200/252 trio).
+ENTRIES_UNIT_WIDTH = 60
+ENTRIES_LOCK_WIDTH = 210
+ENTRIES_DEFAULT_WIDTH = 250
+
+#: Fixed pixel widths of the instances pane's parameter-count, "also" and
+#: button columns (the mock's 150/160/110 trio).
+INSTANCES_COUNT_WIDTH = 110
+INSTANCES_ALSO_WIDTH = 160
+INSTANCES_BUTTON_WIDTH = 80
+
+
+class TypesPane(QtWidgets.QWidget):
+    """The Types tab (plan task 5.5; the mock's Types view): three panes
+    around the selected Type.
+
+    Left: the list of Types — name, number of Instances and number of
+    effective parameters, each row tinted with the Type's colour — and the
+    New type strip. Right, above: the entries of the selected Type as a
+    tree. Own entries carry an editable default (Return or the set button
+    commits), a Remove button and the Type Lock toggle in the "locked to"
+    column, with a re-target button and the Target's path while locked.
+    Entries from Nested Types render read-only with "defined by <type>".
+    Submodule rows show ``type: <t>`` in the "locked to" column and, for
+    the selected Type's own Nested Types, a Remove button. Beneath the
+    tree run the "Add to type" and "Nested type" strips and a note line.
+    Right, below: the Instances of the selected Type — name, parameter
+    count, the other Types the Instance also carries and a Show button —
+    with the New instance strip and a note line.
+
+    The pane never talks to the Server: every action is emitted as a
+    signal — ``addTypeRequested``, ``addEntryRequested``,
+    ``removeEntryRequested``, ``setDefaultRequested``,
+    ``toggleTypeLockRequested``, ``retargetTypeLockRequested``,
+    ``addNestedRequested``, ``removeNestedRequested``,
+    ``addInstanceRequested`` and ``showInstanceRequested`` — and
+    :class:`ParameterManagerGui`, which owns the pane, performs it and
+    reports errors and skipped Locks on the pane's note labels.
+    """
+
+    #: Signal(str)
+    #: Emitted when the user presses the New type strip's Add button;
+    #: the name is trimmed and not empty.
+    addTypeRequested = QtCore.Signal(str)
+
+    #: Signal(str)
+    #: Emitted when the selected Type changes (a row click, or a rebuild
+    #: that had to pick one).
+    typeSelected = QtCore.Signal(str)
+
+    #: Signal(str, str, str, str)
+    #: Emitted when the user presses "Add to type": the Type's name, the
+    #: entry path, the default text and the unit.
+    addEntryRequested = QtCore.Signal(str, str, str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses an own entry's Remove button: the
+    #: Type's name and the entry path.
+    removeEntryRequested = QtCore.Signal(str, str)
+
+    #: Signal(str, str, str)
+    #: Emitted when the user commits an own entry's default editor
+    #: (Return or the set button): the Type's name, the entry path and
+    #: the editor's text.
+    setDefaultRequested = QtCore.Signal(str, str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses a Type Lock toggle: the Type's name
+    #: and the entry path. The GUI locks or unlocks from the entry's
+    #: stored Target.
+    toggleTypeLockRequested = QtCore.Signal(str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses a locked entry's re-target button:
+    #: the Type's name and the entry path.
+    retargetTypeLockRequested = QtCore.Signal(str, str)
+
+    #: Signal(str, str, str)
+    #: Emitted when the user presses "Add nested type": the Type's name,
+    #: the submodule and the Nested Type's name.
+    addNestedRequested = QtCore.Signal(str, str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses an own Nested Type's Remove button:
+    #: the Type's name and the submodule.
+    removeNestedRequested = QtCore.Signal(str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses the New instance strip's button: the
+    #: Type's name and the Instance's name.
+    addInstanceRequested = QtCore.Signal(str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user presses an instance row's Show button: the
+    #: Type's name and the Instance's name.
+    showInstanceRequested = QtCore.Signal(str, str)
+
+    def __init__(
+        self, instrument_name: str, parent: Optional[QtWidgets.QWidget] = None
+    ) -> None:
+        super().__init__(parent)
+        self.instrument_name = instrument_name
+
+        # the selected Type, and one requested while the Server call that
+        # creates it is still in flight (honoured on the next rebuild)
+        self.selectedType: Optional[str] = None
+        self.requestedType: Optional[str] = None
+        # guards the selection slot against the rebuild's own index changes
+        self._building = False
+
+        # the widgets of the entries rows, keyed by row path; and the Show
+        # buttons of the instance rows, keyed by instance path
+        self.entryWidgets: Dict[str, Dict[str, Any]] = {}
+        self.showButtons: Dict[str, QtWidgets.QPushButton] = {}
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal, self)
+
+        # -- left: the list of Types and the New type strip
+        typeListPane = QtWidgets.QWidget(self.splitter)
+        typeListLayout = QtWidgets.QVBoxLayout(typeListPane)
+        typeListLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.typeModel = QtGui.QStandardItemModel(0, 3, self)
+        self.typeModel.setHorizontalHeaderLabels(["type", "instances", "parameters"])
+        self.typeList = QtWidgets.QTreeView(typeListPane)
+        self.typeList.setModel(self.typeModel)
+        self.typeList.setRootIsDecorated(False)
+        self.typeList.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self.typeList.setAlternatingRowColors(True)
+        typeHeader = self.typeList.header()
+        typeHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        for column, width in ((1, 70), (2, 90)):
+            typeHeader.setSectionResizeMode(
+                column, QtWidgets.QHeaderView.ResizeMode.Fixed
+            )
+            typeHeader.resizeSection(column, width)
+
+        typeStrip = QtWidgets.QHBoxLayout()
+        typeStrip.setContentsMargins(0, 0, 0, 0)
+        typeStrip.addWidget(QtWidgets.QLabel("New type:"))
+        self.newTypeEdit = QtWidgets.QLineEdit(typeListPane)
+        self.newTypeEdit.setPlaceholderText("cavity")
+        self.addTypeButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/plus-square.svg"), " Add"
+        )
+        keepSmallHorizontally(self.addTypeButton)
+        typeStrip.addWidget(self.newTypeEdit, 1)
+        typeStrip.addWidget(self.addTypeButton)
+        self.typeNote = QtWidgets.QLabel(typeListPane)
+
+        typeListLayout.addWidget(self.typeList, 1)
+        typeListLayout.addLayout(typeStrip)
+        typeListLayout.addWidget(self.typeNote)
+
+        # -- right: the entries pane above the instances pane
+        rightPane = QtWidgets.QSplitter(
+            QtCore.Qt.Orientation.Vertical, self.splitter
+        )
+
+        entriesPane = QtWidgets.QWidget(rightPane)
+        entriesLayout = QtWidgets.QVBoxLayout(entriesPane)
+        entriesLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.entriesLabel = QtWidgets.QLabel(entriesPane)
+        self.entriesModel = QtGui.QStandardItemModel(0, 4, self)
+        self.entriesModel.setHorizontalHeaderLabels(
+            ["parameter", "unit", "locked to", "default"]
+        )
+        self.entriesView = QtWidgets.QTreeView(entriesPane)
+        self.entriesView.setModel(self.entriesModel)
+        self.entriesView.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self.entriesView.setAlternatingRowColors(True)
+        entriesHeader = self.entriesView.header()
+        entriesHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        for column, width in (
+            (1, ENTRIES_UNIT_WIDTH),
+            (2, ENTRIES_LOCK_WIDTH),
+            (3, ENTRIES_DEFAULT_WIDTH),
+        ):
+            entriesHeader.setSectionResizeMode(
+                column, QtWidgets.QHeaderView.ResizeMode.Interactive
+            )
+            entriesHeader.resizeSection(column, width)
+
+        entryStrip = QtWidgets.QHBoxLayout()
+        entryStrip.setContentsMargins(0, 0, 0, 0)
+        entryStrip.addWidget(QtWidgets.QLabel("Name:"))
+        self.entryNameEdit = QtWidgets.QLineEdit(entriesPane)
+        self.entryNameEdit.setPlaceholderText("pulses.pi.drag_multiplier")
+        entryStrip.addWidget(self.entryNameEdit, 2)
+        entryStrip.addWidget(QtWidgets.QLabel("Default:"))
+        self.entryDefaultEdit = QtWidgets.QLineEdit(entriesPane)
+        entryStrip.addWidget(self.entryDefaultEdit, 1)
+        entryStrip.addWidget(QtWidgets.QLabel("Unit:"))
+        self.entryUnitEdit = QtWidgets.QLineEdit(entriesPane)
+        entryStrip.addWidget(self.entryUnitEdit, 1)
+        self.addEntryButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/plus-square.svg"), "Add to type"
+        )
+        keepSmallHorizontally(self.addEntryButton)
+        entryStrip.addWidget(self.addEntryButton)
+
+        nestedStrip = QtWidgets.QHBoxLayout()
+        nestedStrip.setContentsMargins(0, 0, 0, 0)
+        nestedStrip.addWidget(QtWidgets.QLabel("Nested type:"))
+        self.nestedTypeCombo = QtWidgets.QComboBox(entriesPane)
+        nestedStrip.addWidget(self.nestedTypeCombo, 2)
+        nestedStrip.addWidget(QtWidgets.QLabel("at:"))
+        self.nestedAtEdit = QtWidgets.QLineEdit(entriesPane)
+        self.nestedAtEdit.setPlaceholderText("readout")
+        nestedStrip.addWidget(self.nestedAtEdit, 1)
+        self.addNestedButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/plus-square.svg"), "Add nested type"
+        )
+        self.addNestedButton.setToolTip("require another Type at that submodule")
+        keepSmallHorizontally(self.addNestedButton)
+        nestedStrip.addWidget(self.addNestedButton)
+
+        self.entriesNote = QtWidgets.QLabel(entriesPane)
+        self.entriesNote.setWordWrap(True)
+
+        entriesLayout.addWidget(self.entriesLabel)
+        entriesLayout.addWidget(self.entriesView, 1)
+        entriesLayout.addLayout(entryStrip)
+        entriesLayout.addLayout(nestedStrip)
+        entriesLayout.addWidget(self.entriesNote)
+
+        instancesPane = QtWidgets.QWidget(rightPane)
+        instancesLayout = QtWidgets.QVBoxLayout(instancesPane)
+        instancesLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.instancesLabel = QtWidgets.QLabel(instancesPane)
+        self.instancesModel = QtGui.QStandardItemModel(0, 4, self)
+        self.instancesModel.setHorizontalHeaderLabels(
+            ["instance", "parameters", "also", ""]
+        )
+        self.instancesView = QtWidgets.QTreeView(instancesPane)
+        self.instancesView.setModel(self.instancesModel)
+        self.instancesView.setRootIsDecorated(False)
+        self.instancesView.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self.instancesView.setAlternatingRowColors(True)
+        instancesHeader = self.instancesView.header()
+        instancesHeader.setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        for column, width in (
+            (1, INSTANCES_COUNT_WIDTH),
+            (2, INSTANCES_ALSO_WIDTH),
+            (3, INSTANCES_BUTTON_WIDTH),
+        ):
+            instancesHeader.setSectionResizeMode(
+                column, QtWidgets.QHeaderView.ResizeMode.Fixed
+            )
+            instancesHeader.resizeSection(column, width)
+
+        instanceStrip = QtWidgets.QHBoxLayout()
+        instanceStrip.setContentsMargins(0, 0, 0, 0)
+        instanceStrip.addWidget(QtWidgets.QLabel("New instance:"))
+        self.newInstanceEdit = QtWidgets.QLineEdit(instancesPane)
+        self.newInstanceEdit.setPlaceholderText("q04")
+        instanceStrip.addWidget(self.newInstanceEdit, 1)
+        self.addInstanceButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/plus-square.svg"), "Add instance"
+        )
+        keepSmallHorizontally(self.addInstanceButton)
+        instanceStrip.addWidget(self.addInstanceButton)
+        self.instancesNote = QtWidgets.QLabel(instancesPane)
+
+        instancesLayout.addWidget(self.instancesLabel)
+        instancesLayout.addWidget(self.instancesView, 1)
+        instancesLayout.addLayout(instanceStrip)
+        instancesLayout.addWidget(self.instancesNote)
+
+        rightPane.addWidget(entriesPane)
+        rightPane.addWidget(instancesPane)
+        rightPane.setStretchFactor(0, 3)
+        rightPane.setStretchFactor(1, 2)
+        self.splitter.addWidget(typeListPane)
+        self.splitter.addWidget(rightPane)
+        self.splitter.setStretchFactor(0, 2)
+        self.splitter.setStretchFactor(1, 5)
+        layout.addWidget(self.splitter)
+        self.setLayout(layout)
+
+        self.addTypeButton.clicked.connect(self._request_add_type)
+        self.newTypeEdit.returnPressed.connect(self.addTypeButton.click)
+        self.addEntryButton.clicked.connect(self._request_add_entry)
+        for edit in (self.entryNameEdit, self.entryDefaultEdit, self.entryUnitEdit):
+            edit.returnPressed.connect(self.addEntryButton.click)
+        self.addNestedButton.clicked.connect(self._request_add_nested)
+        self.nestedAtEdit.returnPressed.connect(self.addNestedButton.click)
+        self.addInstanceButton.clicked.connect(self._request_add_instance)
+        self.newInstanceEdit.returnPressed.connect(self.addInstanceButton.click)
+        self.typeList.selectionModel().currentChanged.connect(self._on_type_selected)
+
+    # ------------------------------------------------------------------
+    # rebuilds (plan task 5.5, readings 2-4, 7-8)
+    # ------------------------------------------------------------------
+
+    def select_type(self, name: str) -> None:
+        """Request the selection of the Type ``name``: honoured on the
+        next rebuild, once the Type is in the state the pane rebuilds
+        from. Used after the Server call that creates the Type."""
+        self.requestedType = name
+
+    def rebuild(
+        self,
+        types: Mapping[str, PMTypeBluePrint],
+        parameters: Mapping[str, str],
+        palette: TypePalette,
+    ) -> None:
+        """Rebuild the three panes from the client-side state (plan task
+        5.5): the Type list from ``types`` with Instances counted over
+        ``parameters``, the entries and Instances panes from the selected
+        Type, and every row tinted with ``palette``."""
+        self._rebuild_type_list(types, parameters, palette)
+        self._rebuild_selected_panes(types, parameters, palette)
+
+    def _rebuild_type_list(
+        self,
+        types: Mapping[str, PMTypeBluePrint],
+        parameters: Mapping[str, str],
+        palette: TypePalette,
+    ) -> None:
+        names = list(types)
+        selection_changed = False
+        if self.requestedType is not None and self.requestedType in types:
+            selection_changed = self.selectedType != self.requestedType
+            self.selectedType = self.requestedType
+            self.requestedType = None
+        elif self.selectedType not in types:
+            # the first Type is selected when none is; the selection is
+            # dropped when the Type is gone
+            selection_changed = self.selectedType != (names[0] if names else None)
+            self.selectedType = names[0] if names else None
+        self.typeModel.removeRows(0, self.typeModel.rowCount())
+        current_row = -1
+        for row, name in enumerate(names):
+            count = len(instances_of_type(name, types, parameters))
+            name_item = QtGui.QStandardItem(name)
+            instances_item = QtGui.QStandardItem(str(count))
+            params_item = QtGui.QStandardItem(str(len(types[name].effective)))
+            self.typeModel.appendRow([name_item, instances_item, params_item])
+            colours = palette.colours(name)
+            if colours is not None:
+                for item in (name_item, instances_item, params_item):
+                    item.setData(
+                        colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole
+                    )
+            if name == self.selectedType:
+                current_row = row
+        self._building = True
+        if current_row >= 0:
+            self.typeList.setCurrentIndex(self.typeModel.index(current_row, 0))
+        else:
+            self.typeList.setCurrentIndex(QtCore.QModelIndex())
+        self._building = False
+        if selection_changed and self.selectedType is not None:
+            self.typeSelected.emit(self.selectedType)
+
+    def _rebuild_selected_panes(
+        self,
+        types: Mapping[str, PMTypeBluePrint],
+        parameters: Mapping[str, str],
+        palette: TypePalette,
+    ) -> None:
+        selected = self.selectedType or ""
+        self.entriesLabel.setText(f"parameters of {selected}")
+        self.instancesLabel.setText(f"instances of {selected}")
+        self._rebuild_nested_combo(selected, types)
+        self._rebuild_entries(selected, types, palette)
+        self._rebuild_instances(selected, types, parameters, palette)
+
+    def _rebuild_nested_combo(
+        self, selected: str, types: Mapping[str, PMTypeBluePrint]
+    ) -> None:
+        self.nestedTypeCombo.clear()
+        self.nestedTypeCombo.addItems(
+            sorted(name for name in types if name != selected)
+        )
+
+    def _clear_index_widgets(
+        self, parent: Optional[QtGui.QStandardItem] = None
+    ) -> None:
+        """Delete the row widgets the entries view still hosts, so a
+        rebuild does not leave the old ones behind."""
+        if parent is None:
+            parent = self.entriesModel.invisibleRootItem()
+        for row in range(parent.rowCount()):
+            for column in range(parent.columnCount()):
+                child = parent.child(row, column)
+                if child is None:
+                    continue
+                widget = self.entriesView.indexWidget(
+                    self.entriesModel.indexFromItem(child)
+                )
+                if widget is not None:
+                    widget.deleteLater()
+            first = parent.child(row, 0)
+            if first is not None and first.hasChildren():
+                self._clear_index_widgets(first)
+
+    def _entry_tint_type(
+        self, rows: List[EntryRow], index: int, selected: str
+    ) -> str:
+        """The Type whose tint an entries row shows: an entry row its
+        defining Type, a Nested Type row the Type required there, and a
+        structural submodule row the defining Type of the first entry
+        below it (the selected Type when that entry is own; the mock's
+        ``tintsFor(inc ? inc.type : (p.from || selType))``)."""
+        row = rows[index]
+        if row.kind == "entry":
+            return row.from_type or selected
+        if row.nested_type is not None:
+            return row.nested_type
+        for later in rows[index + 1:]:
+            if later.kind == "entry":
+                return later.from_type or selected
+        return selected
+
+    def _rebuild_entries(
+        self, selected: str, types: Mapping[str, PMTypeBluePrint], palette: TypePalette
+    ) -> None:
+        self._clear_index_widgets()
+        self.entriesModel.removeRows(0, self.entriesModel.rowCount())
+        self.entryWidgets = {}
+        blueprint = types.get(selected)
+        if selected is None or blueprint is None:
+            self.entriesView.expandAll()
+            return
+        rows = type_entry_rows(selected, types, self.instrument_name)
+        items_by_path: Dict[str, QtGui.QStandardItem] = {}
+        for index, row in enumerate(rows):
+            path = row.path
+            parent_item = (
+                items_by_path[path.rsplit(".", 1)[0]]
+                if "." in path
+                else self.entriesModel.invisibleRootItem()
+            )
+            colours = palette.colours(self._entry_tint_type(rows, index, selected))
+            name_item = QtGui.QStandardItem(path.split(".")[-1])
+            unit_item = QtGui.QStandardItem("" if row.kind == "submodule" else row.unit)
+            lock_item = QtGui.QStandardItem()
+            default_item = QtGui.QStandardItem()
+            parent_item.appendRow([name_item, unit_item, lock_item, default_item])
+            items_by_path[path] = name_item
+            if colours is not None:
+                for item in (name_item, unit_item, lock_item, default_item):
+                    item.setData(
+                        colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole
+                    )
+            entry: Dict[str, Any] = {
+                "editor": None,
+                "set": None,
+                "remove": None,
+                "toggle": None,
+                "retarget": None,
+                "targetLabel": None,
+                "definedBy": None,
+                "removeNested": None,
+            }
+            self.entryWidgets[path] = entry
+            if row.kind == "submodule":
+                self._build_submodule_row(
+                    selected, blueprint, row, lock_item, default_item, entry
+                )
+            else:
+                self._build_entry_row(
+                    selected, row, lock_item, default_item, entry
+                )
+        self.entriesView.expandAll()
+
+    def _build_submodule_row(
+        self,
+        selected: str,
+        blueprint: PMTypeBluePrint,
+        row: EntryRow,
+        lock_item: QtGui.QStandardItem,
+        default_item: QtGui.QStandardItem,
+        entry: Dict[str, Any],
+    ) -> None:
+        if row.nested_type is not None:
+            lock_item.setText(f"type: {row.nested_type}")
+        if row.path in blueprint.nested:
+            # only the selected Type's OWN Nested Types are removable
+            nested = blueprint.nested[row.path]
+            remove = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/delete.svg"), "", parent=self.entriesView.viewport()
+            )
+            remove.setStyleSheet("QPushButton { background-color: salmon }")
+            remove.setToolTip(
+                f"stop requiring {nested} here — Instances keep the parameters"
+            )
+            keepSmallHorizontally(remove)
+            remove.pressed.connect(
+                lambda type_name=selected, submodule=row.path: self.removeNestedRequested.emit(
+                    type_name, submodule
+                )
+            )
+            self.entriesView.setIndexWidget(
+                self.entriesModel.indexFromItem(default_item), remove
+            )
+            entry["removeNested"] = remove
+
+    def _build_entry_row(
+        self,
+        selected: str,
+        row: EntryRow,
+        lock_item: QtGui.QStandardItem,
+        default_item: QtGui.QStandardItem,
+        entry: Dict[str, Any],
+    ) -> None:
+        if row.own:
+            self._build_own_entry_cells(selected, row, lock_item, default_item, entry)
+        else:
+            self._build_nested_entry_cells(selected, row, default_item, entry)
+
+    def _build_own_entry_cells(
+        self,
+        selected: str,
+        row: EntryRow,
+        lock_item: QtGui.QStandardItem,
+        default_item: QtGui.QStandardItem,
+        entry: Dict[str, Any],
+    ) -> None:
+        # the "locked to" column: the Type Lock toggle, and while the entry
+        # is locked the re-target button and the Target's relative path
+        locked = row.target is not None
+        lock_container = QtWidgets.QWidget(self.entriesView.viewport())
+        lock_layout = QtWidgets.QHBoxLayout(lock_container)
+        lock_layout.setContentsMargins(0, 0, 0, 0)
+        toggle = make_lock_button(lock_container, locked)
+        if locked:
+            toggle.setToolTip(
+                f"locked to {row.target} — unlock and every Instance of "
+                f"{selected} goes back to its own value"
+            )
+        else:
+            toggle.setToolTip(
+                f"lock — _globals.{selected}.{row.path} is created to hold the "
+                f"value, and every Instance of {selected} follows it"
+            )
+        toggle.pressed.connect(
+            lambda type_name=selected, path=row.path: self.toggleTypeLockRequested.emit(
+                type_name, path
+            )
+        )
+        lock_layout.addWidget(toggle)
+        entry["toggle"] = toggle
+        if locked:
+            retarget = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/set.svg"), "", parent=lock_container
+            )
+            retarget.setToolTip(
+                f"lock every Instance of {selected} to another Target — "
+                "pick one in the parameter tree"
+            )
+            keepSmallHorizontally(retarget)
+            retarget.pressed.connect(
+                lambda type_name=selected, path=row.path: self.retargetTypeLockRequested.emit(
+                    type_name, path
+                )
+            )
+            lock_layout.addWidget(retarget)
+            entry["retarget"] = retarget
+            target_label = QtWidgets.QLabel(row.target, parent=lock_container)
+            target_label.setToolTip(
+                f"{row.target} — followed by every Instance of {selected}"
+            )
+            lock_layout.addWidget(target_label, 1)
+            entry["targetLabel"] = target_label
+        self.entriesView.setIndexWidget(
+            self.entriesModel.indexFromItem(lock_item), lock_container
+        )
+
+        # the default column: the editable default with its set button and
+        # the entry's Remove button
+        editor_container = QtWidgets.QWidget(self.entriesView.viewport())
+        editor_layout = QtWidgets.QHBoxLayout(editor_container)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor = QtWidgets.QLineEdit(editor_container)
+        editor.setText("" if row.default is None else str(row.default))
+        editor.setPlaceholderText("no default")
+        set_button = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/set.svg"), "", parent=editor_container
+        )
+        keepSmallHorizontally(set_button)
+        set_button.pressed.connect(
+            lambda: self.setDefaultRequested.emit(
+                selected, row.path, editor.text()
+            )
+        )
+        editor.returnPressed.connect(set_button.click)
+        remove = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/delete.svg"), "", parent=editor_container
+        )
+        remove.setStyleSheet("QPushButton { background-color: salmon }")
+        remove.setToolTip(
+            "remove from the Type only — Instances keep the parameter "
+            "and lose the Type tint"
+        )
+        keepSmallHorizontally(remove)
+        remove.pressed.connect(
+            lambda type_name=selected, path=row.path: self.removeEntryRequested.emit(
+                type_name, path
+            )
+        )
+        editor_layout.addWidget(editor, 1)
+        editor_layout.addWidget(set_button)
+        editor_layout.addWidget(remove)
+        self.entriesView.setIndexWidget(
+            self.entriesModel.indexFromItem(default_item), editor_container
+        )
+        entry["editor"] = editor
+        entry["set"] = set_button
+        entry["remove"] = remove
+
+    def _build_nested_entry_cells(
+        self,
+        selected: str,
+        row: EntryRow,
+        default_item: QtGui.QStandardItem,
+        entry: Dict[str, Any],
+    ) -> None:
+        # read-only default text, and "defined by <type>" where the Remove
+        # button of an own entry would sit
+        container = QtWidgets.QWidget(self.entriesView.viewport())
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        default_label = QtWidgets.QLabel(
+            "" if row.default is None else str(row.default), parent=container
+        )
+        layout.addWidget(default_label, 1)
+        defined_by = QtWidgets.QLabel(f"defined by {row.from_type}", parent=container)
+        defined_by.setToolTip(
+            f"defined by {row.from_type} — change the default there"
+        )
+        layout.addWidget(defined_by)
+        self.entriesView.setIndexWidget(
+            self.entriesModel.indexFromItem(default_item), container
+        )
+        entry["definedBy"] = defined_by
+
+    def _rebuild_instances(
+        self,
+        selected: str,
+        types: Mapping[str, PMTypeBluePrint],
+        parameters: Mapping[str, str],
+        palette: TypePalette,
+    ) -> None:
+        self.instancesModel.removeRows(0, self.instancesModel.rowCount())
+        self.showButtons = {}
+        if not selected:
+            return
+        colours = palette.colours(selected)
+        for instance in instances_of_type(selected, types, parameters):
+            count = sum(
+                1 for path in parameters if path.startswith(f"{instance}.")
+            )
+            also = [
+                type_name
+                for type_name in also_types(instance, types, parameters)
+                if type_name != selected
+            ]
+            name_item = QtGui.QStandardItem(instance)
+            count_item = QtGui.QStandardItem(f"{count} parameters")
+            also_item = QtGui.QStandardItem(
+                f"also {', '.join(also)}" if also else ""
+            )
+            button_item = QtGui.QStandardItem()
+            self.instancesModel.appendRow(
+                [name_item, count_item, also_item, button_item]
+            )
+            if colours is not None:
+                for item in (name_item, count_item, also_item, button_item):
+                    item.setData(
+                        colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole
+                    )
+            show = QtWidgets.QPushButton(
+                "Show", parent=self.instancesView.viewport()
+            )
+            show.setToolTip("show in the parameter tree")
+            show.pressed.connect(
+                lambda type_name=selected, node=instance: self.showInstanceRequested.emit(
+                    type_name, node
+                )
+            )
+            self.instancesView.setIndexWidget(
+                self.instancesModel.indexFromItem(button_item), show
+            )
+            self.showButtons[instance] = show
+
+    # ------------------------------------------------------------------
+    # selection and strip requests (plan task 5.5, readings 3 and 5)
+    # ------------------------------------------------------------------
+
+    @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def _on_type_selected(
+        self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex
+    ) -> None:
+        """A row click selects the Type for the other two panes."""
+        if self._building or not current.isValid():
+            return
+        name = self.typeModel.item(current.row(), 0)
+        if name is None or name.text() == self.selectedType:
+            return
+        self.selectedType = name.text()
+        self.requestedType = None
+        self.typeSelected.emit(name.text())
+
+    def refresh_selected_panes(
+        self,
+        types: Mapping[str, PMTypeBluePrint],
+        parameters: Mapping[str, str],
+        palette: TypePalette,
+    ) -> None:
+        """Rebuild only the entries and Instances panes, keeping the Type
+        list as it is: the slot of a user selection."""
+        self._rebuild_selected_panes(types, parameters, palette)
+
+    @QtCore.Slot()
+    def _request_add_type(self) -> None:
+        name = self.newTypeEdit.text().strip()
+        if not name:
+            self.show_type_error("Name must not be empty.")
+            return
+        self.addTypeRequested.emit(name)
+
+    @QtCore.Slot()
+    def _request_add_entry(self) -> None:
+        path = self.entryNameEdit.text().strip()
+        if not path:
+            self.show_entries_error("Name must not be empty.")
+            return
+        if self.selectedType is None:
+            return
+        self.addEntryRequested.emit(
+            self.selectedType,
+            path,
+            self.entryDefaultEdit.text(),
+            self.entryUnitEdit.text(),
+        )
+
+    @QtCore.Slot()
+    def _request_add_nested(self) -> None:
+        submodule = self.nestedAtEdit.text().strip()
+        if not submodule:
+            self.show_entries_error("Submodule must not be empty.")
+            return
+        if self.selectedType is None:
+            return
+        self.addNestedRequested.emit(
+            self.selectedType, submodule, self.nestedTypeCombo.currentText()
+        )
+
+    @QtCore.Slot()
+    def _request_add_instance(self) -> None:
+        name = self.newInstanceEdit.text().strip()
+        if not name:
+            self.show_instances_error("Name must not be empty.")
+            return
+        if self.selectedType is None:
+            return
+        self.addInstanceRequested.emit(self.selectedType, name)
+
+    # ------------------------------------------------------------------
+    # note lines (plan task 5.5, reading 5)
+    # ------------------------------------------------------------------
+
+    def show_type_error(self, text: str) -> None:
+        """Show an action error in red on the New type strip's note."""
+        self.typeNote.setStyleSheet("QLabel { color: red }")
+        self.typeNote.setText(text)
+
+    def reset_type_note(self) -> None:
+        """Restore the New type strip's default note (empty)."""
+        self.typeNote.setStyleSheet("")
+        self.typeNote.setText("")
+
+    def show_entries_error(self, text: str) -> None:
+        """Show an action error in red on the entries pane's note."""
+        self.entriesNote.setStyleSheet("QLabel { color: red }")
+        self.entriesNote.setText(text)
+
+    def show_entries_note(self, text: str) -> None:
+        """Show ``text`` on the entries pane's note in the normal colour
+        (a skipped-Lock warning, for example)."""
+        self.entriesNote.setStyleSheet("")
+        self.entriesNote.setText(text)
+
+    def reset_entries_note(self) -> None:
+        """Restore the entries pane's default note (empty)."""
+        self.entriesNote.setStyleSheet("")
+        self.entriesNote.setText("")
+
+    def show_instances_error(self, text: str) -> None:
+        """Show an action error in red on the instances pane's note."""
+        self.instancesNote.setStyleSheet("QLabel { color: red }")
+        self.instancesNote.setText(text)
+
+    def reset_instances_note(self) -> None:
+        """Restore the instances pane's default note (empty)."""
+        self.instancesNote.setStyleSheet("")
+        self.instancesNote.setText("")
+
+
+# ----------------- Parameter Manager Types tab - Ending -------------------------------
+
+
 class ParameterDeleteDelegate(ParameterDelegate):
     #: Signal(str)
     #: Emits the name of the parameter to be deleted when the user presses the delete button.
@@ -2122,11 +3155,15 @@ class ParameterManagerGui(InstrumentParameters):
         self.locksSplitter.setStretchFactor(1, 2)
         layout.insertWidget(view_index, self.locksSplitter)
         self.locksPanel.setVisible(False)
-        # The existing content becomes tab 0 of the tab widget; the Types
-        # tab stays an empty placeholder until its own task builds it.
+        # The existing content becomes tab 0 of the tab widget; tab 1
+        # holds the Types pane (plan task 5.5).
         self.parametersTab = QtWidgets.QWidget(self)
         self.parametersTab.setLayout(self.layout())
         self.typesTab = QtWidgets.QWidget(self)
+        typesTabLayout = QtWidgets.QVBoxLayout(self.typesTab)
+        typesTabLayout.setContentsMargins(0, 0, 0, 0)
+        self.typesPane = TypesPane(self.instrument.name, parent=self.typesTab)
+        typesTabLayout.addWidget(self.typesPane)
         self.tabs = QtWidgets.QTabWidget(self)
         self.tabs.addTab(self.parametersTab, "Parameters")
         self.tabs.addTab(self.typesTab, "Types")
@@ -2135,8 +3172,11 @@ class ParameterManagerGui(InstrumentParameters):
         outerLayout.addWidget(self.tabs)
         # The arm strip sits right under the toolbar and stays hidden until
         # a Lock's Target is being picked (plan task 5.3). The Follower the
-        # pick is armed for is kept here.
+        # pick is armed for is kept here, and — for the Types tab's Type
+        # Lock re-target (plan task 5.5) — the (Type, entry) pair the
+        # re-target is armed for.
         self.armed_follower: Optional[str] = None
+        self.armed_type_lock: Optional[Tuple[str, str]] = None
         self.armStrip = LockArmStrip(self.parametersTab)
         parametersLayout = self.parametersTab.layout()
         assert isinstance(parametersLayout, QtWidgets.QVBoxLayout)
@@ -2191,6 +3231,21 @@ class ParameterManagerGui(InstrumentParameters):
         self.view.selectionModel().currentChanged.connect(
             self._on_tree_current_changed
         )
+        # the Types pane (plan task 5.5): its actions run through this GUI,
+        # and a selection change re-renders the two panes it drives
+        self.typesPane.typeSelected.connect(self._on_pane_type_selected)
+        self.typesPane.addTypeRequested.connect(self._on_pane_add_type)
+        self.typesPane.addEntryRequested.connect(self._on_pane_add_entry)
+        self.typesPane.removeEntryRequested.connect(self._on_pane_remove_entry)
+        self.typesPane.setDefaultRequested.connect(self._on_pane_set_default)
+        self.typesPane.toggleTypeLockRequested.connect(
+            self._on_pane_toggle_type_lock
+        )
+        self.typesPane.retargetTypeLockRequested.connect(self.arm_type_lock)
+        self.typesPane.addNestedRequested.connect(self._on_pane_add_nested)
+        self.typesPane.removeNestedRequested.connect(self._on_pane_remove_nested)
+        self.typesPane.addInstanceRequested.connect(self._on_pane_add_instance)
+        self.typesPane.showInstanceRequested.connect(self._on_pane_show_instance)
         self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
         self.shortcutManager.register("clear_add", self.addParam.clear, self)
         self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
@@ -2453,13 +3508,51 @@ class ParameterManagerGui(InstrumentParameters):
         parameters = self._model_parameters()
         claims = compute_claims(self.state.types, parameters)
         self.armed_follower = follower
+        self.armed_type_lock = None
         self.armStrip.arm(follower, rank_lock_targets(follower, parameters, claims))
 
+    def arm_type_lock(self, type_name: str, path: str) -> None:
+        """Arm the target picker for the Type Lock of the entry ``path``
+        of the Type ``type_name`` (plan task 5.5): the strip shows on the
+        Parameters tab with the entry named in its label, and the
+        candidates are every parameter row of the source model ranked
+        with the entry path as the relative path (the same leaf on any
+        Instance first). Arming while already armed re-arms for the new
+        entry."""
+        self.armed_type_lock = (type_name, path)
+        self.armed_follower = None
+        self.tabs.setCurrentIndex(0)
+        parameters = self._model_parameters()
+        claims = compute_claims(self.state.types, parameters)
+        self.armStrip.arm(
+            f"type {type_name} \u00b7 {path}",
+            rank_lock_targets("", parameters, claims, arm_rel=path),
+        )
+
     def pick_lock_target(self, target: str) -> None:
-        """Pick ``target`` as the Target of the armed Follower's Lock. A
-        refused Lock — a cycle (D7) among them — shows the Server's error
-        text on the strip and stays armed so another target can be picked;
-        a successful Lock disarms the strip."""
+        """Pick ``target`` as the Target of the armed pick — a Follower's
+        Lock (plan task 5.3) or, while a Type Lock re-target is armed, the
+        Type Lock declaration with ``target`` as its Target (plan task
+        5.5). A refused Lock — a cycle (D7), a self-lock — shows the
+        Server's error text on the strip and stays armed so another
+        target can be picked; a successful Lock disarms the strip, and a
+        Type Lock declaration names the Instance parameters it skipped
+        (D17) on the entries pane's note."""
+        if self.armed_type_lock is not None:
+            type_name, path = self.armed_type_lock
+            try:
+                skipped = self.instrument.lock_type_parameter(
+                    type_name, path, target=target
+                )
+            except Exception as exc:
+                self.armStrip.show_error(str(exc))
+            else:
+                if skipped:
+                    self.typesPane.show_entries_note(
+                        f"skipped: {', '.join(skipped)}"
+                    )
+                self.cancel_arm()
+            return
         if self.armed_follower is None:
             return
         try:
@@ -2470,8 +3563,10 @@ class ParameterManagerGui(InstrumentParameters):
             self.cancel_arm()
 
     def cancel_arm(self) -> None:
-        """Disarm the target picker without picking anything."""
+        """Disarm the target picker without picking anything (either kind
+        of pick: a Follower's Lock or a Type Lock's re-target)."""
         self.armed_follower = None
+        self.armed_type_lock = None
         self.armStrip.disarm()
 
     @QtCore.Slot(QtCore.QModelIndex)
@@ -2479,7 +3574,7 @@ class ParameterManagerGui(InstrumentParameters):
         """A row click while the pick is armed chooses that row's parameter
         as the Target (the mock's rowClick); a submodule click does
         nothing."""
-        if self.armed_follower is None:
+        if self.armed_follower is None and self.armed_type_lock is None:
             return
         source_index = self.proxyModel.mapToSource(index)
         source_index = source_index.sibling(source_index.row(), 0)
@@ -2616,11 +3711,13 @@ class ParameterManagerGui(InstrumentParameters):
         Runs after the state was refreshed from the Parameter Manager (on a
         model reload), on every ``pm-type-update`` Broadcast, and after a
         parameter was created or removed by a Broadcast, since matching
-        depends on which parameters exist.
+        depends on which parameters exist. The Types pane rebuilds from
+        the same state at the end (plan task 5.5).
         """
         self.typePalette.sync(self.state.types)
         claims = compute_claims(self.state.types, self._model_parameters())
         self._apply_tints_to_rows(self.model.invisibleRootItem(), claims)
+        self.refresh_types_pane()
 
     def _model_parameters(self) -> Dict[str, str]:
         """Every parameter row of the source model as ``{path: unit}``."""
@@ -2679,6 +3776,202 @@ class ParameterManagerGui(InstrumentParameters):
                 gutterItem.setData([], GUTTER_ROLE)
             if item.hasChildren():
                 self._apply_tints_to_rows(item, claims)
+
+    # ------------------------------------------------------------------
+    # the Types pane (plan task 5.5)
+    # ------------------------------------------------------------------
+
+    @QtCore.Slot()
+    def refresh_types_pane(self) -> None:
+        """Rebuild the Types pane's three panes from the client-side state
+        (plan task 5.5): the Types, the model's parameter rows and the
+        tint palette.
+
+        Runs at the end of :meth:`apply_tints` — so a refresh, a profile
+        load, a ``pm-type-update`` Broadcast and a structural Broadcast
+        all refresh it — and after every pane action's Server call
+        returns (the Broadcast arrives on top of that; a double rebuild
+        is fine). The pane keeps the selected Type across rebuilds and
+        drops the selection when the Type is gone."""
+        self.typesPane.rebuild(
+            self.state.types, self._model_parameters(), self.typePalette
+        )
+
+    @QtCore.Slot(str)
+    def _on_pane_type_selected(self, name: str) -> None:
+        """The Types pane's selected Type changed: re-render the entries
+        and Instances panes for it."""
+        self.typesPane.refresh_selected_panes(
+            self.state.types, self._model_parameters(), self.typePalette
+        )
+
+    @QtCore.Slot(str)
+    def _on_pane_add_type(self, name: str) -> None:
+        """The New type strip: create the Type. A refused creation shows
+        the Server's error text on the strip's note; on success the new
+        Type is selected once the pane rebuilds (the ``pm-type-update``
+        Broadcast brings it into the state)."""
+        try:
+            self.instrument.add_type(name)
+        except Exception as exc:
+            self.typesPane.show_type_error(str(exc))
+        else:
+            self.typesPane.reset_type_note()
+            self.typesPane.newTypeEdit.clear()
+            self.typesPane.select_type(name)
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str, str, str)
+    def _on_pane_add_entry(
+        self, type_name: str, path: str, default_text: str, unit: str
+    ) -> None:
+        """The "Add to type" strip: add the entry with its parsed default
+        (``None`` when the text is empty) and unit (D11, D13). A refused
+        edit shows the Server's error text on the entries pane's note."""
+        try:
+            self.instrument.add_type_parameter(
+                type_name, path, default=parse_default_text(default_text), unit=unit
+            )
+        except Exception as exc:
+            self.typesPane.show_entries_error(str(exc))
+        else:
+            self.typesPane.reset_entries_note()
+            self.typesPane.entryNameEdit.clear()
+            self.typesPane.entryDefaultEdit.clear()
+            self.typesPane.entryUnitEdit.clear()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str)
+    def _on_pane_remove_entry(self, type_name: str, path: str) -> None:
+        """An own entry's Remove button: remove the entry from the Type
+        only (D13) — the Instances keep the parameter. A refused removal
+        shows the Server's error text on the entries pane's note."""
+        try:
+            self.instrument.remove_type_parameter(type_name, path)
+        except Exception as exc:
+            self.typesPane.show_entries_error(str(exc))
+        else:
+            self.typesPane.reset_entries_note()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str, str)
+    def _on_pane_set_default(self, type_name: str, path: str, text: str) -> None:
+        """An own entry's committed default editor (Return or the set
+        button): set the entry's default to the parsed text (D13). A
+        refused set shows the Server's error text on the entries pane's
+        note."""
+        try:
+            self.instrument.set_type_parameter_default(
+                type_name, path, parse_default_text(text)
+            )
+        except Exception as exc:
+            self.typesPane.show_entries_error(str(exc))
+        else:
+            self.typesPane.reset_entries_note()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str)
+    def _on_pane_toggle_type_lock(self, type_name: str, path: str) -> None:
+        """An entry's Type Lock toggle: declare the Type Lock on the
+        default Globals Target while the entry has no Target, remove only
+        the rule while it has one (D17). A refused toggle shows the
+        Server's error text on the entries pane's note; the Instance
+        parameters a declaration skips (D17) are named on it."""
+        blueprint = self.state.types.get(type_name)
+        target = None
+        if blueprint is not None:
+            target = blueprint.parameters.get(path, {}).get("target")
+        try:
+            if target is None:
+                skipped = self.instrument.lock_type_parameter(type_name, path)
+            else:
+                self.instrument.unlock_type_parameter(type_name, path)
+                skipped = []
+        except Exception as exc:
+            self.typesPane.show_entries_error(str(exc))
+        else:
+            if skipped:
+                self.typesPane.show_entries_note(f"skipped: {', '.join(skipped)}")
+            else:
+                self.typesPane.reset_entries_note()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str, str)
+    def _on_pane_add_nested(
+        self, type_name: str, submodule: str, nested: str
+    ) -> None:
+        """The "Nested type" strip: require the Nested Type ``nested`` at
+        the submodule (D11, D13). A refused edit shows the Server's error
+        text on the entries pane's note."""
+        try:
+            self.instrument.add_nested_type(type_name, submodule, nested)
+        except Exception as exc:
+            self.typesPane.show_entries_error(str(exc))
+        else:
+            self.typesPane.reset_entries_note()
+            self.typesPane.nestedAtEdit.clear()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str)
+    def _on_pane_remove_nested(self, type_name: str, submodule: str) -> None:
+        """An own Nested Type's Remove button: remove the requirement
+        (D13) — the Instances keep the parameters. A refused removal
+        shows the Server's error text on the entries pane's note."""
+        try:
+            self.instrument.remove_nested_type(type_name, submodule)
+        except Exception as exc:
+            self.typesPane.show_entries_error(str(exc))
+        else:
+            self.typesPane.reset_entries_note()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str)
+    def _on_pane_add_instance(self, type_name: str, name: str) -> None:
+        """The New instance strip: create the Instance ``name`` of the
+        Type (D14). A refused creation shows the Server's error text on
+        the instances pane's note."""
+        try:
+            self.instrument.add_instance(type_name, name)
+        except Exception as exc:
+            self.typesPane.show_instances_error(str(exc))
+        else:
+            self.typesPane.reset_instances_note()
+            self.typesPane.newInstanceEdit.clear()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str, str)
+    def _on_pane_show_instance(self, type_name: str, instance: str) -> None:
+        """An instance row's Show button: switch to the Parameters tab,
+        clear the filter, expand the tree and select the Instance's first
+        parameter row — the first effective entry under it, the submodule
+        row as the fallback — scrolled into view."""
+        self.tabs.setCurrentIndex(0)
+        self.lineEdit.clear()
+        self.view.expandAll()
+        blueprint = self.state.types.get(type_name)
+        candidates = [instance]
+        if blueprint is not None and blueprint.effective:
+            first = sorted(blueprint.effective, key=lambda entry: entry.split("."))[0]
+            candidates.insert(0, f"{instance}.{first}")
+        for path in candidates:
+            matches = self.model.findItems(
+                path,
+                cast(
+                    "QtCore.Qt.MatchFlags",
+                    QtCore.Qt.MatchFlag.MatchExactly
+                    | QtCore.Qt.MatchFlag.MatchRecursive,
+                ),
+                0,
+            )
+            if not matches:
+                continue
+            proxy_index = self.proxyModel.mapFromSource(
+                self.model.indexFromItem(matches[0])
+            )
+            if proxy_index.isValid():
+                self.view.setCurrentIndex(proxy_index)
+                self.view.scrollTo(proxy_index)
+            break
 
     @QtCore.Slot()
     def loadFromFile(self, loadFile: Optional[str] = None) -> None:

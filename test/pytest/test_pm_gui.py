@@ -1,7 +1,7 @@
 """Client-side state and Broadcast handling of the Parameter Manager GUI
 (plan task 5.1), its tabs, tints and gutter bands (plan task 5.2), its
-Lock column, lock toggle, context menu and arm strip (plan task 5.3), and
-its Locks panel (plan task 5.4).
+Lock column, lock toggle, context menu and arm strip (plan task 5.3), its
+Locks panel (plan task 5.4), and its Types tab (plan task 5.5).
 
 The GUI keeps the Parameter Manager's Types and Locks in a ``PMState``
 (``ParameterManagerGui.state``), filled from the Parameter Manager on
@@ -18,21 +18,20 @@ flow, the toggle, the refused cycle, the Follower repaint on a second
 Client's Target update, and the model reload path live. The 5.4 tests cover
 the pure Locks-panel row model without a Server, the toolbar action and
 splitter, and the panel's rows, remove and lock-all actions, value editor
-and "Lock selection to…" flow live.
+and "Lock selection to…" flow live. The 5.5 tests cover the pure Types-pane
+helpers (the entries rows, the client-side Instance matching, the "also"
+Types and the Type Lock arm ranking) without a Server, the model's
+parameter-creation branch (the 5.1 TEST_AUDIT trap, fixed in plan task 5.5
+by Marcos's decision as an exception to plan rule 6), and the Types tab's
+three panes live: a Type and an Instance created through the widgets with
+the Server state checked, entry and Nested Type edits, the Type Lock
+toggle and its re-target through the arm strip, Show, "also" and the
+error notes.
 
-Two shapes of the live path are deliberately avoided in these tests, both
-pre-existing and outside this task's scope:
-
-- a parameter another Client creates while the GUI is open makes the
-  model's creation branch resolve it on the GUI's (stale) Proxy Instrument
-  blueprint, which raises. Every Type edit below therefore has no creation
-  side effect: the parameters (with the units the entries declare) exist
-  before the GUI is built, and the entries land on Instances that already
-  carry them;
-- ``lock_type_parameter`` without an explicit Target creates the Globals
-  parameter ``_globals.<type>.<path>``, whose ``parameter-creation``
-  Broadcast hits the same branch. The Type Lock test therefore declares an
-  explicit Target.
+With the creation branch fixed, parameters may be created while the GUI
+is open, so the 5.5 tests drive everything through the widgets — and the
+Globals-default Type Lock, whose declaration creates the
+``_globals.<type>.<path>`` parameter, is testable live too.
 """
 
 import os
@@ -62,13 +61,17 @@ from instrumentserver.gui.instruments import (
     ParameterManagerTreeView,
     PMState,
     TypePalette,
+    also_types,
     build_lock_rows,
     compute_claims,
     followers_reaching,
+    instances_of_type,
     lock_column_text,
     lock_root,
+    parse_default_text,
     rank_lock_targets,
     relative_path,
+    type_entry_rows,
 )
 from instrumentserver.gui.parameters import ParameterWidget
 from instrumentserver.gui.shortcuts import KeyboardShortcutManager
@@ -487,12 +490,14 @@ def test_refresh_all_refills_the_state_from_the_server(
 # ---------------------------------------------------------------------------
 
 
-def _type_blueprint(name, entries, nested=None, registry=None):
+def _type_blueprint(name, entries, nested=None, registry=None, defaults=None, targets=None):
     """A ``PMTypeBluePrint`` whose effective set is expanded the way
     ``params.py`` expands it: the Type's own entries carry itself as
     ``from_type``, and every Nested Type's effective set is mounted under
     the submodule that requires it, keeping the defining Type."""
     nested = dict(nested or {})
+    defaults = defaults or {}
+    targets = targets or {}
     effective = {
         path: {"unit": unit, "from_type": name} for path, unit in entries.items()
     }
@@ -502,7 +507,11 @@ def _type_blueprint(name, entries, nested=None, registry=None):
     return PMTypeBluePrint(
         name=name,
         parameters={
-            path: {"default": None, "unit": unit, "target": None}
+            path: {
+                "default": defaults.get(path),
+                "unit": unit,
+                "target": targets.get(path),
+            }
             for path, unit in entries.items()
         },
         nested=nested,
@@ -685,7 +694,7 @@ def test_palette_keeps_the_slot_of_an_existing_type_across_updates():
 
 def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
     """The existing widget becomes tab 0 ("Parameters") of a QTabWidget;
-    tab 1 ("Types") is an empty placeholder for its own task; the gutter
+    tab 1 ("Types") hosts the Types pane (plan task 5.5); the gutter
     column is wired into the view: visual position 0, fixed width, its own
     delegate reading the GUI's palette, tree branches on the name column."""
     gui = _make_gui(qtbot, pm, server_port)
@@ -698,7 +707,8 @@ def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
         assert parameters_tab.isAncestorOf(gui.view)
         types_tab = gui.tabs.widget(1)
         assert types_tab is gui.typesTab
-        assert types_tab.findChildren(QtWidgets.QWidget) == []
+        assert isinstance(gui.typesPane, QtWidgets.QWidget)
+        assert types_tab.isAncestorOf(gui.typesPane)
 
         header = gui.view.header()
         assert header.visualIndex(GUTTER_COLUMN) == 0
@@ -1118,9 +1128,9 @@ def test_parameter_widget_set_read_only(qtbot):
 
 
 def _make_live_parameters(pm):
-    """Create the 5.3 live tests' parameters before the GUI is built (a
-    parameter another Client creates while the GUI is open crashes the
-    model's parameter-creation branch, TEST_AUDIT.md)."""
+    """Create the 5.3 live tests' parameters before the GUI is built.
+    (Since the 5.5 creation-branch fix they could equally be created
+    while the GUI is open; the 5.3 tests keep their original order.)"""
     pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
     pm.add_parameter("q02.IF", initial_value=2.0, unit="Hz")
     pm.add_parameter("q03.IF", initial_value=3.0, unit="Hz")
@@ -2035,5 +2045,746 @@ def test_a_panel_action_error_shows_on_the_note_label(qtbot, pm, server_port):
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.locksPanel.noteLabel.text() == LOCK_PANEL_NOTE
+    finally:
+        gui.model.stopListener()
+
+
+# ---------------------------------------------------------------------------
+# plan task 5.5: the Types tab (and the parameter-creation branch fix)
+# ---------------------------------------------------------------------------
+
+
+def _row_exists(gui, path):
+    """Whether the parameters tree holds the row ``path`` (a soft check
+    for ``qtbot.waitUntil`` callbacks)."""
+    matches = gui.model.findItems(
+        path,
+        QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
+        0,
+    )
+    return bool(matches)
+
+
+def _state_type_has(gui, type_name, path):
+    """Whether the GUI's state holds the Type ``type_name`` with the
+    entry ``path``."""
+    blueprint = gui.state.types.get(type_name)
+    return blueprint is not None and path in blueprint.parameters
+
+
+def _type_list_row(gui, name):
+    """The three items of the Types pane's type-list row ``name``, or
+    ``None`` while the row does not exist."""
+    model = gui.typesPane.typeModel
+    matches = model.findItems(name, QtCore.Qt.MatchFlag.MatchExactly, 0)
+    if not matches:
+        return None
+    row = matches[0].row()
+    return [model.item(row, column) for column in range(3)]
+
+
+def _entry_row_items(gui, path):
+    """The four items of the entries-pane row ``path`` (walked segment by
+    segment through the tree), or ``None`` while the row does not
+    exist."""
+    item = gui.typesPane.entriesModel.invisibleRootItem()
+    for segment in path.split("."):
+        found = None
+        for row in range(item.rowCount()):
+            child = item.child(row, 0)
+            if child is not None and child.text() == segment:
+                found = child
+                break
+        if found is None:
+            return None
+        item = found
+    parent = item.parent()
+    if parent is None:
+        model = gui.typesPane.entriesModel
+        return [model.item(item.row(), column) for column in range(4)]
+    return [parent.child(item.row(), column) for column in range(4)]
+
+
+def _instance_row_items(gui, name):
+    """The four items of the instances-pane row ``name``, or ``None``
+    while the row does not exist."""
+    model = gui.typesPane.instancesModel
+    matches = model.findItems(name, QtCore.Qt.MatchFlag.MatchExactly, 0)
+    if not matches:
+        return None
+    row = matches[0].row()
+    return [model.item(row, column) for column in range(4)]
+
+
+def _create_type_with_instance(qtbot, gui, pm, type_name="qubit", instance="q10"):
+    """Create the Type ``type_name`` with one entry ``IF`` (default 1.0,
+    unit Hz) and the Instance ``instance`` through the Types pane's
+    widgets, waiting for the Server state and the pane rows each step."""
+    gui.tabs.setCurrentIndex(1)
+    gui.typesPane.newTypeEdit.setText(type_name)
+    gui.typesPane.addTypeButton.click()
+    qtbot.waitUntil(
+        lambda: type_name in pm.list_types(), timeout=BROADCAST_TIMEOUT
+    )
+    qtbot.waitUntil(
+        lambda: gui.typesPane.selectedType == type_name
+        and _type_list_row(gui, type_name) is not None,
+        timeout=BROADCAST_TIMEOUT,
+    )
+    gui.typesPane.entryNameEdit.setText("IF")
+    gui.typesPane.entryDefaultEdit.setText("1.0")
+    gui.typesPane.entryUnitEdit.setText("Hz")
+    gui.typesPane.addEntryButton.click()
+    qtbot.waitUntil(
+        lambda: _state_type_has(gui, type_name, "IF"), timeout=BROADCAST_TIMEOUT
+    )
+    qtbot.waitUntil(
+        lambda: gui.typesPane.entryWidgets.get("IF", {}).get("editor") is not None,
+        timeout=BROADCAST_TIMEOUT,
+    )
+    gui.typesPane.newInstanceEdit.setText(instance)
+    gui.typesPane.addInstanceButton.click()
+    qtbot.waitUntil(
+        lambda: pm.has_param(f"{instance}.IF"), timeout=BROADCAST_TIMEOUT
+    )
+    qtbot.waitUntil(
+        lambda: _instance_row_items(gui, instance) is not None,
+        timeout=BROADCAST_TIMEOUT,
+    )
+
+
+def test_type_entry_rows_build_the_segment_sorted_tree():
+    """The entries rows of a Type with a Nested Type: segment-wise order
+    (the mock's sort), submodule rows naming the Nested Type they
+    require, own entries marked with their default and Target, nested
+    entries carrying the defining Type and its own default."""
+    readout = _type_blueprint("readout", {"bw": "Hz"}, defaults={"bw": 2.0})
+    qubit = _type_blueprint(
+        "qubit",
+        {"IF": "Hz"},
+        nested={"readout": "readout"},
+        registry={"readout": readout},
+        defaults={"IF": 1.0},
+        targets={"IF": f"{PM_NAME}._globals.qubit.IF"},
+    )
+    rows = type_entry_rows(
+        "qubit", {"readout": readout, "qubit": qubit}, PM_NAME
+    )
+    assert [row.path for row in rows] == ["IF", "readout", "readout.bw"]
+    assert rows[0].kind == "entry" and rows[0].own
+    assert rows[0].from_type == "qubit"
+    assert rows[0].unit == "Hz" and rows[0].default == 1.0
+    assert rows[0].target == "_globals.qubit.IF"
+    assert rows[1].kind == "submodule" and rows[1].nested_type == "readout"
+    assert rows[2].kind == "entry" and not rows[2].own
+    assert rows[2].from_type == "readout"
+    assert rows[2].unit == "Hz" and rows[2].default == 2.0
+    assert rows[2].target is None
+
+
+def test_type_entry_rows_walks_deeper_nested_submodules():
+    """A Nested Type's own Nested Type: the deeper submodule row names the
+    Type required there (the mock's ``at`` walk), and its entries carry
+    the defining Type's own default for the path relative to it; a
+    submodule with no Nested Type is a structural row."""
+    pulse_window = _type_blueprint("pulse_window", {"win": "s"}, defaults={"win": 5})
+    readout = _type_blueprint(
+        "readout",
+        {"bw": "Hz"},
+        nested={"pw": "pulse_window"},
+        registry={"pulse_window": pulse_window},
+    )
+    qubit = _type_blueprint(
+        "qubit",
+        {"IF": "Hz"},
+        nested={"readout": "readout"},
+        registry={"readout": readout},
+    )
+    types = {"pulse_window": pulse_window, "readout": readout, "qubit": qubit}
+    rows = type_entry_rows("qubit", types)
+    assert [row.path for row in rows] == [
+        "IF",
+        "readout",
+        "readout.bw",
+        "readout.pw",
+        "readout.pw.win",
+    ]
+    by_path = {row.path: row for row in rows}
+    assert by_path["readout"].nested_type == "readout"
+    assert by_path["readout.pw"].nested_type == "pulse_window"
+    assert by_path["readout.pw.win"].kind == "entry"
+    assert by_path["readout.pw.win"].from_type == "pulse_window"
+    assert by_path["readout.pw.win"].default == 5
+
+    deep = _type_blueprint("dq", {"short.win": "s"})
+    rows = type_entry_rows("dq", {"dq": deep})
+    assert [row.path for row in rows] == ["short", "short.win"]
+    assert rows[0].nested_type is None
+
+
+def test_type_entry_rows_of_an_unknown_type():
+    """An unknown Type yields no rows."""
+    assert type_entry_rows("gone", {}) == []
+
+
+def test_instances_of_type_matches_like_compute_claims():
+    """The client-side Instance matching follows the rules
+    ``compute_claims`` matches by: every effective path with the declared
+    unit, the root never, Globals never, an empty Type never, extra
+    parameters do not matter."""
+    qubit = _type_blueprint("qubit", {"IF": "Hz", "bw": "Hz"})
+    types = {"qubit": qubit}
+    parameters = {
+        "q10.IF": "Hz",
+        "q10.bw": "Hz",
+        "q10.gain": "dB",
+        "IF": "Hz",
+        "bw": "Hz",
+        "_globals.qubit.IF": "Hz",
+        "_globals.qubit.bw": "Hz",
+        "wrong.IF": "Hz",
+        "wrong.bw": "V",
+    }
+    assert instances_of_type("qubit", types, parameters) == ["q10"]
+    # one path missing or one unit off: no Instance
+    assert instances_of_type("qubit", types, {"q10.IF": "Hz"}) == []
+    assert instances_of_type("qubit", types, {"q10.IF": "Hz", "q10.bw": "V"}) == []
+    assert instances_of_type("empty", types, parameters) == []
+
+
+def test_also_types_lists_every_type_the_submodule_carries():
+    """A submodule can be an Instance of several Types; ``also_types``
+    lists them all in registry order (the Types pane filters the selected
+    one out when it composes the ``also`` text)."""
+    big = _type_blueprint("big", {"a": "Hz", "b": "Hz"})
+    small = _type_blueprint("small", {"a": "Hz"})
+    types = {"big": big, "small": small}
+    parameters = {"q01.a": "Hz", "q01.b": "Hz"}
+    assert also_types("q01", types, parameters) == ["big", "small"]
+    assert also_types("other", types, parameters) == []
+
+
+def test_parse_default_text():
+    """An empty default text parses to ``None``, a literal to its value,
+    and anything else stays the raw string."""
+    assert parse_default_text("") is None
+    assert parse_default_text("  ") is None
+    assert parse_default_text("1.0") == 1.0
+    assert parse_default_text("3") == 3
+    assert parse_default_text("True") is True
+    assert parse_default_text("abc") == "abc"
+    assert parse_default_text("'xy'") == "xy"
+
+
+def test_rank_lock_targets_ranks_for_a_type_lock_arm():
+    """With an explicit ``arm_rel`` — the Types tab's Type Lock re-target
+    — the entry path ranks the candidates: the same leaf on any Instance
+    first, then submodules on the way, everything else last. There is no
+    Follower to exclude."""
+    claims = {
+        "q01.IF": Claim(type="qubit", instance="q01", stack=["qubit"]),
+        "q02.IF": Claim(type="qubit", instance="q02", stack=["qubit"]),
+    }
+    ranked = rank_lock_targets(
+        "", ["other.x", "q02.IF", "q05.IF.gain", "q01.IF"], claims, arm_rel="IF"
+    )
+    assert ranked == ["q01.IF", "q02.IF", "q05.IF.gain", "other.x"]
+
+
+def test_a_creation_from_a_second_client_under_an_existing_submodule_appears(
+    qtbot, pm, second_client, server_port
+):
+    """Regression (plan task 5.5, reading 0): a parameter another Client
+    creates under an existing submodule while the GUI is open appears in
+    the model with its delegate widget."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.add_parameter("cr01.x", initial_value=1.0, unit="Hz")
+    pm.update()  # the GUI's tree is built from the proxy's blueprint
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.add_parameter("cr01.y", initial_value=2.0, unit="Hz")
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "cr01.y")
+            and "cr01.y" in gui.view.delegate.parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_creation_from_a_second_client_in_a_new_submodule_appears(
+    qtbot, pm, second_client, server_port
+):
+    """Regression: the same for a parameter that brings a new submodule
+    with it."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.update()
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.add_parameter("crnew.z", initial_value=3.0, unit="s")
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "crnew")
+            and _row_exists(gui, "crnew.z")
+            and "crnew.z" in gui.view.delegate.parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_an_add_instance_from_a_second_client_appears_and_tints(
+    qtbot, pm, second_client, server_port
+):
+    """Regression: an Instance a second Client creates while the GUI is
+    open appears row by row, with widgets, and the tints recompute so the
+    new Instance's rows carry the Type's tint."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.add_type("insttype")
+        second_pm.add_type_parameter("insttype", "ix", default=1.0, unit="Hz")
+        second_pm.add_type_parameter("insttype", "iy", default=2.0, unit="Hz")
+        qtbot.waitUntil(
+            lambda: _state_type_has(gui, "insttype", "iy"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        second_pm.add_instance("insttype", "instq")
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "instq.ix")
+            and _row_exists(gui, "instq.iy")
+            and "instq.ix" in gui.view.delegate.parameters
+            and "instq.iy" in gui.view.delegate.parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: _type_tint(gui, "insttype") is not None
+            and _row_items(gui, "instq.ix")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in _type_tint(gui, "insttype")
+            and _row_items(gui, "instq.iy")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in _type_tint(gui, "insttype"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_an_add_instance_from_the_gui_proxy_appears(
+    qtbot, pm, second_client, server_port
+):
+    """Regression: the same for the GUI's own Proxy calling
+    ``add_instance`` — and the Proxy is refreshed by the creation branch,
+    so attribute access resolves the created parameters."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        second_pm.add_type("owntype")
+        second_pm.add_type_parameter("owntype", "ox", default=1.0, unit="Hz")
+        second_pm.add_type_parameter("owntype", "oy", default=2.0, unit="Hz")
+        qtbot.waitUntil(
+            lambda: _state_type_has(gui, "owntype", "oy"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        pm.add_instance("owntype", "ownq")
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "ownq.ox")
+            and _row_exists(gui, "ownq.oy")
+            and "ownq.ox" in gui.view.delegate.parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert pm.ownq.ox.get() == 1.0
+        assert pm.ownq.oy.get() == 2.0
+        qtbot.waitUntil(
+            lambda: _type_tint(gui, "owntype") is not None
+            and _row_items(gui, "ownq.ox")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in _type_tint(gui, "owntype"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_types_tab_creates_a_type_and_an_instance(
+    qtbot, pm, second_client, server_port
+):
+    """The plan's named flow: a Type and an Instance created through the
+    Types pane's widgets, with the Server state matching; the new
+    Instance's tree row carries the Type's tint; a second Client's entry
+    appears in the panes and the tree without any GUI action."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        _create_type_with_instance(qtbot, gui, pm)
+
+        # the Server holds the entry with its default and unit
+        assert pm.get_type("qubit").parameters["IF"] == {
+            "default": 1.0,
+            "unit": "Hz",
+            "target": None,
+        }
+        # the type list shows the row, selected, with its counts
+        row = _type_list_row(gui, "qubit")
+        assert row is not None
+        current = gui.typesPane.typeModel.item(
+            gui.typesPane.typeList.currentIndex().row(), 0
+        )
+        assert current is not None and current.text() == "qubit"
+        assert gui.typesPane.selectedType == "qubit"
+        # the entry row is in the pane
+        assert _entry_row_items(gui, "IF") is not None
+        # the Instance was created with the entry's default and unit
+        qtbot.waitUntil(lambda: _row_exists(gui, "q10.IF"), timeout=BROADCAST_TIMEOUT)
+        assert pm.q10.IF.get() == 1.0
+        assert pm.q10.IF.unit == "Hz"
+        # the instances row shows the parameter count
+        assert _instance_row_items(gui, "q10")[1].text() == "1 parameters"
+        # the Parameters tree shows the q10.IF row tinted with qubit's colour
+        qtbot.waitUntil(
+            lambda: _type_tint(gui, "qubit") is not None
+            and _row_items(gui, "q10.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in _type_tint(gui, "qubit"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # a second Client's entry appears without any GUI action
+        second_pm.add_type_parameter("qubit", "bw", default=2.0, unit="Hz")
+        qtbot.waitUntil(
+            lambda: _entry_row_items(gui, "bw") is not None
+            and _row_exists(gui, "q10.bw"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_types_tab_edits_entries_and_nested_types(
+    qtbot, pm, second_client, server_port
+):
+    """Entry edits through the widgets: the default editor sets the
+    entry's default on the Server, Remove takes the entry off the Type
+    while the Instance keeps the parameter (D13), and a Nested Type added
+    through the strips shows its submodule row and "defined by" entries
+    and creates the parameters on the Instances, until it is removed."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+
+        # change IF's default to 3.0 via the editor + set
+        entry = gui.typesPane.entryWidgets["IF"]
+        entry["editor"].setText("3.0")
+        entry["set"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").parameters["IF"]["default"] == 3.0,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # a second entry via the strip, then Remove via the row button
+        gui.typesPane.entryNameEdit.setText("bw")
+        gui.typesPane.entryDefaultEdit.setText("2.0")
+        gui.typesPane.entryUnitEdit.setText("Hz")
+        gui.typesPane.addEntryButton.click()
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("bw", {}).get("remove")
+            is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert pm.get_type("qubit").parameters["bw"]["default"] == 2.0
+        gui.typesPane.entryWidgets["bw"]["remove"].click()
+        qtbot.waitUntil(
+            lambda: "bw" not in pm.get_type("qubit").parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # D13: the Instance keeps the parameter
+        assert pm.has_param("q10.bw")
+
+        # nested: add Type "readout" with entry "bw" (Hz) through the
+        # widgets
+        gui.typesPane.newTypeEdit.setText("readout")
+        gui.typesPane.addTypeButton.click()
+        qtbot.waitUntil(
+            lambda: gui.typesPane.selectedType == "readout",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.typesPane.entryNameEdit.setText("bw")
+        gui.typesPane.entryUnitEdit.setText("Hz")
+        gui.typesPane.addEntryButton.click()
+        qtbot.waitUntil(
+            lambda: "bw" in pm.get_type("readout").parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # select "qubit" again through the type list, then nest readout
+        # at "readout"
+        row = _type_list_row(gui, "qubit")
+        assert row is not None
+        gui.typesPane.typeList.setCurrentIndex(
+            gui.typesPane.typeModel.indexFromItem(row[0])
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.selectedType == "qubit",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.typesPane.nestedTypeCombo.setCurrentText("readout")
+        gui.typesPane.nestedAtEdit.setText("readout")
+        gui.typesPane.addNestedButton.click()
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").nested == {"readout": "readout"},
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # the entries pane shows the submodule row with its Nested Type
+        # and the defined-by entry
+        qtbot.waitUntil(
+            lambda: _entry_row_items(gui, "readout") is not None
+            and _entry_row_items(gui, "readout.bw") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert _entry_row_items(gui, "readout")[2].text() == "type: readout"
+        defined_by = gui.typesPane.entryWidgets["readout.bw"]["definedBy"]
+        assert defined_by.text() == "defined by readout"
+        assert defined_by.toolTip() == "defined by readout — change the default there"
+        # the nested entry was created on the Instance
+        qtbot.waitUntil(
+            lambda: pm.has_param("q10.readout.bw"), timeout=BROADCAST_TIMEOUT
+        )
+
+        # Remove nested: only the requirement goes (D13)
+        gui.typesPane.entryWidgets["readout"]["removeNested"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").nested == {}, timeout=BROADCAST_TIMEOUT
+        )
+        assert pm.has_param("q10.readout.bw")
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_types_tab_type_locks_toggle_and_retarget(
+    qtbot, pm, second_client, server_port
+):
+    """The Type Lock toggle puts the Globals default Target on the entry,
+    locks the Instance parameter and shows the ``_globals`` row in the
+    tree; toggling again removes only the rule (D17) and the Locks stay.
+    The re-target button arms the picker on the Parameters tab and the
+    picked row becomes the entry's Target."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+
+        globals_target = f"{PM_NAME}._globals.qubit.IF"
+
+        def _state_target():
+            blueprint = gui.state.types.get("qubit")
+            return None if blueprint is None else blueprint.parameters["IF"]["target"]
+
+        # toggle on: the Globals default Target is created and locked
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: _state_target() == globals_target
+            and pm.get_type("qubit").parameters["IF"]["target"] == globals_target,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q10.IF")
+            == PMLockBluePrint(target=globals_target, locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # the _globals.qubit.IF row appears in the tree
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "_globals.qubit.IF"),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # toggle again: the rule goes, the Lock stays (D17); the wait runs
+        # on the state, so the next toggle reads the current rule and not
+        # the one still in flight
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: _state_target() is None
+            and pm.get_type("qubit").parameters["IF"]["target"] is None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert pm.get_lock("q10.IF") is not None
+
+        # toggle on once more: the re-target button needs a locked entry
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: _state_target() == globals_target
+            and pm.get_type("qubit").parameters["IF"]["target"] == globals_target,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # re-target through the arm strip, with a root parameter created
+        # first
+        pm.add_parameter("tshared", initial_value=0.0, unit="Hz")
+        qtbot.waitUntil(lambda: _row_exists(gui, "tshared"), timeout=BROADCAST_TIMEOUT)
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("retarget")
+            is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.typesPane.entryWidgets["IF"]["retarget"].click()
+        assert gui.tabs.currentIndex() == 0
+        assert gui.armStrip.label.text() == "Target for type qubit · IF"
+        assert gui.armed_type_lock == ("qubit", "IF")
+        assert gui.armed_follower is None
+
+        gui.pick_lock_target("tshared")
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").parameters["IF"]["target"]
+            == f"{PM_NAME}.tshared",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert gui.armStrip.isHidden()
+        assert gui.armed_type_lock is None
+        assert gui.armed_follower is None
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_types_tab_names_skipped_locks_on_the_note(
+    qtbot, pm, second_client, server_port
+):
+    """A Type Lock declaration skips the Instance parameters already
+    locked to another Target (D17) and names them on the entries pane's
+    note; the skipped parameter keeps its own Target."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+
+        pm.add_parameter("tshared", initial_value=0.0, unit="Hz")
+        qtbot.waitUntil(lambda: _row_exists(gui, "tshared"), timeout=BROADCAST_TIMEOUT)
+        pm.lock("q10.IF", "tshared")
+        qtbot.waitUntil(
+            lambda: gui.state.locks.get("q10.IF")
+            == PMLockBluePrint(target=f"{PM_NAME}.tshared", locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("toggle")
+            is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: "skipped: q10.IF" in gui.typesPane.entriesNote.text(),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert pm.get_lock("q10.IF").target == f"{PM_NAME}.tshared"
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_types_tab_show_button_and_also_types(
+    qtbot, pm, second_client, server_port
+):
+    """An instance row's Show button switches to the Parameters tab,
+    clears the filter and selects the Instance's first parameter row; a
+    second Type the Instance also carries shows as ``also <type>``."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        qtbot.waitUntil(
+            lambda: gui.typesPane.showButtons.get("q10") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # a second Type whose set q10 also carries
+        second_pm.add_type("smallq")
+        second_pm.add_type_parameter("smallq", "IF", unit="Hz")
+        qtbot.waitUntil(
+            lambda: _instance_row_items(gui, "q10") is not None
+            and _instance_row_items(gui, "q10")[2].text() == "also smallq",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # press q10's Show: tab 0, filter empty, the current row is q10.IF
+        gui.lineEdit.setText("no-such-parameter")
+        gui.typesPane.showButtons["q10"].click()
+        assert gui.tabs.currentIndex() == 0
+        qtbot.waitUntil(lambda: gui.lineEdit.text() == "")
+        current = gui._getCurrentItem()
+        assert current is not None and current.name == "q10.IF"
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_types_tab_shows_server_errors_and_empty_names(
+    qtbot, pm, second_client, server_port
+):
+    """The strips show the Server's refusal for a repeated name on their
+    note and their own note for an empty name."""
+    second_pm = _second_parameter_manager(second_client)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        gui.tabs.setCurrentIndex(1)
+        gui.typesPane.newTypeEdit.setText("errtype")
+        gui.typesPane.addTypeButton.click()
+        qtbot.waitUntil(
+            lambda: "errtype" in pm.list_types(), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.selectedType == "errtype",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # an existing name: the Server's text on the note
+        gui.typesPane.newTypeEdit.setText("errtype")
+        gui.typesPane.addTypeButton.click()
+        qtbot.waitUntil(
+            lambda: "already exists" in gui.typesPane.typeNote.text(),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # an empty name: the strip's own note
+        gui.typesPane.newTypeEdit.setText("")
+        gui.typesPane.addTypeButton.click()
+        assert gui.typesPane.typeNote.text() == "Name must not be empty."
+
+        # the New instance and "Add to type" strips refuse empty names too
+        gui.typesPane.newInstanceEdit.setText("")
+        gui.typesPane.addInstanceButton.click()
+        assert gui.typesPane.instancesNote.text() == "Name must not be empty."
+        gui.typesPane.entryNameEdit.setText("")
+        gui.typesPane.addEntryButton.click()
+        assert gui.typesPane.entriesNote.text() == "Name must not be empty."
     finally:
         gui.model.stopListener()
