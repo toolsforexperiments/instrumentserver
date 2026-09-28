@@ -1265,19 +1265,19 @@ def build_lock_rows(
     ``locks`` maps each Follower's path (relative to the Parameter
     Manager) to its :class:`PMLockBluePrint`; ``types`` maps each Type's
     name to its :class:`PMTypeBluePrint`. An unlocked Lock still
-    remembers its Target (D5), so a Follower's link is its Lock's Target
+    remembers its Target (D5), so a Follower's Lock names its Target
     whether the Lock is locked or not.
 
-    The Targets are the unique links in ``locks`` order. The roots are the
-    Targets that carry no Lock of their own, the Type Lock Targets first
-    (a stable sort, like the mock's "group rows first"), each walked
+    The Targets are the unique Targets of the Locks, in ``locks`` order.
+    The roots are the Targets that carry no Lock of their own, the Type
+    Lock Targets first (a stable sort, like the mock's), each walked
     recursively into its Followers — a ``seen`` set guards against loops —
     and then any Target the first walk did not reach (the mock's second
     pass, e.g. a cycle among Followers). Every row carries its own Lock
     (``None`` for a plain Target) and its ``(Type, entry)`` pairs.
     """
 
-    def link(follower: str) -> Optional[str]:
+    def target_of(follower: str) -> Optional[str]:
         lock = locks.get(follower)
         return (
             None if lock is None else relative_path(lock.target, instrument_name)
@@ -1285,7 +1285,7 @@ def build_lock_rows(
 
     targets: List[str] = []
     for follower in locks:
-        target = link(follower)
+        target = target_of(follower)
         if target is not None and target not in targets:
             targets.append(target)
 
@@ -1303,7 +1303,7 @@ def build_lock_rows(
 
     def followers(path: str) -> List[str]:
         return [
-            follower for follower in locks if link(follower) == path
+            follower for follower in locks if target_of(follower) == path
         ]
 
     rows: List[LockRow] = []
@@ -1325,8 +1325,8 @@ def build_lock_rows(
                 row.children.append(child)
         return row
 
-    # Group rows first: a Type Lock Target is the headline, single links
-    # follow (the mock's stable sort).
+    # Type Lock Targets first, plain Targets follow — a stable sort,
+    # like the mock's
     roots = [target for target in targets if target not in locks]
     roots.sort(key=lambda target: 0 if type_locks_at(target) else 1)
     for target in roots:

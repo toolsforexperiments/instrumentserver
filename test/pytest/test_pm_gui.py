@@ -1491,7 +1491,7 @@ def test_a_filter_cycle_re_applies_the_lock_state(
 # ---------------------------------------------------------------------------
 
 
-def test_build_lock_rows_groups_followers_under_a_plain_target():
+def test_build_lock_rows_nests_followers_under_a_plain_target():
     """A plain Target with two Followers — one of them unlocked — builds
     one root with two children, each child carrying its own Lock (locked
     and unlocked alike, D5), and the root carrying none."""
@@ -1770,6 +1770,13 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
         )
         qtbot.waitUntil(
             lambda: (
+                gui.state.locks.get("dq01.IF") is not None
+                and gui.state.locks["dq01.IF"].locked is False
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: (
                 gui.locksPanel.rowWidgets.get("tshared") is not None
                 and gui.locksPanel.rowWidgets["tshared"]["lockAll"] is not None
             ),
@@ -1783,6 +1790,87 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
             and pm.get_lock("dq01.IF").locked,
             timeout=BROADCAST_TIMEOUT,
         )
+        # "lock all" passes the entry's stored Target: a call without it
+        # would re-point the rule to the Globals default (D17)
+        qtbot.waitUntil(
+            lambda: pm.get_type("dqubit").parameters["IF"]["target"]
+            == f"{PM_NAME}.tshared",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert pm.get_lock("dq01.IF").target == f"{PM_NAME}.tshared"
+        assert not any(path.startswith("_globals") for path in pm.list())
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_lock_all_note_names_the_skipped_followers(
+    qtbot, pm, second_client, server_port
+):
+    """"lock all" names the Instance parameters it skips on the note
+    label and leaves them locked to their own Target (D17): one whose
+    Lock the second Client re-targeted keeps that Target."""
+    second_pm = _second_parameter_manager(second_client)
+    second_pm.add_parameter("dq01.IF", initial_value=1.0, unit="Hz")
+    second_pm.add_parameter("dq02.IF", initial_value=2.0, unit="Hz")
+    # root-level parameters: the root is never an Instance, so targeting
+    # them cannot self-lock an Instance parameter
+    second_pm.add_parameter("tshared", initial_value=0.0, unit="Hz")
+    second_pm.add_parameter("talt", initial_value=9.0, unit="Hz")
+    second_pm.add_type("dqubit")
+    second_pm.add_type_parameter("dqubit", "IF", default=1.0, unit="Hz")
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+
+        # an explicit Target, so no Globals parameter is created and no
+        # parameter-creation Broadcast hits the model's creation branch
+        second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
+        qtbot.waitUntil(
+            lambda: gui.state.types.get("dqubit") is not None
+            and gui.state.types["dqubit"].parameters["IF"]["target"]
+            == f"{PM_NAME}.tshared",
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.locksAction.trigger()
+        qtbot.waitUntil(
+            lambda: _panel_root_paths(gui) == ["tshared"],
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # the second Client re-targets one Instance parameter; waiting for
+        # the GUI's state makes sure the rebuild that replaces the panel's
+        # buttons has run before the click
+        second_pm.lock("dq01.IF", "talt")
+        qtbot.waitUntil(
+            lambda: pm.get_lock("dq01.IF") is not None
+            and pm.get_lock("dq01.IF").target == f"{PM_NAME}.talt",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: (
+                gui.state.locks.get("dq01.IF") is not None
+                and gui.state.locks["dq01.IF"].target == f"{PM_NAME}.talt"
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: (
+                gui.locksPanel.rowWidgets.get("tshared") is not None
+                and gui.locksPanel.rowWidgets["tshared"]["lockAll"] is not None
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # "lock all": dq01.IF is skipped, named on the note label, and
+        # stays locked to its own Target
+        gui.locksPanel.rowWidgets["tshared"]["lockAll"].click()
+        qtbot.waitUntil(
+            lambda: "skipped: dq01.IF" in gui.locksPanel.noteLabel.text(),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert pm.get_lock("dq01.IF").target == f"{PM_NAME}.talt"
     finally:
         gui.model.stopListener()
 
@@ -1792,9 +1880,13 @@ def test_the_panel_value_editor_sets_the_target(
 ):
     """Typing a value into the root Target's editor and pressing its set
     button sets the parameter on the Server, and the tree's Follower row
-    repaints to it (5.3's repaint path)."""
-    second_pm = _second_parameter_manager(second_client)
+    repaints to it (5.3's repaint path). A second Client's set repaints
+    the panel in place: the root editor and the locked Follower's
+    read-only label both show the new value without a rebuild."""
+    # the second Client's proxy is built after the parameters exist, so
+    # its blueprint knows q02.IF (attribute access resolves through it)
     _make_live_parameters(pm)
+    second_pm = _second_parameter_manager(second_client)
 
     gui = _make_gui(qtbot, pm, server_port)
     try:
@@ -1823,6 +1915,28 @@ def test_the_panel_value_editor_sets_the_target(
         tree_widget = gui.view.delegate.parameters["q01.IF"]
         qtbot.waitUntil(
             lambda: tree_widget._getMethod() == 11, timeout=BROADCAST_TIMEOUT
+        )
+
+        # the second Client's set reaches the panel without a local echo:
+        # the root editor and the locked Follower's read-only label are
+        # refreshed in place (a no-op refresh_values would fail here)
+        second_pm.q02.IF.set(21)
+        qtbot.waitUntil(
+            lambda: (
+                gui.locksPanel.rowWidgets.get("q02.IF") is not None
+                and gui.locksPanel.rowWidgets["q02.IF"]["editor"] is not None
+                and gui.locksPanel.rowWidgets["q02.IF"]["editor"]._getMethod()
+                == 21
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: (
+                gui.locksPanel.rowWidgets.get("q01.IF") is not None
+                and gui.locksPanel.rowWidgets["q01.IF"]["label"] is not None
+                and gui.locksPanel.rowWidgets["q01.IF"]["label"].text() == "21"
+            ),
+            timeout=BROADCAST_TIMEOUT,
         )
     finally:
         gui.model.stopListener()
@@ -1875,7 +1989,9 @@ def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_po
 
 def test_a_panel_action_error_shows_on_the_note_label(qtbot, pm, server_port):
     """A refused panel action shows the Server's error text on the note
-    label, and the next successful action restores the default note."""
+    label, and the next successful action restores the default note. The
+    panel's toggle button runs the same action as the signal: unlock, then
+    lock again."""
     pm.add_parameter("q01.x", initial_value=1.0, unit="Hz")
     pm.add_parameter("q02.x", initial_value=2.0, unit="Hz")
     pm.lock("q02.x", "q01.x")
@@ -1884,6 +2000,30 @@ def test_a_panel_action_error_shows_on_the_note_label(qtbot, pm, server_port):
     gui = _make_gui(qtbot, pm, server_port)
     try:
         gui.locksAction.trigger()
+
+        # the panel's toggle button is wired to the same action: unlock,
+        # then lock again; the rebuild replaces the button, so it is
+        # re-read from rowWidgets before the second click
+        gui.locksPanel.rowWidgets["q02.x"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q02.x").locked is False,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        def _unlocked_toggle_back():
+            entry = gui.locksPanel.rowWidgets.get("q02.x")
+            return (
+                entry is not None
+                and entry["toggle"] is not None
+                and entry["toggle"].property("locked") is False
+            )
+
+        qtbot.waitUntil(_unlocked_toggle_back, timeout=BROADCAST_TIMEOUT)
+        gui.locksPanel.rowWidgets["q02.x"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q02.x").locked is True,
+            timeout=BROADCAST_TIMEOUT,
+        )
 
         gui.locksPanel.toggleLockRequested.emit("no.such")
         assert "no.such" in gui.locksPanel.noteLabel.text()
