@@ -579,7 +579,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   Tests: `test_pm_gui.py` — arm via context menu, pick a row, assert `get_lock` on the
   server; toggle unlocks; a cycle attempt shows the error; setting the Target from a second
   client repaints the Follower row.
-- [ ] **5.4 Locks panel.** Toolbar action (lock icon, checkable, `Ctrl+Shift+L`) toggling a
+- [x] **5.4 Locks panel.** Toolbar action (lock icon, checkable, `Ctrl+Shift+L`) toggling a
   second `QTreeView` in a `QSplitter` right of the tree. Rows built from `PMState.locks`:
   Targets at depth 0 (Type Lock Targets first, labelled `[type: <t>] <target>`), Followers
   beneath, recursively for chains. Per Follower row: lock/relock toggle and remove
