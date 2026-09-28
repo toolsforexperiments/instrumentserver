@@ -617,11 +617,36 @@ class ModelParameterManager(ModelParameters):
 
             self.newItem.emit(item)
 
+    def _has_row(self, full_name: str) -> bool:
+        """Whether the model holds a row for the dotted path ``full_name``
+        (the Broadcast name with the instrument name stripped)."""
+        return bool(
+            self.findItems(
+                full_name,
+                cast(
+                    "QtCore.Qt.MatchFlags",
+                    QtCore.Qt.MatchFlag.MatchExactly
+                    | QtCore.Qt.MatchFlag.MatchRecursive,
+                ),
+                0,
+            )
+        )
+
     def updateParameter(self, bp: ParameterBroadcastBluePrint) -> None:
+        fullName = ".".join(bp.name.split(".")[1:])
+        known_row = bp.action == PARAMETER_UPDATE and self._has_row(fullName)
         super().updateParameter(bp)
-        if bp.action in (PARAMETER_CREATION, PARAMETER_DELETION):
-            # matching depends on which parameters exist: the tints and
-            # gutter bands must be recomputed after a structural Broadcast
+        # a parameter-update for a row the model did not know adds one
+        # through the base update branch; matching depends on which
+        # parameters exist, so the tints and gutter bands must be
+        # recomputed for it too (plan task 5.6), or the new row would
+        # stay untinted until the next recompute
+        added_row = (
+            bp.action == PARAMETER_UPDATE
+            and not known_row
+            and self._has_row(fullName)
+        )
+        if bp.action in (PARAMETER_CREATION, PARAMETER_DELETION) or added_row:
             self.structureChanged.emit()
 
 
@@ -1388,10 +1413,11 @@ class LockArmStrip(QtWidgets.QWidget):
     error label for the Server's refusal text.
 
     Picking works three ways: a completion from the popup, Return with the
-    exact typed path (or the first ranked candidate when the text is not a
-    path), and clicking a tree row — the last one is wired by the
-    Parameter Manager GUI, which owns the strip. Cancel is the button or
-    Escape while the strip or one of its children has focus."""
+    exact typed path (or the first completion the completer filters for
+    the typed text; a text that matches no candidate picks nothing), and
+    clicking a tree row — the last one is wired by the Parameter Manager
+    GUI, which owns the strip. Cancel is the button or Escape while the
+    strip or one of its children has focus."""
 
     #: Signal(str)
     #: Emitted when a Target was picked. The path is relative to the
@@ -1533,9 +1559,10 @@ class LocksPanel(QtWidgets.QWidget):
 
     A Target row holds a value editor (a plain ``set`` on the Target); a
     locked Follower row shows its value read-only, and every Follower row
-    carries the lock/relock toggle and the remove button. A Type Lock row
-    carries "lock all" and "remove rule". The panel never talks to the
-    Server itself: every action is emitted as a signal —
+    that is not a Type Lock row carries the lock/relock toggle and the
+    remove button. A Type Lock row carries "lock all" and "remove rule".
+    The panel never talks to the Server itself: every action is emitted as
+    a signal —
     ``toggleLockRequested``, ``removeLockRequested``, ``lockAllRequested``,
     ``removeRuleRequested`` and ``lockSelectionRequested`` — and the
     Parameter Manager GUI, which owns the panel, performs it and reports
@@ -2400,8 +2427,19 @@ class TypesPane(QtWidgets.QWidget):
         palette: TypePalette,
     ) -> None:
         selected = self.selectedType or ""
-        self.entriesLabel.setText(f"parameters of {selected}")
-        self.instancesLabel.setText(f"instances of {selected}")
+        # with no Type selected the labels keep no trailing space and the
+        # three strips are disabled — their actions all need a Type
+        # (plan task 5.6)
+        has_type = bool(selected)
+        self.entriesLabel.setText(
+            f"parameters of {selected}" if has_type else "parameters"
+        )
+        self.instancesLabel.setText(
+            f"instances of {selected}" if has_type else "instances"
+        )
+        self.addEntryButton.setEnabled(has_type)
+        self.addNestedButton.setEnabled(has_type)
+        self.addInstanceButton.setEnabled(has_type)
         self._rebuild_nested_combo(selected, types)
         self._rebuild_entries(selected, types, palette)
         self._rebuild_instances(selected, types, parameters, palette)
@@ -3192,6 +3230,10 @@ class ParameterManagerGui(InstrumentParameters):
         )
         self.viewEscShortcut.setContext(QtCore.Qt.ShortcutContext.WidgetShortcut)
         self.viewEscShortcut.activated.connect(self.cancel_arm)
+        # The confirmation dialog for removing a Lock Target (plan task
+        # 5.6), kept on the GUI so tests can drive it; ``None`` while no
+        # removal that needs one is in flight.
+        self.removalDialog: Optional[QtWidgets.QMessageBox] = None
         self.connectSignals()
         self.loadProfile()
 
@@ -3254,6 +3296,13 @@ class ParameterManagerGui(InstrumentParameters):
         self.shortcutManager.register("load_items", self.loadFromFile, self)
         self.shortcutManager.register("save_items", self.saveToFile, self)
         self.shortcutManager.register("toggle_locks", self.locksAction.toggle, self)
+        # the Lock shortcuts (plan task 5.6); the tree's two lock actions
+        # carry their key in their tooltips
+        self.shortcutManager.register("lock_to", self._lock_current_item, self)
+        self.shortcutManager.register("unlock_item", self._unlock_current_item, self)
+        self.shortcutManager.register("show_types", self._toggle_tabs, self)
+        self.shortcutManager.register_tooltip("lock_to", self.view.lockToAction)
+        self.shortcutManager.register_tooltip("unlock_item", self.view.unlockAction)
 
     @QtCore.Slot()
     def _deleteCurrentItem(self) -> None:
@@ -3301,8 +3350,54 @@ class ParameterManagerGui(InstrumentParameters):
         self.apply_locks()
 
     def removeParameter(self, fullName: str) -> None:
-        if self.instrument.has_param(fullName):
-            self.instrument.remove_parameter(fullName)
+        """Remove the parameter at ``fullName`` (the row's delete button
+        and the delete_item shortcut both land here).
+
+        While the parameter is the Target of Locks — deleting it drops
+        them (D3) — a QMessageBox names every Follower that will lose its
+        Lock and asks for confirmation (plan task 5.6); Cancel returns
+        without touching the Server. A parameter without Followers is
+        removed without a dialog."""
+        self.removalDialog = None
+        if not self.instrument.has_param(fullName):
+            return
+        try:
+            followers = self.instrument.followers_of(fullName)
+        except Exception:
+            # the Server call failed: fall back to the client-side list
+            # computed from the state — locked and unlocked alike, the
+            # Targets compared through relative_path
+            followers = sorted(
+                follower
+                for follower, lock in self.state.locks.items()
+                if relative_path(lock.target, self.instrument.name) == fullName
+            )
+        if followers:
+            lines = []
+            for follower in followers:
+                lock = self.state.locks.get(follower)
+                state = "locked" if lock is not None and lock.locked else "unlocked"
+                lines.append(f"{follower} ({state})")
+            box = QtWidgets.QMessageBox(self)
+            box.setObjectName("removalDialog")
+            box.setIcon(QtWidgets.QMessageBox.Icon.Question)
+            box.setWindowTitle("Remove Target?")
+            # macOS ignores a QMessageBox's window title (windowTitle()
+            # reads back empty there); tests pin the dialog through its
+            # object name and text instead.
+            box.setText(
+                f"Removing {fullName} also removes the Locks of:\n"
+                + "\n".join(lines)
+            )
+            box.setStandardButtons(
+                QtWidgets.QMessageBox.StandardButton.Ok
+                | QtWidgets.QMessageBox.StandardButton.Cancel
+            )
+            box.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Cancel)
+            self.removalDialog = box
+            if box.exec() != QtWidgets.QMessageBox.StandardButton.Ok:
+                return
+        self.instrument.remove_parameter(fullName)
 
     def addParameter(self, fullName: str, value: Any, unit: str) -> None:
         try:
@@ -3487,6 +3582,33 @@ class ParameterManagerGui(InstrumentParameters):
             if widget is not None:
                 widget.alertWidget.setAlert(str(e))
 
+    def _lock_current_item(self) -> None:
+        """The lock_to shortcut (plan task 5.6): arm the target picker for
+        the tree's current parameter row. A submodule row or no selection
+        does nothing."""
+        item = self._getCurrentItem()
+        if item is not None and item.element is not None:
+            self.arm_lock(item.name)
+
+    def _unlock_current_item(self) -> None:
+        """The unlock_item shortcut (plan task 5.6): unlock the Lock of
+        the tree's current parameter row while it is locked; a row
+        without a locked Lock does nothing. A refused unlock shows the
+        Server's error text on the row's alert widget, like the context
+        menu's Unlock."""
+        item = self._getCurrentItem()
+        if item is None or item.element is None:
+            return
+        lock = self.state.locks.get(item.name)
+        if lock is None or not lock.locked:
+            return
+        self._unlock(item.name)
+
+    def _toggle_tabs(self) -> None:
+        """The show_types shortcut (plan task 5.6): switch between the
+        Parameters and Types tabs."""
+        self.tabs.setCurrentIndex(1 if self.tabs.currentIndex() == 0 else 0)
+
     @QtCore.Slot()
     def _update_lock_actions(self) -> None:
         """Enable the context menu's lock actions for the row the menu was
@@ -3553,6 +3675,10 @@ class ParameterManagerGui(InstrumentParameters):
                     self.typesPane.show_entries_note(
                         f"skipped: {', '.join(skipped)}"
                     )
+                else:
+                    # a clean declaration leaves no stale error or
+                    # skipped note behind (plan task 5.6)
+                    self.typesPane.reset_entries_note()
                 self.cancel_arm()
             return
         if self.armed_follower is None:
@@ -3685,11 +3811,13 @@ class ParameterManagerGui(InstrumentParameters):
     def _lock_selection_from_panel(self) -> None:
         """The panel's "Lock selection to…": arm the target picker for the
         tree's current parameter row. With no parameter row current, the
-        note label says so and nothing is armed."""
+        note label says so and nothing is armed; a successful arm clears a
+        stale error from the note (plan task 5.6)."""
         item = self._getCurrentItem()
         if item is None or item.element is None:
             self.locksPanel.show_error("Select a parameter in the tree first.")
             return
+        self.locksPanel.reset_note()
         self.arm_lock(item.name)
 
     @QtCore.Slot(QtCore.QModelIndex, QtCore.QModelIndex)

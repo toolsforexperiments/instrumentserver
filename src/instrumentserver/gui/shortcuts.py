@@ -44,6 +44,12 @@ class KeyboardShortcutManager:
         "fit_column": ("Ctrl+Shift+D", "Fits column width"),
         "sort_column": ("Ctrl+D", "Toggle sorting of selected column"),
         "toggle_locks": ("Ctrl+Shift+L", "Show or hide the Locks panel"),
+        "lock_to": ("Ctrl+L", "Lock the selected parameter to… (pick a Target)"),
+        "unlock_item": ("Ctrl+U", "Unlock the selected parameter"),
+        "show_types": (
+            "Ctrl+Shift+Y",
+            "Switch between the Parameters and Types tabs",
+        ),
     }
 
     def __init__(self) -> None:

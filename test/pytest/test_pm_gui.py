@@ -31,7 +31,15 @@ error notes.
 With the creation branch fixed, parameters may be created while the GUI
 is open, so the 5.5 tests drive everything through the widgets — and the
 Globals-default Type Lock, whose declaration creates the
-``_globals.<type>.<path>`` parameter, is testable live too.
+``_globals.<type>.<path>`` parameter, is testable live too. The 5.6 tests
+cover the delete-Target confirmation (Cancel leaves the Server untouched,
+Ok removes the Target and drops the Locks, a parameter without Followers
+goes without a dialog), the three Lock shortcut REGISTRY entries and
+their keys (Ctrl+L arm, Ctrl+U unlock, Ctrl+Shift+Y tab switch), the
+lock/unlock icons in the compiled resources, and the 5.6 polish: a
+parameter-update for an unknown row recomputes the tints, stale notes are
+reset on success, and with no Type selected the Types tab strips are
+disabled and the pane labels carry no trailing space.
 """
 
 import os
@@ -40,7 +48,12 @@ import pytest
 from qcodes.instrument import InstrumentBase
 
 from instrumentserver import QtCore, QtWidgets
-from instrumentserver.blueprints import PMLockBluePrint, PMTypeBluePrint
+from instrumentserver.blueprints import (
+    PARAMETER_UPDATE,
+    ParameterBroadcastBluePrint,
+    PMLockBluePrint,
+    PMTypeBluePrint,
+)
 from instrumentserver.client.proxy import Client
 from instrumentserver.gui.base_instrument import InstrumentSortFilterProxyModel
 from instrumentserver.gui.instruments import (
@@ -882,7 +895,8 @@ def test_a_deletion_broadcast_recomputes_the_tints(
     and recomputes the tints: the submodule that stops carrying the whole
     set loses its Claim, so the surviving rows show no tint and no gutter
     band. Deletion is safe live (the model's deletion branch touches no
-    Proxy blueprint); creation stays off-limits (TEST_AUDIT trap)."""
+    Proxy blueprint), and creation is too since plan task 5.5 fixed the
+    creation branch."""
     second_pm = _second_parameter_manager(second_client)
     pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
     pm.add_parameter("q01.bw", initial_value=2.0, unit="Hz")
@@ -1043,8 +1057,8 @@ def test_rank_lock_targets_without_a_claim_is_alphabetical():
 
 def test_lock_arm_strip_picks_cancels_and_shows_errors(qtbot):
     """The arm strip picks with Return (the exact path, or the first
-    ranked candidate when the text is not a path), cancels with Escape and
-    the Cancel button, shows the error text, and disarms."""
+    completion the completer filters for the typed text), cancels with
+    Escape and the Cancel button, shows the error text, and disarms."""
     strip = LockArmStrip()
     qtbot.addWidget(strip)
     picked = []
@@ -1993,6 +2007,14 @@ def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_po
         )
         assert gui.armed_follower is None
         assert gui.armStrip.isHidden()
+
+        # a successful arm clears the stale error from the note
+        # (plan task 5.6)
+        source_index = gui.model.indexFromItem(_row_items(gui, "other.x")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        gui.locksPanel.lockSelectionButton.click()
+        assert gui.armed_follower == "other.x"
+        assert gui.locksPanel.noteLabel.text() == LOCK_PANEL_NOTE
     finally:
         gui.model.stopListener()
 
@@ -2462,6 +2484,14 @@ def test_the_types_tab_creates_a_type_and_an_instance(
     try:
         _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
 
+        # no Type selected yet: the labels carry no trailing space and the
+        # three strips are disabled (plan task 5.6)
+        assert gui.typesPane.entriesLabel.text() == "parameters"
+        assert gui.typesPane.instancesLabel.text() == "instances"
+        assert not gui.typesPane.addEntryButton.isEnabled()
+        assert not gui.typesPane.addNestedButton.isEnabled()
+        assert not gui.typesPane.addInstanceButton.isEnabled()
+
         # create the Type through the widgets
         gui.tabs.setCurrentIndex(1)
         gui.typesPane.newTypeEdit.setText("qubit")
@@ -2474,6 +2504,13 @@ def test_the_types_tab_creates_a_type_and_an_instance(
             and _type_list_row(gui, "qubit") is not None,
             timeout=BROADCAST_TIMEOUT,
         )
+        # with the Type selected the strips are enabled and the labels
+        # name it
+        assert gui.typesPane.addEntryButton.isEnabled()
+        assert gui.typesPane.addNestedButton.isEnabled()
+        assert gui.typesPane.addInstanceButton.isEnabled()
+        assert gui.typesPane.entriesLabel.text() == "parameters of qubit"
+        assert gui.typesPane.instancesLabel.text() == "instances of qubit"
 
         # add the entry through the widgets
         gui.typesPane.entryNameEdit.setText("IF")
@@ -2791,6 +2828,20 @@ def test_the_types_tab_names_skipped_locks_on_the_note(
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.get_lock("q10.IF").target == f"{PM_NAME}.tshared"
+
+        # a clean Type Lock re-target with nothing skipped resets the
+        # note (plan task 5.6); re-targeting to the Follower's own Target
+        # skips nothing
+        gui.arm_type_lock("qubit", "IF")
+        assert gui.armed_type_lock == ("qubit", "IF")
+        gui.pick_lock_target("tshared")
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").parameters["IF"]["target"]
+            == f"{PM_NAME}.tshared",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert gui.typesPane.entriesNote.text() == ""
+        assert gui.armed_type_lock is None
     finally:
         gui.model.stopListener()
 
@@ -2893,5 +2944,268 @@ def test_the_types_tab_shows_server_errors_and_empty_names(
         assert gui.typesPane.entriesNote.text() == "Submodule must not be empty."
         # the Server's Nested Types are untouched
         assert pm.get_type("errtype2").nested == {}
+    finally:
+        gui.model.stopListener()
+
+
+# ---------------------------------------------------------------------------
+# plan task 5.6: delete-Target confirmation, shortcuts, icons, polish
+# ---------------------------------------------------------------------------
+
+
+def test_lock_and_unlock_icons_ship_in_the_resources():
+    """resource.qrc lists lock.svg and unlock.svg (plan task 5.3 copied
+    them into resource/icons), so the compiled resources expose both."""
+    import instrumentserver.resource  # noqa: F401
+
+    assert QtCore.QFile.exists(":/icons/lock.svg")
+    assert QtCore.QFile.exists(":/icons/unlock.svg")
+
+
+def test_the_lock_shortcuts_are_in_the_registry():
+    """The three shortcut REGISTRY entries (plan task 5.6) sit after
+    ``toggle_locks`` — the first key stays ``jump_filter`` — and no key
+    collides with another entry."""
+    registry = KeyboardShortcutManager.REGISTRY
+    assert registry["lock_to"] == (
+        "Ctrl+L",
+        "Lock the selected parameter to… (pick a Target)",
+    )
+    assert registry["unlock_item"] == ("Ctrl+U", "Unlock the selected parameter")
+    assert registry["show_types"] == (
+        "Ctrl+Shift+Y",
+        "Switch between the Parameters and Types tabs",
+    )
+    assert list(registry)[0] == "jump_filter"
+    keys = [entry[0] for entry in registry.values()]
+    assert len(keys) == len(set(keys))
+
+
+def _row_remove_button(gui, path):
+    """The row's delete button (the delegate's additional widget with the
+    ``Delete this parameter`` tooltip)."""
+    widget = gui.view.delegate.parameters[path]
+    buttons = [
+        button
+        for button in widget.findChildren(QtWidgets.QPushButton)
+        if button.toolTip() == "Delete this parameter"
+    ]
+    assert len(buttons) == 1, f"expected one delete button on {path}"
+    return buttons[0]
+
+
+def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
+    qtbot, pm, second_client, server_port
+):
+    """The plan's named test: deleting a Target — through the row's delete
+    button or the delete_item shortcut — pops a QMessageBox naming the
+    Followers that will lose their Locks; Cancel leaves the Server
+    untouched and no pm-lock-update is emitted, Ok removes the Target and
+    drops the Locks, and a parameter without Followers is removed without
+    a dialog."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        second_pm.lock("q01.IF", "q02.IF")
+        qtbot.waitUntil(
+            lambda: gui.state.locks.get("q01.IF")
+            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert gui.removalDialog is None
+
+        def _cancel_dialog():
+            dialog = gui.removalDialog
+            assert dialog is not None
+            # macOS ignores a QMessageBox's window title (it reads back
+            # empty there), so the object name and text pin the dialog
+            assert dialog.objectName() == "removalDialog"
+            assert dialog.text().startswith(
+                "Removing q02.IF also removes the Locks of:"
+            )
+            assert "q01.IF (locked)" in dialog.text()
+            assert (
+                dialog.standardButtons()
+                & QtWidgets.QMessageBox.StandardButton.Ok
+            )
+            assert (
+                dialog.standardButtons()
+                & QtWidgets.QMessageBox.StandardButton.Cancel
+            )
+            dialog.button(QtWidgets.QMessageBox.StandardButton.Cancel).click()
+
+        # the row's delete button path: the dialog appears, Cancel keeps
+        # the Target and its Followers' Locks untouched
+        QtCore.QTimer.singleShot(0, _cancel_dialog)
+        _row_remove_button(gui, "q02.IF").click()
+        qtbot.wait(300)  # a pm-lock-update would have arrived by now
+        assert pm.has_param("q02.IF")
+        assert pm.get_lock("q01.IF") == PMLockBluePrint(
+            target=f"{PM_NAME}.q02.IF", locked=True
+        )
+        assert gui.state.locks.get("q01.IF") == PMLockBluePrint(
+            target=f"{PM_NAME}.q02.IF", locked=True
+        )
+
+        # the delete_item shortcut path, with the row current
+        source_index = gui.model.indexFromItem(_row_items(gui, "q02.IF")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        QtCore.QTimer.singleShot(0, _cancel_dialog)
+        gui._deleteCurrentItem()
+        qtbot.wait(300)
+        assert pm.has_param("q02.IF")
+        assert pm.get_lock("q01.IF") == PMLockBluePrint(
+            target=f"{PM_NAME}.q02.IF", locked=True
+        )
+
+        # the Ok path: the Target is gone, its Follower's Lock with it
+        def _accept_dialog():
+            dialog = gui.removalDialog
+            assert dialog is not None
+            dialog.button(QtWidgets.QMessageBox.StandardButton.Ok).click()
+
+        QtCore.QTimer.singleShot(0, _accept_dialog)
+        _row_remove_button(gui, "q02.IF").click()
+        qtbot.waitUntil(
+            lambda: not pm.has_param("q02.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q01.IF") is None, timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: _lock_item(gui, "q01.IF").text() == "",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert "q01.IF" not in gui.state.locks
+
+        # a parameter without Followers is removed with no dialog
+        gui.removeParameter("other.x")
+        qtbot.waitUntil(
+            lambda: not pm.has_param("other.x"), timeout=BROADCAST_TIMEOUT
+        )
+        assert gui.removalDialog is None
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_lock_shortcuts_arm_unlock_and_switch_tabs(
+    qtbot, pm, second_client, server_port
+):
+    """Ctrl+L arms the pick for the tree's current parameter row (and
+    does nothing on a submodule row), Ctrl+U unlocks the current locked
+    Follower, and Ctrl+Shift+Y switches between the tabs."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        second_pm.lock("q01.IF", "q02.IF")
+        qtbot.waitUntil(
+            lambda: gui.state.locks.get("q01.IF")
+            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.show()
+        qtbot.waitExposed(gui)
+        gui.view.expandAll()
+        control = QtCore.Qt.KeyboardModifier.ControlModifier
+        control_shift = (
+            QtCore.Qt.KeyboardModifier.ControlModifier
+            | QtCore.Qt.KeyboardModifier.ShiftModifier
+        )
+
+        # Ctrl+L with the q01.IF row current arms the pick for it
+        source_index = gui.model.indexFromItem(_row_items(gui, "q01.IF")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        gui.view.setFocus()
+        qtbot.wait(20)
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_L, control)
+        assert gui.armed_follower == "q01.IF"
+        assert not gui.armStrip.isHidden()
+        gui.cancel_arm()
+
+        # Ctrl+U on the locked Follower unlocks it on the Server. Hiding
+        # the armed strip hands focus to the next row editor, and the
+        # navigation filter's FocusIn moves the tree's current row there —
+        # re-establish the row the shortcut should act on.
+        source_index = gui.model.indexFromItem(_row_items(gui, "q01.IF")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        gui.view.setFocus()
+        qtbot.wait(20)
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_U, control)
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q01.IF").locked is False,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # Ctrl+U on an unlocked Follower does nothing: the Lock stays
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_U, control)
+        qtbot.wait(300)
+        assert pm.get_lock("q01.IF") is not None
+
+        # Ctrl+L on a submodule row arms nothing
+        source_index = gui.model.indexFromItem(_row_items(gui, "q01")[0])
+        gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_L, control)
+        assert gui.armed_follower is None
+        assert gui.armStrip.isHidden()
+
+        # Ctrl+Shift+Y toggles between the tabs
+        assert gui.tabs.currentIndex() == 0
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_Y, control_shift)
+        assert gui.tabs.currentIndex() == 1
+        qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_Y, control_shift)
+        assert gui.tabs.currentIndex() == 0
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
+    qtbot, pm, second_client, server_port
+):
+    """A parameter-update Broadcast for a parameter the model does not
+    know adds the row through the base update branch; the tints are
+    recomputed for it too (plan task 5.6), so the new row carries the
+    claiming Type's tint right away instead of staying untinted until the
+    next recompute."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", unit="Hz")
+    pm.update()  # the GUI's tree is built from the proxy's blueprint
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.model.stopListener()
+
+        # created while the listener is stopped: the creation Broadcast is
+        # lost, so the model has no q02.IF row; refreshing the GUI's own
+        # Proxy (without reloading the model) makes the parameter resolve
+        # when the update Broadcast arrives
+        second_pm.add_parameter("q02.IF", initial_value=2.0, unit="Hz")
+        pm.update()
+        assert not _row_exists(gui, "q02.IF")
+
+        gui.model.updateParameter(
+            ParameterBroadcastBluePrint(
+                name=f"{PM_NAME}.q02.IF",
+                action=PARAMETER_UPDATE,
+                value=2.0,
+                unit="Hz",
+            )
+        )
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "q02.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        tint = _type_tint(gui, "qubit")
+        assert tint is not None
+        for item in _row_items(gui, "q02.IF"):
+            assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
+        assert _row_items(gui, "q02.IF")[3].data(GUTTER_ROLE) == ["qubit"]
     finally:
         gui.model.stopListener()
