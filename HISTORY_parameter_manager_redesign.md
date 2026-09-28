@@ -747,3 +747,53 @@ The Parameter Manager GUI now keeps a client-side copy of the Types and Locks. `
 - `decisions.md` records the Lumen coin budget running out three times in fix round 1. The first time, one nudge after about 10 minutes got the coder going again. The second time, opencode scheduled a retry in about 48 minutes, and the fix edits sat uncommitted on disk while the orchestrator waited. After the retry the coder ran the suite green, but the budget ran out a third time before it committed, and a nudge got "No healthy endpoints for model glm-5.3-flash". It committed once the provider recovered.
 - All six round-1 re-reviews then hit the exhausted budget as soon as they were dispatched, and the orchestrator stopped for Marcos (see Questions).
 - Two coder permissions were rejected. The first was a probe run whose `tempfile.mkdtemp()` wrote outside the repo, which the coder reran with its temp directory under `orchestration/5.1/`. The second was a request for `/tmp` in fix round 1. The coder also proved both new tests fail by temporarily changing `instruments.py` from a backup under `orchestration/5.1/`. The orchestrator's diff check of `d5c5ded` showed the file restored, and the backup and logs were deleted.
+
+## 5.2 Tabs, tints and gutter bands — 2026-09-28
+
+`ParameterManagerGui` now puts its existing content on tab 0 ("Parameters", `self.parametersTab`) of a `QTabWidget` (`self.tabs`). Tab 1 ("Types", `self.typesTab`) is an empty placeholder for 5.5. The module-level pure function `compute_claims(types, parameters)` in `gui/instruments.py` ports the mock's `claims()`. It takes `PMState.types` and the model's `{path: unit}` rows and returns a `Claim(type, instance, stack)` for every claimed parameter and submodule row. `TypePalette` hands out the five light `TINT_PALETTE` entries (`tint`, `tintAlt`, `bar`) in Type creation order. `ParameterManagerGui.apply_tints` sets `BackgroundRole` on all four columns of each claimed row and clears it on unclaimed ones. The new `ModelParameterManager` adds a fourth logical column (`GUTTER_COLUMN = 3`), which the view shows at visual position 0, 12 px wide, painted by `GutterDelegate`. `test/pytest/test_pm_gui.py` grew from 9 to 25 tests.
+
+### Commit by commit
+- `6052b32` The tabs, `compute_claims`, the palette, `ModelParameterManager`, `GutterDelegate` and 15 tests. The orchestrator's coder spec set nine readings:
+  - Matching mirrors `instances_of` client-side. Every effective path must exist with the declared unit, compared as strings. The root, any path with a `_globals` segment and an empty Type never match.
+  - The Claiming Type is the innermost Instance, then the larger effective set, then the Type name. The name tie-break is not in the mock but matches `types_of`.
+  - A Nested Type's entries credit the Nested Type at and below its submodule. So `q01.readout.bw` gets `readout` with stack `["qubit", "readout"]`. The helper `_nested_claim_prefixes` derives the submodule chain the way `params.py` expands the effective set.
+  - Palette slots follow creation order. A removed Type frees its slot, a new Type takes the lowest free slot, and slot 0 is reused when all five are taken (the mock's `freeTint`).
+  - `tintAlt` goes on odd sibling rows, and the stack is cut to 3 for drawing.
+  - The gutter column is added without renumbering columns 0/1/2, through a new `modelType` keyword on `InstrumentParameters` that defaults to `ModelParameters`, so the generic instrument GUI is unchanged.
+  - Every live Type edit must avoid creating a parameter, because of the 5.1 crash in the `parameter-creation` branch (TEST_AUDIT.md).
+
+  The coder added four things of its own:
+  - The palette helper is `self.typePalette`, not `self.palette`, which would shadow `QWidget.palette`.
+  - Recompute has three explicit paths: after `state.refresh` in `refreshAll`/`loadProfile`, `typeChanged` → `_onTypeChanged`, and a new `structureChanged` signal emitted after `parameter-creation`/`parameter-deletion` Broadcasts. `newItem` fires mid-load and `modelRefreshed` fires before `state.refresh`, so neither could be used.
+  - `ModelParameters` pins the model to 3 columns after loading, so `ModelParameterManager` widens it again and `_ensureGutterItems` puts back the gutter items.
+  - macOS needed `setMinimumSectionSize(GUTTER_WIDTH)`, and the gutter header setup is guarded on `columnCount()`, so 5.1's 3-column D24 stub test still works.
+
+  The tests: eight no-server `compute_claims` tests (unit match, `_globals` at any depth, root, empty Type, innermost Nested Type, two-level nesting ending in stack `["qubit", "readout", "pulse_window"]`, larger set wins, name tie-break), four palette tests, `test_the_parameters_view_moves_into_a_tab_widget`, and two live tests. `test_tints_follow_a_second_clients_type` is the plan's named test. It uses `q01.IF`/`q01.readout.bw` (Hz), `q02.IF` (V) and `other.x`, all created before the GUI. A second Client adds `qubit` with its entries, and the test checks the tint and gutter stack `["qubit"]` on `q01`/`q01.IF`, with none on the wrong-unit and unrelated rows. The tint goes away after `remove_type_parameter` empties the Type and after `remove_type`. `test_refresh_all_recomputes_tints_after_a_model_reload` covers the reload path with the listener stopped. reviewer-qwen confirmed with offscreen Qt probes that the layout re-parenting and the tree branches on the name column work. Orchestrator run: ruff clean, 34 in the three named GUI files, 490 in the full suite.
+- `cd39235` Fix from round 0, four items:
+  - `test_a_deletion_broadcast_recomputes_the_tints`: `q01.IF`/`q01.bw` exist before the GUI, and the second Client's `qubit` claims both. After `remove_parameter("q01.bw")`, the `q01.bw` row is gone, `q01.IF` has no background on any column and an empty gutter stack, and `q01` is untinted. Nothing had tested the `structureChanged` path. Deletion is safe to test live, since only the creation branch crashes. Both test reviewers raised it (should-fix).
+  - The positive tint checks now cover all four items instead of `[:3]`, as "on all columns" asks. This applies to both live tints and the reload test. test-reviewer-qwen raised it as should-fix and test-reviewer-glm as a nit. The `_tint` closure moved to a module helper, `_type_tint`.
+  - The tab test now checks the gutter wiring: `visualIndex(GUTTER_COLUMN) == 0`, `sectionSize == GUTTER_WIDTH`, a `GutterDelegate` on the column, `gui.view.gutterDelegate.typePalette is gui.typePalette` and `treePosition() == 0`. Before, deleting `moveSection` or the delegate install would have left every test green. test-reviewer-glm raised it (should-fix).
+  - Plan rule 8: the six new non-override methods became snake_case (`apply_tints`, `_on_type_changed`, `_model_parameters`, `_collect_parameters`, `_apply_tints_to_rows`, `_ensure_gutter_items`). Overrides (`insertItemTo`, `updateParameter`, `paint`, `sizeHint`) and the signal name `structureChanged` keep camelCase. Both plan checkers raised it as a nit, and each said the reading's `applyTints()` name and the camelCase GUI module argued the other way. The orchestrator sent it anyway because it is a plan rule. The `src/` diff is renames only.
+
+  All six approved in re-review, and every raiser confirmed their item fixed. Orchestrator run: ruff clean, 35 in the three named GUI files, 491 in the full suite.
+
+### Dropped findings
+- The cut of the stack to 3 is never seen, because the deepest test has a stack of exactly 3 (test-reviewer-glm, nit) → not sent.
+- The live tests take the expected colour from `gui.typePalette` itself, and the claimed Type always sits in slot 0. The tint/tintAlt parity is not pinned either (test-reviewer-glm, test-reviewer-qwen, nits) → not sent. Reading 8 allowed "tint (or tintAlt)".
+- No pixel test of `GutterDelegate.paint` (test-reviewer-qwen nit; the optional part of test-reviewer-glm's wiring finding) → not sent. The fix list said no pixel test was needed.
+- `ModelParameterManager.insertItemTo` copies about 10 lines of `ModelParameters.insertItemTo` (reviewer-glm), `TypePalette.sync` is annotated `Any` (reviewer-glm, reviewer-qwen), and the `setColumnCount` round-trip lacks a comment (reviewer-qwen). All nits, not sent; they are still in the code.
+
+### Loose ends
+- A `parameter-update` for a parameter the model does not know adds a row through the base update branch without a recompute, so the row stays untinted until the next one (reviewer-glm, and a reviewer-qwen observation). Logged in `decisions.md` for 5.6 polish.
+- `apply_tints` reads units from the model's unit column, which only updates on reload. After a second Client's `set_type_parameter_unit`, the recompute uses stale units (reviewer-glm). Logged for 5.5, when unit edits become reachable from the GUI.
+- Convention recorded for 5.3–5.6: new non-override GUI methods are snake_case, while Qt overrides and signals stay camelCase. plan-checker-glm suggested that Marcos settle rule 8 against the GUI's camelCase. The orchestrator decided it without asking him, and no answer from Marcos is recorded.
+- The tint parity is stored per row item, so re-sorting the tree can put two rows with the same colour next to each other (reviewer-qwen). The mock does the same.
+
+### Process notes
+- The coder's shell tool timed out after 150 s on every test run it waited on in line, and the coder took this for pytest hangs. Detached runs writing to logs under `orchestration/5.2/` worked.
+- Four permission requests were rejected:
+  - the coder's `pkill -9 -f test_gui_navigation`, which would have killed other agents' runs of that file
+  - reviewer-qwen's request for `/tmp`
+  - reviewer-qwen's inline Qt heredoc, which came through truncated in the prompt
+  - a mistyped path outside the repository from test-reviewer-qwen
+- The orchestrator session stopped in fix round 1, after the 2026-09-25 implementation commit, while the coder was waiting on a permission prompt. It resumed on 2026-09-28, and the fix commit and re-reviews followed that day.

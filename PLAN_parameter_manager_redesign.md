@@ -558,7 +558,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   `ParameterManagerTreeView.onItemNewValue` uses `widget._setMethod(value)`. Tests:
   `test_pm_gui.py` — construct `ParameterManagerGui` against a live server; a second client
   locks a parameter; `qtbot.waitUntil` the state holds it.
-- [ ] **5.2 Tabs, tints and gutter bands.** Wrap the existing widget in a `QTabWidget`
+- [x] **5.2 Tabs, tints and gutter bands.** Wrap the existing widget in a `QTabWidget`
   (Parameters, Types; Types tab empty for now). Port the mock's `claims()` to a pure
   function over `PMState.types` + the model's paths, producing per row: claiming Type,
   stack of up to 3 Types. Palette of 5 tint pairs + bar colours assigned by Type creation
