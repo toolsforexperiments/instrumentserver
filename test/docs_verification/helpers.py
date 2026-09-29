@@ -20,11 +20,13 @@ example shows) and fail immediately with a clear message if the port is taken.
 
 import socket
 import subprocess
+import threading
 import time
 from contextlib import contextmanager
-from typing import Any, Iterator, List, Optional, Sequence
+from typing import Any, Iterator, List, Optional, Sequence, Tuple
 
 import qcodes as qc
+import zmq
 
 from instrumentserver import DEFAULT_PORT, QtCore, QtWidgets
 from instrumentserver.client.core import BaseClient
@@ -188,6 +190,75 @@ class BroadcastCapture:
                 )
             time.sleep(0.05)
         return list(self.messages)
+
+
+class RawFrameCapture:
+    """Collects the raw two-frame ZMQ messages a PUB socket publishes.
+
+    Use via ``capture_raw_frames``. Each entry is a ``(topic, payload)``
+    tuple of ``str``: frame 1 is the topic string the publisher chose,
+    frame 2 the JSON document of the message.
+    """
+
+    def __init__(self) -> None:
+        self.frames: List[Tuple[str, str]] = []
+
+    def wait_for(self, n: int = 1, timeout: float = 5.0) -> List[Tuple[str, str]]:
+        """Block until at least ``n`` frame pairs arrived; return them all."""
+        deadline = time.monotonic() + timeout
+        while len(self.frames) < n:
+            if time.monotonic() > deadline:
+                raise TimeoutError(
+                    f"Expected {n} raw frame pair(s) within {timeout}s, "
+                    f"got {len(self.frames)}: {self.frames!r}"
+                )
+            time.sleep(0.05)
+        return list(self.frames)
+
+
+@contextmanager
+def capture_raw_frames(
+    port: int, host: str = "localhost", topic: str = ""
+) -> Iterator[RawFrameCapture]:
+    """Capture the raw two-frame messages a PUB socket publishes.
+
+    A plain ``zmq.SUB`` socket on its own thread, for sections whose claims
+    are about the wire format itself (``capture_broadcasts`` decodes in the
+    SubClient, so the frames never reach the caller).
+
+    :param port: the port the PUB socket is bound to.
+    :param host: host the PUB socket is bound on.
+    :param topic: subscription prefix; ``""`` receives every message.
+    """
+    capture = RawFrameCapture()
+    context = zmq.Context.instance()
+    sock = context.socket(zmq.SUB)
+    sock.setsockopt_string(zmq.SUBSCRIBE, topic)
+    sock.connect(f"tcp://{host}:{port}")
+    sock.setsockopt(zmq.RCVTIMEO, 100)  # ms, so the loop can check the stop flag
+    stop = threading.Event()
+
+    def _collect() -> None:
+        while not stop.is_set():
+            try:
+                parts = sock.recv_multipart()
+            except zmq.Again:
+                continue
+            capture.frames.append(
+                (parts[0].decode("utf-8"), parts[1].decode("utf-8"))
+            )
+
+    thread = threading.Thread(target=_collect, daemon=True)
+    thread.start()
+    # PUB/SUB slow-joiner: give the SUB socket a moment to connect and
+    # subscribe before the caller triggers the messages it wants to see.
+    time.sleep(0.3)
+    try:
+        yield capture
+    finally:
+        stop.set()
+        thread.join(2)
+        sock.close(linger=0)
 
 
 @contextmanager
