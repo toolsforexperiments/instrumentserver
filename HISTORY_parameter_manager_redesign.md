@@ -1032,3 +1032,45 @@ The stub `docs/user_guide/parameter_manager.md` is now the full User Guide page.
 - The watcher's local-port-check rule auto-allowed a chained command from test-reviewer-qwen that also ran an unscanned probe (`probe_shadow.py`). The probe was scanned afterwards, and the rule now rejects chained commands.
 - Two permission requests were rejected. test-reviewer-qwen tried to `rm -rf docs/build`, which is shared with the other reviewers, and redid its cleanup without it. plan-checker-qwen mistyped a path outside the repo.
 - All six reviewers run the verification script on the helpers' fixed port, so in round 2 several found the port busy. They waited or retried in loops. The `verify_pm_*` directories they saw belonged to other reviewers' runs, not leaks.
+
+## 6.2 Technical Guide: `docs/technical_guide/broadcasts.md` — 2026-09-28
+
+The stub `docs/technical_guide/broadcasts.md` is now the full Technical Guide page. It has six level-2 sections: "What triggers a Broadcast", "The wire format", "SubClient", "External forwarding", "The Broadcaster contract" and "The Parameter Manager's actions". It links to the User Guide's Parameter Manager page, `server.md`, `monitoring.md` and `blueprints_and_proxies.md`. The verification script `test/docs_verification/technical_guide/verify_broadcasts.py` has one `section_*` function per page section and runs in a throwaway `verify_broadcasts_*` directory. The shared helpers gained `capture_raw_frames` and `RawFrameCapture`, a plain `zmq.SUB` on its own thread, because `capture_broadcasts` decodes inside the `SubClient` and never hands over the raw frames. The task added seven docstring rows and one tests row to `TEST_AUDIT.md`, and changed no source code.
+
+### Commit by commit
+- `44141d8` The page, the script, the helper and the `TEST_AUDIT.md` rows. The orchestrator's coder spec set eight readings. The main ones:
+  - Reading 1 carried over 6.1's meaning of "following the docs protocol": the script exercises every claim first, no build warnings from this page, the docs plan's style rules, the reviewers in place of GRILL/REVISE, and one commit by the coder.
+  - Reading 2 named the script `verify_broadcasts.py`, since the plan gives only the folder.
+  - Reading 3 fixed the six sections and what each covers. The wire format is shown twice: as the two raw frames a plain SUB socket receives (topic = instrument name, then the JSON of the `ParameterBroadcastBluePrint` dict with `_class_type`), and as the Blueprint that `decode`/`deserialize_obj` rebuild from it.
+  - Reading 6 verifies external forwarding in-process: `startServer(ipAddresses={"externalBroadcast": "tcp://127.0.0.1:<free port>"})` through the helpers' `server(**kwargs)`, and a raw SUB on that address that receives the same two frames as the main socket.
+  - Reading 5 sent docstring problems to `TEST_AUDIT.md` instead of edits. The docstring rows are `base.sendBroadcast` (`:param messages:` for a parameter named `message`), `base.recvMultipart` ("Recieves" and garbled wording), `SubClient.__init__` (the `sub_port` "should not be changed" note is wrong for any non-default Server), the `SubClient.update` signal comment (it names two of the six actions), `ParameterBroadcastBluePrint` (it omits the `PMTypeBluePrint` payload), `StationServer._broadcastParameterChange` (it does not mention the external socket) and `startServer` (no parameter docs at all). The tests row: no pytest starts a Server with an external Broadcast address.
+
+  Orchestrator run: ruff clean, script 6/6 sections OK, docs build with only the 3 old ADR warnings, 543 in the full suite. The script's log also shows a non-fatal `NotImplementedError` traceback from the Server asking the config-loaded `DummyBroadcasterInstrument` for its IDN.
+- `da12f46` Fix from round 0, four items. The commit message says "round 1", but the fix list is `round-0/fix-list.md`. Five of the six reviewers asked for changes, and plan-checker-qwen approved with five nits:
+  - The page said registering the same sink twice means receiving everything twice, and nothing checked it. The script now adds the sink twice, sees two deliveries, removes it once and sees one more delivery, then removes it again and sees none. The page adds "removing it once leaves it registered once". Raised by plan-checker-glm, reviewer-qwen, test-reviewer-glm (must-fix) and test-reviewer-qwen.
+  - The `pm-lock-update` and `pm-type-update` payloads had been checked only by `action` and the inner `_class_type`. Both are now compared as complete dicts equal to the page's two examples (`"locked": "True"`, `"target": "None"`, the `effective` map and so on). Both test reviewers raised it (should-fix).
+  - `add_nested_type` creates parameters as a side effect (`params.py` calls `_broadcast_parameter_creation` there), but the page left it out of the list of side-effect creators, and four Type-editing methods had no capture. The page now lists it and gives its order: `parameter-creation`s, then the applied Type Locks' `pm-lock-update`s, then one `pm-type-update` per affected Type, the edited Type first. The script now asserts one `pm-type-update` each for `set_type_parameter_unit`, `remove_type_parameter` and `remove_nested_type`, and the `add_nested_type` order on Type `qubitline` with Instance `ql01` and a Nested Type `pulse` that carries a Type Lock. Raised by plan-checker-glm, reviewer-glm (must-fix), test-reviewer-qwen (should-fix) and plan-checker-qwen.
+  - Five one-line wording fixes. By severity these were nits, but each was a factual slip on a wire-format page, and a fix round was happening anyway:
+    - A "next section" pointer that was two sections off.
+    - Frame 2 carries only the scalar fields as strings. A Blueprint `value` travels as a nested dict.
+    - The fan-out claim now says two SUB sockets each received the frames, which is what the script runs.
+    - `lock_type_parameter`/`unlock_type_parameter` are no longer called "Lock methods and Type methods at once". `unlock_type_parameter` removes only the rule and touches no Lock.
+    - The GUI's `SubClient` receives every Broadcast of its own instrument, not every Broadcast.
+
+  All six approved in round 1. Orchestrator run: ruff clean, script 6/6, same 3 build warnings, 543 in the full suite.
+
+### Dropped findings
+- The page's opening sentence names the Server's own GUI as a subscriber (reviewer-glm). Not sent: its embedded instrument widgets, such as `ParameterManagerGui`, do subscribe with a `SubClient`, and `how_it_works.md` uses the same wording.
+- Not sent from test-reviewer-glm: the page's claim that emission happens under the held instrument mutex is not observed directly (hard to test cleanly), and `hasattr` versus `isinstance` registration cannot be told apart (no duck-typed instrument class exists).
+- Style nits not sent: lowercase "client" in four places (the site is mixed, and `quickstart.md` uses lowercase), and "the instrument's instrument mutex" (both reviewer-qwen).
+- Round-1 nit (test-reviewer-qwen): the "edited Type first" order among several affected Types is pinned by reading the code only. The script's scenario has a single affected Type.
+
+### Loose ends
+- The eight new `TEST_AUDIT.md` rows listed under `44141d8` are open `gap`s.
+- 6.3 still owes the 3 ADR toctree warnings and the check of forward references to stub pages. 6.2's page is now written, and `server.md` is next.
+- The non-fatal IDN `NotImplementedError` traceback from `DummyBroadcasterInstrument` shows up in every script run. Nothing tracks it.
+
+### Process notes
+- All six reviewers run the script on the helpers' fixed port, so the port contention seen in 6.1 got worse: in both rounds, reviewers spent long stretches in wait-and-retry loops. In round 1 the orchestrator told the five still retrying to rely on its own passing run at `da12f46`. It also rejected reviewer-glm's 200-attempt tight retry loop, which would have starved the shared port.
+- A killed reviewer run left an empty `verify_broadcasts_vd8xyzcn/` directory. test-reviewer-qwen's probe showed that the script's `workspace()` does clean up when the port is taken, so this was not a script bug. test-reviewer-qwen removed the directory with the orchestrator's approval.
+- The coder's inline heredoc Python probe was rejected, because the spec allows probes only as files under `orchestration/6.2/`. It redid the probe as a file.

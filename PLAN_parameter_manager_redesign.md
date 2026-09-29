@@ -618,7 +618,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   (tabs, tints, lock column, arm strip, Locks panel, Types tab) with screenshots; using it
   from measurement code. Verification script
   `test/docs_verification/user_guide/parameter_manager.py`. Zero Sphinx warnings.
-- [ ] **6.2 Technical Guide: `docs/technical_guide/broadcasts.md`.** What triggers a
+- [x] **6.2 Technical Guide: `docs/technical_guide/broadcasts.md`.** What triggers a
   Broadcast and the wire format; `SubClient`; external forwarding; the **Broadcaster
   contract** (mixin, registration points, threading, no-op standalone) and the Parameter
   Manager's actions with their payload blueprints. Verification script under
