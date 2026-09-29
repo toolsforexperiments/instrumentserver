@@ -48,7 +48,7 @@ import os
 import pytest
 from qcodes.instrument import InstrumentBase
 
-from instrumentserver import QtCore, QtWidgets
+from instrumentserver import QtCore, QtGui, QtWidgets
 from instrumentserver.blueprints import (
     PARAMETER_CALL,
     PARAMETER_UPDATE,
@@ -1721,6 +1721,69 @@ def test_the_tree_takes_the_spare_height_and_the_add_strip_sits_at_the_bottom(
             add_strip.geometry().top() - gui.locksSplitter.geometry().bottom() - 1
             == spacing
         )
+    finally:
+        gui.model.stopListener()
+
+
+def _drag_header_edge(header, column, dx):
+    """Drag the right edge of ``column`` on ``header`` by ``dx`` pixels
+    with the left mouse button, the way a user resizes a column. (Qt's
+    test mouseMove does not carry a held button, so the events are sent
+    directly.)"""
+    edge = header.sectionViewportPosition(column) + header.sectionSize(column) - 1
+    y = header.height() // 2
+    left = QtCore.Qt.MouseButton.LeftButton
+    for kind, x, buttons in [
+        (QtCore.QEvent.Type.MouseButtonPress, edge, left),
+        (QtCore.QEvent.Type.MouseMove, edge + dx, left),
+        (QtCore.QEvent.Type.MouseButtonRelease, edge + dx, QtCore.Qt.MouseButton.NoButton),
+    ]:
+        event = QtGui.QMouseEvent(
+            kind,
+            QtCore.QPointF(x, y),
+            left,
+            buttons,
+            QtCore.Qt.KeyboardModifier.NoModifier,
+        )
+        QtWidgets.QApplication.sendEvent(header.viewport(), event)
+
+
+def test_the_panel_columns_can_be_resized_and_the_value_fits(
+    qtbot, pm, server_port
+):
+    """The Locks panel's columns used to be fixed: no header edge could be
+    dragged, and the Target's value editor was squeezed until its number
+    was unreadable. Dragging the locks column's edge moves width between
+    the names and the values, the buttons column can be dragged too, and
+    the value column gives the editor at least the width it asks for."""
+    _make_live_parameters(pm)
+    pm.lock("q01.IF", "q02.IF")
+    pm.update()
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.resize(1200, 800)
+        gui.show()
+        qtbot.waitExposed(gui)
+        gui.locksAction.trigger()
+        header = gui.locksPanel.view.header()
+
+        def _value_fits():
+            # re-read the editor: a panel rebuild replaces it
+            editor = gui.locksPanel.rowWidgets["q02.IF"]["editor"]
+            return header.sectionSize(1) >= editor.sizeHint().width()
+
+        # the panel lays its columns out once it has been shown
+        qtbot.waitUntil(_value_fits, timeout=BROADCAST_TIMEOUT)
+
+        name_width, value_width = header.sectionSize(0), header.sectionSize(1)
+        _drag_header_edge(header, 0, -60)
+        assert header.sectionSize(0) == name_width - 60
+        assert header.sectionSize(1) == value_width + 60
+
+        buttons_width = header.sectionSize(2)
+        _drag_header_edge(header, 2, -20)
+        assert header.sectionSize(2) == buttons_width - 20
     finally:
         gui.model.stopListener()
 

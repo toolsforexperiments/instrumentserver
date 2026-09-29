@@ -257,9 +257,9 @@ LOCK_PANEL_NOTE = (
     "Lock row locks them all again."
 )
 
-#: Fixed pixel width of the Locks panel's value column (the mock's value
-#: column) and of its buttons column.
-LOCK_PANEL_VALUE_WIDTH = 200
+#: Starting pixel widths of the Locks panel's locks and buttons columns;
+#: the user can drag both, and the value column takes the rest.
+LOCK_PANEL_NAME_WIDTH = 180
 LOCK_PANEL_BUTTONS_WIDTH = 84
 
 #: Data role under which a Locks panel row's path (relative to the
@@ -331,11 +331,15 @@ class LocksPanel(QtWidgets.QWidget):
         self.view.setEditTriggers(
             QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
         )
+        # the user can drag the locks and buttons columns; the value
+        # column takes whatever width is left, so the values stay readable
         header = self.view.header()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(1, LOCK_PANEL_VALUE_WIDTH)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        assert header is not None
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.resizeSection(0, LOCK_PANEL_NAME_WIDTH)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Interactive)
         header.resizeSection(2, LOCK_PANEL_BUTTONS_WIDTH)
 
         self.lockSelectionButton = QtWidgets.QPushButton(
