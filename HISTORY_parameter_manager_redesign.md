@@ -985,3 +985,50 @@ The "Types" tab (`self.typesTab`) now holds a `TypesPane` (`self.typesPane`). It
 ### Process notes
 - The coder's first named-test run hung, because a modal dialog blocked pytest before the `QTimer`-driven canceler was in place. The coder profiled its own pytest with `sample` and killed it by pid.
 - The orchestrator deleted run logs the coder had left behind.
+
+## 6.1 User Guide: `docs/user_guide/parameter_manager.md` — 2026-09-28
+
+The stub `docs/user_guide/parameter_manager.md` is now the full User Guide page. It has eight level-2 sections: "Concept", "Hierarchical parameters", "Types", "Locks", "Type Locks and Globals", "Profiles and files", "The GUI" and "Using it from measurement code". The GUI section has five screenshot placeholders and a keyboard shortcuts table. The verification script `test/docs_verification/user_guide/verify_parameter_manager.py` has one `section_*` function per page section and uses only the shared helpers. It runs in a throwaway `verify_pm_*` directory, so no profile file is left behind. The task added three docstring rows and one tests row to `TEST_AUDIT.md`, and changed no source code. This task opens Phase 6.
+
+### Commit by commit
+- `da417a9` The page, the script and the `TEST_AUDIT.md` rows. The orchestrator's coder spec set seven readings. The main ones:
+  - Reading 1 defined "following the docs protocol" (plan rule 9). The script exercises every claim before it goes on the page. The site builds with no new warnings. The style rules of `PLAN_docs_refactor.md` apply. Screenshots are placeholder admonitions with light/dark paths under `docs/_static/user_guide/parameter_manager/`. The six reviewers stand in for the docs plan's GRILL/REVISE loop with Marcos, and the coder commits (the standing exception on this worktree). The orchestrator flagged this reading for Marcos in `decisions.md`.
+  - Reading 2 names the script `verify_parameter_manager.py`, following the docs convention `verify_<page>.py`. The plan text's `parameter_manager.py` is treated as a slip, and this is recorded in `decisions.md`.
+  - Reading 3 fixed the section order and what each section covers. Reading 5 sent docstring problems to `TEST_AUDIT.md` rows instead of edits. The rows added are `ParameterGroup.has_param` (no docstring), `ParameterGroup.get`/`set` (no docstrings, and on a Proxy Instrument they resolve to QCoDeS' local `InstrumentBase.get`/`set`), and `ParameterManager.fromFile` (it documents `deleteMissing` but never forwards it, and it names a file the code never uses). A tests-table row was added for "Type Locks and Globals".
+
+  At the start, `sphinx-build` was missing from the uv environment. `uv run --group docs` (the same as CI's docs group) fixed that. "Zero Sphinx warnings" was read as "none from this page": the build still shows 3 ADR toctree warnings that were there before, and they are left for 6.3. Orchestrator run: ruff clean, script 8/8 sections OK, docs build with only the 3 old warnings, 543 in the full suite.
+- `d1dcd42` Fix from round 0, eleven items. Every reviewer asked for changes:
+  - The Globals note was wrong, and so was the tests row that repeated it. They said QCoDeS reserves underscore names, so attribute access cannot reach `_globals`. The orchestrator's probe showed that attribute access does work, on a fresh Proxy or after `pm.update()`. Only a Proxy built before the Globals parameter existed raises `AttributeError`, because its Blueprint is cached. What is really unavailable is the dotted `pm.get`/`pm.set`: on the Proxy these are QCoDeS' local shorthands, and a dotted path raises `KeyError`. That is why the page uses `Client.call`. The note, the `TEST_AUDIT.md` row and the script's four assertions now say this. Raised by reviewer-glm, reviewer-qwen, test-reviewer-qwen and plan-checker-qwen (must-fix). test-reviewer-glm's request to assert the `AttributeError` was reworded to the stale-Proxy case.
+  - The page claimed the Server window shows the Parameter Manager widget. It opens the generic instrument widget unless the station config's `gui` entry names `instrumentserver.gui.instruments.ParameterManagerGui`, as `serverConfig.yml` does. The page now says so, and presents the launcher as the sure way to get the widget. Raised by plan-checker-glm, reviewer-glm, test-reviewer-qwen and plan-checker-qwen.
+  - Three GUI wordings were fixed to match what shipped in 5.3–5.5:
+    - The gutter bands go outermost first, up to three.
+    - The arm strip lists the same relative path on another Instance first, then paths containing it, then the rest.
+    - On a locked Type entry, the re-target button and the Target path sit beside the Type Lock toggle. The page had said the toggle doubles as the re-target button.
+
+    Each was raised by three or four of the general reviewers and plan checkers.
+  - "Profiles and files" now starts with the `add_parameter`/`lock` block the script runs, so you can reproduce the shown document from an empty Parameter Manager (test-reviewer-qwen, reviewer-glm, plan-checker-qwen). `refresh_profiles()` is shown as `sorted(...)`, because the API returns the files in directory order (both test reviewers and reviewer-qwen). The `deleteMissing=False` example did nothing, since it loaded a document that omitted nothing. It became a document with `temp.extra` dropped, loaded both ways (plan-checker-qwen, a nit sent because the docs plan asks for concrete examples).
+  - Legacy note. reviewer-glm and test-reviewer-glm disagreed about whether a Lock survives the legacy load. The fix list had the script observe what happens and the prose match it. The page now shows a legacy flat file loading, and the note says the reader writes no Types and no Locks. Parameters the file does not list are removed, and their Locks with them. A Lock whose parameters stay is untouched.
+  - New script assertions for page claims that nothing checked yet. The default `remove_parameter` prunes the emptied Parameter Group. `add_instance` keeps an existing value and unit. A submodule with the wrong unit is not an Instance. `remove_type` of a Nested Type is refused. A Globals parameter is saved in the profile. One `pm-type-update` Broadcast per Type edit, and one `pm-lock-update` per Lock method. The D8 refusal of a cross-manager `lock`. Raised mainly by test-reviewer-glm (must-fix), with test-reviewer-qwen, reviewer-glm, reviewer-qwen and plan-checker-qwen.
+  - Two one-line wordings. The Parameter Manager logs the skipped-Instance warning, not the Server. Ctrl+Shift+Y switches between the two tabs.
+
+  Orchestrator run: ruff clean, script 8/8, same 3 build warnings, 543 in the full suite.
+- `b8a99d2` Fix from round 1, two items, script only:
+  - `d1dcd42` had moved the `remove_lock("q02.IF")` capture ahead of the Target deletion. That dropped the check that a Follower of a surviving Target keeps its Lock, and it left a muddled comment. The script now deletes `q01Data.IF`, asserts `q01.IF` is unlocked with its own value `5000000.0` and that `q02.IF` is still locked to `q01.IF`, and only then captures the one `pm-lock-update` from `remove_lock`. Raised by test-reviewer-glm (must-fix), test-reviewer-qwen (should-fix), reviewer-glm and plan-checker-glm.
+  - `capture_one_broadcast` returned the snapshot that `cap.wait_for(1)` took when the first message arrived, so its 0.2 s sleep never affected the four `count == 1` checks. It now returns `list(cap.messages)` after the sleep, inside the `with` block. reviewer-qwen raised it alone, and the orchestrator confirmed it in `helpers.py`.
+
+  All six approved in round 2 with no findings. Orchestrator run: ruff clean, script 8/8, same 3 build warnings, 543 in the full suite.
+
+### Dropped findings
+- The page speaks in the present tense about pages that are still stubs: "the Technical Guide page above lists them all" and "server.md explains where profile files end up" (reviewer-glm N2, plan-checker-qwen F6). The links resolve, so this was left for 6.3's final pass. The same nit came up again in round 1 and was not sent.
+- Round 2, plan-checker-qwen, not blocking: surviving a restart is covered only indirectly, and `unlock`/`relock`/`lock_type_parameter` have no Broadcast captures of their own.
+
+### Loose ends
+- The five screenshot placeholders (tree with tints, arm strip, Locks panel, Types tab, delete confirmation) are waiting for Marcos to capture them. Each has a ready-to-uncomment `{image}` pair next to it.
+- 6.3 should fix the 3 ADR toctree warnings and re-check the stub-page forward references once 6.2 and `server.md` are written.
+- New `TEST_AUDIT.md` gaps: the `has_param`, `get`/`set` and `fromFile` docstrings. The `fromFile` row points out that `deleteMissing` never reaches the loader, and the page documents that behaviour with a note. The stale-Proxy `AttributeError` on `_globals` has no direct pytest.
+
+### Process notes
+- plan-checker-qwen wrote its round-0 report but did not send worker_done. One nudge with the exact send command fixed it.
+- The watcher's local-port-check rule auto-allowed a chained command from test-reviewer-qwen that also ran an unscanned probe (`probe_shadow.py`). The probe was scanned afterwards, and the rule now rejects chained commands.
+- Two permission requests were rejected. test-reviewer-qwen tried to `rm -rf docs/build`, which is shared with the other reviewers, and redid its cleanup without it. plan-checker-qwen mistyped a path outside the repo.
+- All six reviewers run the verification script on the helpers' fixed port, so in round 2 several found the port busy. They waited or retried in loops. The `verify_pm_*` directories they saw belonged to other reviewers' runs, not leaks.

@@ -611,7 +611,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
 
 ### Phase 6 — Documentation
 
-- [ ] **6.1 User Guide: `docs/user_guide/parameter_manager.md`.** Following the docs
+- [x] **6.1 User Guide: `docs/user_guide/parameter_manager.md`.** Following the docs
   protocol: concept and single source of truth; hierarchical parameters; Types (shape,
   Instances, Nested Types, `add_instance`); Locks (states, chains, what `set` does); Type
   Locks and `_globals`; profiles and the version-2 file (with the legacy note); the GUI
