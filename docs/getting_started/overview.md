@@ -203,7 +203,7 @@ instruments:
     type: instrumentserver.params.ParameterManager
     initialize: True
     gui:
-      type: instrumentserver.gui.instruments.ParameterManagerGui
+      type: instrumentserver.gui.parameter_manager.ParameterManagerGui
 ```
 
 ![parameter_manager_2](../_static/param_manager_2.png)

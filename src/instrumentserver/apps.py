@@ -12,7 +12,7 @@ from .client import Client, ClientStation
 from .client.application import ClientStationGui
 from .config import loadConfig
 from .gui import widgetMainWindow
-from .gui.instruments import ParameterManagerGui
+from .gui.parameter_manager import ParameterManagerGui
 from .log import setupLogging
 from .server.application import startServerGuiApplication
 from .server.core import startServer

@@ -1,5 +1,10 @@
 # Deferred type-cleanup: `InstrumentModelBase` parent/filter types
 
+> Note (2026-09-29): the Parameter Manager GUI has since moved out of
+> `gui/instruments.py` into `gui/parameter_manager/`, so the
+> `gui/instruments.py` line numbers below are out of date. Search for the
+> named symbols instead.
+
 During the mypy sweep, roughly 10 `# type: ignore` comments were concentrated
 around `InstrumentModelBase.addItem` / `insertItemTo` / `fillCollapsedDict` in
 `src/instrumentserver/gui/base_instrument.py`. They are all symptoms of two

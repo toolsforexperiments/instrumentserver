@@ -83,7 +83,7 @@ instruments:
 
     gui:
       # By having the parameter manager GUI as the gui type, we can have it directly in the server instead of on a separate window.
-      type: instrumentserver.gui.instruments.ParameterManagerGui
+      type: instrumentserver.gui.parameter_manager.ParameterManagerGui
 
 # GUI defaults: Class-based configuration that applies to all instances of a given instrument class
 # These are merged with instance-specific gui.kwargs configs (instance settings take precedence)

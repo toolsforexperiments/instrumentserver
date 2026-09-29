@@ -11,7 +11,7 @@ instruments:
 
     gui:
       # By having the parameter manager GUI as the gui type, we can have it directly in the server instead of on a separate window.
-      type: instrumentserver.gui.instruments.ParameterManagerGui
+      type: instrumentserver.gui.parameter_manager.ParameterManagerGui
 
   test1:
     type: 'instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout'

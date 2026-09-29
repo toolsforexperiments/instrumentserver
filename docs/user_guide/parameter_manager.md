@@ -614,9 +614,11 @@ Parameter Manager named `parameter_manager` if it does not exist yet, and
 opens the window. `--name` chooses a different Parameter Manager. The Server
 window itself opens the generic instrument widget for a Parameter Manager
 unless the station config's `gui` entry names
-`instrumentserver.gui.instruments.ParameterManagerGui`, as the
+`instrumentserver.gui.parameter_manager.ParameterManagerGui`, as the
 `serverConfig.yml` in the repository does; then the Server window embeds the
-same widget, and the launcher above is the sure way to get it.
+same widget, and the launcher above is the sure way to get it. Configs that
+still name the older path `instrumentserver.gui.instruments.ParameterManagerGui`
+keep working.
 [the Server](server.md) covers launching and the station config, and
 [GUI features](gui_features.md) describes the `gui` entry and the patterns
 shared by every instrument window: starring, trashing, filtering, and the

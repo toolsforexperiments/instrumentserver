@@ -42,6 +42,7 @@ reset on success, and with no Type selected the Types tab strips are
 disabled and the pane labels carry no trailing space.
 """
 
+import importlib
 import os
 
 import pytest
@@ -51,13 +52,16 @@ from instrumentserver import QtCore, QtWidgets
 from instrumentserver.blueprints import (
     PARAMETER_CALL,
     PARAMETER_UPDATE,
+    PM_LOCK_UPDATE,
+    PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
     PMLockBluePrint,
     PMTypeBluePrint,
 )
 from instrumentserver.client.proxy import Client
 from instrumentserver.gui.base_instrument import InstrumentSortFilterProxyModel
-from instrumentserver.gui.instruments import (
+from instrumentserver.gui.instruments import ItemParameters, ModelParameters
+from instrumentserver.gui.parameter_manager import (
     GUTTER_COLUMN,
     GUTTER_ROLE,
     GUTTER_WIDTH,
@@ -68,9 +72,8 @@ from instrumentserver.gui.instruments import (
     TINT_COLOURS,
     Claim,
     GutterDelegate,
-    ItemParameters,
     LockArmStrip,
-    ModelParameters,
+    ModelParameterManager,
     ParameterManagerGui,
     ParameterManagerTreeView,
     PMState,
@@ -281,6 +284,57 @@ def test_on_item_new_value_uses_the_parameter_widget_set_method(qtbot):
         model.stopListener()
 
     assert widget.set_via_set_method == [42]
+
+
+def _pm_broadcasts(instrument_name):
+    """A ``pm-lock-update`` and a ``pm-type-update`` Broadcast about
+    ``instrument_name``, both reporting a removal."""
+    return [
+        ParameterBroadcastBluePrint(
+            name=f"{instrument_name}.q01.IF", action=PM_LOCK_UPDATE, value=None
+        ),
+        ParameterBroadcastBluePrint(
+            name=f"{instrument_name}.qubit", action=PM_TYPE_UPDATE, value=None
+        ),
+    ]
+
+
+def test_generic_model_ignores_the_parameter_manager_broadcasts(qtbot):
+    """The generic ``ModelParameters`` has no Lock or Type signals: an
+    instrument window opened on a Parameter Manager without the
+    Parameter Manager GUI receives ``pm-lock-update`` and
+    ``pm-type-update`` Broadcasts and leaves its rows alone."""
+    stub_instrument = InstrumentBase("pm_generic_stub")
+    model = ModelParameters(stub_instrument, "parameters", ItemParameters)
+    try:
+        assert not hasattr(model, "lockChanged")
+        assert not hasattr(model, "typeChanged")
+        rows_before = model.rowCount()
+        for bp in _pm_broadcasts(stub_instrument.name):
+            model.updateParameter(bp)
+        assert model.rowCount() == rows_before
+    finally:
+        model.stopListener()
+
+
+def test_parameter_manager_model_routes_the_parameter_manager_broadcasts(qtbot):
+    """``ModelParameterManager`` emits ``lockChanged`` with the Follower's
+    path and ``typeChanged`` with the Type's name, both relative to the
+    instrument, and adds no row for either."""
+    stub_instrument = InstrumentBase("pm_model_stub")
+    model = ModelParameterManager(stub_instrument, "parameters", ItemParameters)
+    locks, types = [], []
+    model.lockChanged.connect(lambda path, lock: locks.append((path, lock)))
+    model.typeChanged.connect(lambda name, bp: types.append((name, bp)))
+    try:
+        rows_before = model.rowCount()
+        for bp in _pm_broadcasts(stub_instrument.name):
+            model.updateParameter(bp)
+        assert locks == [("q01.IF", None)]
+        assert types == [("qubit", None)]
+        assert model.rowCount() == rows_before
+    finally:
+        model.stopListener()
 
 
 def test_state_on_construction_holds_types_and_locks_created_before(
@@ -531,6 +585,19 @@ def _type_blueprint(name, entries, nested=None, registry=None, defaults=None, ta
         nested=nested,
         effective=effective,
     )
+
+
+def test_old_gui_instruments_path_still_serves_the_moved_names():
+    """Station configs name the widget by its dotted path, which the Server
+    resolves with ``import_module`` and ``getattr``. The path from before
+    the Parameter Manager GUI moved to ``gui.parameter_manager`` keeps
+    resolving to the same objects; other names still fail."""
+    old = importlib.import_module("instrumentserver.gui.instruments")
+    new = importlib.import_module("instrumentserver.gui.parameter_manager")
+    assert getattr(old, "ParameterManagerGui") is new.ParameterManagerGui
+    assert getattr(old, "PMState") is new.PMState
+    with pytest.raises(AttributeError):
+        getattr(old, "TypesPane")
 
 
 def test_compute_claims_requires_every_path_with_the_declared_unit():

@@ -56,7 +56,7 @@ from instrumentserver.blueprints import (
 )
 from instrumentserver.client.proxy import SubClient
 from instrumentserver.config import loadConfig
-from instrumentserver.gui.instruments import PMState
+from instrumentserver.gui.parameter_manager import PMState
 from instrumentserver.params import ParameterManager
 
 PM_CLASS = "instrumentserver.params.ParameterManager"
