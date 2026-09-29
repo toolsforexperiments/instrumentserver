@@ -17,5 +17,5 @@ A locked Follower answers `get` by asking its Target and returning that value; `
 - A Follower keeps its own underlying value while locked. Unlocking exposes that own value again (deliberate: "unlock and see its own value" is the point). Profiles store the own value plus the Lock.
 - QCoDeS reads the cache, not `get`, for snapshots with `update=False`. `ManagedParameter` therefore reports the Target's value in its snapshot while locked, and the profile writer reads the own value explicitly. Otherwise measurement metadata would record stale values.
 - GUIs repaint Followers when they receive a `parameter-update` for the Target; the Parameter Manager emits nothing for values.
-- Deleting a Target removes the Locks pointing at it; their Followers become plain parameters.
+- Deleting a Target removes the Locks pointing at it; their Followers become plain parameters. When the deleted Target was the stored Target of Type Locks, those rules are cleared with it.
 - Targets are restricted to parameters inside the same Parameter Manager.

@@ -879,5 +879,7 @@ where this one ended:
 ```
 
 The [Python Client](client.md) page covers the Client's connection lifecycle
-and error handling, and [the Server](server.md) explains where profile files
-end up when the Server runs somewhere else.
+and error handling. The profile files end up in the working directory of the
+Server process, as Profiles and files above describes, so where they live
+follows from where the Server runs; [the Server](server.md) page documents
+the Server itself.

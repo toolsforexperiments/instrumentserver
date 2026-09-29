@@ -475,11 +475,16 @@ Small, mechanical, makes every later phase land cleanly.
   - [ ] Detachable tabs
   - [ ] Custom instrument widgets: mention + config hook; link to custom_widgets.md
 - Page: `parameter_manager.md` (verify_parameter_manager.py)
-  - [ ] Concept: the flagship Virtual Instrument; single source of truth
-  - [ ] Hierarchical parameters: add / remove / nesting
-  - [ ] Persistence: JSON files; profiles (refresh / switch)
-  - [ ] The Parameter Manager GUI + `instrumentserver-param-manager` launcher
-  - [ ] Using it from measurement code
+  - [x] Concept: the flagship Virtual Instrument; single source of truth
+  - [x] Hierarchical parameters: add / remove / nesting
+  - [x] Types: shape, Instances, Nested Types, editing and removing
+  - [x] Locks: the three states, chains, cycles, and what deleting a Target does
+  - [x] Type Locks and Globals
+  - [x] Profiles and files: the version-2 document, the legacy flat map,
+        profiles (refresh / switch)
+  - [x] The GUI: tabs, tints, lock column, arm strip, Locks panel, Types tab,
+        delete confirmation, shortcuts; + `instrumentserver-param-manager` launcher
+  - [x] Using it from measurement code
 
 ## Phase 4 — User Guide completion
 
@@ -533,9 +538,12 @@ Small, mechanical, makes every later phase land cleanly.
   - [ ] Client side: Blueprint → dynamic proxy (methods, signatures, submodules)
   - [ ] Blueprint caching and invalidation
 - Page: `broadcasts.md` (verify_broadcasts.py)
-  - [ ] What triggers a Broadcast; message format
-  - [ ] SubClient mechanics; how GUIs stay live
-  - [ ] External broadcast forwarding (deep dive promised by server.md)
+  - [x] What triggers a Broadcast
+  - [x] The wire format
+  - [x] SubClient; how GUIs stay live
+  - [x] External broadcast forwarding (deep dive promised by server.md)
+  - [x] The Broadcaster contract
+  - [x] The Parameter Manager's actions
 - Page: `custom_widgets.md`
   - [ ] How `gui.type` resolves to a widget class; the widget contract
   - [ ] Writing and registering your own (worked example)

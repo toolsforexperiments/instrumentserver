@@ -24,7 +24,7 @@ A parameter-change event published by the Server on its PUB socket for any subsc
 _Avoid_: notification, event stream
 
 **Broadcaster**:
-The opt-in contract by which an instrument emits its own Broadcasts: it exposes `add_broadcast_sink` / `remove_broadcast_sink` / `broadcast`, and the Server registers itself as a sink when the instrument joins the Station. Instruments without it are untouched. The Parameter Manager is the first Broadcaster. It emits `pm-lock-update` (payload: a `PMLockBluePrint`) and `pm-type-update` (payload: a `PMTypeBluePrint`), and re-emits the Server's own `parameter-creation` / `parameter-deletion` for parameters it creates or removes as side effects of Type edits.
+The opt-in contract by which an instrument emits its own Broadcasts: it exposes `add_broadcast_sink` / `remove_broadcast_sink` / `broadcast`, and the Server registers itself as a sink when the instrument joins the Station. Instruments without it are untouched. The Parameter Manager is the first Broadcaster. It emits `pm-lock-update` (payload: a `PMLockBluePrint`, or `None` when its Lock was removed) and `pm-type-update` (payload: a `PMTypeBluePrint`, or `None` when the Type was removed), and re-emits the Server's own `parameter-creation` for the parameters it creates as side effects of Type edits, `add_instance` and Type Lock declarations; it emits no `parameter-deletion`.
 _Avoid_: hook, callback, event emitter
 
 **Virtual Instrument**:
@@ -77,7 +77,7 @@ A rule attached to one parameter (the **Follower**) naming another parameter, it
 _Avoid_: link, binding, mirror, source. Not the server's **instrument mutex**.
 
 **Target**:
-The parameter a Lock points at. A parameter that is the Target of at least one locked Lock is marked as such in the tree. Deleting a Target removes the Locks that pointed at it; their Followers become plain parameters.
+The parameter a Lock points at. A parameter that is the Target of at least one Lock is marked as such in the tree, its Followers counted locked and unlocked alike. Deleting a Target removes the Locks that pointed at it and clears the Type Lock rules whose stored Target it was; their Followers become plain parameters.
 _Avoid_: source
 
 **Follower**:
@@ -88,7 +88,7 @@ A rule on a Type entry naming a Target. Declaring it puts an ordinary, locked Lo
 _Avoid_: group lock, rule (alone)
 
 **Globals**:
-The reserved `_globals` submodule of the Parameter Manager that holds default Targets for Type Locks. It is never an Instance of anything.
+The reserved `_globals` submodule of the Parameter Manager that holds the default Targets of Type Locks. Its parameters are created on demand by the Type Lock, not through `add_parameter`, which refuses the name; otherwise a Globals parameter is ordinary: it can be read and set, and it is saved with the profile. Globals is never an Instance of anything.
 
 **Instrument mutex**:
 The server's per-instrument `threading.RLock` that serialises concurrent `call`s to one instrument. Prose uses "instrument mutex" so it never collides with **Lock**; the code keeps its current names (`_instrument_locks`) with a rename note only.
