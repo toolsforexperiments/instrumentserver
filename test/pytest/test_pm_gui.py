@@ -2169,6 +2169,57 @@ def test_a_panel_action_error_shows_on_the_note_label(qtbot, pm, server_port):
         gui.model.stopListener()
 
 
+
+def test_an_open_panel_asks_the_server_nothing_while_idle(
+    qtbot, pm, second_client, server_port
+):
+    """The Server broadcasts a parameter-call for every ``get``, so a
+    handler that answers a value Broadcast with a ``get`` feeds itself: an
+    open panel with a locked Follower used to ask the Server thousands of
+    times a second. With the panel open and nothing happening, the GUI
+    must send no request at all, and a second Client's Target update must
+    still reach the Follower's label through the Broadcast's value."""
+    second_pm = _second_parameter_manager(second_client)
+    _make_live_parameters(pm)
+    second_pm.lock("q01.IF", "q02.IF")
+    second_pm.lock("q03.IF", "q01.IF")
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        gui.locksAction.trigger()
+        qtbot.waitUntil(
+            lambda: "q03.IF" in gui.locksPanel.rowWidgets,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.wait(300)  # let the Broadcasts the panel's rebuild caused land
+
+        asks = []
+        original_ask = pm.cli.ask
+
+        def counting_ask(message):
+            asks.append(message)
+            return original_ask(message)
+
+        pm.cli.ask = counting_ask
+        try:
+            qtbot.wait(1000)
+            assert asks == []
+
+            second_pm.update()  # it was made before the parameters existed
+            second_pm.q02.IF(7.5)
+            qtbot.waitUntil(
+                lambda: gui.locksPanel.rowWidgets["q03.IF"]["label"].text()
+                == "7.5",
+                timeout=BROADCAST_TIMEOUT,
+            )
+            assert gui.locksPanel.rowWidgets["q01.IF"]["label"].text() == "7.5"
+            assert asks == []
+        finally:
+            del pm.cli.ask
+    finally:
+        gui.model.stopListener()
+
 # ---------------------------------------------------------------------------
 # plan task 5.5: the Types tab (and the parameter-creation branch fix)
 # ---------------------------------------------------------------------------

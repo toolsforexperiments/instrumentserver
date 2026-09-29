@@ -406,6 +406,25 @@ class LocksPanel(QtWidgets.QWidget):
                     "Object is not being shown right now."
                 )
 
+    def show_value(self, paths: Iterable[str], value: Any) -> None:
+        """Show ``value`` on every named row the panel holds, without
+        asking the Server: the value a Broadcast carried. A row whose
+        widget is gone — a rebuild replaced it — is skipped."""
+        for path in paths:
+            entry = self.rowWidgets.get(path)
+            if entry is None:
+                continue
+            try:
+                if entry.get("editor") is not None:
+                    entry["editor"]._setMethod(value)
+                elif entry.get("label") is not None:
+                    entry["label"].setText(str(value))
+            except RuntimeError:
+                logger.debug(
+                    f"Could not show the value of {path}. "
+                    "Object is not being shown right now."
+                )
+
     def show_error(self, text: str) -> None:
         """Show an action error (the mock's ``lockError``) in red on the
         note label."""

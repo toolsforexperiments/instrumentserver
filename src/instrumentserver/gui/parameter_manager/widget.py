@@ -593,19 +593,25 @@ class LocksController(QtCore.QObject):
     @QtCore.Slot(object, object)
     def _on_item_new_value(self, path: object, value: object) -> None:
         """Repaint every Follower whose locked Lock chain reaches the
-        parameter a ``parameter-update`` Broadcast names (D3: a locked
-        Follower answers ``get`` with the Target's value, and the
-        Parameter Manager emits nothing for values). The Broadcast's own
-        row is refreshed by the base wiring to
+        parameter a ``parameter-update`` or ``parameter-call`` Broadcast
+        names (D3: a locked Follower answers ``get`` with the Target's
+        value, and the Parameter Manager emits nothing for values). The
+        Broadcast's own row is refreshed by the base wiring to
         ``view.onItemNewValue``; this slot handles the rows behind it —
-        and, while the Locks panel is shown, the same paths there."""
+        and, while the Locks panel is shown, the same paths there.
+
+        Every row is painted with the Broadcast's ``value``, never a fresh
+        ``get``: the Server broadcasts a ``parameter-call`` for every
+        ``get``, so a ``get`` here would bring this slot back for the same
+        path, forever."""
         followers = followers_reaching(
             str(path), self.gui.state.locks, self.gui.instrument.name
         )
         for follower in followers:
-            self._refresh_row_widget(follower)
+            if follower in self.gui.view.delegate.parameters:
+                self.gui.view.onItemNewValue(follower, value)
         if not self.gui.locksPanel.isHidden():
-            self.gui.locksPanel.refresh_values([str(path), *followers])
+            self.gui.locksPanel.show_value([str(path), *followers], value)
 
     def _refresh_row_widget(self, path: str) -> None:
         """Re-read the parameter behind the row at ``path`` through the
