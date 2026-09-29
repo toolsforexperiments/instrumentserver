@@ -2220,6 +2220,37 @@ def test_an_open_panel_asks_the_server_nothing_while_idle(
     finally:
         gui.model.stopListener()
 
+
+def test_filtering_away_a_locked_row_and_back_does_not_crash(
+    qtbot, pm, server_port
+):
+    """Qt deletes a row's editor when the filter hides the row, and every
+    filter change re-applies the Locks to the rows' editors. The delegate
+    used to keep the deleted editor, so typing a filter that hid a locked
+    row ("L", then "LO") raised "wrapped C/C++ object of type QPushButton
+    has been deleted". Hiding the row and bringing it back must raise
+    nothing, and the returning row's editor must carry its Lock again."""
+    _make_live_parameters(pm)
+    pm.lock("q01.IF", "q02.IF")
+    pm.update()
+
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.show()
+        qtbot.waitExposed(gui)
+        gui.view.expandAll()
+        with qtbot.captureExceptions() as exceptions:
+            for text in ["L", "LO", "L", ""]:
+                gui.lineEdit.setText(text)
+                qtbot.wait(50)
+        assert exceptions == []
+
+        widget = gui.view.delegate.parameters["q01.IF"]
+        assert widget.lockButton.isVisibleTo(widget)
+        assert widget.read_only is True
+    finally:
+        gui.model.stopListener()
+
 # ---------------------------------------------------------------------------
 # plan task 5.5: the Types tab (and the parameter-creation branch fix)
 # ---------------------------------------------------------------------------

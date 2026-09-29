@@ -177,6 +177,13 @@ class ParameterDelegate(DelegateBase):
 
         ret = self.makeParameterWidget(item, widget)
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        # Qt deletes the editor when its row is hidden (the filter, the
+        # trash toggle); forget it then, so nobody touches a dead widget
+        ret.destroyed.connect(
+            lambda _=None, name=item.name, editor=ret: self._forgetEditor(  # type: ignore[attr-defined]
+                name, editor
+            )
+        )
         ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
         if self.navFilter is not None:
@@ -196,6 +203,12 @@ class ParameterDelegate(DelegateBase):
         #     except Exception as e:
         #         logger.warning(f"Failed to get value for parameter {element.name}: {e}")
         return ret
+
+    def _forgetEditor(self, name: str, editor: QtWidgets.QWidget) -> None:
+        """Drop the destroyed ``editor`` of row ``name``, unless a newer
+        editor for the same row has already replaced it."""
+        if self.parameters.get(name) is editor:
+            del self.parameters[name]
 
     def makeParameterWidget(
         self, item: QtGui.QStandardItem, parent: QtWidgets.QWidget
@@ -430,7 +443,10 @@ class ParametersTreeView(InstrumentTreeViewBase):
 
     @QtCore.Slot(object, object)
     def onItemNewValue(self, itemName: str, value: Any) -> None:
-        widget = self.delegate.parameters[itemName]
+        widget = self.delegate.parameters.get(itemName)
+        if widget is None:
+            # the row is hidden, so it has no editor to update
+            return
         try:
             # use the abstract set method defined in parameter widget so it works for different types of widgets
             widget._setMethod(value)
