@@ -59,16 +59,18 @@ def workspace():
 
 
 def capture_one_broadcast(action):
-    """Run ``action`` under a Broadcast capture and return the messages.
+    """Run ``action`` under a Broadcast capture and return every message
+    the capture saw while ``action`` ran, plus a short settle wait.
 
-    Sleeps briefly after the first message arrived, so a caller counting
-    the messages sees the ones belonging to this action only.
+    ``wait_for(1)`` returns as soon as the first message lands, so the
+    settle wait runs before the list is taken: a caller counting the
+    messages sees the ones belonging to this action only.
     """
     with capture_broadcasts([PM_NAME]) as cap:
         action()
-        messages = cap.wait_for(1)
+        cap.wait_for(1)
         time.sleep(0.2)
-    return messages
+        return list(cap.messages)
 
 
 # ---------------------------------------------------------------------------
@@ -426,19 +428,22 @@ def section_locks() -> None:
             assert cross_error is not None
             assert "does not exist" in cross_error, cross_error
 
-            # removing a Lock announces it with a None payload
-            messages = capture_one_broadcast(lambda: pm.remove_lock("q02.IF"))
-            text = repr(messages)
-            assert text.count("pm-lock-update") == 1, text
-            assert "parameter_manager.q02.IF" in text, text
-
             # deleting a Target removes the Locks that pointed at it; the
             # Followers become plain parameters
             pm.remove_parameter("q01Data.IF")
             assert pm.get_lock("q01.IF") is None
             assert pm.q01.IF() == 5000000.0
-            # q02.IF's Lock pointed at q01.IF, which still exists ... but it
-            # was removed above, so the tree holds no Lock here
+            # a Follower of a survivor keeps its Lock: q02.IF is locked to
+            # q01.IF, which still exists
+            assert pm.get_lock("q02.IF") == PMLockBluePrint(
+                target="parameter_manager.q01.IF", locked=True
+            )
+
+            # removing a Lock announces it with a None payload
+            messages = capture_one_broadcast(lambda: pm.remove_lock("q02.IF"))
+            text = repr(messages)
+            assert text.count("pm-lock-update") == 1, text
+            assert "parameter_manager.q02.IF" in text, text
             assert pm.list_locks() == {}
     print("section_locks: OK")
 
