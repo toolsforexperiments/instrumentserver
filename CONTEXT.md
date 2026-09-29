@@ -88,7 +88,7 @@ A rule on a Type entry naming a Target. Declaring it puts an ordinary, locked Lo
 _Avoid_: group lock, rule (alone)
 
 **Globals**:
-The reserved `_globals` submodule of the Parameter Manager that holds the default Targets of Type Locks. Its parameters are created on demand by the Type Lock, not through `add_parameter`, which refuses the name; otherwise a Globals parameter is ordinary: it can be read and set, and it is saved with the profile. Globals is never an Instance of anything.
+The reserved `_globals` submodule of the Parameter Manager that holds the default Targets of Type Locks. Its parameters are created on demand by a Type Lock or by a profile load that lists one, never through `add_parameter`, which refuses the name; otherwise a Globals parameter is ordinary: it can be read and set, and it is saved with the profile. Globals is never an Instance of anything.
 
 **Instrument mutex**:
 The server's per-instrument `threading.RLock` that serialises concurrent `call`s to one instrument. Prose uses "instrument mutex" so it never collides with **Lock**; the code keeps its current names (`_instrument_locks`) with a rename note only.

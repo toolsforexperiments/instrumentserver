@@ -541,7 +541,7 @@ Small, mechanical, makes every later phase land cleanly.
   - [x] What triggers a Broadcast
   - [x] The wire format
   - [x] SubClient; how GUIs stay live
-  - [x] External broadcast forwarding (deep dive promised by server.md)
+  - [x] External forwarding (deep dive promised by server.md)
   - [x] The Broadcaster contract
   - [x] The Parameter Manager's actions
 - Page: `custom_widgets.md`
