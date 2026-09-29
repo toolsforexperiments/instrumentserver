@@ -623,7 +623,7 @@ Each task: what to build, files touched, acceptance, tests. One task per session
   contract** (mixin, registration points, threading, no-op standalone) and the Parameter
   Manager's actions with their payload blueprints. Verification script under
   `test/docs_verification/technical_guide/`. Cross-link with the User Guide page.
-- [ ] **6.3 Bookkeeping.** Update `PLAN_docs_refactor.md` (mark the two pages done, adjust
+- [x] **6.3 Bookkeeping.** Update `PLAN_docs_refactor.md` (mark the two pages done, adjust
   their section lists to what was written), `TEST_AUDIT.md` (gaps noticed, defects left),
   and do a final pass of `CONTEXT.md` and the three ADRs against the shipped behaviour.
 

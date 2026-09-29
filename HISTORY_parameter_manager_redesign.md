@@ -1074,3 +1074,48 @@ The stub `docs/technical_guide/broadcasts.md` is now the full Technical Guide pa
 - All six reviewers run the script on the helpers' fixed port, so the port contention seen in 6.1 got worse: in both rounds, reviewers spent long stretches in wait-and-retry loops. In round 1 the orchestrator told the five still retrying to rely on its own passing run at `da12f46`. It also rejected reviewer-glm's 200-attempt tight retry loop, which would have starved the shared port.
 - A killed reviewer run left an empty `verify_broadcasts_vd8xyzcn/` directory. test-reviewer-qwen's probe showed that the script's `workspace()` does clean up when the port is taken, so this was not a script bug. test-reviewer-qwen removed the directory with the orchestrator's approval.
 - The coder's inline heredoc Python probe was rejected, because the spec allows probes only as files under `orchestration/6.2/`. It redid the probe as a file.
+
+## 6.3 Bookkeeping — 2026-09-29
+
+This task closes the plan's paperwork. `PLAN_docs_refactor.md` now lists the sections the two new pages actually have, all done. `TEST_AUDIT.md` gained six tests rows for gaps and defects that earlier tasks had left without one. `CONTEXT.md` and ADRs 0002 and 0003 were corrected where they no longer matched the shipped behaviour. Two leftovers from 6.1 were also closed: `'adr'` joins `exclude_patterns` in `docs/conf.py`, so the three ADR toctree warnings are gone and the docs build has zero warnings, and the User Guide's forward reference to `server.md` was reworded. No source code, tests or verification scripts changed.
+
+### Commit by commit
+- `966f961` The bookkeeping, one commit across seven files. The orchestrator's coder spec gave seven readings. The main ones:
+  - Reading 1: in the docs plan, replace each page block's bullets with its level-2 sections, all `[x]`. `parameter_manager.md` now has eight bullets and `broadcasts.md` six. The docs plan keeps no record of finished pages beyond the checkboxes.
+  - Reading 2: add `TEST_AUDIT.md` rows only for gaps that have no row yet, and edit an existing row only if its state is wrong. Four rows were added:
+    - `covered`: the side-effect `parameter-creation`s, `add_nested_type` included, pinned by seven tests in `test_pm_types.py`.
+    - `waived`: the claim that a Broadcast is emitted while the instrument mutex is held, which 6.2 dropped.
+    - `gap`: `hasattr` versus `isinstance` registration, since there is no duck-typed instrument to test with.
+    - `gap`: the 4.3 loose end that `does_profile_exist` matches by substring.
+
+    The "Profiles — loading a file" row keeps its `gap` state, and its notes now open by calling it a product defect left open: `fromFile` ignores `deleteMissing`. The 5.5 creation-branch row already read `fixed`. The stale-Proxy `AttributeError` was already in the notes of the Type Locks and Globals row, so it got no new row.
+  - Reading 3: the glossary may get wording fixes only. Three entries changed:
+    - Broadcaster: the `None` payloads, and "it emits no `parameter-deletion`". The old text said the Parameter Manager re-emits deletions, but `params.py` never emits one. That makes D22's deletion clause empty: nothing removes parameters as a side effect.
+    - Target: the tree marks Targets and counts their Followers whether the Locks are locked or unlocked, and deleting a Target also clears Type Lock rules.
+    - Globals: `add_parameter` refuses the name, and a Globals parameter can otherwise be read, set and saved like any other.
+  - Reading 4: an ADR may change in its Consequences only. ADR-0002 gained the Type Lock clearing on Target deletion. ADR-0003's second bullet was rewritten: no `parameter-deletion`, and no creation or deletion Broadcasts from a profile load or from `remove_all_parameters`. ADR-0001 was checked and left unchanged. Before review, the orchestrator confirmed in `params.py` that `_broadcast_parameter_creation` is called from exactly four places.
+  - Reading 6: "the Technical Guide page above lists them all" is true now that `broadcasts.md` is written. The `server.md` sentence was reworded to say that profile files end up in the Server process's working directory, which the page already states, and to link `server.md` only as the Server's page.
+
+  The coder left the 1.3 dict-response loose end without a row, arguing that 1.3's `BluePrintType` branch had superseded it. It also flagged the `does_profile_exist` row as a judgment call. Orchestrator run: ruff clean, both scripts all sections OK, docs build with zero warnings, 543 in the full suite.
+- `d59ad5f` Fix from round 0, four items, in three files:
+  - The Globals entry now names the second way its parameters get created: "by a Type Lock or by a profile load that lists one" (`fromParamDict` calls `_create_managed_parameter`). test-reviewer-glm raised it as should-fix and reviewer-glm as a nit.
+  - New `gap` row for the 1.3 loose end. `ServerResponse.toJson` still sends a top-level dict as `str(dict)` (`blueprints.py` :770-773), so a value containing a quote does not survive the trip, and `list_locks` is the documented case. Only the happy path is pinned. The commit shows the coder's "superseded" reading was wrong: 1.3's branch fixes Blueprint values inside the dict, not the top-level `str()`. Raised by both test reviewers (should-fix).
+  - New `gap` row for the 1.2 loose end. A Parameter Group that foreign code attaches through `add_submodule` keeps `_root = None` and skips routing. A plain `Parameter` can be a Target but not a Follower. Raised by test-reviewer-qwen (should-fix).
+  - A bullet in the docs plan was renamed to "External forwarding", to match the page's section title (plan-checker-qwen, a nit sent because a fix round was happening anyway).
+
+  All six approved in round 1. Orchestrator run: ruff clean, both scripts OK, zero build warnings, 543 in the full suite.
+
+### Dropped findings
+- The Target entry's "marked as such in the tree" leaves out the GUI rule that a row that is both Follower and Target shows its Follower text (reviewer-qwen, plan-checker-qwen). Not sent: the wording predates this task, and the User Guide page documents the rule.
+- The Claiming Type entry leaves out the code's final tie-break by Type name. The coder left it alone because neither page documents it.
+- Round 1 (reviewer-qwen, test-reviewer-glm): the new "Hierarchical parameters" row's Page column reads `user_guide/parameter_manager.md (future)`, although the page exists. The marker was copied from the fix list, and older rows carry it too. Not sent, and flagged for Marcos as a one-word cleanup.
+
+### Loose ends
+- Four of the six new `TEST_AUDIT.md` rows are open `gap`s. The other two are the `covered` and `waived` rows. `fromFile` ignoring `deleteMissing` and the `does_profile_exist` substring match are product defects that were left unfixed.
+- The `(future)` markers in the `TEST_AUDIT.md` Page column are now inconsistent and could be cleaned up in one pass.
+- `server.md` is still a stub. The User Guide no longer promises anything specific from it.
+
+### Process notes
+- Two reviewer docs-build requests were rejected. plan-checker-glm aimed at the same build folder as reviewer-glm, and reviewer-qwen used cwd-relative paths that would have landed outside `round-0/`. Both retried with their own explicit paths.
+- plan-checker-qwen created a stray `docs/orchestration/6.3/round-0` directory by mistake and removed it with approval.
+- The port contention on 5555 continued: several reviewers ran the User Guide script in sleep-and-retry loops in both rounds.
