@@ -5,6 +5,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Optional,
     Type,
     Union,
@@ -174,9 +175,7 @@ class ParameterDelegate(DelegateBase):
         if not item.showDelegate:  # type: ignore[attr-defined]
             return None  # type: ignore[return-value]
 
-        element = item.element  # type: ignore[attr-defined]
-
-        ret = ParameterWidget(element, widget)
+        ret = self.makeParameterWidget(item, widget)
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
         ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
@@ -197,6 +196,15 @@ class ParameterDelegate(DelegateBase):
         #     except Exception as e:
         #         logger.warning(f"Failed to get value for parameter {element.name}: {e}")
         return ret
+
+    def makeParameterWidget(
+        self, item: QtGui.QStandardItem, parent: QtWidgets.QWidget
+    ) -> ParameterWidget:
+        """The editor widget for the parameter of ``item``. A delegate that
+        adds buttons next to the value overrides this;
+        :meth:`createEditor` does the rest (registering the widget and
+        installing the navigation filter)."""
+        return ParameterWidget(item.element, parent)  # type: ignore[attr-defined]
 
 
 class ValueCellNavigationFilter(QtCore.QObject):
@@ -282,8 +290,9 @@ class ModelParameters(InstrumentModelBase):
         }
         super().__init__(*args, **kwargs)
 
-        self.setColumnCount(3)
-        self.setHorizontalHeaderLabels([self.attr, "unit", ""])
+        labels = self.headerLabels()
+        self.setColumnCount(len(labels))
+        self.setHorizontalHeaderLabels(labels)
 
         # Live updates items
         self.cliThread = QtCore.QThread()
@@ -365,29 +374,40 @@ class ModelParameters(InstrumentModelBase):
                 # The model can't actually modify the widget since it knows nothing about the view itself.
                 self.itemNewValue.emit(item[0].name, bp.value)
 
+    def headerLabels(self) -> List[str]:
+        """The header label of every column: name, unit and delegate.
+        A model with more columns extends this list and :meth:`rowItems`
+        together."""
+        return [self.attr, "unit", ""]
+
+    def rowItems(self, item: QtGui.QStandardItem) -> List[QtGui.QStandardItem]:
+        """The items of one row, ``item`` first, one per column of
+        :meth:`headerLabels`. :meth:`insertItemTo` inserts them."""
+        # A parameter might not have a unit
+        unit = ""
+        if item.element is not None:  # type: ignore[attr-defined]
+            unit = item.element.unit  # type: ignore[attr-defined]
+        return [item, QtGui.QStandardItem(unit), QtGui.QStandardItem()]
+
     def insertItemTo(
         self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
     ) -> None:
         if item is not None:
-            # A parameter might not have a unit
-            unit = ""
-            if item.element is not None:  # type: ignore[attr-defined]
-                unit = item.element.unit  # type: ignore[attr-defined]
-            unitItem = QtGui.QStandardItem(unit)
-            extraItem = QtGui.QStandardItem()
-
+            row = self.rowItems(item)
             if parent == self:
                 rowCount = self.rowCount()
-                self.setItem(rowCount, 0, item)
-                self.setItem(rowCount, 1, unitItem)
-                self.setItem(rowCount, 2, extraItem)
+                for column, cell in enumerate(row):
+                    self.setItem(rowCount, column, cell)
             else:
-                parent.appendRow([item, unitItem, extraItem])
+                parent.appendRow(row)
 
             self.newItem.emit(item)
 
 
 class ParametersTreeView(InstrumentTreeViewBase):
+    #: The delegate class of the value column (column 2).
+    delegateClass: type[ParameterDelegate] = ParameterDelegate
+
     def __init__(
         self,
         model: QtCore.QAbstractItemModel,
@@ -396,11 +416,17 @@ class ParametersTreeView(InstrumentTreeViewBase):
     ) -> None:
         super().__init__(model, [2], *args, **kwargs)
 
-        self.delegate = ParameterDelegate(self)
+        self.delegate = self.delegateClass(self)
         self.delegate.navFilter = ValueCellNavigationFilter(self)
 
         self.setItemDelegateForColumn(2, self.delegate)
+        self.setupColumns()
         self.setAllDelegatesPersistent()
+
+    def setupColumns(self) -> None:
+        """Set up the delegates and header of any columns beyond name,
+        unit and value. Runs before the persistent editors are opened;
+        the default does nothing."""
 
     @QtCore.Slot(object, object)
     def onItemNewValue(self, itemName: str, value: Any) -> None:

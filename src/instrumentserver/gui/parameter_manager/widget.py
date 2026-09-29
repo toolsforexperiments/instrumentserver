@@ -5,6 +5,7 @@ import logging
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
     Tuple,
     Union,
@@ -32,14 +33,13 @@ from ...params import (
     paramTypeFromName,
 )
 from .. import keepSmallHorizontally
-from ..base_instrument import InstrumentTreeViewBase
 from ..instruments import (
     InstrumentParameters,
     ModelParameters,
     ParameterDelegate,
-    ValueCellNavigationFilter,
+    ParametersTreeView,
 )
-from ..parameters import AnyInput, ParameterWidget
+from ..parameters import ParameterWidget
 from .logic import (
     GUTTER_COLUMN,
     GUTTER_ROLE,
@@ -257,50 +257,16 @@ class ModelParameterManager(ModelParameters):
     #: when the Type was removed). No model item is touched for this action.
     typeChanged = QtCore.Signal(str, object)
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        # ModelParameters pins the column count at 3 after loading; widen it
-        # again and give every loaded row the gutter item the narrow count
-        # dropped, and the Lock column item (plan task 5.3)
-        self.setColumnCount(LOCK_COLUMN + 1)
-        self.setHorizontalHeaderLabels([self.attr, "unit", "", "", "locked to"])
-        self._ensure_extra_items(self.invisibleRootItem())
+    def headerLabels(self) -> List[str]:
+        # the gutter column (plan task 5.2) and the Lock column (plan
+        # task 5.3) follow the name, unit and delegate columns
+        return super().headerLabels() + ["", "locked to"]
 
-    def _ensure_extra_items(self, parent: QtGui.QStandardItem) -> None:
-        """Give every row under ``parent`` its gutter item and its Lock
-        column item."""
-        for row in range(parent.rowCount()):
-            for column in (GUTTER_COLUMN, LOCK_COLUMN):
-                if parent.child(row, column) is None:
-                    parent.setChild(row, column, QtGui.QStandardItem())
-            item = parent.child(row, 0)
-            if item is not None and item.hasChildren():
-                self._ensure_extra_items(item)
-
-    def insertItemTo(
-        self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
-    ) -> None:
-        if item is not None:
-            # A parameter might not have a unit
-            unit = ""
-            if item.element is not None:  # type: ignore[attr-defined]
-                unit = item.element.unit  # type: ignore[attr-defined]
-            unitItem = QtGui.QStandardItem(unit)
-            extraItem = QtGui.QStandardItem()
-            gutterItem = QtGui.QStandardItem()
-            lockItem = QtGui.QStandardItem()
-
-            if parent == self:
-                rowCount = self.rowCount()
-                self.setItem(rowCount, 0, item)
-                self.setItem(rowCount, 1, unitItem)
-                self.setItem(rowCount, 2, extraItem)
-                self.setItem(rowCount, GUTTER_COLUMN, gutterItem)
-                self.setItem(rowCount, LOCK_COLUMN, lockItem)
-            else:
-                parent.appendRow([item, unitItem, extraItem, gutterItem, lockItem])
-
-            self.newItem.emit(item)
+    def rowItems(self, item: QtGui.QStandardItem) -> List[QtGui.QStandardItem]:
+        return super().rowItems(item) + [
+            QtGui.QStandardItem(),
+            QtGui.QStandardItem(),
+        ]
 
     def _has_row(self, full_name: str) -> bool:
         """Whether the model holds a row for the dotted path ``full_name``
@@ -350,38 +316,20 @@ class ParameterDeleteDelegate(ParameterDelegate):
     #: the Parameter Manager GUI toggles that parameter's Lock.
     toggleLock = QtCore.Signal(str)
 
-    def createEditor(  # type: ignore[override]
-        self,
-        widget: QtWidgets.QWidget,
-        option: QtWidgets.QStyleOptionViewItem,
-        index: QtCore.QModelIndex,
-    ) -> QtWidgets.QWidget:
-        item = self.getItem(index)
-
-        if not item.showDelegate:  # type: ignore[attr-defined]
-            return None  # type: ignore[return-value]
-
-        element = item.element  # type: ignore[attr-defined]
-        rw = self.makeRemoveWidget(item.name, widget)  # type: ignore[attr-defined]
-        lw = self.make_lock_widget(item.name, widget)
+    def makeParameterWidget(
+        self, item: QtGui.QStandardItem, parent: QtWidgets.QWidget
+    ) -> ParameterWidget:
+        rw = self.makeRemoveWidget(item.name, parent)  # type: ignore[attr-defined]
+        lw = self.make_lock_widget(item.name, parent)  # type: ignore[attr-defined]
 
         ret = ParameterWidget(
-            parameter=element, parent=widget, additionalWidgets=[lw, rw]
+            parameter=item.element,  # type: ignore[attr-defined]
+            parent=parent,
+            additionalWidgets=[lw, rw],
         )
         # the lock button is kept on the row's ParameterWidget so the
         # Parameter Manager GUI can restyle it with the Lock state
         ret.lockButton = lw
-        self.parameters[item.name] = ret  # type: ignore[attr-defined]
-        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
-
-        if self.navFilter is not None:
-            if isinstance(ret.paramWidget, AnyInput):
-                input_widget = ret.paramWidget.input
-            else:
-                input_widget = ret.paramWidget
-            input_widget.installEventFilter(self.navFilter)
-            self.navFilter.registerWidget(input_widget, index)
-
         return ret
 
     def make_lock_widget(
@@ -412,7 +360,7 @@ class ParameterDeleteDelegate(ParameterDelegate):
 
 
 # TODO: Make sure that the refresh button refreshes the profiles as well as the model
-class ParameterManagerTreeView(InstrumentTreeViewBase):
+class ParameterManagerTreeView(ParametersTreeView):
     #: Signal(str)
     #: Emitted when the user picks "Lock to…" in the context menu; the
     #: Parameter Manager GUI arms the target picker for that parameter.
@@ -422,19 +370,30 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
     #: Emitted when the user picks "Unlock" in the context menu.
     unlockRequested = QtCore.Signal(str)
 
+    delegateClass = ParameterDeleteDelegate
+    delegate: ParameterDeleteDelegate
+
     def __init__(
         self,
         model: QtCore.QAbstractItemModel,
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        super().__init__(model, [2], *args, **kwargs)
+        super().__init__(model, *args, **kwargs)
 
-        self.delegate = ParameterDeleteDelegate(self)
-        self.delegate.navFilter = ValueCellNavigationFilter(self)
+        # the lock actions act on the row the context menu was opened for
+        # (self.lastSelectedItem, set by the base onContextMenuRequested
+        # before the menu opens); the Parameter Manager GUI enables and
+        # disables them in its aboutToShow slot
+        self.lockToAction = QtWidgets.QAction("Lock to…")
+        self.lockToAction.triggered.connect(self._on_lock_to_action_trigger)
+        self.unlockAction = QtWidgets.QAction("Unlock")
+        self.unlockAction.triggered.connect(self._on_unlock_action_trigger)
+        self.contextMenu.addSeparator()
+        self.contextMenu.addAction(self.lockToAction)
+        self.contextMenu.addAction(self.unlockAction)
 
-        self.setItemDelegateForColumn(2, self.delegate)
-
+    def setupColumns(self) -> None:
         # the gutter column exists only in the Parameter Manager's own model
         # (ModelParameterManager)
         self.gutterDelegate = GutterDelegate(self)
@@ -461,19 +420,6 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
                 )
                 header.resizeSection(LOCK_COLUMN, LOCK_COLUMN_WIDTH)
         self.setTreePosition(0)
-        self.setAllDelegatesPersistent()
-
-        # the lock actions act on the row the context menu was opened for
-        # (self.lastSelectedItem, set by the base onContextMenuRequested
-        # before the menu opens); the Parameter Manager GUI enables and
-        # disables them in its aboutToShow slot
-        self.lockToAction = QtWidgets.QAction("Lock to…")
-        self.lockToAction.triggered.connect(self._on_lock_to_action_trigger)
-        self.unlockAction = QtWidgets.QAction("Unlock")
-        self.unlockAction.triggered.connect(self._on_unlock_action_trigger)
-        self.contextMenu.addSeparator()
-        self.contextMenu.addAction(self.lockToAction)
-        self.contextMenu.addAction(self.unlockAction)
 
     @QtCore.Slot()
     def _on_lock_to_action_trigger(self) -> None:
@@ -490,17 +436,6 @@ class ParameterManagerTreeView(InstrumentTreeViewBase):
         item = self.lastSelectedItem
         if item is not None and item.element is not None:
             self.unlockRequested.emit(item.name)
-
-    @QtCore.Slot(object, object)
-    def onItemNewValue(self, itemName: str, value: Any) -> None:
-        widget = self.delegate.parameters[itemName]
-        try:
-            # use the abstract set method defined in parameter widget so it works for different types of widgets
-            widget._setMethod(value)
-        except RuntimeError:
-            logger.debug(
-                f"Could not set value for {itemName} to {value}. Object is not being shown right now."
-            )
 
 
 class ProfilesManager(QtWidgets.QComboBox):
@@ -918,9 +853,8 @@ class ParameterManagerGui(InstrumentParameters):
             if item is None:
                 continue
             lockItem = parent.child(row, LOCK_COLUMN)
-            if lockItem is None:
-                lockItem = QtGui.QStandardItem()
-                parent.setChild(row, LOCK_COLUMN, lockItem)
+            # ModelParameterManager.rowItems gives every row this item
+            assert lockItem is not None
             if item.element is None:
                 # a submodule row carries no Lock state of its own
                 lockItem.setText("")
@@ -1283,9 +1217,8 @@ class ParameterManagerGui(InstrumentParameters):
             if item is None:
                 continue
             gutterItem = rowItems[GUTTER_COLUMN]
-            if gutterItem is None:
-                gutterItem = QtGui.QStandardItem()
-                parent.setChild(row, GUTTER_COLUMN, gutterItem)
+            # ModelParameterManager.rowItems gives every row this item
+            assert gutterItem is not None
             claim = claims.get(item.name)
             colours = (
                 self.typePalette.colours(claim.type) if claim is not None else None
