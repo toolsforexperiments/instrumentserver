@@ -548,12 +548,12 @@ def build_lock_rows(
     return rows
 
 
-def _lock_row_paths(rows: List[LockRow]) -> List[str]:
+def lock_row_paths(rows: List[LockRow]) -> List[str]:
     """Every row path of the built rows, depth first."""
     paths: List[str] = []
     for row in rows:
         paths.append(row.path)
-        paths.extend(_lock_row_paths(row.children))
+        paths.extend(lock_row_paths(row.children))
     return paths
 
 

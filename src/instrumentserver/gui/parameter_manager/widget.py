@@ -14,10 +14,7 @@ from typing import (
 
 from ... import QtCore, QtGui, QtWidgets
 from ...blueprints import (
-    PARAMETER_CALL,
-    PARAMETER_CREATION,
     PARAMETER_DELETION,
-    PARAMETER_UPDATE,
     PM_LOCK_UPDATE,
     PM_TYPE_UPDATE,
     ParameterBroadcastBluePrint,
@@ -49,12 +46,12 @@ from .logic import (
     Claim,
     PMState,
     TypePalette,
-    _lock_row_paths,
     build_lock_rows,
     compute_claims,
     followers_reaching,
     lock_button_tooltip,
     lock_column_text,
+    lock_row_paths,
     parse_default_text,
     rank_lock_targets,
     relative_path,
@@ -268,20 +265,17 @@ class ModelParameterManager(ModelParameters):
             QtGui.QStandardItem(),
         ]
 
-    def _has_row(self, full_name: str) -> bool:
-        """Whether the model holds a row for the dotted path ``full_name``
-        (the Broadcast name with the instrument name stripped)."""
-        return bool(
-            self.findItems(
-                full_name,
-                cast(
-                    "QtCore.Qt.MatchFlags",
-                    QtCore.Qt.MatchFlag.MatchExactly
-                    | QtCore.Qt.MatchFlag.MatchRecursive,
-                ),
-                0,
-            )
-        )
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # set by newItem while a Broadcast is handled, so updateParameter
+        # knows the Broadcast added a row; rows added while the model loads
+        # or reloads never reach updateParameter's check
+        self._rows_added = False
+        self.newItem.connect(self._on_new_item)
+
+    @QtCore.Slot(object)
+    def _on_new_item(self, item: QtGui.QStandardItem) -> None:
+        self._rows_added = True
 
     def updateParameter(self, bp: ParameterBroadcastBluePrint) -> None:
         fullName = ".".join(bp.name.split(".")[1:])
@@ -293,17 +287,37 @@ class ModelParameterManager(ModelParameters):
         if bp.action == PM_TYPE_UPDATE:
             self.typeChanged.emit(fullName, bp.value)
             return
-        value_update = bp.action in (PARAMETER_UPDATE, PARAMETER_CALL)
-        known_row = value_update and self._has_row(fullName)
+        self._rows_added = False
         super().updateParameter(bp)
-        # a parameter-update or parameter-call for a row the model did not
-        # know adds one through the base update branch; matching depends
-        # on which parameters exist, so the tints and gutter bands must be
-        # recomputed for it too (plan task 5.6), or the new row would
+        # a creation, or a parameter-update or parameter-call for a row the
+        # model did not know, adds rows through the base branches; matching
+        # depends on which parameters exist, so the tints and gutter bands
+        # must be recomputed then (plan task 5.6), or the new row would
         # stay untinted until the next recompute
-        added_row = value_update and not known_row and self._has_row(fullName)
-        if bp.action in (PARAMETER_CREATION, PARAMETER_DELETION) or added_row:
+        if self._rows_added or bp.action == PARAMETER_DELETION:
             self.structureChanged.emit()
+
+
+class LockableParameterWidget(ParameterWidget):
+    """The value widget of a Parameter Manager row: a
+    :class:`~instrumentserver.gui.parameters.ParameterWidget` with the
+    row's lock button and delete button after the value. It keeps the lock
+    button so the Parameter Manager GUI can restyle it with the Lock
+    state."""
+
+    def __init__(
+        self,
+        parameter: Any,
+        lockButton: QtWidgets.QPushButton,
+        removeButton: QtWidgets.QPushButton,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        super().__init__(
+            parameter=parameter,
+            parent=parent,
+            additionalWidgets=[lockButton, removeButton],
+        )
+        self.lockButton = lockButton
 
 
 class ParameterDeleteDelegate(ParameterDelegate):
@@ -322,15 +336,12 @@ class ParameterDeleteDelegate(ParameterDelegate):
         rw = self.makeRemoveWidget(item.name, parent)  # type: ignore[attr-defined]
         lw = self.make_lock_widget(item.name, parent)  # type: ignore[attr-defined]
 
-        ret = ParameterWidget(
-            parameter=item.element,  # type: ignore[attr-defined]
+        return LockableParameterWidget(
+            item.element,  # type: ignore[attr-defined]
+            lockButton=lw,
+            removeButton=rw,
             parent=parent,
-            additionalWidgets=[lw, rw],
         )
-        # the lock button is kept on the row's ParameterWidget so the
-        # Parameter Manager GUI can restyle it with the Lock state
-        ret.lockButton = lw
-        return ret
 
     def make_lock_widget(
         self, fullName: str, widget: QtWidgets.QWidget
@@ -394,31 +405,28 @@ class ParameterManagerTreeView(ParametersTreeView):
         self.contextMenu.addAction(self.unlockAction)
 
     def setupColumns(self) -> None:
-        # the gutter column exists only in the Parameter Manager's own model
-        # (ModelParameterManager)
+        # the view is built over a ModelParameterManager, whose rows carry
+        # the gutter and Lock columns
         self.gutterDelegate = GutterDelegate(self)
-        if self.model().columnCount() > GUTTER_COLUMN:
-            self.setItemDelegateForColumn(GUTTER_COLUMN, self.gutterDelegate)
-            header = self.header()
-            # the gutter moves to visual position 0 with a fixed width; the
-            # tree branches stay on the name column
-            header.moveSection(GUTTER_COLUMN, 0)
-            if header.minimumSectionSize() > GUTTER_WIDTH:
-                header.setMinimumSectionSize(GUTTER_WIDTH)
-            header.setSectionResizeMode(
-                GUTTER_COLUMN, QtWidgets.QHeaderView.ResizeMode.Fixed
-            )
-            header.resizeSection(GUTTER_COLUMN, GUTTER_WIDTH)
-            if self.model().columnCount() > LOCK_COLUMN:
-                # the Lock column moves between the unit and the delegate
-                # column, with a resizable default width
-                header.moveSection(
-                    header.visualIndex(LOCK_COLUMN), header.visualIndex(2)
-                )
-                header.setSectionResizeMode(
-                    LOCK_COLUMN, QtWidgets.QHeaderView.ResizeMode.Interactive
-                )
-                header.resizeSection(LOCK_COLUMN, LOCK_COLUMN_WIDTH)
+        self.setItemDelegateForColumn(GUTTER_COLUMN, self.gutterDelegate)
+        header = self.header()
+        assert header is not None
+        # the gutter moves to visual position 0 with a fixed width; the
+        # tree branches stay on the name column
+        header.moveSection(GUTTER_COLUMN, 0)
+        if header.minimumSectionSize() > GUTTER_WIDTH:
+            header.setMinimumSectionSize(GUTTER_WIDTH)
+        header.setSectionResizeMode(
+            GUTTER_COLUMN, QtWidgets.QHeaderView.ResizeMode.Fixed
+        )
+        header.resizeSection(GUTTER_COLUMN, GUTTER_WIDTH)
+        # the Lock column moves between the unit and the delegate column,
+        # with a resizable default width
+        header.moveSection(header.visualIndex(LOCK_COLUMN), header.visualIndex(2))
+        header.setSectionResizeMode(
+            LOCK_COLUMN, QtWidgets.QHeaderView.ResizeMode.Interactive
+        )
+        header.resizeSection(LOCK_COLUMN, LOCK_COLUMN_WIDTH)
         self.setTreePosition(0)
 
     @QtCore.Slot()
@@ -876,7 +884,11 @@ class ParameterManagerGui(InstrumentParameters):
         """Set one row's lock button and read-only state from the Lock the
         state holds for ``path``. A row without a Lock shows no button and
         renders its value editable."""
-        button = getattr(widget, "lockButton", None)
+        button = (
+            widget.lockButton
+            if isinstance(widget, LockableParameterWidget)
+            else None
+        )
         lock = self.state.locks.get(path)
         if lock is None:
             if button is not None:
@@ -889,8 +901,10 @@ class ParameterManagerGui(InstrumentParameters):
             button.setToolTip(tooltip)
             button.setProperty("locked", lock.locked)
             # re-polish so the locked property restyles the button
-            button.style().unpolish(button)
-            button.style().polish(button)
+            style = button.style()
+            if style is not None:
+                style.unpolish(button)
+                style.polish(button)
             button.setVisible(True)
         widget.set_read_only(lock.locked)
 
@@ -1075,7 +1089,7 @@ class ParameterManagerGui(InstrumentParameters):
             self.state.locks, self.state.types, self.instrument.name
         )
         elements: Dict[str, Any] = {}
-        for path in _lock_row_paths(rows):
+        for path in lock_row_paths(rows):
             try:
                 elements[path] = nestedAttributeFromString(self.instrument, path)
             except (AttributeError, RuntimeError) as exc:

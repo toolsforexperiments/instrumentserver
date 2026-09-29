@@ -61,21 +61,14 @@ from instrumentserver.blueprints import (
 from instrumentserver.client.proxy import Client
 from instrumentserver.gui.base_instrument import InstrumentSortFilterProxyModel
 from instrumentserver.gui.instruments import ItemParameters, ModelParameters
-from instrumentserver.gui.parameter_manager import (
+from instrumentserver.gui.parameter_manager.logic import (
     GUTTER_COLUMN,
     GUTTER_ROLE,
     GUTTER_WIDTH,
     LOCK_COLUMN,
     LOCK_COLUMN_WIDTH,
-    LOCK_PANEL_NOTE,
-    LOCK_ROW_ROLE,
     TINT_COLOURS,
     Claim,
-    GutterDelegate,
-    LockArmStrip,
-    ModelParameterManager,
-    ParameterManagerGui,
-    ParameterManagerTreeView,
     PMState,
     TypePalette,
     also_types,
@@ -89,6 +82,17 @@ from instrumentserver.gui.parameter_manager import (
     rank_lock_targets,
     relative_path,
     type_entry_rows,
+)
+from instrumentserver.gui.parameter_manager.panels import (
+    LOCK_PANEL_NOTE,
+    LOCK_ROW_ROLE,
+    GutterDelegate,
+    LockArmStrip,
+)
+from instrumentserver.gui.parameter_manager.widget import (
+    ModelParameterManager,
+    ParameterManagerGui,
+    ParameterManagerTreeView,
 )
 from instrumentserver.gui.parameters import ParameterWidget
 from instrumentserver.gui.shortcuts import KeyboardShortcutManager
@@ -271,7 +275,7 @@ def test_on_item_new_value_uses_the_parameter_widget_set_method(qtbot):
     only the input widgets have. The stub's paramWidget deliberately has no
     ``setValue``, so the old code would raise AttributeError here."""
     stub_instrument = InstrumentBase("pm_tree_stub")
-    model = ModelParameters(stub_instrument, "parameters", ItemParameters)
+    model = ModelParameterManager(stub_instrument, "parameters", ItemParameters)
     view = ParameterManagerTreeView(InstrumentSortFilterProxyModel(model))
     qtbot.addWidget(view)
 
