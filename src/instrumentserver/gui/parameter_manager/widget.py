@@ -188,6 +188,10 @@ class AddParameterWidget(QtWidgets.QWidget):
         layout.addWidget(self.clearButton, 0, 7, 1, 1)
 
         self.setLayout(layout)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
         self.invalidParamRequested.connect(self.setError)
 
     @QtCore.Slot()
@@ -1295,7 +1299,9 @@ class ParameterManagerGui(InstrumentParameters):
         self.locksSplitter.addWidget(self.locksPanel)
         self.locksSplitter.setStretchFactor(0, 3)
         self.locksSplitter.setStretchFactor(1, 2)
-        layout.insertWidget(view_index, self.locksSplitter)
+        # Stretch 1 so the tree takes all spare height and the Add strip
+        # stays pinned to the bottom.
+        layout.insertWidget(view_index, self.locksSplitter, 1)
         self.locksPanel.setVisible(False)
         # The existing content becomes tab 0 of the tab widget; tab 1
         # holds the Types pane (plan task 5.5).

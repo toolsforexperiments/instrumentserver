@@ -1699,6 +1699,32 @@ def _panel_child_paths(gui, path):
     return [item.child(row, 0).data(LOCK_ROW_ROLE) for row in range(item.rowCount())]
 
 
+def test_the_tree_takes_the_spare_height_and_the_add_strip_sits_at_the_bottom(
+    qtbot, pm, server_port
+):
+    """The tree (inside the Locks splitter) grows with the window, and the
+    add-parameter strip keeps its own height at the bottom of the
+    Parameters tab instead of sharing the spare height with the tree."""
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.resize(900, 800)
+        gui.show()
+        qtbot.waitExposed(gui)
+        tab = gui.parametersTab
+        add_strip = gui.addParam
+        assert add_strip.height() == add_strip.sizeHint().height()
+        margin = tab.layout().contentsMargins().bottom()
+        assert tab.height() - add_strip.geometry().bottom() - 1 == margin
+        # nothing but the layout spacing between the tree and the strip
+        spacing = tab.layout().spacing()
+        assert (
+            add_strip.geometry().top() - gui.locksSplitter.geometry().bottom() - 1
+            == spacing
+        )
+    finally:
+        gui.model.stopListener()
+
+
 def test_the_locks_action_toggles_the_panel(qtbot, pm, server_port):
     """The toolbar action is checkable and unchecked, the panel starts
     hidden as the splitter's second pane, and the shortcut is registered;
