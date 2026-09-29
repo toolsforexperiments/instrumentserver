@@ -548,12 +548,19 @@ def section_the_broadcaster_contract() -> None:
 
         received = []
         bc.add_broadcast_sink(received.append)
+        # the same sink twice: sinks are a plain list, so it receives
+        # every Broadcast twice, and a single remove leaves it in once
+        bc.add_broadcast_sink(received.append)
         bc.broadcast(bp)
-        assert received == [bp]
+        assert received == [bp, bp]
 
         bc.remove_broadcast_sink(received.append)
         bc.broadcast(bp)
-        assert received == [bp]
+        assert received == [bp, bp, bp]
+
+        bc.remove_broadcast_sink(received.append)
+        bc.broadcast(bp)
+        assert received == [bp, bp, bp]
 
         # a sink that raises is logged; the others still run
         pm = ParameterManager(name="pm_standalone")
@@ -652,11 +659,16 @@ def section_the_broadcaster_contract() -> None:
 # when deleting a Target drops Locks (D10); pm-type-update, name =
 # <instrument>.<type>, value = PMTypeBluePrint(name, parameters, nested,
 # effective) or None when the Type was removed, from every Type-editing
-# method including lock_type_parameter / unlock_type_parameter (D22);
-# re-emitted parameter-creation for parameters the Parameter Manager
-# creates as side effects, while direct add_parameter / remove_parameter
-# calls are announced by the Server, so nothing is announced twice; the
-# ordering rules the docstrings state.
+# method (add_type, add_type_parameter, set_type_parameter_default,
+# set_type_parameter_unit, remove_type_parameter, add_nested_type,
+# remove_nested_type, remove_type, and the Type Lock methods
+# lock_type_parameter / unlock_type_parameter, D22), including the
+# documented order of add_nested_type; re-emitted parameter-creation for
+# parameters the Parameter Manager creates as side effects, while direct
+# add_parameter / remove_parameter calls are announced by the Server, so
+# nothing is announced twice; the two payload blueprints pinned field by
+# field as they appear on the wire; the ordering rules the docstrings
+# state.
 # ---------------------------------------------------------------------------
 def section_the_parameter_managers_actions() -> None:
     with workspace(), server():
@@ -765,6 +777,59 @@ def section_the_parameter_managers_actions() -> None:
                 "parameter_manager.q03.window",
             ]
 
+            # the remaining Type-editing methods announce their Type too:
+            # exactly one pm-type-update each (no Types nest them here)
+            messages = capture_actions(
+                lambda: pm.set_type_parameter_unit("qubit", "gain", "V")
+            )
+            assert [bp.action for bp in messages] == [PM_TYPE_UPDATE]
+            assert messages[0].name == "parameter_manager.qubit"
+
+            messages = capture_actions(
+                lambda: pm.remove_type_parameter("qubit", "window")
+            )
+            assert [bp.action for bp in messages] == [PM_TYPE_UPDATE]
+            assert messages[0].name == "parameter_manager.qubit"
+
+            # add_nested_type, on a Type with one Instance and a Nested
+            # Type carrying a Type Lock: one parameter-creation per
+            # created parameter, in creation order, then the pm-lock-updates
+            # of the Type Locks the new Instances get, then one
+            # pm-type-update per affected Type, the edited Type first
+            pm.add_type("pulse")
+            pm.add_type_parameter("pulse", "length", default=0.5, unit="s")
+            pm.add_instance("pulse", "p01")
+            pm.lock_type_parameter("pulse", "length")
+            pm.add_type("qubitline")
+            pm.add_type_parameter("qubitline", "drive", default=1.0, unit="dBm")
+            pm.add_instance("qubitline", "ql01")
+            pm.update()
+            messages = capture_actions(
+                lambda: pm.add_nested_type("qubitline", "readout", "pulse")
+            )
+            actions = [bp.action for bp in messages]
+            assert actions == [
+                PARAMETER_CREATION,
+                PM_LOCK_UPDATE,
+                PM_TYPE_UPDATE,
+            ], actions
+            assert messages[0].name == "parameter_manager.ql01.readout.length"
+            assert messages[0].value == 0.5
+            assert messages[0].unit == "s"
+            assert messages[1].name == "parameter_manager.ql01.readout.length"
+            assert messages[1].value == PMLockBluePrint(
+                target="parameter_manager._globals.pulse.length", locked=True
+            )
+            assert messages[2].name == "parameter_manager.qubitline"
+
+            # removing the Nested Type requirement announces the Type once
+            messages = capture_actions(
+                lambda: pm.remove_nested_type("qubitline", "readout")
+            )
+            assert [bp.action for bp in messages] == [PM_TYPE_UPDATE]
+            assert messages[0].name == "parameter_manager.qubitline"
+            assert messages[0].value.nested == {}
+
             # remove_type announces the removal with a None payload
             pm.add_type("shortlived")
             messages = capture_actions(lambda: pm.remove_type("shortlived"))
@@ -854,7 +919,8 @@ def section_the_parameter_managers_actions() -> None:
             assert messages[1].value.parameters["lo"]["target"] is None
             assert messages[2].name == "parameter_manager.shared.frequency"
 
-            # the two payload blueprints as they appear on the wire
+            # the two payload blueprints as they appear on the wire,
+            # pinned field by field (these are the page's two examples)
             pm.add_parameter("show.target", initial_value=1.0, unit="V")
             pm.add_parameter("show.follower", initial_value=0.0, unit="V")
             with capture_raw_frames(BROADCAST_PORT, topic=PM_NAME) as cap:
@@ -862,9 +928,17 @@ def section_the_parameter_managers_actions() -> None:
                 frames = cap.wait_for(1)
             lock_payload = frames[0][1]
             print(f"pm-lock-update payload: {lock_payload}")
-            wire = json.loads(lock_payload)
-            assert wire["action"] == PM_LOCK_UPDATE
-            assert wire["value"]["_class_type"] == "PMLockBluePrint"
+            assert json.loads(lock_payload) == {
+                "name": "parameter_manager.show.follower",
+                "action": PM_LOCK_UPDATE,
+                "value": {
+                    "target": "parameter_manager.show.target",
+                    "locked": "True",
+                    "_class_type": "PMLockBluePrint",
+                },
+                "unit": "",
+                "_class_type": "ParameterBroadcastBluePrint",
+            }
 
             pm.add_type("display")
             pm.add_type_parameter("display", "gain", default=10, unit="dB")
@@ -873,9 +947,23 @@ def section_the_parameter_managers_actions() -> None:
                 frames = cap.wait_for(1)
             type_payload = frames[0][1]
             print(f"pm-type-update payload: {type_payload}")
-            wire = json.loads(type_payload)
-            assert wire["action"] == PM_TYPE_UPDATE
-            assert wire["value"]["_class_type"] == "PMTypeBluePrint"
+            assert json.loads(type_payload) == {
+                "name": "parameter_manager.display",
+                "action": PM_TYPE_UPDATE,
+                "value": {
+                    "name": "display",
+                    "parameters": {
+                        "gain": {"default": "12", "unit": "dB", "target": "None"}
+                    },
+                    "nested": {},
+                    "effective": {
+                        "gain": {"unit": "dB", "from_type": "display"}
+                    },
+                    "_class_type": "PMTypeBluePrint",
+                },
+                "unit": "",
+                "_class_type": "ParameterBroadcastBluePrint",
+            }
     print("section_the_parameter_managers_actions: OK")
 
 

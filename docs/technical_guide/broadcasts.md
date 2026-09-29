@@ -47,7 +47,7 @@ The examples below run against a Client and the two instruments they use:
 ... )
 ```
 
-Captured through a `SubClient` (the next section shows the wiring), the
+Captured through a `SubClient` (the SubClient section shows the wiring), the
 triggers look like this, in the order they were emitted:
 
 ```pycon
@@ -102,15 +102,17 @@ The topic is what lets subscribers filter per instrument: a SUB socket that
 subscribes to `parameter_manager` receives the Parameter Manager's Broadcasts
 and nothing else. The subscription is a plain prefix match, so subscribing to
 `dummy` also receives the messages of an instrument named `dummy2`. One
-Broadcast reaches every subscriber: two subscribers on the same socket
-received the identical two frames.
+Broadcast reaches every subscriber: two SUB sockets connected to the
+Server's PUB socket each received the identical two frames.
 
-Frame 2 carries every field of the Blueprint as a string, including
-`_class_type`, which names the class the dict stands for. `decode` turns the
-payload back into the dataclass: `json.loads`, then `deserialize_obj`, which
-sees the `_class_type` key and rebuilds a `ParameterBroadcastBluePrint` from
-the fields. Decoding the frame 2 payload from above (a subscriber holds it as
-`payload`), the numeric strings come back as numbers:
+Frame 2 carries every scalar field of the Blueprint as a string, including
+`_class_type`, which names the class the dict stands for. A `value` that is
+itself a Blueprint travels as a nested dict with its own `_class_type`, as
+the Parameter Manager payloads at the end of this page show. `decode` turns
+the payload back into the dataclass: `json.loads`, then `deserialize_obj`,
+which sees the `_class_type` key and rebuilds a `ParameterBroadcastBluePrint`
+from the fields. Decoding the frame 2 payload from above (a subscriber holds
+it as `payload`), the numeric strings come back as numbers:
 
 ```pycon
 >>> from instrumentserver.base import decode
@@ -151,13 +153,14 @@ use. `stop()` ends the receive loop; stop the thread with it, as the GUI's
 `thread.wait()`.
 
 This is also how GUIs stay live without polling. The Parameter Manager GUI's
-model receives every Broadcast through a `SubClient` and routes the two
-Parameter Manager actions straight into its client-side state: a
-`pm-lock-update` payload replaces one Follower's Lock, and a `pm-type-update`
-payload replaces that one Type, which carries the whole fresh definition, so
-the GUI never fetches that Type or Lock again. The next section shows
-the payloads; [the Parameter Manager](../user_guide/parameter_manager.md)
-page shows the widgets this feeds.
+model receives every Broadcast of its instrument through a `SubClient` and
+routes the two Parameter Manager actions straight into its client-side
+state: a `pm-lock-update` payload replaces one Follower's Lock, and a
+`pm-type-update` payload replaces that one Type, which carries the whole
+fresh definition, so the GUI never fetches that Type or Lock again. The
+Parameter Manager's actions section at the end of this page shows the
+payloads; [the Parameter Manager](../user_guide/parameter_manager.md) page
+shows the widgets this feeds.
 
 You do not need Qt to subscribe. A plain SUB loop is the whole recipe, and
 the Listener is exactly that:
@@ -220,7 +223,8 @@ An instrument implements the contract by mixing in `Broadcaster` (in
 
 - `add_broadcast_sink(fn)` registers `fn` to receive every Broadcast the
   instrument emits. Sinks are stored in a plain list, so registering the same
-  sink twice means receiving everything twice.
+  sink twice means receiving everything twice, and removing it once leaves it
+  registered once.
 - `remove_broadcast_sink(fn)` removes it again.
 - `broadcast(bp)` sends one `ParameterBroadcastBluePrint` to every
   registered sink. With no sinks registered it is a no-op, so an instrument
@@ -296,14 +300,15 @@ crossed the wire, stringified fields and all:
 ```
 
 Every Type-editing method emits one `pm-type-update` per affected Type
-(D22), including `lock_type_parameter` and `unlock_type_parameter`, which
-are Lock methods and Type methods at once. The message's `name` is the
-Type's full dotted name, `<instrument>.<type>`, and its `value` is the
-Type's fresh `PMTypeBluePrint` with its entries (defaults, units and Type
-Lock Targets), its Nested Types and its effective set, or `None` when the
-Type was removed. The payload carries the whole new definition, which is why
-a GUI can replace that one Type locally and recompute its tints with no
-follow-up fetch:
+(D22), the two Type Lock methods included. `lock_type_parameter` on top
+creates the Locks it declares, so it additionally emits one
+`pm-lock-update` per applied Lock; `unlock_type_parameter` removes only the
+rule. The message's `name` is the Type's full dotted name,
+`<instrument>.<type>`, and its `value` is the Type's fresh
+`PMTypeBluePrint` with its entries (defaults, units and Type Lock Targets),
+its Nested Types and its effective set, or `None` when the Type was removed.
+The payload carries the whole new definition, which is why a GUI can replace
+that one Type locally and recompute its tints with no follow-up fetch:
 
 ```
 {"name": "parameter_manager.display", "action": "pm-type-update", "value": {"name": "display", "parameters": {"gain": {"default": "12", "unit": "dB", "target": "None"}}, "nested": {}, "effective": {"gain": {"unit": "dB", "from_type": "display"}}, "_class_type": "PMTypeBluePrint"}, "unit": "", "_class_type": "ParameterBroadcastBluePrint"}
@@ -312,16 +317,21 @@ follow-up fetch:
 Parameters the Parameter Manager creates as side effects are announced as
 `parameter-creation`, one per created parameter in creation order: an
 `add_type_parameter` that writes an entry into every Instance lacking it, an
-`add_instance`, and the Globals Target that a Type Lock with no explicit
-Target creates on demand. Direct `add_parameter` and `remove_parameter`
-calls keep being announced by the Server, so nothing is ever announced
-twice.
+`add_nested_type` that writes the Nested Type's entries under its submodule
+into every Instance of the outer Type lacking them, an `add_instance`, and
+the Globals Target that a Type Lock with no explicit Target creates on
+demand. Direct `add_parameter` and `remove_parameter` calls keep being
+announced by the Server, so nothing is ever announced twice.
 
 The emissions of one method arrive in a fixed order:
 
 - `lock_type_parameter` with the default Target: first the
   `parameter-creation` of the Globals parameter, then one `pm-lock-update`
   per applied Lock, then the Type's `pm-type-update`.
+- `add_nested_type`: first one `parameter-creation` per created parameter,
+  in creation order, then the `pm-lock-update`s of the Type Locks the new
+  Instances get, then one `pm-type-update` per affected Type, the edited
+  Type first.
 - `add_instance`: first one `parameter-creation` per created parameter, in
   creation order, then the `pm-lock-update`s of the Type Locks the new
   Instance gets at creation. It edits no Type, so no `pm-type-update`.
