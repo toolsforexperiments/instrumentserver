@@ -1258,7 +1258,7 @@ def test_arm_via_context_menu_pick_a_row_and_toggle(
 
         assert not gui.armStrip.isHidden()
         assert gui.armStrip.label.text() == "Target for q01.IF"
-        assert gui.armed_follower == "q01.IF"
+        assert gui.locksController.armed_follower == "q01.IF"
         candidates = gui.armStrip.completerModel.stringList()
         assert "q02.IF" in candidates
         assert "q01.IF" not in candidates
@@ -1271,7 +1271,7 @@ def test_arm_via_context_menu_pick_a_row_and_toggle(
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.armStrip.isHidden()
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_follower is None
 
         # the pm-lock-update Broadcast repaints the Lock column and the
         # lock button, and renders the locked Follower read-only
@@ -1364,14 +1364,14 @@ def test_a_cycle_attempt_shows_the_error_and_stays_armed(
             timeout=BROADCAST_TIMEOUT,
         )
 
-        gui.arm_lock("q02.IF")
-        assert gui.armed_follower == "q02.IF"
+        gui.locksController.arm_lock("q02.IF")
+        assert gui.locksController.armed_follower == "q02.IF"
         assert not gui.armStrip.isHidden()
 
-        gui.pick_lock_target("q01.IF")
+        gui.locksController.pick_lock_target("q01.IF")
         assert "cycle" in gui.armStrip.errorLabel.text()
         assert not gui.armStrip.isHidden()
-        assert gui.armed_follower == "q02.IF"
+        assert gui.locksController.armed_follower == "q02.IF"
         assert pm.get_lock("q02.IF") is None
 
         # Escape over the tree disarms the pick too (the view's Escape
@@ -1382,17 +1382,17 @@ def test_a_cycle_attempt_shows_the_error_and_stays_armed(
         qtbot.wait(20)
         qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_Escape)
         assert gui.armStrip.isHidden()
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_follower is None
 
         # re-arm: Escape in the strip's line edit disarms as well
-        gui.arm_lock("q02.IF")
-        assert gui.armed_follower == "q02.IF"
+        gui.locksController.arm_lock("q02.IF")
+        assert gui.locksController.armed_follower == "q02.IF"
         gui.armStrip.activateWindow()
         gui.armStrip.lineEdit.setFocus()
         qtbot.wait(20)
         qtbot.keyClick(gui.armStrip.lineEdit, QtCore.Qt.Key.Key_Escape)
         assert gui.armStrip.isHidden()
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_follower is None
     finally:
         gui.model.stopListener()
 
@@ -2060,12 +2060,12 @@ def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_po
         )
 
         gui.locksPanel.lockSelectionButton.click()
-        assert gui.armed_follower == "other.x"
+        assert gui.locksController.armed_follower == "other.x"
         assert not gui.armStrip.isHidden()
 
         # a fresh pick, then a submodule row: the label shows that no
         # parameter is selected and pressing arms nothing
-        gui.cancel_arm()
+        gui.locksController.cancel_arm()
         source_index = gui.model.indexFromItem(_row_items(gui, "other")[0])
         gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
         qtbot.waitUntil(
@@ -2077,7 +2077,7 @@ def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_po
             "Select a parameter in the tree first."
             in gui.locksPanel.noteLabel.text()
         )
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_follower is None
         assert gui.armStrip.isHidden()
 
         # a successful arm clears the stale error from the note
@@ -2085,7 +2085,7 @@ def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_po
         source_index = gui.model.indexFromItem(_row_items(gui, "other.x")[0])
         gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
         gui.locksPanel.lockSelectionButton.click()
-        assert gui.armed_follower == "other.x"
+        assert gui.locksController.armed_follower == "other.x"
         assert gui.locksPanel.noteLabel.text() == LOCK_PANEL_NOTE
     finally:
         gui.model.stopListener()
@@ -2838,31 +2838,31 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         gui.typesPane.entryWidgets["IF"]["retarget"].click()
         assert gui.tabs.currentIndex() == 0
         assert gui.armStrip.label.text() == "Target for type qubit · IF"
-        assert gui.armed_type_lock == ("qubit", "IF")
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_type_lock == ("qubit", "IF")
+        assert gui.locksController.armed_follower is None
 
         # a Target the Server refuses: the error text on the strip, which
         # stays armed, and the entry's Target unchanged on the Server
-        gui.pick_lock_target("no.such.path")
+        gui.locksController.pick_lock_target("no.such.path")
         qtbot.waitUntil(
             lambda: "no.such.path" in gui.armStrip.errorLabel.text(),
             timeout=BROADCAST_TIMEOUT,
         )
         assert not gui.armStrip.errorLabel.isHidden()
         assert not gui.armStrip.isHidden()
-        assert gui.armed_type_lock == ("qubit", "IF")
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_type_lock == ("qubit", "IF")
+        assert gui.locksController.armed_follower is None
         assert pm.get_type("qubit").parameters["IF"]["target"] == globals_target
 
-        gui.pick_lock_target("tshared")
+        gui.locksController.pick_lock_target("tshared")
         qtbot.waitUntil(
             lambda: pm.get_type("qubit").parameters["IF"]["target"]
             == f"{PM_NAME}.tshared",
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.armStrip.isHidden()
-        assert gui.armed_type_lock is None
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_type_lock is None
+        assert gui.locksController.armed_follower is None
     finally:
         gui.model.stopListener()
 
@@ -2904,16 +2904,16 @@ def test_the_types_tab_names_skipped_locks_on_the_note(
         # a clean Type Lock re-target with nothing skipped resets the
         # note (plan task 5.6); re-targeting to the Follower's own Target
         # skips nothing
-        gui.arm_type_lock("qubit", "IF")
-        assert gui.armed_type_lock == ("qubit", "IF")
-        gui.pick_lock_target("tshared")
+        gui.locksController.arm_type_lock("qubit", "IF")
+        assert gui.locksController.armed_type_lock == ("qubit", "IF")
+        gui.locksController.pick_lock_target("tshared")
         qtbot.waitUntil(
             lambda: pm.get_type("qubit").parameters["IF"]["target"]
             == f"{PM_NAME}.tshared",
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.typesPane.entriesNote.text() == ""
-        assert gui.armed_type_lock is None
+        assert gui.locksController.armed_type_lock is None
     finally:
         gui.model.stopListener()
 
@@ -3268,9 +3268,9 @@ def test_the_lock_shortcuts_arm_unlock_and_switch_tabs(
         gui.view.setFocus()
         qtbot.wait(20)
         qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_L, control)
-        assert gui.armed_follower == "q01.IF"
+        assert gui.locksController.armed_follower == "q01.IF"
         assert not gui.armStrip.isHidden()
-        gui.cancel_arm()
+        gui.locksController.cancel_arm()
 
         # Ctrl+U on the locked Follower unlocks it on the Server. Hiding
         # the armed strip hands focus to the next row editor, and the
@@ -3295,7 +3295,7 @@ def test_the_lock_shortcuts_arm_unlock_and_switch_tabs(
         source_index = gui.model.indexFromItem(_row_items(gui, "q01")[0])
         gui.view.setCurrentIndex(gui.proxyModel.mapFromSource(source_index))
         qtbot.keyClick(gui.view, QtCore.Qt.Key.Key_L, control)
-        assert gui.armed_follower is None
+        assert gui.locksController.armed_follower is None
         assert gui.armStrip.isHidden()
 
         # Ctrl+Shift+Y toggles between the tabs

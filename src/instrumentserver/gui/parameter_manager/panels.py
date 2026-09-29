@@ -111,7 +111,7 @@ def make_lock_button(
     the purple ``locked`` fill. ``target`` is the Target relative to the
     Parameter Manager for the state tooltip; the tree's delegate passes
     ``None`` and leaves the tooltip to
-    :meth:`.ParameterManagerGui._update_row_lock_widget`."""
+    :meth:`.LocksController._update_row_lock_widget`."""
     button = QtWidgets.QPushButton(
         QtGui.QIcon(":/icons/lock.svg"), "", parent=parent
     )
