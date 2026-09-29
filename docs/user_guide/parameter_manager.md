@@ -422,10 +422,12 @@ Setting the Globals parameter moves every Follower at once:
 ```
 
 :::{note}
-Names starting with an underscore are reserved by QCoDeS instruments, so
-attribute access on the Proxy cannot reach the Globals submodule. The
-Parameter Manager's own dotted `get` and `set` methods reach it; call them
-through `Client.call`, as above.
+Why `Client.call`? On a Proxy Instrument, `pm.get` and `pm.set` are QCoDeS'
+own local shorthands, and they only take a plain parameter name: a dotted
+path raises `KeyError`. Attribute access does reach the Globals submodule
+once the Proxy knows it; a Proxy built before the Globals parameter existed
+needs one `pm.update()` first. The Parameter Manager's own dotted `get` and
+`set` run through `Client.call`, as above.
 :::
 
 An explicit Target names any parameter of the same Parameter Manager
@@ -439,10 +441,11 @@ instead:
 ```
 
 The return value names the Instance parameters that were skipped, and the
-Server logs a warning: `q01.IF` already carried a Lock on another Target
-(the Globals parameter), and a Lock is never re-pointed behind its holder's
-back. Everything else is locked to the new Target. Declaring the same Type
-Lock again is how the GUI's lock all button re-applies it to everyone.
+Parameter Manager logs a warning: `q01.IF` already carried a Lock on another
+Target (the Globals parameter), and a Lock is never re-pointed behind its
+holder's back. Everything else is locked to the new Target. Declaring the
+same Type Lock again is how the GUI's lock all button re-applies it to
+everyone.
 
 `unlock_type_parameter` removes only the rule. The Locks it created stay
 until they are removed individually, and Instances created after the removal
@@ -469,9 +472,13 @@ and is saved with the profile.
 
 A Parameter Manager saves itself as a JSON profile document in the working
 directory of the Server process, so the state survives restarts and can be
-switched per experiment:
+switched per experiment. This section starts from two parameters and a Lock
+between them, so the document below shows all three shapes:
 
 ```pycon
+>>> pm.add_parameter("lo.frequency", initial_value=5e9, unit="Hz")
+>>> pm.add_parameter("q01.IF", initial_value=10e6, unit="Hz")
+>>> pm.lock("q01.IF", "lo.frequency")
 >>> pm.toFile()
 ```
 
@@ -521,13 +528,22 @@ Three things to read off that document:
 PMLockBluePrint(target='parameter_manager.lo.frequency', locked=True, _class_type='PMLockBluePrint')
 ```
 
-:::{note}
 Loading removes parameters the document does not list; that is the
-`deleteMissing` default of the reader underneath. `fromFile` always loads
-with that default today, and the dictionary variant takes it explicitly:
-`pm.fromParamDict(pm.toParamDict(), deleteMissing=False)` keeps parameters
-the document does not list.
-:::
+`deleteMissing` default of the reader underneath, and `fromFile` always
+loads with that default today. The dictionary variant takes it explicitly,
+so a document that omits one parameter shows the difference:
+
+```pycon
+>>> pm.add_parameter("temp.extra", initial_value=1)
+>>> document = pm.toParamDict()
+>>> del document["parameters"]["parameter_manager.temp.extra"]
+>>> pm.fromParamDict(document, deleteMissing=False)
+>>> pm.has_param("temp.extra")
+True
+>>> pm.fromParamDict(document)
+>>> pm.has_param("temp.extra")
+False
+```
 
 Any file named `parameter_manager-<profile>.json` in the working directory
 is a profile. `refresh_profiles` re-reads the directory, `list_profiles`
@@ -537,7 +553,7 @@ the profile you name:
 
 ```pycon
 >>> pm.toFile(name="cooldown")
->>> pm.refresh_profiles()
+>>> sorted(pm.refresh_profiles())
 ['parameter_manager-cooldown.json', 'parameter_manager-parameter_manager.json']
 >>> pm.unlock("q01.IF")
 >>> pm.lo.frequency.set(8e9)
@@ -553,11 +569,35 @@ True
 PMLockBluePrint(target='parameter_manager.lo.frequency', locked=False, _class_type='PMLockBluePrint')
 ```
 
+A file without a top-level `version` key is the old flat map from before
+Types and Locks existed. Write one (any file named
+`parameter_manager-<profile>.json` works) and load it:
+
+```json
+{
+  "parameter_manager.old_target": {"unit": "Hz", "value": 5},
+  "parameter_manager.old_param": {"unit": "M", "value": 123}
+}
+```
+
+```pycon
+>>> pm.add_parameter("old_target", initial_value=5, unit="Hz")
+>>> pm.add_parameter("old_param", initial_value=1, unit="M")
+>>> pm.lock("old_param", "old_target")
+>>> pm.unlock("old_param")  # present but unlocked, so the load can set its value
+>>> pm.fromFile("parameter_manager-legacy.json")
+>>> pm.old_param()
+123
+>>> pm.list_locks()
+{'old_param': PMLockBluePrint(target='parameter_manager.old_target', locked=False, _class_type='PMLockBluePrint')}
+```
+
 :::{note}
-A profile file without a top-level `version` key is the old flat map from
-before Types and Locks existed. It loads as parameters only, and the Types
-and Locks of the running Parameter Manager are left untouched. Saving always
-writes the version-2 document, so one save over an old file upgrades it.
+The legacy reader writes no Types and no Locks. Parameters it does not list
+are removed as above, their Locks with them; a Lock whose parameters stay is
+untouched, exactly as the load above leaves the unlocked `old_param` Lock.
+Saving always writes the version-2 document, so one save over an old file
+upgrades it.
 :::
 
 ## The GUI
@@ -571,11 +611,16 @@ instrumentserver-param-manager --port 5555
 
 The launcher connects a Client to the Server on that port, creates the
 Parameter Manager named `parameter_manager` if it does not exist yet, and
-opens the window. `--name` chooses a different Parameter Manager. The same
-widget is embedded in the Server window, which shows it for a Parameter
-Manager in its Station; [the Server](server.md) covers launching, and
-[GUI features](gui_features.md) describes the patterns shared by every
-instrument window: starring, trashing, filtering, and the detachable tabs.
+opens the window. `--name` chooses a different Parameter Manager. The Server
+window itself opens the generic instrument widget for a Parameter Manager
+unless the station config's `gui` entry names
+`instrumentserver.gui.instruments.ParameterManagerGui`, as the
+`serverConfig.yml` in the repository does; then the Server window embeds the
+same widget, and the launcher above is the sure way to get it.
+[the Server](server.md) covers launching and the station config, and
+[GUI features](gui_features.md) describes the `gui` entry and the patterns
+shared by every instrument window: starring, trashing, filtering, and the
+detachable tabs.
 
 ### The Parameters tab
 
@@ -585,9 +630,9 @@ specific to the Parameter Manager:
 
 - **Tints and gutter bands.** Every parameter of an Instance is tinted with
   the colour of its Claiming Type, and the thin coloured band at the left
-  edge stacks one segment per Type covering the row, innermost first. When a
-  Client edits a Type, the tints follow live, because the Parameter Manager
-  emits a `pm-type-update` Broadcast.
+  edge stacks one segment per Type covering the row, outermost first, up to
+  three. When a Client edits a Type, the tints follow live, because the
+  Parameter Manager emits a `pm-type-update` Broadcast.
 
 :::{admonition} 📸 SCREENSHOT NEEDED
 :class: attention
@@ -619,10 +664,11 @@ theme: `docs/_static/user_guide/parameter_manager/tree_tints_dark.png`.
   beside the usual actions.
 
 "Lock to…" arms the Target picker: a strip appears under the toolbar, naming
-the Follower, with a line edit that completes over every parameter path
-(ranked so that paths in the Follower's own submodule come first) and a
-Cancel button. Click a tree row or complete a path to pick the Target. If
-the Server refuses, for a cycle for example, the strip shows the error.
+the Follower, with a line edit that completes over every parameter path,
+ranked so that the same relative path on another Instance comes first, then
+paths containing that relative path, then the rest, and a Cancel button.
+Click a tree row or complete a path to pick the Target. If the Server
+refuses, for a cycle for example, the strip shows the error.
 
 :::{admonition} 📸 SCREENSHOT NEEDED
 :class: attention
@@ -684,18 +730,18 @@ theme: `docs/_static/user_guide/parameter_manager/locks_panel_dark.png`.
 
 ### The Types tab
 
-The Types tab, or Ctrl+Shift+Y, keeps the structure work in one place, in
-three panes:
+The Types tab (Ctrl+Shift+Y switches between the two tabs) keeps the
+structure work in one place, in three panes:
 
 - Left: the list of Types, each with its number of Instances and parameters,
   tinted in the Type's colour, and the "New type:" strip below.
 - Top right: the selected Type's entries as a tree. An entry of the Type
   itself has an editable default, a Remove button, and the Type Lock toggle
-  in the "locked to" column, which doubles as the re-target button while the
-  entry is locked. Entries that come from a Nested Type are read-only and
-  say "defined by <type>"; submodule rows show which Type they require and
-  can drop the requirement. The "Add to type" and "Nested type" strips below
-  add entries and Nested Type requirements.
+  in the "locked to" column; while the entry is locked, the column also
+  shows a re-target button and the Target's path. Entries that come from a
+  Nested Type are read-only and say "defined by <type>"; submodule rows show
+  which Type they require and can drop the requirement. The "Add to type"
+  and "Nested type" strips below add entries and Nested Type requirements.
 - Bottom right: the Instances of the selected Type, each with its parameter
   count and the other Types it also carries. "Show" jumps to the Parameters
   tab and selects the Instance; the "New instance:" strip adds one.

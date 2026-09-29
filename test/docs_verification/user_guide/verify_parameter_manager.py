@@ -13,9 +13,11 @@ GUI claims (the tab layout, tints and gutter bands, the Lock column and lock
 button, the context menu, the arm strip flow, the Locks panel, the Types tab
 panes, and the delete-Target confirmation dialog) cannot be asserted from a
 script. They are verified manually (the plan's task 5.6 records the
-end-to-end GUI check) and captured in the page's screenshots. What the GUI
-section states about keyboard shortcuts is asserted here against the GUI's
-shortcut registry.
+end-to-end GUI check) and captured in the page's screenshots; the same goes
+for the Server window showing the generic instrument widget unless the
+station config's ``gui`` entry names the Parameter Manager widget. What the
+GUI section states about keyboard shortcuts is asserted here against the
+GUI's shortcut registry.
 """
 
 import json
@@ -24,6 +26,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -53,6 +56,19 @@ def workspace():
     finally:
         os.chdir(old)
         shutil.rmtree(path, ignore_errors=True)
+
+
+def capture_one_broadcast(action):
+    """Run ``action`` under a Broadcast capture and return the messages.
+
+    Sleeps briefly after the first message arrived, so a caller counting
+    the messages sees the ones belonging to this action only.
+    """
+    with capture_broadcasts([PM_NAME]) as cap:
+        action()
+        messages = cap.wait_for(1)
+        time.sleep(0.2)
+    return messages
 
 
 # ---------------------------------------------------------------------------
@@ -93,10 +109,9 @@ def section_concept() -> None:
 #
 # Page claims: dotted paths address parameters in nested Parameter Groups,
 # which are created on demand; add_parameter / remove_parameter / list /
-# has_param manage the tree; get and set work through dotted paths and
-# through Proxy attribute access; removing a parameter leaves emptied
-# Parameter Groups in place only with cleanup=False, and
-# remove_empty_submodules prunes them.
+# has_param manage the tree; get and set work through Proxy attribute
+# access; the default remove_parameter prunes the Parameter Group it
+# empties; cleanup=False keeps it, and remove_empty_submodules prunes it.
 # ---------------------------------------------------------------------------
 def section_hierarchical_parameters() -> None:
     with workspace(), server():
@@ -119,23 +134,34 @@ def section_hierarchical_parameters() -> None:
             assert pm.q01.readout.IF() == 21000000.0
             assert pm.q01.readout.IF.unit == "Hz"
 
-            # cleanup=False leaves the emptied Parameter Group in the tree
+            # the default removes the parameter and prunes the Parameter
+            # Group it empties
+            pm.remove_parameter("q01.readout.IF")
+            assert pm.list() == ["q01.power"]
+            try:
+                pm.q01.readout
+                pruned = False
+            except AttributeError:
+                pruned = True
+            assert pruned
+
+            # cleanup=False keeps the emptied Parameter Group instead ...
+            pm.add_parameter("q01.readout.IF", initial_value=1, unit="Hz")
             pm.remove_parameter("q01.readout.IF", cleanup=False)
             pm.update()
             assert not pm.has_param("q01.readout.IF")
             assert pm.q01.readout is not None
 
             # ... and remove_empty_submodules prunes every empty group
-            pm.remove_parameter("q01.power", cleanup=False)
             pm.remove_empty_submodules()
             pm.update()
-            assert pm.list() == []
             try:
-                pm.q01
-                gone = False
+                pm.q01.readout
+                pruned = False
             except AttributeError:
-                gone = True
-            assert gone
+                pruned = True
+            assert pruned
+            assert pm.list() == ["q01.power"]
     print("section_hierarchical_parameters: OK")
 
 
@@ -144,12 +170,15 @@ def section_hierarchical_parameters() -> None:
 #
 # Page claims: a Type is a named shape (relative paths with defaults and
 # units, plus Nested Types); Instances are duck-typed, recomputed on demand,
-# never stored; add_type_parameter writes the entry into every Instance
-# lacking it; set_type_parameter_default only affects Instances created
-# later; set_type_parameter_unit propagates to every Instance; Nested Types
-# expand under their submodule; add_instance writes the shape into a new
-# Parameter Group; instances_of / types_of answer on demand; removing an
-# entry, a Nested Type or a Type leaves the parameters alone.
+# never stored; add_instance writes the shape into a new Parameter Group and
+# keeps parameters that exist at a target path already; a wrong-unit
+# submodule is no Instance; add_type_parameter writes the entry into every
+# Instance lacking it; a Type edit emits one pm-type-update Broadcast;
+# set_type_parameter_default only affects Instances created later;
+# set_type_parameter_unit propagates to every Instance; Nested Types expand
+# under their submodule; instances_of / types_of answer on demand; removing
+# an entry, a Nested Type or a Type leaves the parameters alone; a Type
+# still nested in another refuses to be removed, naming the nester.
 # ---------------------------------------------------------------------------
 def section_types() -> None:
     with workspace(), server():
@@ -178,14 +207,27 @@ def section_types() -> None:
             assert pm.instances_of("qubit") == ["q01", "q02", "q03"]
             assert pm.types_of("q03.IF") == ["qubit"]
 
+            # the unit is part of the shape: a submodule with the wrong unit
+            # is no Instance
+            pm.add_parameter("q05.IF", initial_value=1, unit="V")
+            pm.add_parameter("q05.octave_gain", initial_value=1, unit="dB")
+            assert "q05" not in pm.instances_of("qubit")
+
             # a new entry is written into every Instance lacking it
             pm.add_type_parameter("qubit", "window", default=0.5, unit="s")
             pm.update()
             assert pm.q01.window() == 0.5
             assert pm.q03.window() == 0.5
 
+            # a Type edit announces itself: one pm-type-update Broadcast
+            messages = capture_one_broadcast(
+                lambda: pm.set_type_parameter_default("qubit", "window", 1.0)
+            )
+            text = repr(messages)
+            assert text.count("pm-type-update") == 1, text
+            assert "parameter_manager.qubit" in text, text
+
             # a new default only affects Instances created later
-            pm.set_type_parameter_default("qubit", "window", 1.0)
             assert pm.q01.window() == 0.5
             pm.add_instance("qubit", "q04")
             pm.update()
@@ -219,17 +261,27 @@ def section_types() -> None:
                 "q04.readout",
             ]
 
-            # duck-typing cuts both ways: deleting a required parameter makes
-            # the submodule stop matching, and nothing else changes
-            pm.remove_parameter("q02.IF")
-            assert pm.has_param("q02.octave_gain")
-            assert pm.instances_of("qubit") == ["q01", "q03", "q04"]
+            # a Type still required as a Nested Type refuses to be removed,
+            # naming the Types that nest it
+            try:
+                pm.remove_type("readout")
+                nested_error = None
+            except Exception as exc:  # noqa: BLE001
+                nested_error = str(exc)
+            assert nested_error is not None
+            assert "qubit" in nested_error, nested_error
 
             # removing an entry from the Type leaves the parameters alone,
             # and the Instances keep matching: the required shape only shrank
             pm.remove_type_parameter("qubit", "window")
             assert pm.has_param("q01.window")
             assert pm.has_param("q04.window")
+            assert pm.instances_of("qubit") == ["q01", "q02", "q03", "q04"]
+
+            # duck-typing cuts both ways: deleting a required parameter makes
+            # the submodule stop matching, and nothing else changes
+            pm.remove_parameter("q02.IF")
+            assert pm.has_param("q02.octave_gain")
             assert pm.instances_of("qubit") == ["q01", "q03", "q04"]
 
             # same for a Nested Type and for the Type itself: the parameters
@@ -241,6 +293,17 @@ def section_types() -> None:
             assert pm.list_types() == ["readout"]
             assert pm.has_param("q01.IF")
             assert pm.q01.IF() == 10000000.0
+
+            # add_instance keeps parameters that exist at a target path
+            # already, with their own value and unit
+            pm.add_type("qubit")
+            pm.add_type_parameter("qubit", "IF", default=10e6, unit="Hz")
+            pm.add_parameter("q09.IF", initial_value=99, unit="Hz")
+            pm.add_instance("qubit", "q09")
+            pm.update()
+            assert pm.q09.IF() == 99
+            assert pm.q09.IF.unit == "Hz"
+            assert pm.instances_of("qubit") == ["q09"]
     print("section_types: OK")
 
 
@@ -252,10 +315,11 @@ def section_types() -> None:
 # answers get with the Target's value and refuses set with an error naming
 # the Target; values are pulled on get, so setting the Target is enough and
 # unlocking exposes the Follower's own value again; Locks chain and each hop
-# reads by its own state; cycles are refused with an error listing the
-# chain; get_lock / list_locks / followers_of report the state; deleting a
-# Target removes the Locks that pointed at it; the Parameter Manager emits a
-# pm-lock-update Broadcast for each affected Follower.
+# reads by its own state; cycles and self-locks are refused with an error
+# listing the chain; the Target lives in the same Parameter Manager (D8);
+# get_lock / list_locks / followers_of report the state; deleting a Target
+# removes the Locks that pointed at it; every Lock method the page names
+# emits one pm-lock-update Broadcast per affected Follower.
 # ---------------------------------------------------------------------------
 def section_locks() -> None:
     with workspace(), server():
@@ -300,9 +364,15 @@ def section_locks() -> None:
             assert pm.q01.IF() == 5000000.0
             pm.relock("q01.IF")
             assert pm.q01.IF() == 11000000.0
-            pm.toggle_lock("q01.IF")
+
+            # every Lock method the page names announces the Follower: one
+            # pm-lock-update per state change
+            messages = capture_one_broadcast(lambda: pm.toggle_lock("q01.IF"))
+            text = repr(messages)
+            assert text.count("pm-lock-update") == 1, text
+            assert "parameter_manager.q01.IF" in text, text
             assert pm.get_lock("q01.IF").locked is False
-            pm.toggle_lock("q01.IF")
+            messages = capture_one_broadcast(lambda: pm.toggle_lock("q01.IF"))
             assert pm.get_lock("q01.IF").locked is True
 
             # bookkeeping: followers_of and list_locks
@@ -345,15 +415,30 @@ def section_locks() -> None:
             assert self_error is not None
             assert "cannot lock" in self_error, self_error
 
+            # the Target must live in the same Parameter Manager (D8)
+            other = cli.find_or_create_instrument("parameter_manager_2", PM_CLASS)
+            other.add_parameter("elsewhere.x", initial_value=1)
+            try:
+                pm.lock("q01.IF", "parameter_manager_2.elsewhere.x")
+                cross_error = None
+            except Exception as exc:  # noqa: BLE001
+                cross_error = str(exc)
+            assert cross_error is not None
+            assert "does not exist" in cross_error, cross_error
+
+            # removing a Lock announces it with a None payload
+            messages = capture_one_broadcast(lambda: pm.remove_lock("q02.IF"))
+            text = repr(messages)
+            assert text.count("pm-lock-update") == 1, text
+            assert "parameter_manager.q02.IF" in text, text
+
             # deleting a Target removes the Locks that pointed at it; the
             # Followers become plain parameters
             pm.remove_parameter("q01Data.IF")
             assert pm.get_lock("q01.IF") is None
             assert pm.q01.IF() == 5000000.0
-            # q02.IF's Lock pointed at q01.IF, which still exists
-            assert pm.get_lock("q02.IF") is not None
-            assert pm.q02.IF() == 5000000.0
-            pm.remove_lock("q02.IF")
+            # q02.IF's Lock pointed at q01.IF, which still exists ... but it
+            # was removed above, so the tree holds no Lock here
             assert pm.list_locks() == {}
     print("section_locks: OK")
 
@@ -365,11 +450,16 @@ def section_locks() -> None:
 # parameter in every current Instance; with no explicit Target the Target is
 # the Globals parameter _globals.<type>.<path>, created on demand with the
 # entry's default and unit; setting the Globals parameter moves every
-# Follower; Instance parameters already locked to another Target are
+# Follower; on a Proxy, pm.get/pm.set are QCoDeS' local shorthands and raise
+# KeyError on a dotted path, attribute access reaches the Globals submodule
+# once the Proxy knows it (one update() for a Proxy built before it
+# existed), and the Parameter Manager's own dotted get/set run through
+# Client.call; Instance parameters already locked to another Target are
 # skipped, returned and logged; unlock_type_parameter removes only the rule,
 # the Locks it created stay; new Instances created after the rule is removed
-# get no Lock; Globals is never an Instance, and parameters under it cannot
-# be created through add_parameter.
+# get no Lock; Globals is never an Instance, its parameters cannot be
+# created through add_parameter, and a Globals parameter is saved with the
+# profile.
 # ---------------------------------------------------------------------------
 def section_type_locks_and_globals() -> None:
     with workspace(), server():
@@ -385,9 +475,31 @@ def section_type_locks_and_globals() -> None:
             assert pm.lock_type_parameter("qubit", "IF") == []
             assert pm.has_param("_globals.qubit.IF")
             assert "_globals.qubit.IF" in pm.list()
-            # names starting with an underscore are reserved by QCoDeS, so
-            # attribute access cannot reach Globals; the Parameter Manager's
-            # own dotted get and set do, through Client.call
+
+            # this Proxy was built before the Globals parameter existed, so
+            # its cached Blueprint does not know the submodule yet
+            try:
+                pm._globals
+                stale_error = None
+            except AttributeError as exc:  # noqa: BLE001
+                stale_error = str(exc)
+            assert stale_error is not None
+
+            # one update() later, attribute access reaches it
+            pm.update()
+            assert pm._globals.qubit.IF() == 10000000.0
+
+            # the Proxy's own dotted get and set are QCoDeS' local,
+            # deprecated shorthands: they raise KeyError on a dotted path
+            try:
+                pm.get("_globals.qubit.IF")
+                proxy_get_error = None
+            except KeyError as exc:  # noqa: BLE001
+                proxy_get_error = str(exc)
+            assert proxy_get_error is not None
+
+            # the Parameter Manager's own dotted get and set are reachable
+            # through Client.call
             assert cli.call("parameter_manager.get", "_globals.qubit.IF") == 10000000.0
             for instance in ("q01", "q02"):
                 lock = pm.get_lock(f"{instance}.IF")
@@ -398,6 +510,7 @@ def section_type_locks_and_globals() -> None:
 
             # setting the Globals parameter moves every Follower
             cli.call("parameter_manager.set", "_globals.qubit.IF", 12e6)
+            assert pm._globals.qubit.IF() == 12000000.0
             assert pm.q01.IF() == 12000000.0
             assert pm.q02.IF() == 12000000.0
 
@@ -439,6 +552,13 @@ def section_type_locks_and_globals() -> None:
                 globals_error = str(exc)
             assert globals_error is not None
             assert "reserved" in globals_error, globals_error
+
+            # a Globals parameter is saved with the profile
+            pm.toFile()
+            document = json.loads(
+                (Path.cwd() / "parameter_manager-parameter_manager.json").read_text()
+            )
+            assert "parameter_manager._globals.qubit.IF" in document["parameters"]
     print("section_type_locks_and_globals: OK")
 
 
@@ -447,11 +567,14 @@ def section_type_locks_and_globals() -> None:
 #
 # Page claims: toFile writes the version-2 profile document (values are the
 # parameters' own values, lock appears only on Followers); fromFile loads it
-# again, with deleteMissing removing parameters the file does not list;
-# switch_to_profile saves the current profile, then clears everything, then
-# loads the new one; list_profiles / refresh_profiles report the profile
-# files of the working directory; a file without a version key is the legacy
-# flat map and loads as parameters only; saving always writes version 2.
+# again, with deleteMissing removing parameters the document does not list;
+# the dictionary variant takes deleteMissing explicitly; switch_to_profile
+# saves the current profile, then clears everything, then loads the new one;
+# sorted(pm.refresh_profiles()) reports the profile files of the working
+# directory; a file without a version key is the legacy flat map: it loads
+# as parameters only, removes the parameters it does not list (their Locks
+# with them), leaves Locks whose parameters stay untouched, and writes no
+# Types and no Locks; saving always writes version 2.
 # ---------------------------------------------------------------------------
 def section_profiles_and_files() -> None:
     with workspace(), server():
@@ -491,20 +614,24 @@ def section_profiles_and_files() -> None:
                 target="parameter_manager.lo.frequency", locked=True
             )
 
-            # deleteMissing controls whether parameters the document does
-            # not list are removed. fromFile always loads with the default
-            # (True); the dictionary variant takes it explicitly.
+            # deleteMissing removes the parameters the document does not
+            # list; deleteMissing=False keeps them
             pm.add_parameter("temp.extra", initial_value=1)
-            pm.fromParamDict(pm.toParamDict(), deleteMissing=False)
+            document = pm.toParamDict()
+            del document["parameters"]["parameter_manager.temp.extra"]
+            pm.fromParamDict(document, deleteMissing=False)
             assert pm.has_param("temp.extra")
-            pm.fromFile()
+            pm.fromParamDict(document)
             assert not pm.has_param("temp.extra")
 
             # a second profile: saving to a profile file also selects it;
             # a plain name lands in the working directory as
             # parameter_manager-cooldown.json
             pm.toFile(name="cooldown")
-            pm.refresh_profiles()
+            assert sorted(pm.refresh_profiles()) == [
+                "parameter_manager-cooldown.json",
+                "parameter_manager-parameter_manager.json",
+            ]
             assert sorted(pm.list_profiles()) == [
                 "parameter_manager-cooldown.json",
                 "parameter_manager-parameter_manager.json",
@@ -531,15 +658,36 @@ def section_profiles_and_files() -> None:
             )
 
             # a file without a version key is the legacy flat map: it loads
-            # as parameters only
+            # as parameters only. Two of its parameters carry an unlocked
+            # Lock in-session first, to observe what the load does to Locks
+            # (a locked Follower would refuse the load's set, D6)
+            pm.add_parameter("old_target", initial_value=5, unit="Hz")
+            pm.add_parameter("old_param", initial_value=1, unit="M")
+            pm.lock("old_param", "old_target")
+            pm.unlock("old_param")
             legacy = Path.cwd() / "parameter_manager-legacy.json"
             legacy.write_text(
-                json.dumps({"parameter_manager.old_param": {"value": 123, "unit": "M"}})
+                json.dumps(
+                    {
+                        "parameter_manager.old_target": {"unit": "Hz", "value": 5},
+                        "parameter_manager.old_param": {"unit": "M", "value": 123},
+                    }
+                )
             )
-            pm.fromFile(str(legacy))
+            pm.fromFile("parameter_manager-legacy.json")
+            # the parameters the file does not list are removed, their Locks
+            # with them; the Lock between the two listed parameters stays,
+            # untouched by the reader
             assert not pm.has_param("lo.frequency")
+            assert not pm.has_param("q01.IF")
+            assert pm.list_locks() == {
+                "old_param": PMLockBluePrint(
+                    target="parameter_manager.old_target", locked=False
+                )
+            }
             pm.update()
             assert pm.old_param() == 123
+            assert pm.old_target() == 5
 
             # saving always writes version 2, even over a legacy file; and
             # loading a profile file selected it, so the save lands there
@@ -556,8 +704,10 @@ def section_profiles_and_files() -> None:
 # the arm strip, the Locks panel, the Types tab panes, and the delete-Target
 # confirmation) cannot be asserted from a script; it is verified manually
 # (plan task 5.6 records the end-to-end GUI check) and captured in the
-# page's screenshots. The keyboard shortcuts the page lists come from the
-# GUI's shortcut registry, and that is asserted here.
+# page's screenshots. The same goes for the Server window showing the
+# generic instrument widget unless the station config's gui entry names the
+# Parameter Manager widget. The keyboard shortcuts the page lists come from
+# the GUI's shortcut registry, and that is asserted here.
 # ---------------------------------------------------------------------------
 def section_the_gui() -> None:
     from instrumentserver.gui.shortcuts import KeyboardShortcutManager
