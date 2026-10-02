@@ -115,11 +115,14 @@ class QLogHandler(logging.Handler):
         except RuntimeError:
             # Widget has been destroyed; detach self from the logger so we
             # stop receiving further records and Python can collect us.
+            # Assign a new list rather than removeHandler: the logger is
+            # iterating over its handlers list right now, and removing from
+            # it in place would skip the handler after this one.
             for lg in list(logging.Logger.manager.loggerDict.values()) + [
                 logging.getLogger()
             ]:
                 if isinstance(lg, logging.Logger) and self in lg.handlers:
-                    lg.removeHandler(self)
+                    lg.handlers = [h for h in lg.handlers if h is not self]
 
 
 class LogWidget(QtWidgets.QWidget):

@@ -58,6 +58,23 @@ def test_a_record_after_the_widget_is_deleted_detaches_the_handler(qtbot):
     assert handler not in logger.handlers
 
 
+def test_detaching_a_dead_handler_does_not_skip_the_next_handler(qtbot):
+    """A dead handler detaches itself while the logger is looping over its
+    handlers; the handler after it must still get the record."""
+    logger = logging.getLogger(LOGGER)
+    first = LogWidget()
+    first_handler = first.handler
+    sip.delete(first)
+    second = LogWidget()
+    second_handler = second.handler
+    sip.delete(second)
+    with qtbot.captureExceptions() as exceptions:
+        logger.warning("both dead handlers should detach")
+    assert exceptions == []
+    assert first_handler not in logger.handlers
+    assert second_handler not in logger.handlers
+
+
 def test_closing_the_app_leaves_no_traceback_from_the_log_handler():
     """Qt deletes the log widget before the interpreter exits, and
     ``logging.shutdown`` then visits every handler still registered. The
