@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto, unique
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Tuple, Union, cast
 
 from qcodes import Parameter, validators
 from qcodes.instrument import InstrumentBase
@@ -708,7 +708,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         if not full_path.startswith(prefix):
             return None
         try:
-            return self._get_param(full_path[len(prefix):])
+            return self._get_param(full_path[len(prefix) :])
         except ValueError:
             return None
 
@@ -802,9 +802,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         param = self._resolve_param(name)
         lock = self._require_lock(param, name)
         if not lock.locked:
-            logger.info(
-                f"{self._full_path(name)} is already unlocked; nothing to do"
-            )
+            logger.info(f"{self._full_path(name)} is already unlocked; nothing to do")
             return
         lock.locked = False
         # a snapshot, not the live record: sinks must not see the payload
@@ -831,8 +829,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         target_param = self._param_by_full_path(lock.target)
         if target_param is None:
             raise ValueError(
-                f"{follower_full} remembers Target {lock.target}, "
-                "which does not exist"
+                f"{follower_full} remembers Target {lock.target}, which does not exist"
             )
         self._check_lock_allowed(follower_full, lock.target)
         assert isinstance(param, ManagedParameter)
@@ -1114,7 +1111,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         def walk(defn: _TypeDefinition, chain: List[str]) -> List[str] | None:
             for nested_name in defn.nested.values():
                 if nested_name in chain:
-                    return chain[chain.index(nested_name):] + [nested_name]
+                    return chain[chain.index(nested_name) :] + [nested_name]
                 nested = types.get(nested_name)
                 if nested is None:
                     raise ValueError(
@@ -1177,6 +1174,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         Group below this Parameter Manager, at any depth: never the root
         itself, and never the reserved Globals submodule ``_globals`` or
         anything inside it (D12)."""
+
         def walk(
             group: "ParameterGroup", prefix: str
         ) -> Iterator[Tuple[str, "ParameterGroup"]]:
@@ -1272,7 +1270,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 prefix = f"{submodule_path}."
                 if not path.startswith(prefix):
                     continue
-                if path[len(prefix):] not in effective:
+                if path[len(prefix) :] not in effective:
                     continue
                 depth = len(submodule_path)
                 size = len(effective)
@@ -1339,9 +1337,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         walk(type_name, "", (type_name,))
         return prefixes
 
-    def _check_creation_targets(
-        self, targets: List[Tuple[str, str]]
-    ) -> None:
+    def _check_creation_targets(self, targets: List[Tuple[str, str]]) -> None:
         """Validate the parameters a Type edit or :meth:`add_instance` is
         about to create, before anything is mutated. ``targets`` holds
         ``(Instance path, relative target path)`` pairs. An intermediate
@@ -1386,11 +1382,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     group = None
                     break
                 walked.append(segment)
-                group = submodule
+                group = cast(ParameterGroup, submodule)
             if blocked is not None:
                 offending[full] = (
-                    f"'{blocked}' is a parameter, and cannot have "
-                    "child parameters"
+                    f"'{blocked}' is a parameter, and cannot have child parameters"
                 )
                 continue
             if group is None:
@@ -1400,7 +1395,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 last = index == len(segments) - 1
                 if segment in group.parameters:
                     if not last:
-                        blocked = f"{instance_path}.{'.'.join(segments[:index + 1])}"
+                        blocked = f"{instance_path}.{'.'.join(segments[: index + 1])}"
                         offending[full] = (
                             f"'{blocked}' is a parameter, and cannot have "
                             "child parameters"
@@ -1408,9 +1403,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     break
                 if last:
                     if segment in group.submodules:
-                        offending[full] = (
-                            f"'{full}' is already a Parameter Group"
-                        )
+                        offending[full] = f"'{full}' is already a Parameter Group"
                     break
                 submodule = group.submodules.get(segment)
                 if submodule is None:
@@ -1423,7 +1416,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # edit, whatever Instance or nesting chain produced them
         full_paths = sorted(seen)
         for index, shorter in enumerate(full_paths):
-            for longer in full_paths[index + 1:]:
+            for longer in full_paths[index + 1 :]:
                 if longer.startswith(f"{shorter}."):
                     blocked, blocker = longer, shorter
                 elif shorter.startswith(f"{longer}."):
@@ -1463,7 +1456,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
             f"parameter path '{path}' is not an entry of Type '{type_name}'"
         )
 
-    def _instances_before_edit(self, affected: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    def _instances_before_edit(
+        self, affected: Dict[str, List[str]]
+    ) -> Dict[str, List[str]]:
         """The Instances of every Type in ``affected``, computed while the
         registry still holds the shape the edit is about to change (D13):
         after the edit no submodule matches until it carries what is new,
@@ -1516,9 +1511,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # or the tree is touched
         definition = self._require_type(type_name)
         if not path or any(segment == "" for segment in path.split(".")):
-            raise ValueError(
-                f"'{path}' is not a valid parameter path for a Type entry"
-            )
+            raise ValueError(f"'{path}' is not a valid parameter path for a Type entry")
         expanded = self._expand_effective(type_name)
         if path in expanded:
             from_type = expanded[path][1]
@@ -1539,10 +1532,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
             for prefix in affected[name]:
                 candidate = f"{prefix}{path}"
                 if candidate in current:
-                    described = (
-                        f"'{candidate}' (in the effective set of "
-                        f"Type '{name}')"
-                    )
+                    described = f"'{candidate}' (in the effective set of Type '{name}')"
                     if described not in collisions:
                         collisions.append(described)
         if collisions:
@@ -1607,9 +1597,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         for name in affected:
             self._broadcast_type_update(name)
 
-    def set_type_parameter_default(
-        self, type_name: str, path: str, value: Any
-    ) -> None:
+    def set_type_parameter_default(self, type_name: str, path: str, value: Any) -> None:
         """Set the default value of the Type ``type_name``'s own entry at
         ``path`` (D13): the parameters the Instances already carry keep
         their values, and only parameters created later start with the
@@ -1631,9 +1619,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         entry.default = value
         self._broadcast_type_update(type_name)
 
-    def set_type_parameter_unit(
-        self, type_name: str, path: str, unit: str
-    ) -> None:
+    def set_type_parameter_unit(self, type_name: str, path: str, unit: str) -> None:
         """Set the unit of the Type ``type_name``'s own entry at ``path``
         and propagate it to that parameter in every Instance of the Type
         and of every Type whose effective parameter set contains
@@ -1667,13 +1653,11 @@ class ParameterManager(Broadcaster, ParameterGroup):
                         continue
                     propagated.add(full)
                     if self.has_param(full):
-                        self.parameter(full).unit = unit
+                        cast(Parameter, self.parameter(full)).unit = unit
         for name in affected:
             self._broadcast_type_update(name)
 
-    def add_nested_type(
-        self, type_name: str, submodule: str, nested_type: str
-    ) -> None:
+    def add_nested_type(self, type_name: str, submodule: str, nested_type: str) -> None:
         """Require the Nested Type ``nested_type`` at the submodule
         ``submodule`` of the Type ``type_name`` (D11), and write the
         nested Type's effective parameter set under that submodule into
@@ -1725,8 +1709,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         definition = self._types[type_name]
         if not submodule or any(segment == "" for segment in submodule.split(".")):
             raise ValueError(
-                f"'{submodule}' is not a valid submodule name for a "
-                "Nested Type"
+                f"'{submodule}' is not a valid submodule name for a Nested Type"
             )
         if submodule.split(".")[0] == "_globals":
             raise ValueError(
@@ -1777,8 +1760,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     new_path = f"{prefix}{submodule}.{entry_path}"
                     if new_path in current or new_path in new_paths:
                         described = (
-                            f"'{new_path}' (in the effective set of "
-                            f"Type '{name}')"
+                            f"'{new_path}' (in the effective set of Type '{name}')"
                         )
                         if described not in collisions:
                             collisions.append(described)
@@ -1798,7 +1780,10 @@ class ParameterManager(Broadcaster, ParameterGroup):
             for entry_path, entry in nested_entries.items()
         ]
         self._check_creation_targets(
-            [(instance_path, relative_target) for instance_path, relative_target, _ in targets]
+            [
+                (instance_path, relative_target)
+                for instance_path, relative_target, _ in targets
+            ]
         )
         definition.nested[submodule] = nested_type
         created: set = set()
@@ -1809,9 +1794,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 continue
             created.add(full)
             if not self.has_param(full):
-                self.add_parameter(
-                    full, initial_value=entry.default, unit=entry.unit
-                )
+                self.add_parameter(full, initial_value=entry.default, unit=entry.unit)
                 creations.append((full, entry.default, entry.unit))
         # broadcasts after the whole edit succeeded (D22): one
         # parameter-creation per created parameter in creation order,
@@ -1847,8 +1830,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         definition = self._require_type(type_name)
         if submodule not in definition.nested:
             raise ValueError(
-                f"submodule '{submodule}' of Type '{type_name}' has no "
-                "Nested Type"
+                f"submodule '{submodule}' of Type '{type_name}' has no Nested Type"
             )
         affected = self._nesting_prefixes(type_name)
         del definition.nested[submodule]
@@ -1923,9 +1905,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # touched
         self._require_type(type_name)
         if not name or any(segment == "" for segment in name.split(".")):
-            raise ValueError(
-                f"'{name}' is not a valid submodule path for an Instance"
-            )
+            raise ValueError(f"'{name}' is not a valid submodule path for an Instance")
         if name.split(".")[0] == "_globals":
             raise ValueError(
                 f"'{name}' is not a valid submodule path for an Instance: "
@@ -1964,9 +1944,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         for path, entry in effective.items():
             full = f"{name}.{path}"
             if not self.has_param(full):
-                self.add_parameter(
-                    full, initial_value=entry.default, unit=entry.unit
-                )
+                self.add_parameter(full, initial_value=entry.default, unit=entry.unit)
                 creations.append((full, entry.default, entry.unit))
         # one parameter-creation per created parameter, in creation order,
         # then the Type Locks of the new Instances (each emitting its
@@ -2168,10 +2146,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
         offenders: List[str] = []
         for instance_path in self.instances_of(type_name):
             param_path = f"{instance_path}.{path}"
-            action, locked_to = self._classify_lock_application(
-                param_path, target_full
-            )
+            action, locked_to = self._classify_lock_application(param_path, target_full)
             if action == "skip":
+                assert locked_to is not None  # "skip" always names the Target
                 skipped.append((param_path, locked_to))
                 continue
             if action == "none":
@@ -2294,38 +2271,37 @@ class ParameterManager(Broadcaster, ParameterGroup):
         skipped: List[Tuple[str, str, str, str]] = []
         seen: set = set()
         for type_name in lock_types:
-            locked_entries = {
-                entry_path: entry
+            locked_targets = {
+                entry_path: entry.target
                 for entry_path, entry in self._effective_entries(type_name).items()
                 if entry.target is not None
             }
-            if not locked_entries:
+            if not locked_targets:
                 continue
             for instance_path in self.instances_of(type_name):
                 if instance_path in instances_before.get(type_name, []):
                     # an Instance before the edit: only lock_type_parameter
                     # re-applies a Type Lock to everyone
                     continue
-                for entry_path, entry in locked_entries.items():
+                for entry_path, target in locked_targets.items():
                     param_path = f"{instance_path}.{entry_path}"
                     if param_path in seen:
                         # the same defining entry reaches the parameter
                         # through several Types of the closure
                         continue
                     seen.add(param_path)
-                    if self._param_by_full_path(entry.target) is None:
+                    if self._param_by_full_path(target) is None:
                         skipped.append(
                             (
                                 type_name,
                                 entry_path,
                                 param_path,
-                                f"the stored Target {entry.target} does "
-                                "not exist",
+                                f"the stored Target {target} does not exist",
                             )
                         )
                         continue
                     action, locked_to = self._classify_lock_application(
-                        param_path, entry.target
+                        param_path, target
                     )
                     if action == "skip":
                         skipped.append(
@@ -2333,8 +2309,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                                 type_name,
                                 entry_path,
                                 param_path,
-                                "it carries a Lock on another Target "
-                                f"({locked_to})",
+                                f"it carries a Lock on another Target ({locked_to})",
                             )
                         )
                         continue
@@ -2353,18 +2328,16 @@ class ParameterManager(Broadcaster, ParameterGroup):
                         )
                         continue
                     try:
-                        self._check_lock_allowed(follower_full, entry.target)
+                        self._check_lock_allowed(follower_full, target)
                     except ValueError as exc:
-                        skipped.append(
-                            (type_name, entry_path, param_path, str(exc))
-                        )
+                        skipped.append((type_name, entry_path, param_path, str(exc)))
                         continue
                     applications.append(
                         (
                             type_name,
                             entry_path,
                             param_path,
-                            entry.target[len(self.name) + 1:],
+                            target[len(self.name) + 1 :],
                             action == "relock",
                         )
                     )
@@ -2389,8 +2362,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 skipped.append((type_name, entry_path, param_path, str(exc)))
         if skipped:
             described = "; ".join(
-                f"'{param_path}' (entry '{entry_path}' of Type "
-                f"'{type_name}') {reason}"
+                f"'{param_path}' (entry '{entry_path}' of Type '{type_name}') {reason}"
                 for type_name, entry_path, param_path, reason in skipped
             )
             logger.warning(
@@ -2763,9 +2735,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
         # follows each Target's Lock within the document regardless of
         # locked/unlocked state (D7)
         document_locks = {
-            key: entry["lock"]
-            for key, entry in parameters.items()
-            if "lock" in entry
+            key: entry["lock"] for key, entry in parameters.items() if "lock" in entry
         }
         for follower_full, lock in document_locks.items():
             target_full = lock["target"]
@@ -2900,8 +2870,7 @@ class ParameterManager(Broadcaster, ParameterGroup):
                 self._check_lock_allowed(follower_full, target_full)
                 target_param = self._param_by_full_path(target_full)
                 assert target_param is not None, (
-                    "the validated Target is not a parameter of this "
-                    "Parameter Manager"
+                    "the validated Target is not a parameter of this Parameter Manager"
                 )
                 param._target = target_param
                 param.lock = PMLockBluePrint(

@@ -265,9 +265,7 @@ def test_submodule_does_not_load_parameter_file(tmp_path, monkeypatch):
     is not loaded into the q01 submodule."""
     monkeypatch.chdir(tmp_path)
     profile = tmp_path / "parameter_manager-q01.json"
-    profile.write_text(
-        json.dumps({"q01.file_param": {"value": 999, "unit": "V"}})
-    )
+    profile.write_text(json.dumps({"q01.file_param": {"value": 999, "unit": "V"}}))
 
     params = ParameterManager(name="params")
     params.add_parameter(name="q01.my_param", initial_value=1, unit="M")

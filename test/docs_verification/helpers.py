@@ -244,9 +244,7 @@ def capture_raw_frames(
                 parts = sock.recv_multipart()
             except zmq.Again:
                 continue
-            capture.frames.append(
-                (parts[0].decode("utf-8"), parts[1].decode("utf-8"))
-            )
+            capture.frames.append((parts[0].decode("utf-8"), parts[1].decode("utf-8")))
 
     thread = threading.Thread(target=_collect, daemon=True)
     thread.start()

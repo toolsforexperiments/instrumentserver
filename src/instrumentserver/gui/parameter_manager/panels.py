@@ -55,18 +55,19 @@ class GutterDelegate(QtWidgets.QStyledItemDelegate):
 
     def paint(
         self,
-        painter: QtGui.QPainter,
+        painter: Optional[QtGui.QPainter],
         option: QtWidgets.QStyleOptionViewItem,
         index: QtCore.QModelIndex,
     ) -> None:
+        if painter is None:
+            return
         opt = QtWidgets.QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
         opt.text = ""
         # the background first (alternating row or Type tint), then the bands
         widget = opt.widget
-        style = (
-            widget.style() if widget is not None else QtWidgets.QApplication.style()
-        )
+        style = widget.style() if widget is not None else QtWidgets.QApplication.style()
+        assert style is not None  # an application always has a style
         style.drawControl(
             QtWidgets.QStyle.ControlElement.CE_ItemViewItem, opt, painter, widget
         )
@@ -95,9 +96,7 @@ class GutterDelegate(QtWidgets.QStyledItemDelegate):
         option: QtWidgets.QStyleOptionViewItem,
         index: QtCore.QModelIndex,
     ) -> QtCore.QSize:
-        return QtCore.QSize(
-            GUTTER_WIDTH, super().sizeHint(option, index).height()
-        )
+        return QtCore.QSize(GUTTER_WIDTH, super().sizeHint(option, index).height())
 
 
 # ----------------- Locks --------------------------------------------------------------
@@ -112,12 +111,10 @@ def make_lock_button(
     Parameter Manager for the state tooltip; the tree's delegate passes
     ``None`` and leaves the tooltip to
     :meth:`.LocksController._update_row_lock_widget`."""
-    button = QtWidgets.QPushButton(
-        QtGui.QIcon(":/icons/lock.svg"), "", parent=parent
-    )
+    button = QtWidgets.QPushButton(QtGui.QIcon(":/icons/lock.svg"), "", parent=parent)
     button.setProperty("locked", locked)
     button.setStyleSheet(
-        f"QPushButton[locked=\"true\"] {{ background-color: {LOCK_COLOUR} }}"
+        f'QPushButton[locked="true"] {{ background-color: {LOCK_COLOUR} }}'
     )
     if target is not None:
         button.setToolTip(lock_button_tooltip(locked, target))
@@ -164,12 +161,8 @@ class LockArmStrip(QtWidgets.QWidget):
         self.completer = QtWidgets.QCompleter(self)
         self.completer.setModel(self.completerModel)
         self.completer.setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
-        self.completer.setCaseSensitivity(
-            QtCore.Qt.CaseSensitivity.CaseInsensitive
-        )
-        self.completer.setModelSorting(
-            QtWidgets.QCompleter.ModelSorting.UnsortedModel
-        )
+        self.completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        self.completer.setModelSorting(QtWidgets.QCompleter.ModelSorting.UnsortedModel)
         self.lineEdit.setCompleter(self.completer)
 
         self.cancelButton = QtWidgets.QPushButton("Cancel", self)
@@ -186,7 +179,7 @@ class LockArmStrip(QtWidgets.QWidget):
         layout.addWidget(self.errorLabel)
         self.setLayout(layout)
 
-        self.completer.activated[str].connect(self.targetPicked)  # type: ignore[index]
+        self.completer.activated[str].connect(self.targetPicked)
         self.lineEdit.returnPressed.connect(self._on_return_pressed)
         self.cancelButton.clicked.connect(self.cancelled)
 
@@ -210,12 +203,11 @@ class LockArmStrip(QtWidgets.QWidget):
         # the completer's filtered matches for what was typed, in ranked
         # order; its filter mode (MatchContains) and case sensitivity apply
         self.completer.setCompletionPrefix(text)
-        if self.completer.completionCount() > 0:
-            first = self.completer.completionModel().index(0, 0)
+        completions = self.completer.completionModel()
+        if completions is not None and self.completer.completionCount() > 0:
+            first = completions.index(0, 0)
             self.targetPicked.emit(
-                self.completer.completionModel().data(
-                    first, QtCore.Qt.ItemDataRole.DisplayRole
-                )
+                completions.data(first, QtCore.Qt.ItemDataRole.DisplayRole)
             )
 
     def arm(self, follower: str, candidates: List[str]) -> None:
@@ -265,9 +257,7 @@ LOCK_PANEL_BUTTONS_WIDTH = 84
 #: Data role under which a Locks panel row's path (relative to the
 #: Parameter Manager) is stored on its first item, so the rows can be
 #: found again after a rebuild.
-LOCK_ROW_ROLE = cast(
-    "QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 2
-)
+LOCK_ROW_ROLE = cast("QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 2)
 
 
 class LocksPanel(QtWidgets.QWidget):
@@ -342,9 +332,7 @@ class LocksPanel(QtWidgets.QWidget):
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Interactive)
         header.resizeSection(2, LOCK_PANEL_BUTTONS_WIDTH)
 
-        self.lockSelectionButton = QtWidgets.QPushButton(
-            "Lock selection to…", self
-        )
+        self.lockSelectionButton = QtWidgets.QPushButton("Lock selection to…", self)
         self.selectedLabel = QtWidgets.QLabel(self)
         self.selectedLabel.setText("no parameter selected")
 
@@ -384,7 +372,9 @@ class LocksPanel(QtWidgets.QWidget):
         rebuild; no collapsed state is kept."""
         self.model.removeRows(0, self.model.rowCount())
         self.rowWidgets = {}
-        self._build_rows(rows, elements, types, locks, self.model.invisibleRootItem())
+        root = self.model.invisibleRootItem()
+        assert root is not None  # a model always has its root item
+        self._build_rows(rows, elements, types, locks, root)
         self.view.expandAll()
 
     def refresh_values(self, paths: Iterable[str]) -> None:
@@ -400,8 +390,7 @@ class LocksPanel(QtWidgets.QWidget):
                 if entry.get("editor") is not None:
                     entry["editor"].setWidgetFromParameter()
                 elif (
-                    entry.get("label") is not None
-                    and entry.get("element") is not None
+                    entry.get("label") is not None and entry.get("element") is not None
                 ):
                     entry["label"].setText(str(entry["element"].get()))
             except RuntimeError:
@@ -455,9 +444,7 @@ class LocksPanel(QtWidgets.QWidget):
     ) -> None:
         for row in rows:
             if row.type_locks:
-                label = (
-                    f"[type: {', '.join(t for t, _ in row.type_locks)}] {row.path}"
-                )
+                label = f"[type: {', '.join(t for t, _ in row.type_locks)}] {row.path}"
             else:
                 label = row.path
             name_item = QtGui.QStandardItem(label)
@@ -473,9 +460,7 @@ class LocksPanel(QtWidgets.QWidget):
                 value_item,
                 buttons_item,
             )
-            self._build_rows(
-                row.children, elements, types, locks, name_item
-            )
+            self._build_rows(row.children, elements, types, locks, name_item)
 
     def _build_row_widgets(
         self,
@@ -601,9 +586,7 @@ class LocksPanel(QtWidgets.QWidget):
             entry["toggle"] = toggle
             entry["remove"] = remove
         if container is not None:
-            self.view.setIndexWidget(
-                self.model.indexFromItem(buttons_item), container
-            )
+            self.view.setIndexWidget(self.model.indexFromItem(buttons_item), container)
 
 
 # ----------------- Types tab ----------------------------------------------------------
@@ -744,6 +727,7 @@ class TypesPane(QtWidgets.QWidget):
         )
         self.typeList.setAlternatingRowColors(True)
         typeHeader = self.typeList.header()
+        assert typeHeader is not None  # a QTreeView always has a header
         typeHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         for column, width in ((1, 70), (2, 90)):
             typeHeader.setSectionResizeMode(
@@ -769,9 +753,7 @@ class TypesPane(QtWidgets.QWidget):
         typeListLayout.addWidget(self.typeNote)
 
         # -- right: the entries pane above the instances pane
-        rightPane = QtWidgets.QSplitter(
-            QtCore.Qt.Orientation.Vertical, self.splitter
-        )
+        rightPane = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical, self.splitter)
 
         entriesPane = QtWidgets.QWidget(rightPane)
         entriesLayout = QtWidgets.QVBoxLayout(entriesPane)
@@ -789,6 +771,7 @@ class TypesPane(QtWidgets.QWidget):
         )
         self.entriesView.setAlternatingRowColors(True)
         entriesHeader = self.entriesView.header()
+        assert entriesHeader is not None  # a QTreeView always has a header
         entriesHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         for column, width in (
             (1, ENTRIES_UNIT_WIDTH),
@@ -860,6 +843,7 @@ class TypesPane(QtWidgets.QWidget):
         )
         self.instancesView.setAlternatingRowColors(True)
         instancesHeader = self.instancesView.header()
+        assert instancesHeader is not None  # a QTreeView always has a header
         instancesHeader.setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeMode.Stretch
         )
@@ -911,7 +895,9 @@ class TypesPane(QtWidgets.QWidget):
         self.nestedAtEdit.returnPressed.connect(self.addNestedButton.click)
         self.addInstanceButton.clicked.connect(self._request_add_instance)
         self.newInstanceEdit.returnPressed.connect(self.addInstanceButton.click)
-        self.typeList.selectionModel().currentChanged.connect(self._on_type_selected)
+        typeSelection = self.typeList.selectionModel()
+        assert typeSelection is not None  # set together with the model
+        typeSelection.currentChanged.connect(self._on_type_selected)
 
     # ------------------------------------------------------------------
     # rebuilds (plan task 5.5, readings 2-4, 7-8)
@@ -964,9 +950,7 @@ class TypesPane(QtWidgets.QWidget):
             colours = palette.colours(name)
             if colours is not None:
                 for item in (name_item, instances_item, params_item):
-                    item.setData(
-                        colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole
-                    )
+                    item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
             if name == self.selectedType:
                 current_row = row
         self._building = True
@@ -1017,6 +1001,7 @@ class TypesPane(QtWidgets.QWidget):
         rebuild does not leave the old ones behind."""
         if parent is None:
             parent = self.entriesModel.invisibleRootItem()
+            assert parent is not None  # a model always has its root item
         for row in range(parent.rowCount()):
             for column in range(parent.columnCount()):
                 child = parent.child(row, column)
@@ -1031,9 +1016,7 @@ class TypesPane(QtWidgets.QWidget):
             if first is not None and first.hasChildren():
                 self._clear_index_widgets(first)
 
-    def _entry_tint_type(
-        self, rows: List[EntryRow], index: int, selected: str
-    ) -> str:
+    def _entry_tint_type(self, rows: List[EntryRow], index: int, selected: str) -> str:
         """The Type whose tint an entries row shows: an entry row its
         defining Type, a Nested Type row the Type required there, and a
         structural submodule row the defining Type of the first entry
@@ -1044,7 +1027,7 @@ class TypesPane(QtWidgets.QWidget):
             return row.from_type or selected
         if row.nested_type is not None:
             return row.nested_type
-        for later in rows[index + 1:]:
+        for later in rows[index + 1 :]:
             if later.kind == "entry":
                 return later.from_type or selected
         return selected
@@ -1068,6 +1051,7 @@ class TypesPane(QtWidgets.QWidget):
                 if "." in path
                 else self.entriesModel.invisibleRootItem()
             )
+            assert parent_item is not None  # a model always has its root item
             colours = palette.colours(self._entry_tint_type(rows, index, selected))
             name_item = QtGui.QStandardItem(path.split(".")[-1])
             unit_item = QtGui.QStandardItem("" if row.kind == "submodule" else row.unit)
@@ -1077,9 +1061,7 @@ class TypesPane(QtWidgets.QWidget):
             items_by_path[path] = name_item
             if colours is not None:
                 for item in (name_item, unit_item, lock_item, default_item):
-                    item.setData(
-                        colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole
-                    )
+                    item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
             entry: Dict[str, Any] = {
                 "editor": None,
                 "set": None,
@@ -1096,9 +1078,7 @@ class TypesPane(QtWidgets.QWidget):
                     selected, blueprint, row, lock_item, default_item, entry
                 )
             else:
-                self._build_entry_row(
-                    selected, row, lock_item, default_item, entry
-                )
+                self._build_entry_row(selected, row, lock_item, default_item, entry)
         self.entriesView.expandAll()
 
     def _build_submodule_row(
@@ -1116,7 +1096,9 @@ class TypesPane(QtWidgets.QWidget):
             # only the selected Type's OWN Nested Types are removable
             nested = blueprint.nested[row.path]
             remove = QtWidgets.QPushButton(
-                QtGui.QIcon(":/icons/delete.svg"), "", parent=self.entriesView.viewport()
+                QtGui.QIcon(":/icons/delete.svg"),
+                "",
+                parent=self.entriesView.viewport(),
             )
             remove.setStyleSheet("QPushButton { background-color: salmon }")
             remove.setToolTip(
@@ -1124,8 +1106,8 @@ class TypesPane(QtWidgets.QWidget):
             )
             keepSmallHorizontally(remove)
             remove.pressed.connect(
-                lambda type_name=selected, submodule=row.path: self.removeNestedRequested.emit(
-                    type_name, submodule
+                lambda type_name=selected, submodule=row.path: (
+                    self.removeNestedRequested.emit(type_name, submodule)
                 )
             )
             self.entriesView.setIndexWidget(
@@ -1188,8 +1170,8 @@ class TypesPane(QtWidgets.QWidget):
             )
             keepSmallHorizontally(retarget)
             retarget.pressed.connect(
-                lambda type_name=selected, path=row.path: self.retargetTypeLockRequested.emit(
-                    type_name, path
+                lambda type_name=selected, path=row.path: (
+                    self.retargetTypeLockRequested.emit(type_name, path)
                 )
             )
             lock_layout.addWidget(retarget)
@@ -1217,9 +1199,7 @@ class TypesPane(QtWidgets.QWidget):
         )
         keepSmallHorizontally(set_button)
         set_button.pressed.connect(
-            lambda: self.setDefaultRequested.emit(
-                selected, row.path, editor.text()
-            )
+            lambda: self.setDefaultRequested.emit(selected, row.path, editor.text())
         )
         editor.returnPressed.connect(set_button.click)
         remove = QtWidgets.QPushButton(
@@ -1263,9 +1243,7 @@ class TypesPane(QtWidgets.QWidget):
         )
         layout.addWidget(default_label, 1)
         defined_by = QtWidgets.QLabel(f"defined by {row.from_type}", parent=container)
-        defined_by.setToolTip(
-            f"defined by {row.from_type} — change the default there"
-        )
+        defined_by.setToolTip(f"defined by {row.from_type} — change the default there")
         layout.addWidget(defined_by)
         self.entriesView.setIndexWidget(
             self.entriesModel.indexFromItem(default_item), container
@@ -1285,9 +1263,7 @@ class TypesPane(QtWidgets.QWidget):
             return
         colours = palette.colours(selected)
         for instance in instances_of_type(selected, types, parameters):
-            count = sum(
-                1 for path in parameters if path.startswith(f"{instance}.")
-            )
+            count = sum(1 for path in parameters if path.startswith(f"{instance}."))
             also = [
                 type_name
                 for type_name in also_types(instance, types, parameters)
@@ -1295,25 +1271,19 @@ class TypesPane(QtWidgets.QWidget):
             ]
             name_item = QtGui.QStandardItem(instance)
             count_item = QtGui.QStandardItem(f"{count} parameters")
-            also_item = QtGui.QStandardItem(
-                f"also {', '.join(also)}" if also else ""
-            )
+            also_item = QtGui.QStandardItem(f"also {', '.join(also)}" if also else "")
             button_item = QtGui.QStandardItem()
             self.instancesModel.appendRow(
                 [name_item, count_item, also_item, button_item]
             )
             if colours is not None:
                 for item in (name_item, count_item, also_item, button_item):
-                    item.setData(
-                        colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole
-                    )
-            show = QtWidgets.QPushButton(
-                "Show", parent=self.instancesView.viewport()
-            )
+                    item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
+            show = QtWidgets.QPushButton("Show", parent=self.instancesView.viewport())
             show.setToolTip("show in the parameter tree")
             show.pressed.connect(
-                lambda type_name=selected, node=instance: self.showInstanceRequested.emit(
-                    type_name, node
+                lambda type_name=selected, node=instance: (
+                    self.showInstanceRequested.emit(type_name, node)
                 )
             )
             self.instancesView.setIndexWidget(

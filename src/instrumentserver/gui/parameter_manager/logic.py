@@ -35,9 +35,7 @@ GUTTER_WIDTH = 12
 
 #: Data role under which a row's stack of Type names is stored on its
 #: gutter item; :class:`.GutterDelegate` reads it to draw the bands.
-GUTTER_ROLE = cast(
-    "QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 1
-)
+GUTTER_ROLE = cast("QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 1)
 
 #: The mock's TINTS for a light theme: ``tint`` and ``tintAlt`` are the
 #: row background of a claimed row (``tintAlt`` for every other sibling
@@ -339,7 +337,7 @@ def relative_path(full: str, instrument_name: str) -> str:
     stores the full dotted path, while model item names and every string
     the GUI shows the user are relative to the Parameter Manager."""
     prefix = f"{instrument_name}."
-    return full[len(prefix):] if full.startswith(prefix) else full
+    return full[len(prefix) :] if full.startswith(prefix) else full
 
 
 def lock_column_text(
@@ -430,7 +428,7 @@ def rank_lock_targets(
     if arm_rel is None:
         follower_claim = claims.get(follower)
         arm_rel = (
-            follower[len(follower_claim.instance) + 1:]
+            follower[len(follower_claim.instance) + 1 :]
             if follower_claim is not None
             else None
         )
@@ -439,7 +437,7 @@ def rank_lock_targets(
         claim = claims.get(candidate)
         if claim is None:
             return None
-        return candidate[len(claim.instance) + 1:]
+        return candidate[len(claim.instance) + 1 :]
 
     ranked: List[Tuple[int, str]] = []
     for candidate in candidates:
@@ -518,9 +516,7 @@ def build_lock_rows(
 
     def target_of(follower: str) -> Optional[str]:
         lock = locks.get(follower)
-        return (
-            None if lock is None else relative_path(lock.target, instrument_name)
-        )
+        return None if lock is None else relative_path(lock.target, instrument_name)
 
     targets: List[str] = []
     for follower in locks:
@@ -541,9 +537,7 @@ def build_lock_rows(
         return found
 
     def followers(path: str) -> List[str]:
-        return [
-            follower for follower in locks if target_of(follower) == path
-        ]
+        return [follower for follower in locks if target_of(follower) == path]
 
     rows: List[LockRow] = []
     seen: set = set()
@@ -630,7 +624,7 @@ def _nested_type_at(
     maps down the segments, the way :func:`_nested_claim_prefixes` walks.
     ``None`` when no Nested Type is required there — a structural row —
     or when a nested Type of the chain is missing from ``types``."""
-    current = blueprint
+    current: Optional[PMTypeBluePrint] = blueprint
     for segment in submodule.split("."):
         if current is None:
             return None
@@ -699,7 +693,7 @@ def type_entry_rows(
                 target = relative_path(target, instrument_name)
         else:
             at = at_by_path.get(path, "")
-            relative = path[len(at) + 1:] if at else path
+            relative = path[len(at) + 1 :] if at else path
             defining = types.get(from_type)
             default = (
                 defining.parameters.get(relative, {}).get("default")

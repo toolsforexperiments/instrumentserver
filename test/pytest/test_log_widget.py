@@ -39,9 +39,7 @@ def test_a_record_from_another_thread_reaches_the_widget(qtbot):
         )
         thread.start()
         thread.join()
-        qtbot.waitUntil(
-            lambda: "from a thread" in widget.handler.widget.toPlainText()
-        )
+        qtbot.waitUntil(lambda: "from a thread" in widget.handler.widget.toPlainText())
     finally:
         logging.getLogger(LOGGER).removeHandler(widget.handler)
 

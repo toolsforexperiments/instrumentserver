@@ -80,10 +80,10 @@ from instrumentserver.gui.parameter_manager.logic import (
     is_dark_theme,
     lock_column_text,
     lock_root,
-    tint_colours,
     parse_default_text,
     rank_lock_targets,
     relative_path,
+    tint_colours,
     type_entry_rows,
 )
 from instrumentserver.gui.parameter_manager.panels import (
@@ -195,15 +195,11 @@ def _wait_until_broadcasts_arrive(qtbot, gui, second_pm):
         name = f"gui_probe_type_{attempt}"
         second_pm.add_type(name)
         try:
-            qtbot.waitUntil(
-                lambda: name in gui.state.types, timeout=BROADCAST_TIMEOUT
-            )
+            qtbot.waitUntil(lambda: name in gui.state.types, timeout=BROADCAST_TIMEOUT)
         except Exception:
             continue  # the probe Broadcast was lost to the slow joiner
         second_pm.remove_type(name)
-        qtbot.waitUntil(
-            lambda: name not in gui.state.types, timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: name not in gui.state.types, timeout=BROADCAST_TIMEOUT)
         return
     raise AssertionError(
         "the GUI's listener received no Broadcast; cannot test live updates"
@@ -362,8 +358,10 @@ def test_state_on_construction_holds_types_and_locks_created_before(
             timeout=BROADCAST_TIMEOUT,
         )
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("cq02.x")
-            == PMLockBluePrint(target=f"{PM_NAME}.cq01.x", locked=True),
+            lambda: (
+                gui.state.locks.get("cq02.x")
+                == PMLockBluePrint(target=f"{PM_NAME}.cq01.x", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.state.types["cqubit"].parameters["IF"] == {
@@ -390,15 +388,19 @@ def test_lock_broadcasts_from_a_second_client_update_the_state(
 
         second_pm.lock("q02.x", "q01.x")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q02.x")
-            == PMLockBluePrint(target=f"{PM_NAME}.q01.x", locked=True),
+            lambda: (
+                gui.state.locks.get("q02.x")
+                == PMLockBluePrint(target=f"{PM_NAME}.q01.x", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
         second_pm.unlock("q02.x")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q02.x")
-            == PMLockBluePrint(target=f"{PM_NAME}.q01.x", locked=False),
+            lambda: (
+                gui.state.locks.get("q02.x")
+                == PMLockBluePrint(target=f"{PM_NAME}.q01.x", locked=False)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -430,8 +432,10 @@ def test_type_broadcasts_from_a_second_client_update_the_state(
 
         second_pm.add_type_parameter("qubit", "IF", unit="Hz")
         qtbot.waitUntil(
-            lambda: gui.state.types.get("qubit") is not None
-            and "IF" in gui.state.types["qubit"].parameters,
+            lambda: (
+                gui.state.types.get("qubit") is not None
+                and "IF" in gui.state.types["qubit"].parameters
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.state.types["qubit"].parameters["IF"] == {
@@ -493,15 +497,19 @@ def test_type_lock_from_a_second_client_updates_types_and_locks(
         second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
 
         qtbot.waitUntil(
-            lambda: gui.state.types.get("dqubit") is not None
-            and gui.state.types["dqubit"].parameters["IF"]["target"]
-            == f"{PM_NAME}.tshared",
+            lambda: (
+                gui.state.types.get("dqubit") is not None
+                and gui.state.types["dqubit"].parameters["IF"]["target"]
+                == f"{PM_NAME}.tshared"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         for follower in ("dq01.IF", "dq02.IF"):
             qtbot.waitUntil(
-                lambda follower=follower: gui.state.locks.get(follower)
-                == PMLockBluePrint(target=f"{PM_NAME}.tshared", locked=True),
+                lambda follower=follower: (
+                    gui.state.locks.get(follower)
+                    == PMLockBluePrint(target=f"{PM_NAME}.tshared", locked=True)
+                ),
                 timeout=BROADCAST_TIMEOUT,
             )
     finally:
@@ -527,9 +535,7 @@ def test_a_second_clients_set_reaches_the_tree_widget(
         assert line_edit.text() == "1.0"
 
         second_pm.sq01.x.set(42)
-        qtbot.waitUntil(
-            lambda: line_edit.text() == "42", timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: line_edit.text() == "42", timeout=BROADCAST_TIMEOUT)
     finally:
         gui.model.stopListener()
 
@@ -565,7 +571,9 @@ def test_refresh_all_refills_the_state_from_the_server(
 # ---------------------------------------------------------------------------
 
 
-def _type_blueprint(name, entries, nested=None, registry=None, defaults=None, targets=None):
+def _type_blueprint(
+    name, entries, nested=None, registry=None, defaults=None, targets=None
+):
     """A ``PMTypeBluePrint`` whose effective set is expanded the way
     ``params.py`` expands it: the Type's own entries carry itself as
     ``from_type``, and every Nested Type's effective set is mounted under
@@ -661,7 +669,10 @@ def test_compute_claims_innermost_nested_type_wins():
     the ``qubit`` behind it in the stack."""
     readout = _type_blueprint("readout", {"bw": "Hz"})
     qubit = _type_blueprint(
-        "qubit", {"IF": "Hz"}, nested={"readout": "readout"}, registry={"readout": readout}
+        "qubit",
+        {"IF": "Hz"},
+        nested={"readout": "readout"},
+        registry={"readout": readout},
     )
     claims = compute_claims(
         {"readout": readout, "qubit": qubit},
@@ -690,7 +701,10 @@ def test_compute_claims_of_a_nested_type_nested_two_levels_deep():
         registry={"pulse_window": pulse_window},
     )
     qubit = _type_blueprint(
-        "qubit", {"IF": "Hz"}, nested={"readout": "readout"}, registry={"readout": readout}
+        "qubit",
+        {"IF": "Hz"},
+        nested={"readout": "readout"},
+        registry={"readout": readout},
     )
     claims = compute_claims(
         {"pulse_window": pulse_window, "readout": readout, "qubit": qubit},
@@ -801,9 +815,7 @@ def test_the_parameters_view_moves_into_a_tab_widget(qtbot, pm, server_port):
         header = gui.view.header()
         assert header.visualIndex(GUTTER_COLUMN) == 0
         assert header.sectionSize(GUTTER_COLUMN) == GUTTER_WIDTH
-        assert isinstance(
-            gui.view.itemDelegateForColumn(GUTTER_COLUMN), GutterDelegate
-        )
+        assert isinstance(gui.view.itemDelegateForColumn(GUTTER_COLUMN), GutterDelegate)
         assert gui.view.gutterDelegate.typePalette is gui.typePalette
         assert gui.view.treePosition() == 0
         # the Lock column sits between the unit and the delegate column
@@ -869,11 +881,13 @@ def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_por
         second_pm.add_type_parameter("qubit", "IF", unit="Hz")
 
         qtbot.waitUntil(
-            lambda: _type_tint(gui, "qubit") is not None
-            and _row_items(gui, "q01.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in _type_tint(gui, "qubit"),
+            lambda: (
+                _type_tint(gui, "qubit") is not None
+                and _row_items(gui, "q01.IF")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in _type_tint(gui, "qubit")
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         tint = _type_tint(gui, "qubit")
@@ -891,10 +905,12 @@ def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_por
         # q01 already carries readout.bw: no creation, and the row tints too
         second_pm.add_type_parameter("qubit", "readout.bw", unit="Hz")
         qtbot.waitUntil(
-            lambda: _row_items(gui, "q01.readout.bw")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in tint,
+            lambda: (
+                _row_items(gui, "q01.readout.bw")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in tint
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         for item in _row_items(gui, "q01.readout.bw"):
@@ -906,22 +922,24 @@ def test_tints_follow_a_second_clients_type(qtbot, pm, second_client, server_por
         second_pm.remove_type_parameter("qubit", "IF")
         second_pm.remove_type_parameter("qubit", "readout.bw")
         qtbot.waitUntil(
-            lambda: _row_items(gui, "q01.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            is None
-            and _row_items(gui, "q01.IF")[3].data(GUTTER_ROLE) == [],
+            lambda: (
+                _row_items(gui, "q01.IF")[0].data(QtCore.Qt.ItemDataRole.BackgroundRole)
+                is None
+                and _row_items(gui, "q01.IF")[3].data(GUTTER_ROLE) == []
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
         # removing the Type clears the last tint and frees the palette slot
         second_pm.remove_type("qubit")
         qtbot.waitUntil(
-            lambda: _row_items(gui, "q01.readout.bw")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            is None
-            and "qubit" not in gui.typePalette.slots,
+            lambda: (
+                _row_items(gui, "q01.readout.bw")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                is None
+                and "qubit" not in gui.typePalette.slots
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -945,9 +963,7 @@ def test_refresh_all_recomputes_tints_after_a_model_reload(
         second_pm.add_type("equbit")
         second_pm.add_type_parameter("equbit", "IF", unit="Hz")
         assert (
-            _row_items(gui, "eq01.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
+            _row_items(gui, "eq01.IF")[0].data(QtCore.Qt.ItemDataRole.BackgroundRole)
             is None
         )
 
@@ -963,9 +979,7 @@ def test_refresh_all_recomputes_tints_after_a_model_reload(
         gui.model.stopListener()
 
 
-def test_tints_follow_a_switch_to_a_dark_theme(
-    qtbot, pm, second_client, server_port
-):
+def test_tints_follow_a_switch_to_a_dark_theme(qtbot, pm, second_client, server_port):
     """Switching the application to a dark palette re-tints the claimed
     rows with the dark palette entry, and switching back restores the
     light one."""
@@ -999,20 +1013,24 @@ def test_tints_follow_a_switch_to_a_dark_theme(
         app.setPalette(dark)
         dark_entry = TINT_COLOURS_DARK[slot]
         qtbot.waitUntil(
-            lambda: _row_items(gui, "dq01.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in (dark_entry["tint"], dark_entry["tintAlt"]),
+            lambda: (
+                _row_items(gui, "dq01.IF")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in (dark_entry["tint"], dark_entry["tintAlt"])
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.typePalette.bar_colour("dqubit") == dark_entry["bar"]
 
         app.setPalette(light)
         qtbot.waitUntil(
-            lambda: _row_items(gui, "dq01.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in (light_entry["tint"], light_entry["tintAlt"]),
+            lambda: (
+                _row_items(gui, "dq01.IF")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in (light_entry["tint"], light_entry["tintAlt"])
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -1045,11 +1063,13 @@ def test_a_deletion_broadcast_recomputes_the_tints(
         second_pm.add_type_parameter("qubit", "bw", unit="Hz")
 
         qtbot.waitUntil(
-            lambda: _type_tint(gui, "qubit") is not None
-            and _row_items(gui, "q01.bw")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in _type_tint(gui, "qubit"),
+            lambda: (
+                _type_tint(gui, "qubit") is not None
+                and _row_items(gui, "q01.bw")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in _type_tint(gui, "qubit")
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         tint = _type_tint(gui, "qubit")
@@ -1063,8 +1083,7 @@ def test_a_deletion_broadcast_recomputes_the_tints(
         def _q01_bw_gone_and_q01_untinted():
             matches = gui.model.findItems(
                 "q01.bw",
-                QtCore.Qt.MatchFlag.MatchExactly
-                | QtCore.Qt.MatchFlag.MatchRecursive,
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
                 0,
             )
             if matches:
@@ -1078,9 +1097,7 @@ def test_a_deletion_broadcast_recomputes_the_tints(
                 and items[3].data(GUTTER_ROLE) == []
             )
 
-        qtbot.waitUntil(
-            _q01_bw_gone_and_q01_untinted, timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(_q01_bw_gone_and_q01_untinted, timeout=BROADCAST_TIMEOUT)
         for item in _row_items(gui, "q01"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) is None
     finally:
@@ -1181,9 +1198,7 @@ def test_rank_lock_targets_orders_like_the_mock():
 def test_rank_lock_targets_without_a_claim_is_alphabetical():
     """A Follower claimed by no Type has no relative path to prefer, so
     every candidate is rank 2 and sorts alphabetically."""
-    ranked = rank_lock_targets(
-        "q01.IF", ["zz.x", "aa.x", "q01.IF"], {}
-    )
+    ranked = rank_lock_targets("q01.IF", ["zz.x", "aa.x", "q01.IF"], {})
     assert ranked == ["aa.x", "zz.x"]
 
 
@@ -1326,8 +1341,10 @@ def test_arm_via_context_menu_pick_a_row_and_toggle(
         # clicking the q02.IF row picks it as the Target
         _click_row(qtbot, gui, "q02.IF")
         qtbot.waitUntil(
-            lambda: pm.get_lock("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            lambda: (
+                pm.get_lock("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.armStrip.isHidden()
@@ -1419,8 +1436,10 @@ def test_a_cycle_attempt_shows_the_error_and_stays_armed(
 
         pm.lock("q01.IF", "q02.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            lambda: (
+                gui.state.locks.get("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -1476,10 +1495,12 @@ def test_setting_the_target_from_a_second_client_repaints_the_followers(
         pm.lock("q01.IF", "q02.IF")
         pm.lock("q03.IF", "q01.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
-            and gui.state.locks.get("q03.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=True),
+            lambda: (
+                gui.state.locks.get("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+                and gui.state.locks.get("q03.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q01.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -1616,8 +1637,7 @@ def test_a_filter_cycle_re_applies_the_lock_state(
         def _q01_if_is_mapped(mapped: bool):
             matches = gui.model.findItems(
                 "q01.IF",
-                QtCore.Qt.MatchFlag.MatchExactly
-                | QtCore.Qt.MatchFlag.MatchRecursive,
+                QtCore.Qt.MatchFlag.MatchExactly | QtCore.Qt.MatchFlag.MatchRecursive,
                 0,
             )
             proxy_index = gui.proxyModel.mapFromSource(
@@ -1633,8 +1653,10 @@ def test_a_filter_cycle_re_applies_the_lock_state(
         gui.lineEdit.setText("")
         widget = gui.view.delegate.parameters["q01.IF"]
         qtbot.waitUntil(
-            lambda: widget.lockButton.property("locked") is True
-            and not widget.lockButton.isHidden(),
+            lambda: (
+                widget.lockButton.property("locked") is True
+                and not widget.lockButton.isHidden()
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert not widget.paramWidget.isEnabled()
@@ -1677,9 +1699,7 @@ def test_build_lock_rows_walks_a_chain_nested_and_once():
     assert [row.path for row in rows] == ["q01.IF"]
     root = rows[0]
     assert [child.path for child in root.children] == ["q02.IF"]
-    assert [
-        grandchild.path for grandchild in root.children[0].children
-    ] == ["q03.IF"]
+    assert [grandchild.path for grandchild in root.children[0].children] == ["q03.IF"]
 
 
 def test_build_lock_rows_sorts_the_type_lock_target_first():
@@ -1737,9 +1757,7 @@ def _panel_row_items(gui, path):
             if item is None:
                 continue
             if item.data(LOCK_ROW_ROLE) == path:
-                matches.append(
-                    [parent.child(row, column) for column in range(3)]
-                )
+                matches.append([parent.child(row, column) for column in range(3)])
             walk(item)
 
     walk(gui.locksPanel.model.invisibleRootItem())
@@ -1796,7 +1814,11 @@ def _drag_header_edge(header, column, dx):
     for kind, x, buttons in [
         (QtCore.QEvent.Type.MouseButtonPress, edge, left),
         (QtCore.QEvent.Type.MouseMove, edge + dx, left),
-        (QtCore.QEvent.Type.MouseButtonRelease, edge + dx, QtCore.Qt.MouseButton.NoButton),
+        (
+            QtCore.QEvent.Type.MouseButtonRelease,
+            edge + dx,
+            QtCore.Qt.MouseButton.NoButton,
+        ),
     ]:
         event = QtGui.QMouseEvent(
             kind,
@@ -1808,9 +1830,7 @@ def _drag_header_edge(header, column, dx):
         QtWidgets.QApplication.sendEvent(header.viewport(), event)
 
 
-def test_the_panel_columns_can_be_resized_and_the_value_fits(
-    qtbot, pm, server_port
-):
+def test_the_panel_columns_can_be_resized_and_the_value_fits(qtbot, pm, server_port):
     """The Locks panel's columns used to be fixed: no header edge could be
     dragged, and the Target's value editor was squeezed until its number
     was unreadable. Dragging the locks column's edge moves width between
@@ -1977,9 +1997,11 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
         # parameter-creation Broadcast hits the model's creation branch
         second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
         qtbot.waitUntil(
-            lambda: gui.state.types.get("dqubit") is not None
-            and gui.state.types["dqubit"].parameters["IF"]["target"]
-            == f"{PM_NAME}.tshared",
+            lambda: (
+                gui.state.types.get("dqubit") is not None
+                and gui.state.types["dqubit"].parameters["IF"]["target"]
+                == f"{PM_NAME}.tshared"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -2009,8 +2031,10 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
         second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
         second_pm.unlock("dq01.IF")
         qtbot.waitUntil(
-            lambda: pm.get_lock("dq01.IF") is not None
-            and pm.get_lock("dq01.IF").locked is False,
+            lambda: (
+                pm.get_lock("dq01.IF") is not None
+                and pm.get_lock("dq01.IF").locked is False
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         qtbot.waitUntil(
@@ -2031,15 +2055,17 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
         # ... and "lock all" locks it again through the stored Target
         gui.locksPanel.rowWidgets["tshared"]["lockAll"].click()
         qtbot.waitUntil(
-            lambda: pm.get_lock("dq01.IF") is not None
-            and pm.get_lock("dq01.IF").locked,
+            lambda: (
+                pm.get_lock("dq01.IF") is not None and pm.get_lock("dq01.IF").locked
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         # "lock all" passes the entry's stored Target: a call without it
         # would re-point the rule to the Globals default (D17)
         qtbot.waitUntil(
-            lambda: pm.get_type("dqubit").parameters["IF"]["target"]
-            == f"{PM_NAME}.tshared",
+            lambda: (
+                pm.get_type("dqubit").parameters["IF"]["target"] == f"{PM_NAME}.tshared"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.get_lock("dq01.IF").target == f"{PM_NAME}.tshared"
@@ -2051,7 +2077,7 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
 def test_the_lock_all_note_names_the_skipped_followers(
     qtbot, pm, second_client, server_port
 ):
-    """"lock all" names the Instance parameters it skips on the note
+    """ "lock all" names the Instance parameters it skips on the note
     label and leaves them locked to their own Target (D17): one whose
     Lock the second Client re-targeted keeps that Target."""
     second_pm = _second_parameter_manager(second_client)
@@ -2072,9 +2098,11 @@ def test_the_lock_all_note_names_the_skipped_followers(
         # parameter-creation Broadcast hits the model's creation branch
         second_pm.lock_type_parameter("dqubit", "IF", target="tshared")
         qtbot.waitUntil(
-            lambda: gui.state.types.get("dqubit") is not None
-            and gui.state.types["dqubit"].parameters["IF"]["target"]
-            == f"{PM_NAME}.tshared",
+            lambda: (
+                gui.state.types.get("dqubit") is not None
+                and gui.state.types["dqubit"].parameters["IF"]["target"]
+                == f"{PM_NAME}.tshared"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -2089,8 +2117,10 @@ def test_the_lock_all_note_names_the_skipped_followers(
         # buttons has run before the click
         second_pm.lock("dq01.IF", "talt")
         qtbot.waitUntil(
-            lambda: pm.get_lock("dq01.IF") is not None
-            and pm.get_lock("dq01.IF").target == f"{PM_NAME}.talt",
+            lambda: (
+                pm.get_lock("dq01.IF") is not None
+                and pm.get_lock("dq01.IF").target == f"{PM_NAME}.talt"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         qtbot.waitUntil(
@@ -2120,9 +2150,7 @@ def test_the_lock_all_note_names_the_skipped_followers(
         gui.model.stopListener()
 
 
-def test_the_panel_value_editor_sets_the_target(
-    qtbot, pm, second_client, server_port
-):
+def test_the_panel_value_editor_sets_the_target(qtbot, pm, second_client, server_port):
     """Typing a value into the root Target's editor and pressing its set
     button sets the parameter on the Server, and the tree's Follower row
     repaints to it (5.3's repaint path). A second Client's set repaints
@@ -2139,8 +2167,10 @@ def test_the_panel_value_editor_sets_the_target(
 
         second_pm.lock("q01.IF", "q02.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            lambda: (
+                gui.state.locks.get("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -2154,9 +2184,7 @@ def test_the_panel_value_editor_sets_the_target(
 
         editor.paramWidget.input.setText("11")
         editor.setButton.click()
-        qtbot.waitUntil(
-            lambda: pm.q02.IF.get() == 11, timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: pm.q02.IF.get() == 11, timeout=BROADCAST_TIMEOUT)
         tree_widget = gui.view.delegate.parameters["q01.IF"]
         qtbot.waitUntil(
             lambda: tree_widget._getMethod() == 11, timeout=BROADCAST_TIMEOUT
@@ -2170,8 +2198,7 @@ def test_the_panel_value_editor_sets_the_target(
             lambda: (
                 gui.locksPanel.rowWidgets.get("q02.IF") is not None
                 and gui.locksPanel.rowWidgets["q02.IF"]["editor"] is not None
-                and gui.locksPanel.rowWidgets["q02.IF"]["editor"]._getMethod()
-                == 21
+                and gui.locksPanel.rowWidgets["q02.IF"]["editor"]._getMethod() == 21
             ),
             timeout=BROADCAST_TIMEOUT,
         )
@@ -2188,7 +2215,7 @@ def test_the_panel_value_editor_sets_the_target(
 
 
 def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_port):
-    """"Lock selection to…" shows the tree's current parameter in the
+    """ "Lock selection to…" shows the tree's current parameter in the
     selected label and arms the pick for it; on a submodule row it says so
     on the note label and arms nothing."""
     second_pm = _second_parameter_manager(second_client)
@@ -2223,8 +2250,7 @@ def test_lock_selection_to_arms_the_tree_row(qtbot, pm, second_client, server_po
         )
         gui.locksPanel.lockSelectionButton.click()
         assert (
-            "Select a parameter in the tree first."
-            in gui.locksPanel.noteLabel.text()
+            "Select a parameter in the tree first." in gui.locksPanel.noteLabel.text()
         )
         assert gui.locksController.armed_follower is None
         assert gui.armStrip.isHidden()
@@ -2292,7 +2318,6 @@ def test_a_panel_action_error_shows_on_the_note_label(qtbot, pm, server_port):
         gui.model.stopListener()
 
 
-
 def test_an_open_panel_asks_the_server_nothing_while_idle(
     qtbot, pm, second_client, server_port
 ):
@@ -2332,8 +2357,7 @@ def test_an_open_panel_asks_the_server_nothing_while_idle(
             second_pm.update()  # it was made before the parameters existed
             second_pm.q02.IF(7.5)
             qtbot.waitUntil(
-                lambda: gui.locksPanel.rowWidgets["q03.IF"]["label"].text()
-                == "7.5",
+                lambda: gui.locksPanel.rowWidgets["q03.IF"]["label"].text() == "7.5",
                 timeout=BROADCAST_TIMEOUT,
             )
             assert gui.locksPanel.rowWidgets["q01.IF"]["label"].text() == "7.5"
@@ -2344,9 +2368,7 @@ def test_an_open_panel_asks_the_server_nothing_while_idle(
         gui.model.stopListener()
 
 
-def test_filtering_away_a_locked_row_and_back_does_not_crash(
-    qtbot, pm, server_port
-):
+def test_filtering_away_a_locked_row_and_back_does_not_crash(qtbot, pm, server_port):
     """Qt deletes a row's editor when the filter hides the row, and every
     filter change re-applies the Locks to the rows' editors. The delegate
     used to keep the deleted editor, so typing a filter that hid a locked
@@ -2373,6 +2395,7 @@ def test_filtering_away_a_locked_row_and_back_does_not_crash(
         assert widget.read_only is True
     finally:
         gui.model.stopListener()
+
 
 # ---------------------------------------------------------------------------
 # plan task 5.5: the Types tab (and the parameter-creation branch fix)
@@ -2448,12 +2471,12 @@ def _create_type_with_instance(qtbot, gui, pm, type_name="qubit", instance="q10"
     gui.tabs.setCurrentIndex(1)
     gui.typesPane.newTypeEdit.setText(type_name)
     gui.typesPane.addTypeButton.click()
+    qtbot.waitUntil(lambda: type_name in pm.list_types(), timeout=BROADCAST_TIMEOUT)
     qtbot.waitUntil(
-        lambda: type_name in pm.list_types(), timeout=BROADCAST_TIMEOUT
-    )
-    qtbot.waitUntil(
-        lambda: gui.typesPane.selectedType == type_name
-        and _type_list_row(gui, type_name) is not None,
+        lambda: (
+            gui.typesPane.selectedType == type_name
+            and _type_list_row(gui, type_name) is not None
+        ),
         timeout=BROADCAST_TIMEOUT,
     )
     gui.typesPane.entryNameEdit.setText("IF")
@@ -2469,9 +2492,7 @@ def _create_type_with_instance(qtbot, gui, pm, type_name="qubit", instance="q10"
     )
     gui.typesPane.newInstanceEdit.setText(instance)
     gui.typesPane.addInstanceButton.click()
-    qtbot.waitUntil(
-        lambda: pm.has_param(f"{instance}.IF"), timeout=BROADCAST_TIMEOUT
-    )
+    qtbot.waitUntil(lambda: pm.has_param(f"{instance}.IF"), timeout=BROADCAST_TIMEOUT)
     qtbot.waitUntil(
         lambda: _instance_row_items(gui, instance) is not None,
         timeout=BROADCAST_TIMEOUT,
@@ -2492,9 +2513,7 @@ def test_type_entry_rows_build_the_segment_sorted_tree():
         defaults={"IF": 1.0},
         targets={"IF": f"{PM_NAME}._globals.qubit.IF"},
     )
-    rows = type_entry_rows(
-        "qubit", {"readout": readout, "qubit": qubit}, PM_NAME
-    )
+    rows = type_entry_rows("qubit", {"readout": readout, "qubit": qubit}, PM_NAME)
     assert [row.path for row in rows] == ["IF", "readout", "readout.bw"]
     assert rows[0].kind == "entry" and rows[0].own
     assert rows[0].from_type == "qubit"
@@ -2595,9 +2614,9 @@ def test_instances_of_type_with_a_nested_type():
     parameters = {"q10.IF": "Hz", "q10.readout.bw": "Hz"}
     assert instances_of_type("qubit", types, parameters) == ["q10"]
     # the nested entry's unit is off: no Instance
-    assert instances_of_type(
-        "qubit", types, {"q10.IF": "Hz", "q10.readout.bw": "V"}
-    ) == []
+    assert (
+        instances_of_type("qubit", types, {"q10.IF": "Hz", "q10.readout.bw": "V"}) == []
+    )
     # the nested entry is missing: no Instance
     assert instances_of_type("qubit", types, {"q10.IF": "Hz"}) == []
 
@@ -2657,8 +2676,9 @@ def test_a_creation_from_a_second_client_under_an_existing_submodule_appears(
 
         second_pm.add_parameter("cr01.y", initial_value=2.0, unit="Hz")
         qtbot.waitUntil(
-            lambda: _row_exists(gui, "cr01.y")
-            and "cr01.y" in gui.view.delegate.parameters,
+            lambda: (
+                _row_exists(gui, "cr01.y") and "cr01.y" in gui.view.delegate.parameters
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -2679,9 +2699,11 @@ def test_a_creation_from_a_second_client_in_a_new_submodule_appears(
 
         second_pm.add_parameter("crnew.z", initial_value=3.0, unit="s")
         qtbot.waitUntil(
-            lambda: _row_exists(gui, "crnew")
-            and _row_exists(gui, "crnew.z")
-            and "crnew.z" in gui.view.delegate.parameters,
+            lambda: (
+                _row_exists(gui, "crnew")
+                and _row_exists(gui, "crnew.z")
+                and "crnew.z" in gui.view.delegate.parameters
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -2710,22 +2732,26 @@ def test_an_add_instance_from_a_second_client_appears_and_tints(
 
         second_pm.add_instance("insttype", "instq")
         qtbot.waitUntil(
-            lambda: _row_exists(gui, "instq.ix")
-            and _row_exists(gui, "instq.iy")
-            and "instq.ix" in gui.view.delegate.parameters
-            and "instq.iy" in gui.view.delegate.parameters,
+            lambda: (
+                _row_exists(gui, "instq.ix")
+                and _row_exists(gui, "instq.iy")
+                and "instq.ix" in gui.view.delegate.parameters
+                and "instq.iy" in gui.view.delegate.parameters
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         qtbot.waitUntil(
-            lambda: _type_tint(gui, "insttype") is not None
-            and _row_items(gui, "instq.ix")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in _type_tint(gui, "insttype")
-            and _row_items(gui, "instq.iy")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in _type_tint(gui, "insttype"),
+            lambda: (
+                _type_tint(gui, "insttype") is not None
+                and _row_items(gui, "instq.ix")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in _type_tint(gui, "insttype")
+                and _row_items(gui, "instq.iy")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in _type_tint(gui, "insttype")
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -2754,19 +2780,23 @@ def test_an_add_instance_from_the_gui_proxy_appears(
 
         pm.add_instance("owntype", "ownq")
         qtbot.waitUntil(
-            lambda: _row_exists(gui, "ownq.ox")
-            and _row_exists(gui, "ownq.oy")
-            and "ownq.ox" in gui.view.delegate.parameters,
+            lambda: (
+                _row_exists(gui, "ownq.ox")
+                and _row_exists(gui, "ownq.oy")
+                and "ownq.ox" in gui.view.delegate.parameters
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.ownq.ox.get() == 1.0
         assert pm.ownq.oy.get() == 2.0
         qtbot.waitUntil(
-            lambda: _type_tint(gui, "owntype") is not None
-            and _row_items(gui, "ownq.ox")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in _type_tint(gui, "owntype"),
+            lambda: (
+                _type_tint(gui, "owntype") is not None
+                and _row_items(gui, "ownq.ox")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in _type_tint(gui, "owntype")
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -2799,12 +2829,12 @@ def test_the_types_tab_creates_a_type_and_an_instance(
         gui.tabs.setCurrentIndex(1)
         gui.typesPane.newTypeEdit.setText("qubit")
         gui.typesPane.addTypeButton.click()
+        qtbot.waitUntil(lambda: "qubit" in pm.list_types(), timeout=BROADCAST_TIMEOUT)
         qtbot.waitUntil(
-            lambda: "qubit" in pm.list_types(), timeout=BROADCAST_TIMEOUT
-        )
-        qtbot.waitUntil(
-            lambda: gui.typesPane.selectedType == "qubit"
-            and _type_list_row(gui, "qubit") is not None,
+            lambda: (
+                gui.typesPane.selectedType == "qubit"
+                and _type_list_row(gui, "qubit") is not None
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         # with the Type selected the strips are enabled and the labels
@@ -2824,8 +2854,7 @@ def test_the_types_tab_creates_a_type_and_an_instance(
             lambda: _state_type_has(gui, "qubit", "IF"), timeout=BROADCAST_TIMEOUT
         )
         qtbot.waitUntil(
-            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("editor")
-            is not None,
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("editor") is not None,
             timeout=BROADCAST_TIMEOUT,
         )
         # the type list counts: one effective parameter, no Instances yet
@@ -2852,9 +2881,7 @@ def test_the_types_tab_creates_a_type_and_an_instance(
         # create the Instance through the widgets
         gui.typesPane.newInstanceEdit.setText("q10")
         gui.typesPane.addInstanceButton.click()
-        qtbot.waitUntil(
-            lambda: pm.has_param("q10.IF"), timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: pm.has_param("q10.IF"), timeout=BROADCAST_TIMEOUT)
         qtbot.waitUntil(
             lambda: _instance_row_items(gui, "q10") is not None,
             timeout=BROADCAST_TIMEOUT,
@@ -2872,11 +2899,13 @@ def test_the_types_tab_creates_a_type_and_an_instance(
         assert _instance_row_items(gui, "q10")[1].text() == "1 parameters"
         # the Parameters tree shows the q10.IF row tinted with qubit's colour
         qtbot.waitUntil(
-            lambda: _type_tint(gui, "qubit") is not None
-            and _row_items(gui, "q10.IF")[0].data(
-                QtCore.Qt.ItemDataRole.BackgroundRole
-            )
-            in _type_tint(gui, "qubit"),
+            lambda: (
+                _type_tint(gui, "qubit") is not None
+                and _row_items(gui, "q10.IF")[0].data(
+                    QtCore.Qt.ItemDataRole.BackgroundRole
+                )
+                in _type_tint(gui, "qubit")
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -2884,9 +2913,11 @@ def test_the_types_tab_creates_a_type_and_an_instance(
         # effective parameter count follows it
         second_pm.add_type_parameter("qubit", "bw", default=2.0, unit="Hz")
         qtbot.waitUntil(
-            lambda: _entry_row_items(gui, "bw") is not None
-            and _row_exists(gui, "q10.bw")
-            and _type_list_row(gui, "qubit")[2].text() == "2",
+            lambda: (
+                _entry_row_items(gui, "bw") is not None
+                and _row_exists(gui, "q10.bw")
+                and _type_list_row(gui, "qubit")[2].text() == "2"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
     finally:
@@ -2925,8 +2956,7 @@ def test_the_types_tab_edits_entries_and_nested_types(
         gui.typesPane.entryUnitEdit.setText("Hz ")
         gui.typesPane.addEntryButton.click()
         qtbot.waitUntil(
-            lambda: gui.typesPane.entryWidgets.get("bw", {}).get("remove")
-            is not None,
+            lambda: gui.typesPane.entryWidgets.get("bw", {}).get("remove") is not None,
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.get_type("qubit").parameters["bw"]["default"] == 2.0
@@ -2976,8 +3006,10 @@ def test_the_types_tab_edits_entries_and_nested_types(
         # the entries pane shows the submodule row with its Nested Type
         # and the defined-by entry
         qtbot.waitUntil(
-            lambda: _entry_row_items(gui, "readout") is not None
-            and _entry_row_items(gui, "readout.bw") is not None,
+            lambda: (
+                _entry_row_items(gui, "readout") is not None
+                and _entry_row_items(gui, "readout.bw") is not None
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert _entry_row_items(gui, "readout")[2].text() == "type: readout"
@@ -3023,13 +3055,17 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         # toggle on: the Globals default Target is created and locked
         gui.typesPane.entryWidgets["IF"]["toggle"].click()
         qtbot.waitUntil(
-            lambda: _state_target() == globals_target
-            and pm.get_type("qubit").parameters["IF"]["target"] == globals_target,
+            lambda: (
+                _state_target() == globals_target
+                and pm.get_type("qubit").parameters["IF"]["target"] == globals_target
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         qtbot.waitUntil(
-            lambda: pm.get_lock("q10.IF")
-            == PMLockBluePrint(target=globals_target, locked=True),
+            lambda: (
+                pm.get_lock("q10.IF")
+                == PMLockBluePrint(target=globals_target, locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         # the _globals.qubit.IF row appears in the tree
@@ -3043,8 +3079,10 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         # the one still in flight
         gui.typesPane.entryWidgets["IF"]["toggle"].click()
         qtbot.waitUntil(
-            lambda: _state_target() is None
-            and pm.get_type("qubit").parameters["IF"]["target"] is None,
+            lambda: (
+                _state_target() is None
+                and pm.get_type("qubit").parameters["IF"]["target"] is None
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.get_lock("q10.IF") is not None
@@ -3052,8 +3090,10 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         # toggle on once more: the re-target button needs a locked entry
         gui.typesPane.entryWidgets["IF"]["toggle"].click()
         qtbot.waitUntil(
-            lambda: _state_target() == globals_target
-            and pm.get_type("qubit").parameters["IF"]["target"] == globals_target,
+            lambda: (
+                _state_target() == globals_target
+                and pm.get_type("qubit").parameters["IF"]["target"] == globals_target
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -3062,8 +3102,9 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         pm.add_parameter("tshared", initial_value=0.0, unit="Hz")
         qtbot.waitUntil(lambda: _row_exists(gui, "tshared"), timeout=BROADCAST_TIMEOUT)
         qtbot.waitUntil(
-            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("retarget")
-            is not None,
+            lambda: (
+                gui.typesPane.entryWidgets.get("IF", {}).get("retarget") is not None
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         gui.typesPane.entryWidgets["IF"]["retarget"].click()
@@ -3087,8 +3128,9 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
 
         gui.locksController.pick_lock_target("tshared")
         qtbot.waitUntil(
-            lambda: pm.get_type("qubit").parameters["IF"]["target"]
-            == f"{PM_NAME}.tshared",
+            lambda: (
+                pm.get_type("qubit").parameters["IF"]["target"] == f"{PM_NAME}.tshared"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.armStrip.isHidden()
@@ -3115,13 +3157,14 @@ def test_the_types_tab_names_skipped_locks_on_the_note(
         qtbot.waitUntil(lambda: _row_exists(gui, "tshared"), timeout=BROADCAST_TIMEOUT)
         pm.lock("q10.IF", "tshared")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q10.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.tshared", locked=True),
+            lambda: (
+                gui.state.locks.get("q10.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.tshared", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         qtbot.waitUntil(
-            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("toggle")
-            is not None,
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("toggle") is not None,
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -3139,8 +3182,9 @@ def test_the_types_tab_names_skipped_locks_on_the_note(
         assert gui.locksController.armed_type_lock == ("qubit", "IF")
         gui.locksController.pick_lock_target("tshared")
         qtbot.waitUntil(
-            lambda: pm.get_type("qubit").parameters["IF"]["target"]
-            == f"{PM_NAME}.tshared",
+            lambda: (
+                pm.get_type("qubit").parameters["IF"]["target"] == f"{PM_NAME}.tshared"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.typesPane.entriesNote.text() == ""
@@ -3170,8 +3214,10 @@ def test_the_types_tab_show_button_and_also_types(
         second_pm.add_type("smallq")
         second_pm.add_type_parameter("smallq", "IF", unit="Hz")
         qtbot.waitUntil(
-            lambda: _instance_row_items(gui, "q10") is not None
-            and _instance_row_items(gui, "q10")[2].text() == "also smallq",
+            lambda: (
+                _instance_row_items(gui, "q10") is not None
+                and _instance_row_items(gui, "q10")[2].text() == "also smallq"
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -3200,9 +3246,7 @@ def test_the_types_tab_shows_server_errors_and_empty_names(
         gui.tabs.setCurrentIndex(1)
         gui.typesPane.newTypeEdit.setText("errtype")
         gui.typesPane.addTypeButton.click()
-        qtbot.waitUntil(
-            lambda: "errtype" in pm.list_types(), timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: "errtype" in pm.list_types(), timeout=BROADCAST_TIMEOUT)
         qtbot.waitUntil(
             lambda: gui.typesPane.selectedType == "errtype",
             timeout=BROADCAST_TIMEOUT,
@@ -3315,8 +3359,10 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
         _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
         second_pm.lock("q01.IF", "q02.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            lambda: (
+                gui.state.locks.get("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         # a second Follower whose Lock the second Client unlocked: the
@@ -3324,8 +3370,10 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
         second_pm.lock("q03.IF", "q02.IF")
         second_pm.unlock("q03.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q03.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=False),
+            lambda: (
+                gui.state.locks.get("q03.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=False)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
         assert gui.removalDialog is None
@@ -3341,17 +3389,12 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
             )
             assert "q01.IF (locked)" in dialog.text()
             assert "q03.IF (unlocked)" in dialog.text()
+            assert dialog.standardButtons() & QtWidgets.QMessageBox.StandardButton.Ok
             assert (
-                dialog.standardButtons()
-                & QtWidgets.QMessageBox.StandardButton.Ok
+                dialog.standardButtons() & QtWidgets.QMessageBox.StandardButton.Cancel
             )
-            assert (
-                dialog.standardButtons()
-                & QtWidgets.QMessageBox.StandardButton.Cancel
-            )
-            assert (
-                dialog.defaultButton()
-                is dialog.button(QtWidgets.QMessageBox.StandardButton.Cancel)
+            assert dialog.defaultButton() is dialog.button(
+                QtWidgets.QMessageBox.StandardButton.Cancel
             )
             dialog.button(QtWidgets.QMessageBox.StandardButton.Cancel).click()
 
@@ -3387,9 +3430,7 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
 
         QtCore.QTimer.singleShot(0, _accept_dialog)
         _row_remove_button(gui, "q02.IF").click()
-        qtbot.waitUntil(
-            lambda: not pm.has_param("q02.IF"), timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: not pm.has_param("q02.IF"), timeout=BROADCAST_TIMEOUT)
         qtbot.waitUntil(
             lambda: pm.get_lock("q01.IF") is None, timeout=BROADCAST_TIMEOUT
         )
@@ -3403,9 +3444,7 @@ def test_removing_a_target_confirms_and_cancel_keeps_the_server_untouched(
 
         # a parameter without Followers is removed with no dialog
         gui.removeParameter("other.x")
-        qtbot.waitUntil(
-            lambda: not pm.has_param("other.x"), timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: not pm.has_param("other.x"), timeout=BROADCAST_TIMEOUT)
         assert gui.removalDialog is None
     finally:
         gui.model.stopListener()
@@ -3427,8 +3466,10 @@ def test_removing_a_target_falls_back_to_the_client_side_followers(
         _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
         second_pm.lock("q01.IF", "q02.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            lambda: (
+                gui.state.locks.get("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -3479,8 +3520,10 @@ def test_the_lock_shortcuts_arm_unlock_and_switch_tabs(
         _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
         second_pm.lock("q01.IF", "q02.IF")
         qtbot.waitUntil(
-            lambda: gui.state.locks.get("q01.IF")
-            == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True),
+            lambda: (
+                gui.state.locks.get("q01.IF")
+                == PMLockBluePrint(target=f"{PM_NAME}.q02.IF", locked=True)
+            ),
             timeout=BROADCAST_TIMEOUT,
         )
 
@@ -3575,9 +3618,7 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
                 unit="Hz",
             )
         )
-        qtbot.waitUntil(
-            lambda: _row_exists(gui, "q02.IF"), timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: _row_exists(gui, "q02.IF"), timeout=BROADCAST_TIMEOUT)
         tint = _type_tint(gui, "qubit")
         assert tint is not None
         for item in _row_items(gui, "q02.IF"):
@@ -3594,9 +3635,7 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
                 unit="Hz",
             )
         )
-        qtbot.waitUntil(
-            lambda: _row_exists(gui, "q03.IF"), timeout=BROADCAST_TIMEOUT
-        )
+        qtbot.waitUntil(lambda: _row_exists(gui, "q03.IF"), timeout=BROADCAST_TIMEOUT)
         for item in _row_items(gui, "q03.IF"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
         assert _row_items(gui, "q03.IF")[3].data(GUTTER_ROLE) == ["qubit"]

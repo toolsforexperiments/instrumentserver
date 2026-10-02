@@ -102,7 +102,9 @@ def test_client_station_gui_has_three_tabs(qtbot, start_server, server_port):
         station.disconnect()
 
 
-def test_client_station_gui_server_widget_shows_host_port(qtbot, start_server, server_port):
+def test_client_station_gui_server_widget_shows_host_port(
+    qtbot, start_server, server_port
+):
     from instrumentserver.client.application import ClientStationGui
 
     station = ClientStation(host="localhost", port=server_port)

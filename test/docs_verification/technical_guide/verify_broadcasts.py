@@ -76,7 +76,9 @@ def workspace():
     created under this script's folder and removed again on exit.
     """
     old = os.getcwd()
-    path = Path(tempfile.mkdtemp(prefix="verify_broadcasts_", dir=Path(__file__).parent))
+    path = Path(
+        tempfile.mkdtemp(prefix="verify_broadcasts_", dir=Path(__file__).parent)
+    )
     os.chdir(path)
     try:
         yield path
@@ -217,9 +219,9 @@ def section_what_triggers_a_broadcast() -> None:
                     cap.wait_for(1)
                 assert recorded, "the sink never ran"
                 assert recorded[0] is not threading.current_thread()
-                assert recorded[0].name.startswith("ThreadPoolExecutor"), (
-                    recorded[0].name
-                )
+                assert recorded[0].name.startswith("ThreadPoolExecutor"), recorded[
+                    0
+                ].name
             finally:
                 pm_instrument.remove_broadcast_sink(recording_sink)
             pm.unlock("q01.IF")
@@ -229,9 +231,7 @@ def section_what_triggers_a_broadcast() -> None:
             # waits until the first one is done
             def blocked_call() -> None:
                 with client() as second_cli:
-                    finished.append(
-                        second_cli.call(f"{PM_NAME}.set", "q01.IF", 12e6)
-                    )
+                    finished.append(second_cli.call(f"{PM_NAME}.set", "q01.IF", 12e6))
 
             mutex = srv._get_lock_for_target(PM_NAME)
             finished = []
@@ -539,9 +539,7 @@ def section_the_broadcaster_contract() -> None:
     # the mixin itself, no Server involved
     with workspace():
         bc = Broadcaster()
-        bp = ParameterBroadcastBluePrint(
-            "bcaster.param0", PARAMETER_UPDATE, 1.0, "V"
-        )
+        bp = ParameterBroadcastBluePrint("bcaster.param0", PARAMETER_UPDATE, 1.0, "V")
 
         # no sinks: a no-op
         bc.broadcast(bp)
@@ -570,6 +568,7 @@ def section_the_broadcaster_contract() -> None:
         logger = logging.getLogger("instrumentserver.base")
         logger.addHandler(handler)
         try:
+
             def failing_sink(bp):
                 raise RuntimeError("sink is broken")
 
@@ -753,9 +752,7 @@ def section_the_parameter_managers_actions() -> None:
             assert [bp.action for bp in messages] == [
                 PARAMETER_CREATION,
                 PM_TYPE_UPDATE,
-            ], [
-                (bp.action, bp.name, bp.value, bp.unit) for bp in messages
-            ]
+            ], [(bp.action, bp.name, bp.value, bp.unit) for bp in messages]
             assert messages[0].name == "parameter_manager.q02.window"
             assert messages[0].value == 0.5
             assert messages[0].unit == "s"
@@ -956,9 +953,7 @@ def section_the_parameter_managers_actions() -> None:
                         "gain": {"default": "12", "unit": "dB", "target": "None"}
                     },
                     "nested": {},
-                    "effective": {
-                        "gain": {"unit": "dB", "from_type": "display"}
-                    },
+                    "effective": {"gain": {"unit": "dB", "from_type": "display"}},
                     "_class_type": "PMTypeBluePrint",
                 },
                 "unit": "",

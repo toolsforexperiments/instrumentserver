@@ -814,9 +814,7 @@ def test_a_key_of_another_instrument_is_refused_up_front():
         "parameters": {"other.a": {"value": 1, "unit": "u"}},
         "types": {},
     }
-    with pytest.raises(
-        ValueError, match="does not belong to this Parameter Manager"
-    ):
+    with pytest.raises(ValueError, match="does not belong to this Parameter Manager"):
         pm.fromParamDict(doc)
 
     assert pm.a() == 1
@@ -1344,9 +1342,7 @@ def test_clear_all_emits_type_updates_then_lock_updates_and_nothing_else(
     assert "_globals" not in pm.submodules
 
 
-def test_switch_to_an_unknown_profile_raises_and_saves_nothing(
-    tmp_path, monkeypatch
-):
+def test_switch_to_an_unknown_profile_raises_and_saves_nothing(tmp_path, monkeypatch):
     """An unknown profile raises ``ValueError`` before anything happens:
     the current profile file keeps its contents and modification time,
     the state of the Parameter Manager is untouched, and no file is
@@ -1371,9 +1367,7 @@ def test_switch_to_an_unknown_profile_raises_and_saves_nothing(
     ]
 
 
-def test_refresh_and_list_profiles_are_the_same_around_a_switch(
-    tmp_path, monkeypatch
-):
+def test_refresh_and_list_profiles_are_the_same_around_a_switch(tmp_path, monkeypatch):
     """``refresh_profiles``/``list_profiles`` are unchanged by a switch:
     they list the same profile files before and after — plus the current
     profile's file when the switch's save creates it."""

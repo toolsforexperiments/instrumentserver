@@ -415,7 +415,10 @@ def test_effective_set_names_every_duplicated_path(pm):
 
     # every offending path, not the first (rule 3)
     message = str(excinfo.value)
-    assert "parameter path(s) 'readout.IF', 'readout.window' appear more than once" in message
+    assert (
+        "parameter path(s) 'readout.IF', 'readout.window' appear more than once"
+        in message
+    )
     assert message.endswith("effective set of Type 'qubit'")
 
 
@@ -938,8 +941,12 @@ def test_add_type_parameter_refuses_a_target_blocked_by_a_parameter(pm):
     message = str(excinfo.value)
     assert "cannot create parameter 'q01.octave_gain.x'" in message
     assert "cannot create parameter 'q02.octave_gain.x'" in message
-    assert "'q01.octave_gain' is a parameter, and cannot have child parameters" in message
-    assert "'q02.octave_gain' is a parameter, and cannot have child parameters" in message
+    assert (
+        "'q01.octave_gain' is a parameter, and cannot have child parameters" in message
+    )
+    assert (
+        "'q02.octave_gain' is a parameter, and cannot have child parameters" in message
+    )
     # nothing was mutated
     assert pm.get_type("qubit").parameters == {
         "octave_gain": {"default": 10, "unit": "dB", "target": None}
@@ -957,7 +964,9 @@ def test_add_type_parameter_refuses_a_target_blocked_by_a_parameter_group(pm):
 
     with pytest.raises(
         ValueError,
-        match=re.escape("cannot create parameter 'q01.IF': 'q01.IF' is already a Parameter Group"),
+        match=re.escape(
+            "cannot create parameter 'q01.IF': 'q01.IF' is already a Parameter Group"
+        ),
     ):
         pm.add_type_parameter("qubit", "IF", default=1, unit="Hz")
 
@@ -1061,9 +1070,7 @@ def test_set_type_parameter_default_refuses_paths_that_are_not_its_own_entries(p
 
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "'readout.IF' is not an entry of Type 'qubit' itself"
-        ),
+        match=re.escape("'readout.IF' is not an entry of Type 'qubit' itself"),
     ):
         pm.set_type_parameter_default("qubit", "readout.IF", 1)
     with pytest.raises(
@@ -1113,9 +1120,7 @@ def test_set_type_parameter_unit_refuses_paths_that_are_not_its_own_entries(pm):
 
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "'readout.IF' is not an entry of Type 'qubit' itself"
-        ),
+        match=re.escape("'readout.IF' is not an entry of Type 'qubit' itself"),
     ):
         pm.set_type_parameter_unit("qubit", "readout.IF", "V")
     with pytest.raises(
@@ -2142,8 +2147,7 @@ def test_lock_type_parameter_locks_every_current_instance_parameter(pm):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "parameter_manager.q01.IF is locked to "
-            "parameter_manager._globals.qubit.IF"
+            "parameter_manager.q01.IF is locked to parameter_manager._globals.qubit.IF"
         ),
     ):
         pm.set("q01.IF", 1)
@@ -2189,9 +2193,7 @@ def test_lock_type_parameter_with_no_instances_stores_the_rule(pm):
     )
 
 
-def test_lock_type_parameter_skips_a_lock_on_another_target_with_a_warning(
-    pm, caplog
-):
+def test_lock_type_parameter_skips_a_lock_on_another_target_with_a_warning(pm, caplog):
     put_qubit_instances(pm)
     pm.add_parameter("q00.IF", initial_value=1e9, unit="Hz")
     pm.lock("q01.IF", "q00.IF")
@@ -2617,8 +2619,7 @@ def test_unlock_type_parameter_leaves_every_lock_in_place(pm):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "parameter_manager.q01.IF is locked to "
-            "parameter_manager._globals.qubit.IF"
+            "parameter_manager.q01.IF is locked to parameter_manager._globals.qubit.IF"
         ),
     ):
         pm.set("q01.IF", 1)
@@ -4010,9 +4011,7 @@ def test_lock_type_parameter_round_trips_over_the_wire(param_manager):
     try:
         params.add_type(PROXY_LOCK_TYPE)
         params.add_type_parameter(PROXY_LOCK_TYPE, "IF", default=5e9, unit="Hz")
-        params.add_type_parameter(
-            PROXY_LOCK_TYPE, "octave_gain", default=10, unit="dB"
-        )
+        params.add_type_parameter(PROXY_LOCK_TYPE, "octave_gain", default=10, unit="dB")
         for name in PROXY_LOCK_INSTANCES:
             params.add_instance(PROXY_LOCK_TYPE, name)
         params.update()
@@ -4030,9 +4029,7 @@ def test_lock_type_parameter_round_trips_over_the_wire(param_manager):
         # a locked Instance parameter pulls the Globals Target's value;
         # the Target is set through the server-side Parameter Group's set
         # (the client proxy's own set is qcodes' local, deprecated one)
-        cli.call(
-            "parameter_manager.set", f"_globals.{PROXY_LOCK_TYPE}.IF", 7e9
-        )
+        cli.call("parameter_manager.set", f"_globals.{PROXY_LOCK_TYPE}.IF", 7e9)
         assert getattr(params, PROXY_LOCK_INSTANCES[0]).IF() == 7e9
 
         # a Follower locked to another Target comes back as the skipped

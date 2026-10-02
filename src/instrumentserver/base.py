@@ -95,9 +95,7 @@ class Broadcaster:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._broadcast_sinks: list[
-            Callable[[ParameterBroadcastBluePrint], None]
-        ] = []
+        self._broadcast_sinks: list[Callable[[ParameterBroadcastBluePrint], None]] = []
 
     def add_broadcast_sink(
         self, fn: "Callable[[ParameterBroadcastBluePrint], None]"

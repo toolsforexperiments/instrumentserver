@@ -292,7 +292,9 @@ def test_client_station_script_no_config():
 
         clientStationScript()
 
-    mock_cs.assert_called_once_with(host="localhost", port=DEFAULT_PORT, config_path=None)
+    mock_cs.assert_called_once_with(
+        host="localhost", port=DEFAULT_PORT, config_path=None
+    )
 
 
 def test_client_station_script_with_config(tmp_path):
@@ -309,7 +311,9 @@ def test_client_station_script_with_config(tmp_path):
 
         clientStationScript()
 
-    mock_cs.assert_called_once_with(host="localhost", port=DEFAULT_PORT, config_path=cfg)
+    mock_cs.assert_called_once_with(
+        host="localhost", port=DEFAULT_PORT, config_path=cfg
+    )
 
 
 def test_detached_server_script_defaults():
@@ -377,9 +381,7 @@ def test_param_manager_script_instrument_exists():
 
     mock_cli.get_instrument.assert_called_once_with("parameter_manager")
     mock_cli.find_or_create_instrument.assert_not_called()
-    mock_pmg.assert_called_once_with(
-        mock_pm, sub_port=4568, sub_host="localhost"
-    )
+    mock_pmg.assert_called_once_with(mock_pm, sub_port=4568, sub_host="localhost")
     mock_wmw.assert_called_once()
 
 
@@ -412,9 +414,7 @@ def test_param_manager_script_instrument_missing():
     mock_cli.get_instrument.assert_not_called()
     mock_pm.fromFile.assert_called_once()
     mock_pm.update.assert_called_once()
-    mock_pmg.assert_called_once_with(
-        mock_pm, sub_port=4568, sub_host="localhost"
-    )
+    mock_pmg.assert_called_once_with(mock_pm, sub_port=4568, sub_host="localhost")
     mock_wmw.assert_called_once()
 
 

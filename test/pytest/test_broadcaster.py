@@ -34,9 +34,7 @@ def make_bp(
     value: float = 1.0,
     unit: str = "Hz",
 ) -> ParameterBroadcastBluePrint:
-    return ParameterBroadcastBluePrint(
-        name=name, action=action, value=value, unit=unit
-    )
+    return ParameterBroadcastBluePrint(name=name, action=action, value=value, unit=unit)
 
 
 # ---------------------------------------------------------------------------
@@ -214,7 +212,9 @@ def test_created_broadcaster_instrument_reaches_subclient(
         assert bp.unit == "V"
 
 
-def test_plain_dummy_instrument_still_works_and_gets_no_sink(dummy_instrument, start_server):
+def test_plain_dummy_instrument_still_works_and_gets_no_sink(
+    dummy_instrument, start_server
+):
     """A plain dummy instrument keeps working over the wire, and since it does
     not implement the Broadcaster contract the Server registers no sink."""
     cli, dummy = dummy_instrument

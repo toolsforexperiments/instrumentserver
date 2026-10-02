@@ -204,6 +204,7 @@ def test_parameter_manager_creates_managed_parameters():
 # Lock API on the Parameter Manager (plan task 1.2, D9)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def pm(tmp_path, monkeypatch):
     """A fresh Parameter Manager in an empty working directory, with a few
@@ -300,9 +301,7 @@ def test_unknown_path_raises_naming_the_path_and_changes_nothing(pm, call):
         call(pm)
 
     assert pm.list_locks() == {
-        "q01.x": PMLockBluePrint(
-            target="parameter_manager.q01Data.IF", locked=True
-        )
+        "q01.x": PMLockBluePrint(target="parameter_manager.q01Data.IF", locked=True)
     }
 
 
@@ -449,9 +448,7 @@ def test_relock_refuses_a_cycle_and_stays_unlocked(pm):
     pm.unlock("q01.x")
     q01_data_if = pm.parameter("q01Data.IF")
     q01_data_if._target = pm.parameter("q01.x")
-    q01_data_if.lock = PMLockBluePrint(
-        target="parameter_manager.q01.x", locked=True
-    )
+    q01_data_if.lock = PMLockBluePrint(target="parameter_manager.q01.x", locked=True)
 
     with pytest.raises(
         ValueError,
@@ -487,9 +484,7 @@ def test_toggle_lock_switches_both_ways(pm):
 
 def test_calls_without_a_lock_raise_naming_the_path(pm):
     for call in (pm.unlock, pm.relock, pm.toggle_lock, pm.remove_lock):
-        with pytest.raises(
-            ValueError, match="parameter_manager.q01.x has no Lock"
-        ):
+        with pytest.raises(ValueError, match="parameter_manager.q01.x has no Lock"):
             call("q01.x")
 
 

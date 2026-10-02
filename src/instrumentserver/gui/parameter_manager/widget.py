@@ -30,6 +30,7 @@ from ...params import (
     paramTypeFromName,
 )
 from .. import keepSmallHorizontally
+from ..base_instrument import ItemBase
 from ..instruments import (
     InstrumentParameters,
     ModelParameters,
@@ -294,10 +295,10 @@ class ModelParameterManager(ModelParameters):
         self, parent: QtGui.QStandardItem, parameters: Dict[str, str]
     ) -> None:
         for row in range(parent.rowCount()):
-            item = parent.child(row, 0)
+            item = cast(Optional[ItemBase], parent.child(row, 0))
             if item is None:
                 continue
-            if item.element is not None:  # type: ignore[attr-defined]
+            if item.element is not None:
                 # a parameter row; a submodule row's element is None
                 unitItem = parent.child(row, 1)
                 parameters[item.name] = "" if unitItem is None else unitItem.text()
@@ -549,17 +550,16 @@ class LocksController(QtCore.QObject):
         gui.armStrip.cancelled.connect(self.cancel_arm)
         # the Locks panel (plan task 5.4): the tree's current row drives
         # the panel's selected label
+        assert gui.locksAction is not None  # created by the GUI's toolbar
         gui.locksAction.toggled.connect(self._on_locks_action_toggled)
         gui.locksPanel.toggleLockRequested.connect(self._on_panel_toggle_lock)
         gui.locksPanel.removeLockRequested.connect(self._on_panel_remove_lock)
         gui.locksPanel.lockAllRequested.connect(self._on_panel_lock_all)
         gui.locksPanel.removeRuleRequested.connect(self._on_panel_remove_rule)
-        gui.locksPanel.lockSelectionRequested.connect(
-            self._lock_selection_from_panel
-        )
-        gui.view.selectionModel().currentChanged.connect(
-            self._on_tree_current_changed
-        )
+        gui.locksPanel.lockSelectionRequested.connect(self._lock_selection_from_panel)
+        treeSelection = gui.view.selectionModel()
+        assert treeSelection is not None  # set together with the model
+        treeSelection.currentChanged.connect(self._on_tree_current_changed)
         # the Types tab's Type Lock re-target arms the same strip
         gui.typesPane.retargetTypeLockRequested.connect(self.arm_type_lock)
         gui.shortcutManager.register("toggle_locks", gui.locksAction.toggle, gui)
@@ -571,9 +571,7 @@ class LocksController(QtCore.QObject):
         gui.shortcutManager.register_tooltip("unlock_item", gui.view.unlockAction)
 
     @QtCore.Slot(str, object)
-    def _on_lock_changed(
-        self, path: str, lock: Optional[PMLockBluePrint]
-    ) -> None:
+    def _on_lock_changed(self, path: str, lock: Optional[PMLockBluePrint]) -> None:
         """Record the change a ``pm-lock-update`` Broadcast reports about
         the Follower at ``path``, then recompute the Lock column and the
         row widgets, and repaint the values the change alters: the
@@ -649,7 +647,7 @@ class LocksController(QtCore.QObject):
         """Walk the source model (never the proxy) and set each row's Lock
         column text, lock button state and read-only flag."""
         for row in range(parent.rowCount()):
-            item = parent.child(row, 0)
+            item = cast(Optional[ItemBase], parent.child(row, 0))
             if item is None:
                 continue
             lockItem = parent.child(row, LOCK_COLUMN)
@@ -670,16 +668,12 @@ class LocksController(QtCore.QObject):
             if item.hasChildren():
                 self._apply_locks_to_rows(item)
 
-    def _update_row_lock_widget(
-        self, path: str, widget: "ParameterWidget"
-    ) -> None:
+    def _update_row_lock_widget(self, path: str, widget: "ParameterWidget") -> None:
         """Set one row's lock button and read-only state from the Lock the
         state holds for ``path``. A row without a Lock shows no button and
         renders its value editable."""
         button = (
-            widget.lockButton
-            if isinstance(widget, LockableParameterWidget)
-            else None
+            widget.lockButton if isinstance(widget, LockableParameterWidget) else None
         )
         lock = self.gui.state.locks.get(path)
         if lock is None:
@@ -756,8 +750,8 @@ class LocksController(QtCore.QObject):
         self.gui.view.lockToAction.setEnabled(is_parameter)
         self.gui.view.unlockAction.setEnabled(
             is_parameter
-            and item.name in self.gui.state.locks  # type: ignore[union-attr]
-            and self.gui.state.locks[item.name].locked  # type: ignore[union-attr]
+            and item.name in self.gui.state.locks
+            and self.gui.state.locks[item.name].locked
         )
 
     def arm_lock(self, follower: str) -> None:
@@ -989,9 +983,7 @@ class TypesController(QtCore.QObject):
         gui.typesPane.addEntryRequested.connect(self._on_pane_add_entry)
         gui.typesPane.removeEntryRequested.connect(self._on_pane_remove_entry)
         gui.typesPane.setDefaultRequested.connect(self._on_pane_set_default)
-        gui.typesPane.toggleTypeLockRequested.connect(
-            self._on_pane_toggle_type_lock
-        )
+        gui.typesPane.toggleTypeLockRequested.connect(self._on_pane_toggle_type_lock)
         gui.typesPane.addNestedRequested.connect(self._on_pane_add_nested)
         gui.typesPane.removeNestedRequested.connect(self._on_pane_remove_nested)
         gui.typesPane.addInstanceRequested.connect(self._on_pane_add_instance)
@@ -1033,7 +1025,7 @@ class TypesController(QtCore.QObject):
         item; clear the background of the rows without one."""
         for row in range(parent.rowCount()):
             rowItems = [parent.child(row, col) for col in range(LOCK_COLUMN + 1)]
-            item = rowItems[0]
+            item = cast(Optional[ItemBase], rowItems[0])
             if item is None:
                 continue
             gutterItem = rowItems[GUTTER_COLUMN]
@@ -1178,9 +1170,7 @@ class TypesController(QtCore.QObject):
             self.refresh_types_pane()
 
     @QtCore.Slot(str, str, str)
-    def _on_pane_add_nested(
-        self, type_name: str, submodule: str, nested: str
-    ) -> None:
+    def _on_pane_add_nested(self, type_name: str, submodule: str, nested: str) -> None:
         """The "Nested type" strip: require the Nested Type ``nested`` at
         the submodule (D11, D13). A refused edit shows the Server's error
         text on the entries pane's note."""
@@ -1303,9 +1293,7 @@ class ParameterManagerGui(InstrumentParameters):
         self.locksPanel = LocksPanel(self.instrument.name, parent=self)
         view_index = layout.indexOf(self.view)
         layout.removeWidget(self.view)
-        self.locksSplitter = QtWidgets.QSplitter(
-            QtCore.Qt.Orientation.Horizontal, self
-        )
+        self.locksSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal, self)
         self.locksSplitter.addWidget(self.view)
         self.locksSplitter.addWidget(self.locksPanel)
         self.locksSplitter.setStretchFactor(0, 3)
@@ -1355,12 +1343,12 @@ class ParameterManagerGui(InstrumentParameters):
         self.connectSignals()
         self.loadProfile()
 
-    def changeEvent(self, event: QtCore.QEvent) -> None:
+    def changeEvent(self, event: Optional[QtCore.QEvent]) -> None:
         """Re-tint the tree and the Types pane when the application
         switches between a light and a dark theme (the tints are stored
         on the rows, so they do not follow the palette on their own)."""
         super().changeEvent(event)
-        if event.type() in (
+        if event is not None and event.type() in (
             QtCore.QEvent.Type.PaletteChange,
             QtCore.QEvent.Type.ApplicationPaletteChange,
         ):
@@ -1420,6 +1408,7 @@ class ParameterManagerGui(InstrumentParameters):
             QtGui.QIcon(":/icons/lock.svg"),
             "Show the Locks panel",
         )
+        assert self.locksAction is not None  # addAction always returns one
         self.locksAction.setCheckable(True)
         self.shortcutManager.register_tooltip("toggle_locks", self.locksAction)
 
@@ -1470,12 +1459,14 @@ class ParameterManagerGui(InstrumentParameters):
             # reads back empty there); tests pin the dialog through its
             # object name and text instead.
             box.setText(
-                f"Removing {fullName} also removes the Locks of:\n"
-                + "\n".join(lines)
+                f"Removing {fullName} also removes the Locks of:\n" + "\n".join(lines)
             )
             box.setStandardButtons(
-                QtWidgets.QMessageBox.StandardButton.Ok
-                | QtWidgets.QMessageBox.StandardButton.Cancel
+                cast(
+                    "QtWidgets.QMessageBox.StandardButtons",
+                    QtWidgets.QMessageBox.StandardButton.Ok
+                    | QtWidgets.QMessageBox.StandardButton.Cancel,
+                )
             )
             box.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Cancel)
             self.removalDialog = box
