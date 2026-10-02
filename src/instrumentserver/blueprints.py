@@ -774,15 +774,15 @@ def _convert_dict_to_obj(item_dict: dict) -> Any:
         mod = importlib.import_module(".".join(parts[:-1]))
         cls = getattr(mod, parts[-1])
         item_dict.pop("_class_type")
-  
+
         # An Enum's value being a namedtuple is serialized/deserialized as a list instead of deserialized as the correct object.
-        if issubclass(cls, Enum):
+        if isinstance(cls, type) and issubclass(cls, Enum):
             value = item_dict["value"]
             if isinstance(value, list):
                 enum_value_type = type(next(iter(cls)).value)
                 value = enum_value_type(*value)
             return cls(value)
-       
+
         return cls(**item_dict)
 
     try:
