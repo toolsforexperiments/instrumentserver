@@ -49,6 +49,7 @@ from .logic import (
     build_lock_rows,
     compute_claims,
     followers_reaching,
+    is_dark_theme,
     lock_button_tooltip,
     lock_column_text,
     lock_row_paths,
@@ -1281,9 +1282,13 @@ class ParameterManagerGui(InstrumentParameters):
         # Created before connectSignals, which wires the model's Broadcast
         # routing into it.
         self.state = PMState()
-        # The tint palette: maps each Type to its slot in TINT_PALETTE; the
-        # view's gutter delegate reads the colours from it.
+        # The tint palette: maps each Type to its slot in TINT_PALETTE (or
+        # TINT_PALETTE_DARK in a dark theme); the view's gutter delegate
+        # reads the colours from it.
         self.typePalette = TypePalette()
+        # The theme the tints were last applied for; changeEvent re-tints
+        # when the application switches between light and dark.
+        self._darkTheme = is_dark_theme()
         self.view.gutterDelegate.typePalette = self.typePalette
         self.profileManager = ProfilesManager(parent=self)
         self.addParam = AddParameterWidget(parent=self)
@@ -1349,6 +1354,22 @@ class ParameterManagerGui(InstrumentParameters):
         self.locksController = LocksController(self)
         self.connectSignals()
         self.loadProfile()
+
+    def changeEvent(self, event: QtCore.QEvent) -> None:
+        """Re-tint the tree and the Types pane when the application
+        switches between a light and a dark theme (the tints are stored
+        on the rows, so they do not follow the palette on their own)."""
+        super().changeEvent(event)
+        if event.type() in (
+            QtCore.QEvent.Type.PaletteChange,
+            QtCore.QEvent.Type.ApplicationPaletteChange,
+        ):
+            # the event can arrive while __init__ is still building the GUI
+            controller = getattr(self, "typesController", None)
+            dark = is_dark_theme()
+            if controller is not None and dark != self._darkTheme:
+                self._darkTheme = dark
+                controller.apply_tints()
 
     def connectSignals(self) -> None:
         super().connectSignals()

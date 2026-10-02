@@ -68,6 +68,7 @@ from instrumentserver.gui.parameter_manager.logic import (
     LOCK_COLUMN,
     LOCK_COLUMN_WIDTH,
     TINT_COLOURS,
+    TINT_COLOURS_DARK,
     Claim,
     PMState,
     TypePalette,
@@ -76,8 +77,10 @@ from instrumentserver.gui.parameter_manager.logic import (
     compute_claims,
     followers_reaching,
     instances_of_type,
+    is_dark_theme,
     lock_column_text,
     lock_root,
+    tint_colours,
     parse_default_text,
     rank_lock_targets,
     relative_path,
@@ -841,7 +844,7 @@ def _type_tint(gui, type_name):
     slot = gui.typePalette.slots.get(type_name)
     if slot is None:
         return None
-    entry = TINT_COLOURS[slot]
+    entry = tint_colours()[slot]
     return (entry["tint"], entry["tintAlt"])
 
 
@@ -949,7 +952,7 @@ def test_refresh_all_recomputes_tints_after_a_model_reload(
         )
 
         gui.refreshAll()
-        entry = TINT_COLOURS[gui.typePalette.slots["equbit"]]
+        entry = tint_colours()[gui.typePalette.slots["equbit"]]
         for item in _row_items(gui, "eq01.IF"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in (
                 entry["tint"],
@@ -957,6 +960,63 @@ def test_refresh_all_recomputes_tints_after_a_model_reload(
             )
         assert _row_items(gui, "eq01.IF")[3].data(GUTTER_ROLE) == ["equbit"]
     finally:
+        gui.model.stopListener()
+
+
+def test_tints_follow_a_switch_to_a_dark_theme(
+    qtbot, pm, second_client, server_port
+):
+    """Switching the application to a dark palette re-tints the claimed
+    rows with the dark palette entry, and switching back restores the
+    light one."""
+    second_pm = _second_parameter_manager(second_client)
+    pm.add_parameter("dq01.IF", initial_value=1.0, unit="Hz")
+    pm.update()
+
+    app = QtWidgets.QApplication.instance()
+    original = app.palette()
+    # start from a light palette whatever theme the machine is in
+    light = QtGui.QPalette(original)
+    light.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor("#f0f0f0"))
+    light.setColor(QtGui.QPalette.ColorRole.WindowText, QtGui.QColor("#202020"))
+    app.setPalette(light)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        gui.model.stopListener()
+        second_pm.add_type("dqubit")
+        second_pm.add_type_parameter("dqubit", "IF", unit="Hz")
+        gui.refreshAll()
+        slot = gui.typePalette.slots["dqubit"]
+        assert not is_dark_theme()
+        light_entry = TINT_COLOURS[slot]
+        assert _row_items(gui, "dq01.IF")[0].data(
+            QtCore.Qt.ItemDataRole.BackgroundRole
+        ) in (light_entry["tint"], light_entry["tintAlt"])
+
+        dark = QtGui.QPalette(light)
+        dark.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor("#202020"))
+        dark.setColor(QtGui.QPalette.ColorRole.WindowText, QtGui.QColor("#f0f0f0"))
+        app.setPalette(dark)
+        dark_entry = TINT_COLOURS_DARK[slot]
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "dq01.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in (dark_entry["tint"], dark_entry["tintAlt"]),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert gui.typePalette.bar_colour("dqubit") == dark_entry["bar"]
+
+        app.setPalette(light)
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "dq01.IF")[0].data(
+                QtCore.Qt.ItemDataRole.BackgroundRole
+            )
+            in (light_entry["tint"], light_entry["tintAlt"]),
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        app.setPalette(original)
         gui.model.stopListener()
 
 

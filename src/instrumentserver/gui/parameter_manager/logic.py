@@ -39,10 +39,10 @@ GUTTER_ROLE = cast(
     "QtCore.Qt.ItemDataRole", QtCore.Qt.ItemDataRole.UserRole + 1
 )
 
-#: The mock's TINTS, light values only (D21: no dark theme): ``tint`` and
-#: ``tintAlt`` are the row background of a claimed row (``tintAlt`` for
-#: every other sibling row), ``bar`` the colour of its gutter band. The
-#: slot of a Type is its index in this list.
+#: The mock's TINTS for a light theme: ``tint`` and ``tintAlt`` are the
+#: row background of a claimed row (``tintAlt`` for every other sibling
+#: row), ``bar`` the colour of its gutter band. The slot of a Type is its
+#: index in this list.
 TINT_PALETTE: List[Dict[str, str]] = [
     {"tint": "#e8f1fb", "tintAlt": "#dfe9f6", "bar": "#4a7fc1"},
     {"tint": "#e9f4e9", "tintAlt": "#e0ede0", "bar": "#4f9e57"},
@@ -51,11 +51,42 @@ TINT_PALETTE: List[Dict[str, str]] = [
     {"tint": "#e5f4f2", "tintAlt": "#dcece9", "bar": "#3f9490"},
 ]
 
-#: The palette as QColors, in the same slot order.
+#: The same five hues for a dark theme, slot for slot: dark, low-saturation
+#: tints that keep the theme's light text readable, and brighter bars so
+#: the gutter bands stand out on a dark background.
+TINT_PALETTE_DARK: List[Dict[str, str]] = [
+    {"tint": "#1e2a3a", "tintAlt": "#233245", "bar": "#5b8fd1"},
+    {"tint": "#1e2e21", "tintAlt": "#243627", "bar": "#5fae67"},
+    {"tint": "#33291b", "tintAlt": "#3b3020", "bar": "#c99a4e"},
+    {"tint": "#352122", "tintAlt": "#3e2728", "bar": "#c5706f"},
+    {"tint": "#1b302e", "tintAlt": "#213835", "bar": "#4fa4a0"},
+]
+
+#: The palettes as QColors, in the same slot order.
 TINT_COLOURS: List[Dict[str, QtGui.QColor]] = [
     {name: QtGui.QColor(value) for name, value in entry.items()}
     for entry in TINT_PALETTE
 ]
+TINT_COLOURS_DARK: List[Dict[str, QtGui.QColor]] = [
+    {name: QtGui.QColor(value) for name, value in entry.items()}
+    for entry in TINT_PALETTE_DARK
+]
+
+
+def is_dark_theme() -> bool:
+    """Whether the application currently uses a dark theme: its palette's
+    window colour is darker than its window text. Reading the palette
+    (rather than the platform's colour scheme) also covers a dark palette
+    or style sheet set on the application itself."""
+    palette = QtGui.QGuiApplication.palette()
+    window = palette.color(QtGui.QPalette.ColorRole.Window)
+    text = palette.color(QtGui.QPalette.ColorRole.WindowText)
+    return window.lightness() < text.lightness()
+
+
+def tint_colours() -> List[Dict[str, QtGui.QColor]]:
+    """The tint palette for the current theme (:func:`is_dark_theme`)."""
+    return TINT_COLOURS_DARK if is_dark_theme() else TINT_COLOURS
 
 
 @dataclass
@@ -263,9 +294,10 @@ class TypePalette:
 
     def colours(self, type_name: str) -> Optional[Dict[str, QtGui.QColor]]:
         """The palette entry of the Type ``type_name`` (``tint``,
-        ``tintAlt`` and ``bar``), or ``None`` when it has no slot."""
+        ``tintAlt`` and ``bar``) for the current theme, or ``None`` when it
+        has no slot."""
         slot = self.slots.get(type_name)
-        return None if slot is None else TINT_COLOURS[slot]
+        return None if slot is None else tint_colours()[slot]
 
     def bar_colour(self, type_name: str) -> Optional[QtGui.QColor]:
         """The gutter band colour of the Type ``type_name``."""
