@@ -1,6 +1,7 @@
 import json
 
-from instrumentserver.params import ParameterManager
+from instrumentserver.blueprints import ParameterBroadcastBluePrint
+from instrumentserver.params import ParameterGroup, ParameterManager
 
 
 def prep_param_manager(params, template=1):
@@ -53,6 +54,28 @@ def test_proxy_add_remove_parameter(param_manager):
 
     params.remove_parameter(name="probe_param")
     assert "probe_param" not in params.parameters
+
+
+def test_add_parameter_without_initial_value_succeeds_and_broadcasts(
+    param_manager, server_port, capture_broadcasts, wait_for_broadcasts
+):
+    """Calling ``add_parameter("x")`` with no initial_value and no unit over
+    the wire succeeds and Broadcasts the creation with an empty payload
+    (the Server's detection must not raise a latent KeyError)."""
+    cli, params = param_manager
+
+    with capture_broadcasts(["parameter_manager"], server_port + 1) as received:
+        params.add_parameter("x")
+        wait_for_broadcasts(received)
+
+    assert "x" in params.parameters
+    assert len(received) == 1
+    bp = received[0]
+    assert isinstance(bp, ParameterBroadcastBluePrint)
+    assert bp.name == "parameter_manager.x"
+    assert bp.action == "parameter-creation"
+    assert bp.value is None
+    assert bp.unit == ""
 
 
 def test_removing_all_params():
@@ -112,7 +135,7 @@ def test_saving_correct_profile(tmp_path):
     with open(file_path) as file:
         data = json.load(file)
 
-    assert data["params.my_param"]["value"] == 8888
+    assert data["parameters"]["params.my_param"]["value"] == 8888
 
 
 def test_loading_correct_profile(tmp_path):
@@ -127,7 +150,7 @@ def test_loading_correct_profile(tmp_path):
     with open(file_path) as file:
         data = json.load(file)
 
-    data["params.my_param"]["value"] = 9999
+    data["parameters"]["params.my_param"]["value"] = 9999
 
     with open(file_path, "w") as file:
         json.dump(data, file)
@@ -192,9 +215,9 @@ def test_switching_profiles_automatic_save(tmp_path):
     with open(tmp_path.joinpath("parameter_manager-second.json")) as file:
         second = json.load(file)
 
-    assert second["params.his_param"]["value"] == 111
-    assert second["params.nested_param.son1"]["value"] == 222
-    assert second["params.nested_param.son2"]["value"] == 333
+    assert second["parameters"]["params.his_param"]["value"] == 111
+    assert second["parameters"]["params.nested_param.son1"]["value"] == 222
+    assert second["parameters"]["params.nested_param.son2"]["value"] == 333
 
 
 def test_selectedProfile_only_changing_when_correct_name(tmp_path):
@@ -215,3 +238,40 @@ def test_selectedProfile_only_changing_when_correct_name(tmp_path):
     new_path = names_path.replace(tmp_path.joinpath("parameter_manager-names.json"))
     params.fromFile(new_path)
     assert params.selectedProfile == "parameter_manager-names.json"
+
+
+def test_submodules_are_groups(caplog):
+    params = ParameterManager(name="params")
+    # the root itself may warn about its own missing profile file;
+    # only warnings from creating the submodule are of interest here
+    caplog.clear()
+
+    params.add_parameter(name="q01.IF", initial_value=1e9, unit="Hz")
+    params.add_parameter(name="q01.readout.power", initial_value=-10, unit="dBm")
+
+    assert isinstance(params.q01, ParameterGroup)
+    assert not isinstance(params.q01, ParameterManager)
+    assert isinstance(params.q01.readout, ParameterGroup)
+    assert not isinstance(params.q01.readout, ParameterManager)
+
+    # creating a submodule no longer lists the working directory or
+    # tries to load a parameter file for it
+    assert "parameter file not found" not in caplog.text
+
+
+def test_submodule_does_not_load_parameter_file(tmp_path, monkeypatch):
+    """Submodules are Parameter Groups with no file or profile logic of
+    their own: a parameter_manager-q01.json file in the working directory
+    is not loaded into the q01 submodule."""
+    monkeypatch.chdir(tmp_path)
+    profile = tmp_path / "parameter_manager-q01.json"
+    profile.write_text(json.dumps({"q01.file_param": {"value": 999, "unit": "V"}}))
+
+    params = ParameterManager(name="params")
+    params.add_parameter(name="q01.my_param", initial_value=1, unit="M")
+
+    assert isinstance(params.q01, ParameterGroup)
+    assert not isinstance(params.q01, ParameterManager)
+    assert not params.q01.has_param("file_param")
+    assert "q01.file_param" not in params.list()
+    assert params.q01.my_param() == 1

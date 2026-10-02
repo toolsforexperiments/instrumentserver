@@ -12,7 +12,7 @@ from .client import Client, ClientStation
 from .client.application import ClientStationGui
 from .config import loadConfig
 from .gui import widgetMainWindow
-from .gui.instruments import ParameterManagerGui
+from .gui.parameter_manager import ParameterManagerGui
 from .log import setupLogging
 from .server.application import startServerGuiApplication
 from .server.core import startServer
@@ -125,7 +125,7 @@ def parameterManagerScript() -> None:
         description="Starting a parameter manager instrument GUI"
     )
     parser.add_argument("--name", default="parameter_manager")
-    parser.add_argument("--port", default=5555)
+    parser.add_argument("--port", default=5555, type=int)
     args = parser.parse_args()
 
     app = QtWidgets.QApplication([])
@@ -142,7 +142,13 @@ def parameterManagerScript() -> None:
         pm.fromFile()
         pm.update()
 
-    _ = widgetMainWindow(ParameterManagerGui(pm), "Parameter Manager")
+    # The GUI's broadcast listener must follow the server's broadcast port
+    # (request port + 1); without it the GUI listens on the default port
+    # regardless of --port.
+    _ = widgetMainWindow(
+        ParameterManagerGui(pm, sub_port=args.port + 1, sub_host="localhost"),
+        "Parameter Manager",
+    )
     app.exec_()
 
 

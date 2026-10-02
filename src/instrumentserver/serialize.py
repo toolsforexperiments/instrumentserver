@@ -75,7 +75,7 @@ from jsonschema import validate
 from qcodes import Parameter, Station
 from qcodes.instrument import InstrumentBase
 
-from . import PARAMS_SCHEMA_PATH
+from . import PARAMS_SCHEMA_PATH, PM_V2_SCHEMA_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +214,25 @@ def validateParamDict(params: Dict[str, Any]) -> None:
         validate(params, schema)
     except:
         raise
+
+
+def validateParameterManagerV2(document: Dict[str, Any]) -> None:
+    """Validate a version-2 Parameter Manager profile document (see
+    :mod:`.params`, plan decision D19).
+
+    The whole document is validated against
+    ``schemas/parameter_manager_v2.json`` (the ``version`` key, the
+    ``lock`` entry of a Follower and the ``types`` section); the
+    ``parameters`` map is then validated against the per-parameter schema
+    ``schemas/parameters.json`` like a legacy flat parameter map.
+
+    :param document: The profile document, with the keys ``version``
+        (2), ``parameters`` and ``types``.
+    """
+    with open(PM_V2_SCHEMA_PATH) as f:
+        schema = json.load(f)
+    validate(document, schema)
+    validateParamDict(document["parameters"])
 
 
 def toDataFrame(input: SerializableType) -> "pd.DataFrame":

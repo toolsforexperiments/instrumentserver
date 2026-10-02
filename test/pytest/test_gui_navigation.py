@@ -21,15 +21,15 @@ def _shutdown_server_window(qtbot, window):
         qtbot.waitUntil(lambda: not thread.isRunning(), timeout=10000)
 
 
-# Use a spare port so these tests never talk to a developer's live server on 5555.
-TEST_PORT = 5599
-
+# Each pytest session gets its own free port pair from the server_port
+# fixture, so these tests never collide with a developer's live server or
+# another concurrently running test suite.
 TIMEOUT_INS = (
     "instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout"
 )
 
 
-def _start_window(qtbot):
+def _start_window(qtbot, port):
     """Create the server window and wait until its embedded client points at the
     test server.
 
@@ -37,9 +37,9 @@ def _start_window(qtbot):
     only re-targets the real server port once the event loop delivers the
     server-started signal, so the first request must not be sent before then.
     """
-    window = startServerGuiApplication(port=TEST_PORT)
+    window = startServerGuiApplication(port=port)
     qtbot.addWidget(window)
-    qtbot.waitUntil(lambda: window.client.addr.endswith(f":{TEST_PORT}"), timeout=10000)
+    qtbot.waitUntil(lambda: window.client.addr.endswith(f":{port}"), timeout=10000)
     return window
 
 
@@ -62,8 +62,8 @@ def _find_row(view, text):
     return matches[0]
 
 
-def test_backspace_does_not_blank_read_only_parameter(qtbot):
-    window = _start_window(qtbot)
+def test_backspace_does_not_blank_read_only_parameter(qtbot, server_port):
+    window = _start_window(qtbot, server_port)
     try:
         tab = _open_instrument_tab(window, "timeout", TIMEOUT_INS)
         params = tab.parametersList
@@ -84,8 +84,8 @@ def test_backspace_does_not_blank_read_only_parameter(qtbot):
         _shutdown_server_window(qtbot, window)
 
 
-def test_backspace_clears_editable_parameter(qtbot):
-    window = _start_window(qtbot)
+def test_backspace_clears_editable_parameter(qtbot, server_port):
+    window = _start_window(qtbot, server_port)
     try:
         tab = _open_instrument_tab(window, "timeout", TIMEOUT_INS)
         params = tab.parametersList
@@ -109,8 +109,8 @@ SUBMODULE_INS = (
 )
 
 
-def test_enter_toggles_node_with_children(qtbot):
-    window = _start_window(qtbot)
+def test_enter_toggles_node_with_children(qtbot, server_port):
+    window = _start_window(qtbot, server_port)
     try:
         tab = _open_instrument_tab(window, "dummy", SUBMODULE_INS)
         view = tab.parametersList.view
@@ -132,8 +132,8 @@ def test_enter_toggles_node_with_children(qtbot):
         _shutdown_server_window(qtbot, window)
 
 
-def test_right_expands_node_then_moves_to_first_child(qtbot):
-    window = _start_window(qtbot)
+def test_right_expands_node_then_moves_to_first_child(qtbot, server_port):
+    window = _start_window(qtbot, server_port)
     try:
         tab = _open_instrument_tab(window, "dummy", SUBMODULE_INS)
         view = tab.parametersList.view
@@ -152,8 +152,8 @@ def test_right_expands_node_then_moves_to_first_child(qtbot):
         _shutdown_server_window(qtbot, window)
 
 
-def test_enter_on_parameter_requests_edit(qtbot):
-    window = _start_window(qtbot)
+def test_enter_on_parameter_requests_edit(qtbot, server_port):
+    window = _start_window(qtbot, server_port)
     try:
         tab = _open_instrument_tab(window, "dummy", SUBMODULE_INS)
         view = tab.parametersList.view

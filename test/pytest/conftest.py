@@ -1,9 +1,44 @@
+import random
+import socket
+import time
+from contextlib import contextmanager
+
 import pytest  # type: ignore[import-not-found]
 import qcodes as qc
 
+from instrumentserver import QtCore
 from instrumentserver.client.core import BaseClient
-from instrumentserver.client.proxy import Client
+from instrumentserver.client.proxy import Client, SubClient
 from instrumentserver.server.core import startServer
+
+
+@pytest.fixture(scope="session")
+def server_port():
+    """Pick a free pair of consecutive ports, once per pytest session.
+
+    The Server binds ``port`` for requests and uses ``port + 1`` for
+    Broadcasts, so both must be free. Several agents run the suite in
+    parallel; fixed ports made those runs collide. The first port is
+    drawn randomly from a wide range — deliberately outside the OS
+    ephemeral port range, whose sequential allocation hands concurrently
+    starting sessions adjacent, overlapping pairs — and both ports are
+    then verified to be free.
+    """
+
+    def _pair_is_free(port):
+        try:
+            with socket.socket() as first, socket.socket() as second:
+                first.bind(("", port))
+                second.bind(("", port + 1))
+            return True
+        except OSError:
+            return False
+
+    for _ in range(100):
+        port = random.randrange(20_000, 40_000)
+        if _pair_is_free(port):
+            return port
+    raise RuntimeError("Could not find two free consecutive ports.")
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -37,14 +72,14 @@ def qapp_session():
 
 
 @pytest.fixture(scope="module")
-def start_server(qapp_session):
-    server, thread = startServer()
+def start_server(qapp_session, server_port):
+    server, thread = startServer(port=server_port)
     yield server
     # The zmq loop in StationServer blocks on poll(); thread.quit() on its own
     # won't interrupt it. Send the SAFEWORD so the server shuts itself down,
     # then wait for the thread's event loop to exit.
     try:
-        with BaseClient() as shutdown_cli:
+        with BaseClient(port=server_port) as shutdown_cli:
             shutdown_cli.ask(server.SAFEWORD)
     except Exception:
         pass
@@ -53,8 +88,8 @@ def start_server(qapp_session):
 
 
 @pytest.fixture()
-def cli(start_server):
-    cli = Client()
+def cli(start_server, server_port):
+    cli = Client(port=server_port)
     yield cli
     cli.disconnect()
 
@@ -74,3 +109,60 @@ def param_manager(cli):
         "parameter_manager", "instrumentserver.params.ParameterManager"
     )
     return cli, params
+
+
+# ---------------------------------------------------------------------------
+# Broadcast capture helpers, shared by the proxy tests (test_broadcaster.py,
+# test_param_manager.py, test_pm_locks.py). They are exposed as fixtures so
+# test modules do not import from conftest directly.
+# ---------------------------------------------------------------------------
+
+
+@contextmanager
+def _capture_broadcasts(instruments, sub_port):
+    """Run a SubClient on its own QThread and collect the Broadcasts it receives.
+
+    Mirrors the pattern of ``test/docs_verification/helpers.py``, but takes
+    the Broadcast port explicitly so tests pass the ``server_port`` fixture's
+    Broadcast port (``server_port + 1``).
+    """
+    received = []
+    sub = SubClient(instruments=instruments, sub_host="localhost", sub_port=sub_port)
+    sub.update.connect(received.append, QtCore.Qt.DirectConnection)
+    thread = QtCore.QThread()
+    sub.moveToThread(thread)
+    thread.started.connect(sub.connect)
+    sub.finished.connect(thread.quit)
+    thread.start()
+    # PUB/SUB slow joiner: let the SUB socket connect before Broadcasts fire.
+    time.sleep(0.3)
+    try:
+        yield received
+    finally:
+        sub.stop()
+        thread.wait(2000)
+        thread.deleteLater()
+
+
+def _wait_for_broadcasts(received, n=1, timeout=5.0):
+    """Block until at least ``n`` Broadcasts arrived, or fail with a report."""
+    deadline = time.monotonic() + timeout
+    while len(received) < n:
+        if time.monotonic() > deadline:
+            raise AssertionError(
+                f"Expected {n} Broadcast(s) within {timeout}s, "
+                f"got {len(received)}: {received!r}"
+            )
+        time.sleep(0.05)
+
+
+@pytest.fixture(scope="session")
+def capture_broadcasts():
+    """The :func:`_capture_broadcasts` context manager factory."""
+    return _capture_broadcasts
+
+
+@pytest.fixture(scope="session")
+def wait_for_broadcasts():
+    """The :func:`_wait_for_broadcasts` wait helper."""
+    return _wait_for_broadcasts

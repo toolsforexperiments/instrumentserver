@@ -20,29 +20,18 @@ class LogLevels(Enum):
     debug = auto()
 
 
-class QLogHandler(QtCore.QObject, logging.Handler):
-    """A simple log handler that supports logging in TextEdit"""
-
-    COLORS = {
-        logging.ERROR: QtGui.QColor("red"),
-        logging.WARNING: QtGui.QColor("orange"),
-        logging.INFO: QtGui.QColor("green"),
-        logging.DEBUG: QtGui.QColor("gray"),
-    }
+class _LogBridge(QtCore.QObject):
+    """The Qt side of :class:`QLogHandler`: the text widget, and the signal
+    that carries each html line into the GUI thread, where the slot
+    appends it to the widget."""
 
     #: Signal(str) : Emitted with the html-formatted log record to append to the widget
     new_html = QtCore.Signal(str)
 
     def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:
-        QtCore.QObject.__init__(self, parent)
-        logging.Handler.__init__(self)
-
+        super().__init__(parent)
         self.widget = QtWidgets.QTextEdit(parent)
         self.widget.setReadOnly(True)
-        self._transform: Optional[Callable[[logging.LogRecord, str], Optional[str]]] = (
-            None
-        )
-
         # connect signal to slot that actually touches the widget (GUI thread)
         self.new_html.connect(self._append_html)
 
@@ -55,6 +44,31 @@ class QLogHandler(QtCore.QObject, logging.Handler):
         # keep view scrolled to bottom
         self.widget.verticalScrollBar().setValue(  # type: ignore[union-attr]
             self.widget.verticalScrollBar().maximum()  # type: ignore[union-attr]
+        )
+
+
+class QLogHandler(logging.Handler):
+    """A simple log handler that supports logging in TextEdit.
+
+    The handler itself is a plain :class:`logging.Handler`, not a
+    ``QObject``: :func:`logging.shutdown` visits every handler at
+    interpreter exit, after Qt has deleted the widgets, and touching a
+    deleted ``QObject`` there raises. The Qt objects live in a
+    :class:`_LogBridge` parented to ``parent``."""
+
+    COLORS = {
+        logging.ERROR: QtGui.QColor("red"),
+        logging.WARNING: QtGui.QColor("orange"),
+        logging.INFO: QtGui.QColor("green"),
+        logging.DEBUG: QtGui.QColor("gray"),
+    }
+
+    def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:
+        super().__init__()
+        self._bridge = _LogBridge(parent)
+        self.widget = self._bridge.widget
+        self._transform: Optional[Callable[[logging.LogRecord, str], Optional[str]]] = (
+            None
         )
 
     def set_transform(
@@ -89,7 +103,7 @@ class QLogHandler(QtCore.QObject, logging.Handler):
                     )
 
                     # send to GUI thread
-                    self.new_html.emit(html)
+                    self._bridge.new_html.emit(html)
                     return
 
             # fallback: original plain text path
@@ -97,15 +111,18 @@ class QLogHandler(QtCore.QObject, logging.Handler):
             clr_q = self.COLORS.get(record.levelno, QtGui.QColor("black")).name()
             html = f"<span style='color:{clr_q}'>{escape(msg)}</span>"
 
-            self.new_html.emit(html)
+            self._bridge.new_html.emit(html)
         except RuntimeError:
             # Widget has been destroyed; detach self from the logger so we
             # stop receiving further records and Python can collect us.
+            # Assign a new list rather than removeHandler: the logger is
+            # iterating over its handlers list right now, and removing from
+            # it in place would skip the handler after this one.
             for lg in list(logging.Logger.manager.loggerDict.values()) + [
                 logging.getLogger()
             ]:
                 if isinstance(lg, logging.Logger) and self in lg.handlers:
-                    lg.removeHandler(self)
+                    lg.handlers = [h for h in lg.handlers if h is not self]
 
 
 class LogWidget(QtWidgets.QWidget):

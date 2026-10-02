@@ -38,6 +38,10 @@ from ..base import recv_router, send_router, sendBroadcast
 from ..blueprints import (
     INSTRUMENT_MODULE_BASE_CLASSES,
     PARAMETER_BASE_CLASSES,
+    PARAMETER_CALL,
+    PARAMETER_CREATION,
+    PARAMETER_DELETION,
+    PARAMETER_UPDATE,
     CallSpec,
     InstrumentCreationSpec,
     InstrumentModuleBluePrint,
@@ -145,6 +149,12 @@ class StationServer(QtCore.QObject):
                 if settings["initialize"]:
                     self.station.load_instrument(instrumentName)
 
+        # Instruments that reached the Station from config implement the
+        # Broadcaster contract (ADR-0003) or not; register the server as a
+        # Broadcast sink on the ones that do.
+        for component in self.station.components.values():
+            self._registerBroadcaster(component)
+
         self.allowUserShutdown = allowUserShutdown
         self.listenAddresses = list(set(["127.0.0.1"] + addresses))
         self.initScript = initScript
@@ -185,6 +195,7 @@ class StationServer(QtCore.QObject):
         self._wakeup_w.setblocking(False)
 
         # Per-instrument locks to avoid races when multiple threads talk to the same instrument concurrently
+        # Prose calls these the "instrument mutex" (ADR-0003); the code keeps its current names.
         self._instrument_locks: dict[str, threading.RLock] = {}
         self._instrument_locks_lock = threading.Lock()
 
@@ -459,6 +470,7 @@ class StationServer(QtCore.QObject):
 
             if new_instrument.name not in self.station.components:
                 self.station.add_component(new_instrument)
+                self._registerBroadcaster(new_instrument)
 
                 self.instrumentCreated.emit(
                     bluePrintFromInstrumentModule(new_instrument.name, new_instrument),
@@ -485,7 +497,7 @@ class StationServer(QtCore.QObject):
                     # Broadcast changes in parameter values.
                     self._broadcastParameterChange(
                         ParameterBroadcastBluePrint(
-                            spec.target, "parameter-update", args[0]
+                            spec.target, PARAMETER_UPDATE, args[0]
                         )
                     )
                 else:
@@ -493,7 +505,7 @@ class StationServer(QtCore.QObject):
 
                     # Broadcast calls of parameters.
                     self._broadcastParameterChange(
-                        ParameterBroadcastBluePrint(spec.target, "parameter-call", ret)
+                        ParameterBroadcastBluePrint(spec.target, PARAMETER_CALL, ret)
                     )
             else:
                 self.funcCalled.emit(spec.target, args, kwargs, ret)
@@ -567,6 +579,17 @@ class StationServer(QtCore.QObject):
 
         return json.dumps(self.guiConfig[instrumentName])
 
+    def _registerBroadcaster(self, instrument: Any) -> None:
+        """
+        Register the server as a Broadcast sink on an instrument implementing
+        the Broadcaster contract (ADR-0003). Instruments without the contract
+        are left untouched.
+
+        :param instrument: The instrument that joined the Station.
+        """
+        if hasattr(instrument, "add_broadcast_sink"):
+            instrument.add_broadcast_sink(self._broadcastParameterChange)
+
     def _broadcastParameterChange(self, blueprint: ParameterBroadcastBluePrint) -> None:
         """
         Broadcast any changes to parameters in the server.
@@ -605,12 +628,15 @@ class StationServer(QtCore.QObject):
         if spec.target.split(".")[-1] == "add_parameter":
             name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
             pb = ParameterBroadcastBluePrint(
-                name, "parameter-creation", kwargs["initial_value"], kwargs["unit"]
+                name,
+                PARAMETER_CREATION,
+                kwargs.get("initial_value"),
+                kwargs.get("unit", ""),
             )
             self._broadcastParameterChange(pb)
         elif spec.target.split(".")[-1] == "remove_parameter":
             name = spec.target.split(".")[0] + "." + ".".join(spec.args)  # type: ignore[arg-type]
-            pb = ParameterBroadcastBluePrint(name, "parameter-deletion")
+            pb = ParameterBroadcastBluePrint(name, PARAMETER_DELETION)
             self._broadcastParameterChange(pb)
 
     def _get_lock_for_target(self, target: str) -> Optional[threading.RLock]:

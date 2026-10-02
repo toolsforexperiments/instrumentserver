@@ -15,8 +15,8 @@ DUMMY_CLASS = (
 
 
 @pytest.fixture(scope="module")
-def client_station(start_server):
-    station = ClientStation(host="localhost", port=5555)
+def client_station(start_server, server_port):
+    station = ClientStation(host="localhost", port=server_port)
     yield station
     station.disconnect()
 
@@ -73,10 +73,10 @@ def test_client_station_subscript_access(client_station):
 # ---------------------------------------------------------------------------
 
 
-def test_client_station_gui_opens(qtbot, start_server):
+def test_client_station_gui_opens(qtbot, start_server, server_port):
     from instrumentserver.client.application import ClientStationGui
 
-    station = ClientStation(host="localhost", port=5555)
+    station = ClientStation(host="localhost", port=server_port)
     window = ClientStationGui(station)
     qtbot.addWidget(window)
     try:
@@ -86,10 +86,10 @@ def test_client_station_gui_opens(qtbot, start_server):
         station.disconnect()
 
 
-def test_client_station_gui_has_three_tabs(qtbot, start_server):
+def test_client_station_gui_has_three_tabs(qtbot, start_server, server_port):
     from instrumentserver.client.application import ClientStationGui
 
-    station = ClientStation(host="localhost", port=5555)
+    station = ClientStation(host="localhost", port=server_port)
     window = ClientStationGui(station)
     qtbot.addWidget(window)
     try:
@@ -102,24 +102,26 @@ def test_client_station_gui_has_three_tabs(qtbot, start_server):
         station.disconnect()
 
 
-def test_client_station_gui_server_widget_shows_host_port(qtbot, start_server):
+def test_client_station_gui_server_widget_shows_host_port(
+    qtbot, start_server, server_port
+):
     from instrumentserver.client.application import ClientStationGui
 
-    station = ClientStation(host="localhost", port=5555)
+    station = ClientStation(host="localhost", port=server_port)
     window = ClientStationGui(station)
     qtbot.addWidget(window)
     try:
         assert window.server_widget.host.text() == "localhost"
-        assert window.server_widget.port.text() == "5555"
+        assert window.server_widget.port.text() == str(server_port)
     finally:
         window.close()
         station.disconnect()
 
 
-def test_client_station_gui_station_list_populated(qtbot, start_server):
+def test_client_station_gui_station_list_populated(qtbot, start_server, server_port):
     from instrumentserver.client.application import ClientStationGui
 
-    station = ClientStation(host="localhost", port=5555)
+    station = ClientStation(host="localhost", port=server_port)
     station.find_or_create_instrument("gui_cs_dummy", DUMMY_CLASS)
     window = ClientStationGui(station)
     qtbot.addWidget(window)
@@ -130,12 +132,12 @@ def test_client_station_gui_station_list_populated(qtbot, start_server):
         station.disconnect()
 
 
-def test_client_station_gui_open_instrument_tab(qtbot, start_server):
+def test_client_station_gui_open_instrument_tab(qtbot, start_server, server_port):
     from instrumentserver import QtCore
     from instrumentserver.client.application import ClientStationGui
     from instrumentserver.gui.instruments import GenericInstrument
 
-    station = ClientStation(host="localhost", port=5555)
+    station = ClientStation(host="localhost", port=server_port)
     station.find_or_create_instrument("gui_cs_dummy2", DUMMY_CLASS)
     window = ClientStationGui(station)
     qtbot.addWidget(window)

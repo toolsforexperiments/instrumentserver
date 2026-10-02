@@ -11,6 +11,9 @@ import numpy as np
 from qcodes import Instrument, validators
 from qcodes.math_utils.field_vector import FieldVector
 
+from instrumentserver.base import Broadcaster
+from instrumentserver.blueprints import ParameterBroadcastBluePrint
+
 
 class StatusFlag(IntFlag):
     """An ``IntFlag`` mirroring drivers like the Yokogawa GS200 status byte.
@@ -434,3 +437,30 @@ class DummyInstrumentWithFlags(Instrument):
 
     def get_condition(self):
         return self._condition
+
+
+class DummyBroadcasterInstrument(Broadcaster, Instrument):
+    """A dummy instrument implementing the Broadcaster contract.
+
+    The Server registers itself as a Broadcast sink when this instrument
+    joins the Station. Tests call :meth:`emit_broadcast` through a proxy
+    to make the instrument emit a Broadcast over the Server's PUB socket.
+    """
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        self.add_parameter("param0", set_cmd=None, initial_value=0)
+
+    def emit_broadcast(self, value=1.0, unit="V", action="parameter-update"):
+        """
+        Emit a Broadcast about ``param0`` and return the blueprint that was sent.
+
+        :param value: The value carried by the Broadcast.
+        :param unit: The unit carried by the Broadcast.
+        :param action: The action string carried by the Broadcast.
+        """
+        bp = ParameterBroadcastBluePrint(
+            name=f"{self.name}.param0", action=action, value=value, unit=unit
+        )
+        self.broadcast(bp)
+        return bp
