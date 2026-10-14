@@ -5,7 +5,6 @@ Created on Sat Apr 18 16:13:40 2020
 @author: Chao
 """
 
-import collections
 import inspect
 import json
 import logging
@@ -15,7 +14,6 @@ from contextlib import contextmanager
 from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import qcodes as qc
 import zmq
 from qcodes import Instrument, Parameter
 from qcodes.instrument import InstrumentBase
@@ -43,8 +41,87 @@ logger = logging.getLogger(__name__)
 # TODO: enable creation of instruments through yaml files/station configurator.
 # TODO: support for channel lists
 # TODO: support for other parameter classes.
-# FIXME: need to generally find the imports we need for type annotations!
 # TODO: convenience function to refresh from server.
+
+
+class _Missing:
+    """Default of every proxy method parameter: the caller didn't pass it."""
+
+    def __repr__(self) -> str:
+        return "<missing>"
+
+
+_MISSING = _Missing()
+
+# name of the forwarding helper in the generated method's globals; a driver
+# parameter won't use it.
+_FORWARD_NAME = "__isrv_forward__"
+
+# the blueprint stores each parameter kind as ``str(kind)``.
+_PARAMETER_KINDS = {
+    str(kind): kind
+    for kind in (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.VAR_POSITIONAL,
+        inspect.Parameter.KEYWORD_ONLY,
+        inspect.Parameter.VAR_KEYWORD,
+    )
+}
+_POSITIONAL_KINDS = (
+    inspect.Parameter.POSITIONAL_ONLY,
+    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+)
+_VARIADIC_KINDS = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+
+
+def _defArguments(parameters: List[inspect.Parameter]) -> str:
+    """Argument list for the generated proxy method: ``self`` first, every
+    named parameter defaulting to ``_MISSING``, and the ``/`` and ``*`` markers
+    kept so positional-only and keyword-only behave as on the server."""
+    parts = ["self"]
+    star = False
+    for i, p in enumerate(parameters):
+        if p.kind == inspect.Parameter.VAR_POSITIONAL:
+            parts.append(f"*{p.name}")
+            star = True
+        elif p.kind == inspect.Parameter.VAR_KEYWORD:
+            parts.append(f"**{p.name}")
+        else:
+            if p.kind == inspect.Parameter.KEYWORD_ONLY and not star:
+                parts.append("*")
+                star = True
+            parts.append(f"{p.name}=_MISSING")
+        is_last_positional_only = p.kind == inspect.Parameter.POSITIONAL_ONLY and (
+            i + 1 == len(parameters)
+            or parameters[i + 1].kind != inspect.Parameter.POSITIONAL_ONLY
+        )
+        if is_last_positional_only:
+            parts.append("/")
+    return ", ".join(parts)
+
+
+class _ServerSignature(inspect.Signature):
+    """Signature of a proxy method. Its parameters match the generated method,
+    so ``bind()`` behaves like the proxy, but ``str()`` gives the server's
+    signature text, annotations and defaults included."""
+
+    __slots__ = ("_server_text",)
+
+    def __init__(self, *args: Any, server_text: str = "", **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._server_text = server_text
+
+    def __str__(self) -> str:
+        return self._server_text
+
+    def replace(self, **kwargs: Any) -> "_ServerSignature":
+        # inspect calls this to drop ``self`` from a bound method's signature.
+        new = super().replace(**kwargs)
+        new._server_text = self._server_text
+        return new
+
+    __replace__ = replace
 
 
 class ProxyMixin:
@@ -352,37 +429,61 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             )
             return self.askServer(msg)
 
-        sig = bp.call_signature_str
-        params = bp.signature_parameters
-        args = []
-        # FIXME: a better solution to this would probably be to convet kind into the enum object. But it seems that the
-        #  parameter kind enum is private.
-        for pn, kind in params.items():
-            if kind in [
-                str(inspect.Parameter.POSITIONAL_OR_KEYWORD),
-                str(inspect.Parameter.POSITIONAL_ONLY),
-            ]:
-                args.append(f"{pn}")
-            elif kind == str(inspect.Parameter.VAR_POSITIONAL):
-                args.append(f"*{pn}")
-            elif kind == str(inspect.Parameter.KEYWORD_ONLY):
-                args.append(f"{pn}={pn}")
-            elif kind == str(inspect.Parameter.VAR_KEYWORD):
-                args.append(f"**{pn}")
+        # The server signature can hold annotations and defaults the client
+        # can't evaluate, so only names and kinds are used here. Every
+        # parameter defaults to _MISSING, and only what the caller passed is
+        # sent, so the server applies its own defaults.
+        parameters = [
+            inspect.Parameter(
+                pn,
+                _PARAMETER_KINDS[kind],
+                default=(
+                    inspect.Parameter.empty
+                    if _PARAMETER_KINDS[kind] in _VARIADIC_KINDS
+                    else _MISSING
+                ),
+            )
+            for pn, kind in bp.signature_parameters.items()
+        ]
+
+        def forward(values: Dict[str, Any]) -> Any:
+            args: List[Any] = []
+            kwargs: Dict[str, Any] = {}
+            positional = True
+            for p in parameters:
+                value = values[p.name]
+                if p.kind in _POSITIONAL_KINDS:
+                    # send by position until the first omitted one, then by keyword.
+                    if value is _MISSING:
+                        positional = False
+                    elif positional:
+                        args.append(value)
+                    else:
+                        kwargs[p.name] = value
+                elif p.kind == inspect.Parameter.VAR_POSITIONAL:
+                    args.extend(value)
+                elif p.kind == inspect.Parameter.KEYWORD_ONLY:
+                    if value is not _MISSING:
+                        kwargs[p.name] = value
+                else:
+                    kwargs.update(value)
+            return wrap(*args, **kwargs)
 
         # we need to add a `self` argument because we want this to be a bound
         # method of the instrument instance.
-        sig = sig[0] + "self, " + sig[1:]
-        new_func_str = f"""from typing import *\ndef {bp.name}{sig}:
-        return wrap({", ".join(args)})"""
-
-        # make sure the method knows the wrap function.
-        # TODO: this is not complete!
-        globs = {"wrap": wrap, "qcodes": qc, "collections": collections}
+        new_func_str = (
+            f"def {bp.name}({_defArguments(parameters)}):\n"
+            f"    return {_FORWARD_NAME}(locals())"
+        )
+        globs: Dict[str, Any] = {_FORWARD_NAME: forward, "_MISSING": _MISSING}
         exec(new_func_str, globs)
         fun = globs[bp.name]
-        fun.__doc__ = bp.docstring
-        return globs[bp.name]  # type: ignore[return-value]
+        fun.__signature__ = _ServerSignature(
+            [inspect.Parameter("self", inspect.Parameter.POSITIONAL_ONLY)] + parameters,
+            server_text=bp.call_signature_str,
+        )
+        fun.__doc__ = f"{bp.name}{bp.call_signature_str}\n\n{bp.docstring}"
+        return fun
 
     def _getProxySubmodules(self) -> None:
         """Based on the submodule blue print replied from server, add the proxy
