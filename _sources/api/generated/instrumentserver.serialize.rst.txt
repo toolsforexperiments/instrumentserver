@@ -13,4 +13,5 @@
       toDataFrame
       toParamDict
       validateParamDict
+      validateParameterManagerV2
    

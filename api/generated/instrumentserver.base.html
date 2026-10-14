@@ -406,6 +406,12 @@
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.logic.html">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
 </ul>
@@ -524,6 +530,62 @@
 </tbody>
 </table>
 </div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.base.Broadcaster" title="instrumentserver.base.Broadcaster"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Broadcaster</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Mixin implementing the Broadcaster contract: an instrument that emits its own Broadcasts.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.base.Broadcaster">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.base.</span></span><span class="sig-name descname"><span class="pre">Broadcaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/base.html#Broadcaster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.base.Broadcaster" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Mixin implementing the Broadcaster contract: an instrument that emits its
+own Broadcasts.</p>
+<p>The instrument calls <a class="reference internal" href="#instrumentserver.base.Broadcaster.broadcast" title="instrumentserver.base.Broadcaster.broadcast"><code class="xref py py-meth docutils literal notranslate"><span class="pre">broadcast()</span></code></a> with a
+<a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint" title="instrumentserver.blueprints.ParameterBroadcastBluePrint"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParameterBroadcastBluePrint</span></code></a>; the
+Server registers itself as a sink with <a class="reference internal" href="#instrumentserver.base.Broadcaster.add_broadcast_sink" title="instrumentserver.base.Broadcaster.add_broadcast_sink"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_broadcast_sink()</span></code></a> when
+the instrument joins the Station. Used standalone (no sinks registered),
+<a class="reference internal" href="#instrumentserver.base.Broadcaster.broadcast" title="instrumentserver.base.Broadcaster.broadcast"><code class="xref py py-meth docutils literal notranslate"><span class="pre">broadcast()</span></code></a> is a no-op.</p>
+<p>Sinks are stored in a plain list: adding the same sink twice makes it
+receive every Broadcast twice. An exception raised inside one sink is
+logged and does not stop the remaining sinks.</p>
+<p>The annotations of the public methods are strings on purpose: the client
+builds proxy methods by exec-ing the blueprint’s call signature string,
+and a rendered class annotation would reference a name the exec’d source
+cannot resolve. Keep new blueprint-carrying annotations quoted like these.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.base.Broadcaster.add_broadcast_sink">
+<span class="sig-name descname"><span class="pre">add_broadcast_sink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint" title="instrumentserver.blueprints.ParameterBroadcastBluePrint"><span class="pre">ParameterBroadcastBluePrint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/base.html#Broadcaster.add_broadcast_sink"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.base.Broadcaster.add_broadcast_sink" title="Link to this definition">#</a></dt>
+<dd><p>Register <code class="docutils literal notranslate"><span class="pre">fn</span></code> as a sink that receives every Broadcast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fn</strong> – callable taking a ParameterBroadcastBluePrint.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.base.Broadcaster.broadcast">
+<span class="sig-name descname"><span class="pre">broadcast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint" title="instrumentserver.blueprints.ParameterBroadcastBluePrint"><span class="pre">ParameterBroadcastBluePrint</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/base.html#Broadcaster.broadcast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.base.Broadcaster.broadcast" title="Link to this definition">#</a></dt>
+<dd><p>Send a Broadcast to every registered sink.</p>
+<p>With no sinks registered this is a no-op. An exception raised inside
+one sink is logged and the remaining sinks still receive the
+Broadcast.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.base.Broadcaster.remove_broadcast_sink">
+<span class="sig-name descname"><span class="pre">remove_broadcast_sink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint" title="instrumentserver.blueprints.ParameterBroadcastBluePrint"><span class="pre">ParameterBroadcastBluePrint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/base.html#Broadcaster.remove_broadcast_sink"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.base.Broadcaster.remove_broadcast_sink" title="Link to this definition">#</a></dt>
+<dd><p>Remove a sink that was registered with <a class="reference internal" href="#instrumentserver.base.Broadcaster.add_broadcast_sink" title="instrumentserver.base.Broadcaster.add_broadcast_sink"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_broadcast_sink()</span></code></a>.</p>
+<p>Removing a sink that is not registered does nothing.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="instrumentserver.base.decode">
 <span class="sig-prename descclassname"><span class="pre">instrumentserver.base.</span></span><span class="sig-name descname"><span class="pre">decode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><span class="pre">bytes</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/base.html#decode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.base.decode" title="Link to this definition">#</a></dt>
@@ -630,6 +692,12 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.Broadcaster"><code class="docutils literal notranslate"><span class="pre">Broadcaster</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.Broadcaster.add_broadcast_sink"><code class="docutils literal notranslate"><span class="pre">Broadcaster.add_broadcast_sink()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.Broadcaster.broadcast"><code class="docutils literal notranslate"><span class="pre">Broadcaster.broadcast()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.Broadcaster.remove_broadcast_sink"><code class="docutils literal notranslate"><span class="pre">Broadcaster.remove_broadcast_sink()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.decode"><code class="docutils literal notranslate"><span class="pre">decode()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.encode"><code class="docutils literal notranslate"><span class="pre">encode()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.base.recv"><code class="docutils literal notranslate"><span class="pre">recv()</span></code></a></li>

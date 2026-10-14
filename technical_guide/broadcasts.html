@@ -458,16 +458,344 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="broadcasts">
 <h1>Broadcasts<a class="headerlink" href="#broadcasts" title="Link to this heading">#</a></h1>
-<div class="warning admonition">
-<p class="admonition-title">🚧 This page is planned, not yet written</p>
-<p>It will be replaced with verified content as the documentation refactor progresses.</p>
+<p>When a Client sets or reads a parameter, the Server announces it as a
+<strong>Broadcast</strong>: a small message on a PUB socket that any number of subscribers
+receive at once, from the Server’s own GUI to a <strong>Listener</strong> on another
+machine. Nobody polls. The
+<a class="reference internal" href="../getting_started/how_it_works.html"><span class="std std-doc">getting started overview</span></a> shows what
+Broadcasts are for; this page is the deeper twin. It covers what exactly
+triggers a Broadcast, what the two frames on the wire look like, how a Client
+subscribes with <code class="docutils literal notranslate"><span class="pre">SubClient</span></code>, how the Server forwards Broadcasts to other
+machines, and how an instrument emits its own Broadcasts through the
+<strong>Broadcaster</strong> contract, with the Parameter Manager’s Lock, Type and
+side-effect actions as the worked example.</p>
+<p>The user-facing side of the Parameter Manager’s Broadcasts is in the User
+Guide’s <a class="reference internal" href="../user_guide/parameter_manager.html"><span class="std std-doc">Parameter Manager</span></a> page, and
+Blueprints in general are described in
+<a class="reference internal" href="blueprints_and_proxies.html"><span class="std std-doc">Blueprints and Proxies</span></a>.</p>
+<section id="what-triggers-a-broadcast">
+<h2>What triggers a Broadcast<a class="headerlink" href="#what-triggers-a-broadcast" title="Link to this heading">#</a></h2>
+<p>The Server emits every Broadcast from the worker thread that executed the
+client request, while that worker holds the instrument’s instrument mutex.
+Requests for one instrument are serialized by that mutex, so the Broadcasts
+about one instrument go out in the order the requests ran.</p>
+<p>Four things trigger a Broadcast. A parameter set emits <code class="docutils literal notranslate"><span class="pre">parameter-update</span></code>,
+carrying the value that was set. A parameter read emits <code class="docutils literal notranslate"><span class="pre">parameter-call</span></code>,
+carrying the value that was read. A client call to a method literally named
+<code class="docutils literal notranslate"><span class="pre">add_parameter</span></code> emits <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>, and one to <code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code>
+emits <code class="docutils literal notranslate"><span class="pre">parameter-deletion</span></code>; the message’s <code class="docutils literal notranslate"><span class="pre">name</span></code> is the instrument name and
+the call’s arguments joined with dots, and a creation carries the
+<code class="docutils literal notranslate"><span class="pre">initial_value</span></code> and <code class="docutils literal notranslate"><span class="pre">unit</span></code> keyword arguments the call received. Any other
+method call emits nothing.</p>
+<p>The examples below run against a Client and the two instruments they use:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cli</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dummy</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;dummy&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pm</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;parameter_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;instrumentserver.params.ParameterManager&quot;</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
 </div>
-<p>This page will cover:</p>
+<p>Captured through a <code class="docutils literal notranslate"><span class="pre">SubClient</span></code> (the SubClient section shows the wiring), the
+triggers look like this, in the order they were emitted:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dummy</span><span class="o">.</span><span class="n">param0</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+<span class="go">(&#39;parameter-update&#39;, &#39;dummy.param0&#39;, 0.5)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dummy</span><span class="o">.</span><span class="n">param0</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">received</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+<span class="go">(&#39;parameter-call&#39;, 0.5)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pm</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s2">&quot;extra.gain&quot;</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">received</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+<span class="go">(&#39;parameter-creation&#39;, &#39;parameter_manager.extra.gain&#39;, 3, &#39;V&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pm</span><span class="o">.</span><span class="n">remove_parameter</span><span class="p">(</span><span class="s2">&quot;extra.gain&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">received</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+<span class="go">(&#39;parameter-deletion&#39;, &#39;parameter_manager.extra.gain&#39;, None)</span>
+</pre></div>
+</div>
+<p>That is the whole list for a plain instrument. An instrument that implements
+the Broadcaster contract emits its own Broadcasts on top, which is how the
+Parameter Manager announces Locks, Types and the parameters it creates as
+side effects.</p>
+<p>Every Broadcast carries one of six action strings. They are module constants
+in <code class="docutils literal notranslate"><span class="pre">blueprints.py</span></code>, and their values are the wire contract that external
+subscribers parse:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Constant</p></th>
+<th class="head"><p>Action string</p></th>
+<th class="head"><p>Emitted by</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">value</span></code> carries</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PARAMETER_UPDATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">parameter-update</span></code></p></td>
+<td><p>the Server, on a parameter set</p></td>
+<td><p>the new value</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PARAMETER_CALL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">parameter-call</span></code></p></td>
+<td><p>the Server, on a parameter read</p></td>
+<td><p>the value that was read</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PARAMETER_CREATION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code></p></td>
+<td><p>the Server, on a client call to <code class="docutils literal notranslate"><span class="pre">add_parameter</span></code>; the Parameter Manager, for parameters it creates as side effects</p></td>
+<td><p>the initial value (<code class="docutils literal notranslate"><span class="pre">None</span></code> when none was given)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PARAMETER_DELETION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">parameter-deletion</span></code></p></td>
+<td><p>the Server, on a client call to <code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code></p></td>
+<td><p>nothing (<code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PM_LOCK_UPDATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code></p></td>
+<td><p>the Parameter Manager, one per affected Follower</p></td>
+<td><p>the Follower’s <code class="docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when its Lock was removed</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PM_TYPE_UPDATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code></p></td>
+<td><p>the Parameter Manager, one per edited Type</p></td>
+<td><p>the Type’s fresh <code class="docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when the Type was removed</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="the-wire-format">
+<h2>The wire format<a class="headerlink" href="#the-wire-format" title="Link to this heading">#</a></h2>
+<p>The Server publishes Broadcasts on a PUB socket bound to <code class="docutils literal notranslate"><span class="pre">tcp://*</span></code> on the
+request port plus one. A Server on the default port 5555 publishes on 5556.</p>
+<p>A Broadcast is a two-frame ZMQ message. Frame 1 is the topic: the instrument
+name, which is the first dotted component of the message’s <code class="docutils literal notranslate"><span class="pre">name</span></code>. Frame 2 is
+the JSON of the message’s <code class="docutils literal notranslate"><span class="pre">ParameterBroadcastBluePrint</span></code> dict. Here is one
+real message as a subscriber received it, both frames:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">frame</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;dummy&#39;</span>
+<span class="n">frame</span> <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;dummy.param0&quot;</span><span class="p">,</span> <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;parameter-update&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;0.5&quot;</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;_class_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ParameterBroadcastBluePrint&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The topic is what lets subscribers filter per instrument: a SUB socket that
+subscribes to <code class="docutils literal notranslate"><span class="pre">parameter_manager</span></code> receives the Parameter Manager’s Broadcasts
+and nothing else. The subscription is a plain prefix match, so subscribing to
+<code class="docutils literal notranslate"><span class="pre">dummy</span></code> also receives the messages of an instrument named <code class="docutils literal notranslate"><span class="pre">dummy2</span></code>. One
+Broadcast reaches every subscriber: two SUB sockets connected to the
+Server’s PUB socket each received the identical two frames.</p>
+<p>Frame 2 carries every scalar field of the Blueprint as a string, including
+<code class="docutils literal notranslate"><span class="pre">_class_type</span></code>, which names the class the dict stands for. A <code class="docutils literal notranslate"><span class="pre">value</span></code> that is
+itself a Blueprint travels as a nested dict with its own <code class="docutils literal notranslate"><span class="pre">_class_type</span></code>, as
+the Parameter Manager payloads at the end of this page show. <code class="docutils literal notranslate"><span class="pre">decode</span></code> turns
+the payload back into the dataclass: <code class="docutils literal notranslate"><span class="pre">json.loads</span></code>, then <code class="docutils literal notranslate"><span class="pre">deserialize_obj</span></code>,
+which sees the <code class="docutils literal notranslate"><span class="pre">_class_type</span></code> key and rebuilds a <code class="docutils literal notranslate"><span class="pre">ParameterBroadcastBluePrint</span></code>
+from the fields. Decoding the frame 2 payload from above (a subscriber holds
+it as <code class="docutils literal notranslate"><span class="pre">payload</span></code>), the numeric strings come back as numbers:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">decode</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bp</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">bp</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+<span class="go">&#39;ParameterBroadcastBluePrint&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">bp</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">bp</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">bp</span><span class="o">.</span><span class="n">unit</span>
+<span class="go">(&#39;dummy.param0&#39;, &#39;parameter-update&#39;, 0.5, &#39;&#39;)</span>
+</pre></div>
+</div>
+<p>One PUB/SUB quirk to know: a subscriber that connects after a Broadcast was
+published misses it. The subscription only counts from the moment it reached
+the Server’s socket. So subscribe before you trigger, and give a fresh
+subscriber a moment to connect before you expect messages from it. The
+shared helpers sleep briefly after connecting for exactly this reason.</p>
+</section>
+<section id="subclient">
+<h2>SubClient<a class="headerlink" href="#subclient" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SubClient</span></code> (in <code class="docutils literal notranslate"><span class="pre">instrumentserver.client.proxy</span></code>) is the Qt consumer of
+Broadcasts. It opens a SUB socket on the Broadcast port, subscribes to the
+instruments you name, or to everything when you pass none, and emits every
+received Broadcast as a <code class="docutils literal notranslate"><span class="pre">ParameterBroadcastBluePrint</span></code> on its <code class="docutils literal notranslate"><span class="pre">update</span></code>
+signal:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sub</span> <span class="o">=</span> <span class="n">SubClient</span><span class="p">(</span><span class="n">instruments</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parameter_manager&quot;</span><span class="p">])</span>  <span class="c1"># or instruments=None: all</span>
+<span class="n">thread</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">QThread</span><span class="p">()</span>
+<span class="n">sub</span><span class="o">.</span><span class="n">moveToThread</span><span class="p">(</span><span class="n">thread</span><span class="p">)</span>               <span class="c1"># the receive loop runs on its own QThread</span>
+<span class="n">thread</span><span class="o">.</span><span class="n">started</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">sub</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span>    <span class="c1"># connect() runs the loop until stop()</span>
+<span class="n">sub</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">thread</span><span class="o">.</span><span class="n">quit</span><span class="p">)</span>
+<span class="n">sub</span><span class="o">.</span><span class="n">update</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">on_broadcast</span><span class="p">)</span>       <span class="c1"># every Broadcast, as a ParameterBroadcastBluePrint</span>
+<span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>That is the exact wiring the Parameter Manager GUI and the shared helpers
+use. <code class="docutils literal notranslate"><span class="pre">stop()</span></code> ends the receive loop; stop the thread with it, as the GUI’s
+<code class="docutils literal notranslate"><span class="pre">stopListener</span></code> does: <code class="docutils literal notranslate"><span class="pre">sub.stop()</span></code>, then <code class="docutils literal notranslate"><span class="pre">thread.quit()</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">thread.wait()</span></code>.</p>
+<p>This is also how GUIs stay live without polling. The Parameter Manager GUI’s
+model receives every Broadcast of its instrument through a <code class="docutils literal notranslate"><span class="pre">SubClient</span></code> and
+routes the two Parameter Manager actions straight into its client-side
+state: a <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> payload replaces one Follower’s Lock, and a
+<code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> payload replaces that one Type, which carries the whole
+fresh definition, so the GUI never fetches that Type or Lock again. The
+Parameter Manager’s actions section at the end of this page shows the
+payloads; <a class="reference internal" href="../user_guide/parameter_manager.html"><span class="std std-doc">the Parameter Manager</span></a> page
+shows the widgets this feeds.</p>
+<p>You do not need Qt to subscribe. A plain SUB loop is the whole recipe, and
+the Listener is exactly that:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">recvMultipart</span>
+
+<span class="n">context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
+<span class="n">socket</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
+<span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://localhost:5556&quot;</span><span class="p">)</span>
+<span class="n">socket</span><span class="o">.</span><span class="n">setsockopt_string</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">topic</span><span class="p">,</span> <span class="n">blueprint</span> <span class="o">=</span> <span class="n">recvMultipart</span><span class="p">(</span><span class="n">socket</span><span class="p">)</span>
+    <span class="c1"># blueprint is a ParameterBroadcastBluePrint, decoded for you</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="../user_guide/monitoring.html"><span class="std std-doc">Monitoring</span></a> page covers the Listener and
+where it can send what it receives.</p>
+</section>
+<section id="external-forwarding">
+<h2>External forwarding<a class="headerlink" href="#external-forwarding" title="Link to this heading">#</a></h2>
+<p>By default the Server publishes Broadcasts at <code class="docutils literal notranslate"><span class="pre">tcp://*</span></code> on the request port
+plus one, so every machine that can reach the Server can subscribe there.
+The station config can additionally name a second address to publish the
+same Broadcasts to, in its <code class="docutils literal notranslate"><span class="pre">networking</span></code> section:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">networking</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Adds an address to broadcast parameter changes to, Example: &quot;tcp://192.168.1.1:6000&quot;</span>
+<span class="w">  </span><span class="nt">externalBroadcast</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tcp://192.168.1.1:6000&quot;</span>
+</pre></div>
+</div>
+<p>With that in place the Server binds a second PUB socket on the given address
+and sends every Broadcast to both sockets. The copy is the same two-frame
+message as the original: a subscriber on the external address received
+frames identical to the ones on the local port, and a <code class="docutils literal notranslate"><span class="pre">SubClient</span></code> pointed at
+the external address received the Blueprint unchanged. Existing subscribers
+need no change; the address is just a second door into the same stream.
+That is what puts live UIs and Listeners on other machines: a dedicated
+monitoring network or a fixed address of your choosing, with the same
+stream on both.</p>
+<p>In code, the same setting is the <code class="docutils literal notranslate"><span class="pre">ipAddresses</span></code> dict: <code class="docutils literal notranslate"><span class="pre">startServer</span></code> accepts
+<code class="docutils literal notranslate"><span class="pre">ipAddresses={&quot;externalBroadcast&quot;:</span> <span class="pre">&quot;tcp://127.0.0.1:6000&quot;}</span></code> and binds the
+second PUB socket on it. <a class="reference internal" href="../user_guide/server.html"><span class="std std-doc">The Server</span></a> page covers
+the config file and where each entry lands.</p>
+</section>
+<section id="the-broadcaster-contract">
+<h2>The Broadcaster contract<a class="headerlink" href="#the-broadcaster-contract" title="Link to this heading">#</a></h2>
+<p>Everything above is the Server broadcasting what it can see: parameter sets
+and reads, and calls to methods literally named <code class="docutils literal notranslate"><span class="pre">add_parameter</span></code> and
+<code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code>. Structural changes inside an instrument stayed
+invisible to everyone else. The Broadcaster contract (ADR-0003) is the
+opt-in way for an instrument to announce them itself.</p>
+<p>An instrument implements the contract by mixing in <code class="docutils literal notranslate"><span class="pre">Broadcaster</span></code> (in
+<code class="docutils literal notranslate"><span class="pre">instrumentserver.base</span></code>), which brings three methods:</p>
 <ul class="simple">
-<li><p>What triggers a Broadcast; the message format</p></li>
-<li><p>SubClient mechanics; how GUIs stay live</p></li>
-<li><p>External broadcast forwarding</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_broadcast_sink(fn)</span></code> registers <code class="docutils literal notranslate"><span class="pre">fn</span></code> to receive every Broadcast the
+instrument emits. Sinks are stored in a plain list, so registering the same
+sink twice means receiving everything twice, and removing it once leaves it
+registered once.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">remove_broadcast_sink(fn)</span></code> removes it again.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">broadcast(bp)</span></code> sends one <code class="docutils literal notranslate"><span class="pre">ParameterBroadcastBluePrint</span></code> to every
+registered sink. With no sinks registered it is a no-op, so an instrument
+used standalone (no Server, no sinks) emits nothing and nothing raises. An
+exception raised inside one sink is logged and the remaining sinks still
+receive the Broadcast.</p></li>
 </ul>
+<p>The Server knows the contract by shape, not by base class: when an
+instrument joins the Station, the Server checks for an
+<code class="docutils literal notranslate"><span class="pre">add_broadcast_sink</span></code> attribute and registers its own
+<code class="docutils literal notranslate"><span class="pre">StationServer._broadcastParameterChange</span></code> as a sink. This happens at the two
+points where instruments enter the Station: created over the wire with
+<code class="docutils literal notranslate"><span class="pre">find_or_create_instrument</span></code>, and loaded from the station config at startup.
+Instruments without the mixin are registered exactly as before and stay
+untouched.</p>
+<p><code class="docutils literal notranslate"><span class="pre">broadcast</span></code> runs on the thread that called the instrument method. For a
+client request that is the worker thread holding the instrument mutex, the
+same place the Server’s own Broadcasts run from. And the emissions use the
+same socket, the same topic (the instrument name) and the same two-frame
+wire format as the Server’s own Broadcasts, so an existing subscriber parses
+them without knowing or caring who produced them.</p>
+<p>The shipping example is the test instrument the verification of this page
+uses, <code class="docutils literal notranslate"><span class="pre">instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument</span></code>.
+Its emitting method is the whole pattern:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">emit_broadcast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;V&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;parameter-update&quot;</span><span class="p">):</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.param0&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">bp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bp</span>
+</pre></div>
+</div>
+<p>The Server registered itself as a sink when the instrument joined the
+Station, so <code class="docutils literal notranslate"><span class="pre">broadcast</span></code> put the Blueprint on the Server’s PUB socket, and a
+<code class="docutils literal notranslate"><span class="pre">SubClient</span></code> received it like any other Broadcast:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bcaster</span> <span class="o">=</span> <span class="n">cli</span><span class="o">.</span><span class="n">find_or_create_instrument</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;bcaster&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bcaster</span><span class="o">.</span><span class="n">emit_broadcast</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">received</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+<span class="go">(&#39;bcaster.param0&#39;, &#39;parameter-update&#39;, 3.0, &#39;V&#39;)</span>
+</pre></div>
+</div>
+</section>
+<section id="the-parameter-managers-actions">
+<h2>The Parameter Manager’s actions<a class="headerlink" href="#the-parameter-managers-actions" title="Link to this heading">#</a></h2>
+<p>The Parameter Manager is the first instrument built on the Broadcaster
+contract. It emits <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> and <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code>, and re-emits
+<code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code> for parameters it creates as side effects. On the wire
+its emissions are indistinguishable from the Server’s own: same socket, same
+topic, same two-frame format. What the actions mean to use is described in
+the User Guide’s <a class="reference internal" href="../user_guide/parameter_manager.html"><span class="std std-doc">Parameter Manager</span></a>
+page, its Locks and Types sections in particular.</p>
+<p>Every Lock method that changes a Lock emits one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> per
+affected Follower (D10). The message’s <code class="docutils literal notranslate"><span class="pre">name</span></code> is the Follower’s full dotted
+path, and its <code class="docutils literal notranslate"><span class="pre">value</span></code> is the Follower’s <code class="docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when
+its Lock was removed. So <code class="docutils literal notranslate"><span class="pre">lock</span></code>, <code class="docutils literal notranslate"><span class="pre">unlock</span></code>, <code class="docutils literal notranslate"><span class="pre">relock</span></code>, <code class="docutils literal notranslate"><span class="pre">toggle_lock</span></code> and
+<code class="docutils literal notranslate"><span class="pre">remove_lock</span></code> each announce their one change, and <code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code> on a
+Target announces every Lock that deleting it drops, one <code class="docutils literal notranslate"><span class="pre">None</span></code> payload per
+dropped Follower. The no-op paths emit nothing: unlocking an already
+unlocked Lock is not news. Here is the payload of a <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> as it
+crossed the wire, stringified fields and all:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;parameter_manager.show.follower&quot;</span><span class="p">,</span> <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;pm-lock-update&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;parameter_manager.show.target&quot;</span><span class="p">,</span> <span class="s2">&quot;locked&quot;</span><span class="p">:</span> <span class="s2">&quot;True&quot;</span><span class="p">,</span> <span class="s2">&quot;_class_type&quot;</span><span class="p">:</span> <span class="s2">&quot;PMLockBluePrint&quot;</span><span class="p">},</span> <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;_class_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ParameterBroadcastBluePrint&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Every Type-editing method emits one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> per affected Type
+(D22), the two Type Lock methods included. <code class="docutils literal notranslate"><span class="pre">lock_type_parameter</span></code> on top
+creates the Locks it declares, so it additionally emits one
+<code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> per applied Lock; <code class="docutils literal notranslate"><span class="pre">unlock_type_parameter</span></code> removes only the
+rule. The message’s <code class="docutils literal notranslate"><span class="pre">name</span></code> is the Type’s full dotted name,
+<code class="docutils literal notranslate"><span class="pre">&lt;instrument&gt;.&lt;type&gt;</span></code>, and its <code class="docutils literal notranslate"><span class="pre">value</span></code> is the Type’s fresh
+<code class="docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code> with its entries (defaults, units and Type Lock Targets),
+its Nested Types and its effective set, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when the Type was removed.
+The payload carries the whole new definition, which is why a GUI can replace
+that one Type locally and recompute its tints with no follow-up fetch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;parameter_manager.display&quot;</span><span class="p">,</span> <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;pm-type-update&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;display&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gain&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;12&quot;</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;dB&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">}},</span> <span class="s2">&quot;nested&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;effective&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gain&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;dB&quot;</span><span class="p">,</span> <span class="s2">&quot;from_type&quot;</span><span class="p">:</span> <span class="s2">&quot;display&quot;</span><span class="p">}},</span> <span class="s2">&quot;_class_type&quot;</span><span class="p">:</span> <span class="s2">&quot;PMTypeBluePrint&quot;</span><span class="p">},</span> <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;_class_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ParameterBroadcastBluePrint&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Parameters the Parameter Manager creates as side effects are announced as
+<code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>, one per created parameter in creation order: an
+<code class="docutils literal notranslate"><span class="pre">add_type_parameter</span></code> that writes an entry into every Instance lacking it, an
+<code class="docutils literal notranslate"><span class="pre">add_nested_type</span></code> that writes the Nested Type’s entries under its submodule
+into every Instance of the outer Type lacking them, an <code class="docutils literal notranslate"><span class="pre">add_instance</span></code>, and
+the Globals Target that a Type Lock with no explicit Target creates on
+demand. Direct <code class="docutils literal notranslate"><span class="pre">add_parameter</span></code> and <code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code> calls keep being
+announced by the Server, so nothing is ever announced twice.</p>
+<p>The emissions of one method arrive in a fixed order:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">lock_type_parameter</span></code> with the default Target: first the
+<code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code> of the Globals parameter, then one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code>
+per applied Lock, then the Type’s <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_nested_type</span></code>: first one <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code> per created parameter,
+in creation order, then the <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code>s of the Type Locks the new
+Instances get, then one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> per affected Type, the edited
+Type first.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_instance</span></code>: first one <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code> per created parameter, in
+creation order, then the <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code>s of the Type Locks the new
+Instance gets at creation. It edits no Type, so no <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code> on a Target: first one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> with <code class="docutils literal notranslate"><span class="pre">None</span></code> per
+dropped Follower, then one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> per affected Type (the Type
+Locks whose stored Target it was), then the <code class="docutils literal notranslate"><span class="pre">parameter-deletion</span></code> that the
+Server emits once the call has returned.</p></li>
+</ul>
+</section>
 </section>
 
 
@@ -508,6 +836,23 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-triggers-a-broadcast">What triggers a Broadcast</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-wire-format">The wire format</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#subclient">SubClient</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#external-forwarding">External forwarding</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-broadcaster-contract">The Broadcaster contract</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-parameter-managers-actions">The Parameter Manager’s actions</a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

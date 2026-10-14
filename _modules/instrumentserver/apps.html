@@ -444,7 +444,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.client.application</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientStationGui</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">loadConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.gui</span><span class="w"> </span><span class="kn">import</span> <span class="n">widgetMainWindow</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.gui.instruments</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterManagerGui</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.gui.parameter_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterManagerGui</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">setupLogging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.server.application</span><span class="w"> </span><span class="kn">import</span> <span class="n">startServerGuiApplication</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.server.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">startServer</span>
@@ -568,7 +568,7 @@
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Starting a parameter manager instrument GUI&quot;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;parameter_manager&quot;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--port&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5555</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--port&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5555</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">app</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([])</span>
@@ -585,7 +585,13 @@
         <span class="n">pm</span><span class="o">.</span><span class="n">fromFile</span><span class="p">()</span>
         <span class="n">pm</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
 
-    <span class="n">_</span> <span class="o">=</span> <span class="n">widgetMainWindow</span><span class="p">(</span><span class="n">ParameterManagerGui</span><span class="p">(</span><span class="n">pm</span><span class="p">),</span> <span class="s2">&quot;Parameter Manager&quot;</span><span class="p">)</span>
+    <span class="c1"># The GUI&#39;s broadcast listener must follow the server&#39;s broadcast port</span>
+    <span class="c1"># (request port + 1); without it the GUI listens on the default port</span>
+    <span class="c1"># regardless of --port.</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">widgetMainWindow</span><span class="p">(</span>
+        <span class="n">ParameterManagerGui</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">sub_port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">port</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sub_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;Parameter Manager&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">app</span><span class="o">.</span><span class="n">exec_</span><span class="p">()</span></div>
 
 

@@ -17,3 +17,9 @@
       sendBroadcast
       send_router
    
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Broadcaster
+   

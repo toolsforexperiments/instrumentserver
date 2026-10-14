@@ -1,0 +1,15 @@
+instrumentserver.gui.parameter\_manager
+=======================================
+
+.. automodule:: instrumentserver.gui.parameter_manager
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   logic
+   panels
+   widget

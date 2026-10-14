@@ -53,7 +53,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="instrumentserver.gui.shortcuts" href="instrumentserver.gui.shortcuts.html" />
-    <link rel="prev" title="instrumentserver.gui.misc" href="instrumentserver.gui.misc.html" />
+    <link rel="prev" title="instrumentserver.gui.parameter_manager.widget" href="instrumentserver.gui.parameter_manager.widget.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -406,6 +406,12 @@
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.logic.html">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">instrumentserver.gui.parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
 </ul>
@@ -645,6 +651,22 @@ emitted when setting gave an error. Argument is the error message.</p>
 <span class="sig-name descname"><span class="pre">setWidgetFromParameter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameters.html#ParameterWidget.setWidgetFromParameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameters.ParameterWidget.setWidgetFromParameter" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameters.ParameterWidget.set_read_only">
+<span class="sig-name descname"><span class="pre">set_read_only</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">read_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameters.html#ParameterWidget.set_read_only"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameters.ParameterWidget.set_read_only" title="Link to this definition">#</a></dt>
+<dd><p>Render the value read-only while the parameter’s Lock is locked
+(D3): the input and the set button are disabled, since a locked
+Follower refuses <code class="docutils literal notranslate"><span class="pre">set</span></code>, and the get button stays enabled so the
+Target’s value still refreshes. A parameter without a set method
+was constructed with its set button disabled; it is never
+re-enabled here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>read_only</strong> – whether editing the value is refused.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.gui.parameters.ParameterWidget.valueCommitted">
 <span class="sig-name descname"><span class="pre">valueCommitted</span></span><a class="headerlink" href="#instrumentserver.gui.parameters.ParameterWidget.valueCommitted" title="Link to this definition">#</a></dt>
@@ -684,12 +706,12 @@ emitted when the user commits a value via Return/Enter</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="instrumentserver.gui.misc.html"
+       href="instrumentserver.gui.parameter_manager.widget.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">instrumentserver.gui.misc</p>
+        <p class="prev-next-title">instrumentserver.gui.parameter_manager.widget</p>
       </div>
     </a>
     <a class="right-next"
@@ -746,6 +768,7 @@ emitted when the user commits a value via Return/Enter</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameters.ParameterWidget.setParameter"><code class="docutils literal notranslate"><span class="pre">ParameterWidget.setParameter()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameters.ParameterWidget.setPending"><code class="docutils literal notranslate"><span class="pre">ParameterWidget.setPending()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameters.ParameterWidget.setWidgetFromParameter"><code class="docutils literal notranslate"><span class="pre">ParameterWidget.setWidgetFromParameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameters.ParameterWidget.set_read_only"><code class="docutils literal notranslate"><span class="pre">ParameterWidget.set_read_only()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameters.ParameterWidget.valueCommitted"><code class="docutils literal notranslate"><span class="pre">ParameterWidget.valueCommitted</span></code></a></li>
 </ul>
 </li>

@@ -406,6 +406,12 @@
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.logic.html">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
 </ul>
@@ -509,6 +515,12 @@
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.params.ManagedParameter" title="instrumentserver.params.ManagedParameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ManagedParameter</span></code></a>(name[, path])</p></td>
+<td><p>A parameter that can carry a Lock naming another parameter as its Target.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.params.ParameterGroup" title="instrumentserver.params.ParameterGroup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParameterGroup</span></code></a>(name[, metadata, label])</p></td>
+<td><p>A Parameter Group: a plain container of parameters and nested Parameter Groups inside a Parameter Manager.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.params.ParameterManager" title="instrumentserver.params.ParameterManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParameterManager</span></code></a>(name)</p></td>
 <td><p>A virtual instrument that acts as a manager for a collection of arbitrary parameters and groups of parameters.</p></td>
 </tr>
@@ -519,20 +531,89 @@
 </table>
 </div>
 <dl class="py class">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">ParameterManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.InstrumentBase" title="(in QCoDeS v0.62.0.dev58+main.ge7860299b)"><code class="xref py py-class docutils literal notranslate"><span class="pre">InstrumentBase</span></code></a></p>
-<p>A virtual instrument that acts as a manager for a collection of
-arbitrary parameters and groups of parameters.</p>
-<p>Allows extra-easy on-the-fly addition/removal of new parameters.</p>
-<p>For the parameter manager to recognize other profiles in disk,
-the profile filename needs to start with ‘parameter_manager-’
-and end with ‘.json’ with the name of the profile in the middle.
-For example, ‘parameter_manager-qubit1.json’ represents the profile qubit1</p>
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">ManagedParameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ManagedParameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ManagedParameter" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/parameters/index.html#qcodes.parameters.Parameter" title="(in QCoDeS v0.62.0.dev58+main.ge7860299b)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a></p>
+<p>A parameter that can carry a Lock naming another parameter as its Target.</p>
+<p>While the Lock is locked, the parameter answers <code class="docutils literal notranslate"><span class="pre">get</span></code> with the Target’s
+value and refuses <code class="docutils literal notranslate"><span class="pre">set</span></code> with a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the Target: values
+are pulled on get, nothing is ever pushed into a Follower (ADR-0002).
+Locking never touches the own cached value, so unlocking exposes the own
+value again. With no Lock, or with a Lock that is present but unlocked,
+the parameter behaves like a plain <code class="docutils literal notranslate"><span class="pre">Parameter</span></code>; an unlocked Lock only
+remembers its Target.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_parameter">
-<span class="sig-name descname"><span class="pre">add_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_parameter" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter.get_raw">
+<span class="sig-name descname"><span class="pre">get_raw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ManagedParameter.get_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ManagedParameter.get_raw" title="Link to this definition">#</a></dt>
+<dd><p>Answer with the Target’s value while locked, the own cached value
+otherwise.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter.locked">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">locked</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><a class="headerlink" href="#instrumentserver.params.ManagedParameter.locked" title="Link to this definition">#</a></dt>
+<dd><p>Whether a Lock is present and currently locked.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter.own_value">
+<span class="sig-name descname"><span class="pre">own_value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ManagedParameter.own_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ManagedParameter.own_value" title="Link to this definition">#</a></dt>
+<dd><p>Return the own cached value, whatever state the Lock is in.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter.path">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">path</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#instrumentserver.params.ManagedParameter.path" title="Link to this definition">#</a></dt>
+<dd><p>The parameter’s full dotted path with the instrument name, the
+form Locks and files use (<code class="docutils literal notranslate"><span class="pre">parameter_manager.q01.x</span></code>); for a
+standalone parameter, its plain name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter.set_raw">
+<span class="sig-name descname"><span class="pre">set_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ManagedParameter.set_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ManagedParameter.set_raw" title="Link to this definition">#</a></dt>
+<dd><p>Store the value while not locked; while locked, refuse with a
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the full dotted paths of Follower and Target.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ManagedParameter.snapshot_base">
+<span class="sig-name descname"><span class="pre">snapshot_base</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_to_skip_update</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.15)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ManagedParameter.snapshot_base"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ManagedParameter.snapshot_base" title="Link to this definition">#</a></dt>
+<dd><p>Snapshot with a <code class="docutils literal notranslate"><span class="pre">lock</span></code> entry while a Lock is present; while
+locked, the reported <code class="docutils literal notranslate"><span class="pre">value</span></code> is the Target’s value.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">update=True</span></code> the base snapshot already asks this parameter,
+whose locked get answers with the Target’s value, so the Target is
+not read a second time. With a falsy <code class="docutils literal notranslate"><span class="pre">update</span></code> the Target is read
+directly — not its cache — so that each hop of a chain reads
+according to its own state (D7).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">ParameterGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.InstrumentBase" title="(in QCoDeS v0.62.0.dev58+main.ge7860299b)"><code class="xref py py-class docutils literal notranslate"><span class="pre">InstrumentBase</span></code></a></p>
+<p>A Parameter Group: a plain container of parameters and nested Parameter
+Groups inside a Parameter Manager.</p>
+<p>It holds parameters and nested Parameter Groups and offers the tree
+helpers (dotted-path add/remove/get/set, listing, tree building), but
+has no file, profile, Type or Lock logic of its own. Every submodule
+of a Parameter Manager is a Parameter Group; only the root is the
+Parameter Manager, which extends the Parameter Group with those
+responsibilities. When a Parameter Group belongs to a Parameter
+Manager, its public <code class="docutils literal notranslate"><span class="pre">add_parameter</span></code>/<code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code> route to
+the root, so <code class="docutils literal notranslate"><span class="pre">ManagedParameter</span></code> creation and the Lock cleanup always
+happen; a standalone Parameter Group behaves as a plain container.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.add_parameter">
+<span class="sig-name descname"><span class="pre">add_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.add_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.add_parameter" title="Link to this definition">#</a></dt>
 <dd><p>Add a parameter.</p>
+<p>A Parameter Group that belongs to a Parameter Manager routes the
+call to the root, with the path made relative to it
+(<code class="docutils literal notranslate"><span class="pre">&lt;group</span> <span class="pre">path&gt;.&lt;name&gt;</span></code>), so the parameter is created as a
+<a class="reference internal" href="#instrumentserver.params.ManagedParameter" title="instrumentserver.params.ManagedParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ManagedParameter</span></code></a> that can carry a Lock (D15). A
+standalone Parameter Group creates a plain qcodes <code class="docutils literal notranslate"><span class="pre">Parameter</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -545,12 +626,333 @@ Submodules are generated on demand.</p></li>
 <li><p><strong>kw</strong> – Any keyword arguments will be passed on to
 qcodes.Instrument.add_parameter, except:
 - <code class="docutils literal notranslate"><span class="pre">set_cmd</span></code> is always set to <code class="docutils literal notranslate"><span class="pre">None</span></code>
-- <code class="docutils literal notranslate"><span class="pre">parameter_class</span></code> is <code class="docutils literal notranslate"><span class="pre">qcodes.Parameter</span></code>
+- <code class="docutils literal notranslate"><span class="pre">parameter_class</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">qcodes.Parameter</span></code>
 - <code class="docutils literal notranslate"><span class="pre">vals</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">qcodes.utils.validators.Anything()</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.get" title="Link to this definition">#</a></dt>
+<dd><p>Shortcut for getting a parameter from its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>param_name</strong> – The name of a parameter of this instrument.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The current value of the parameter.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is deprecated. Call get directly on the parameter.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.has_param">
+<span class="sig-name descname"><span class="pre">has_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.has_param"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.has_param" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.list">
+<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.list" title="Link to this definition">#</a></dt>
+<dd><p>Return a list of all parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.parameter">
+<span class="sig-name descname"><span class="pre">parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://microsoft.github.io/Qcodes/api/parameters/index.html#qcodes.parameters.ParameterBase" title="(in QCoDeS v0.62.0.dev58+main.ge7860299b)"><span class="pre">ParameterBase</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.parameter" title="Link to this definition">#</a></dt>
+<dd><p>Get a parameter object from the manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – the full name</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the parameter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.remove_empty_submodules">
+<span class="sig-name descname"><span class="pre">remove_empty_submodules</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.remove_empty_submodules"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.remove_empty_submodules" title="Link to this definition">#</a></dt>
+<dd><p>Delete all empty submodules in the instrument.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.remove_parameter">
+<span class="sig-name descname"><span class="pre">remove_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cleanup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.remove_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.remove_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Remove a parameter.</p>
+<p>A Parameter Group that belongs to a Parameter Manager routes the
+call to the root, with the path made relative to it, so the
+root’s Lock cleanup happens before the deletion (D3, D15). A
+standalone Parameter Group deletes directly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> – Name of the parameter; dotted names traverse
+nested Parameter Groups.</p></li>
+<li><p><strong>cleanup</strong> – Whether to remove emptied submodules afterwards.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.set" title="Link to this definition">#</a></dt>
+<dd><p>Shortcut for setting a parameter from its name and new value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>param_name</strong> – The name of a parameter of this instrument.</p></li>
+<li><p><strong>value</strong> – The new value to set.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is deprecated. Call set directly on the parameter.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterGroup.to_tree">
+<span class="sig-name descname"><span class="pre">to_tree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterGroup.to_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterGroup.to_tree" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.params.</span></span><span class="sig-name descname"><span class="pre">ParameterManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="instrumentserver.base.html#instrumentserver.base.Broadcaster" title="instrumentserver.base.Broadcaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">Broadcaster</span></code></a>, <a class="reference internal" href="#instrumentserver.params.ParameterGroup" title="instrumentserver.params.ParameterGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParameterGroup</span></code></a></p>
+<p>A virtual instrument that acts as a manager for a collection of
+arbitrary parameters and groups of parameters.</p>
+<p>Allows extra-easy on-the-fly addition/removal of new parameters.</p>
+<p>The Parameter Manager is the root of the parameter tree. It extends the
+Parameter Group with file, profile, Lock, and Type logic;
+its submodules are plain Parameter Groups.</p>
+<p>It implements the Broadcaster contract, so the Server can register
+itself as a broadcast sink when the Parameter Manager joins the
+Station. Every Lock method that changes a Lock emits one
+<code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast per affected Follower (D10), and
+<code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code> emits them for the Locks that deleting a Target
+drops. Every Type-editing method emits <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> with the
+edited Type’s fresh <code class="docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code> (D22), and the parameters the
+Type edits and <a class="reference internal" href="#instrumentserver.params.ParameterManager.add_instance" title="instrumentserver.params.ParameterManager.add_instance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_instance()</span></code></a> create as side effects are
+re-emitted as <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code> Broadcasts (ADR-0003); direct
+<code class="docutils literal notranslate"><span class="pre">add_parameter</span></code> calls keep being announced by the Server, so nothing
+is announced twice. Declaring a Type Lock with
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.lock_type_parameter" title="instrumentserver.params.ParameterManager.lock_type_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">lock_type_parameter()</span></code></a> and removing it with
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.unlock_type_parameter" title="instrumentserver.params.ParameterManager.unlock_type_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlock_type_parameter()</span></code></a> do both: they emit the
+<code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcasts of the Locks the declaration creates and
+the <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> of the edited Type, and every new Instance gets
+the existing Type Locks of its Type at creation (D17). Removing a
+parameter that is the stored Target of Type Locks drops the Locks
+pointing at it and clears those Type Locks, emitting one
+<code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> per affected Type (D18).</p>
+<p>For the parameter manager to recognize other profiles in disk,
+the profile filename needs to start with ‘parameter_manager-’
+and end with ‘.json’ with the name of the profile in the middle.
+For example, ‘parameter_manager-qubit1.json’ represents the profile qubit1</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_instance">
+<span class="sig-name descname"><span class="pre">add_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_instance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_instance" title="Link to this definition">#</a></dt>
+<dd><p>Create the Instance <code class="docutils literal notranslate"><span class="pre">name</span></code> of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D14):
+every effective parameter path of the Type that is missing under
+<code class="docutils literal notranslate"><span class="pre">name</span></code> — together with the Parameter Groups on the way — is
+created with the entry’s default value and unit through the
+ordinary <a class="reference internal" href="#instrumentserver.params.ParameterManager.add_parameter" title="instrumentserver.params.ParameterManager.add_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_parameter()</span></code></a> path, and every parameter that
+exists at a target path already is kept untouched, with its own
+value and unit. <code class="docutils literal notranslate"><span class="pre">name</span></code> is a dotted submodule path relative to
+this Parameter Manager (<code class="docutils literal notranslate"><span class="pre">&quot;q01&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;q01.readout&quot;</span></code>), so
+nested Instances are allowed. After a successful call <code class="docutils literal notranslate"><span class="pre">name</span></code>
+carries the whole effective set with the units the Type declares,
+so it is an Instance in <a class="reference internal" href="#instrumentserver.params.ParameterManager.instances_of" title="instrumentserver.params.ParameterManager.instances_of"><code class="xref py py-meth docutils literal notranslate"><span class="pre">instances_of()</span></code></a> — unless the Type is
+empty: an empty Type has no Instances (D12), creates nothing and
+raises nothing, and the submodule is not created for it.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> — creating nothing — naming every offending
+path when no such Type exists, when <code class="docutils literal notranslate"><span class="pre">name</span></code> is empty or has an
+empty segment, when <code class="docutils literal notranslate"><span class="pre">name</span></code> starts with the reserved Globals
+name <code class="docutils literal notranslate"><span class="pre">_globals</span></code> (D18), when a parameter already exists at an
+effective path with a unit different from the one the Type
+declares (the unit-conflict scan runs over every effective path
+before anything is created, D14), or when a target path cannot be
+created because a segment of <code class="docutils literal notranslate"><span class="pre">name</span></code> or of the target is an
+existing parameter, or the final segment of a target is an
+existing Parameter Group.</p>
+<p>After the Instance is created it emits one <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>
+Broadcast per parameter it created, in creation order, followed by
+one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast per Type Lock it applied to the
+new Instance (D17, D22, ADR-0003); the call edits no Type, so it
+emits no <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code>. A failed validation emits nothing.
+As a new Instance, <code class="docutils literal notranslate"><span class="pre">name</span></code> gets the existing Type Locks of this
+Type and of every Type nesting it applied to its parameters at
+their locked effective entries — a parameter the call kept (D14)
+included, since a Lock changes neither its own value nor its unit.
+A kept parameter that already carries a Lock on another Target, a
+stored Target that no longer exists and a Lock that would close a
+cycle are skipped, collected into one <code class="docutils literal notranslate"><span class="pre">logger.warning</span></code>; the
+creation itself still succeeds. Submodules that were Instances
+before the call are untouched.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>name</strong> – Dotted submodule path of the Instance, relative to
+this Parameter Manager.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_nested_type">
+<span class="sig-name descname"><span class="pre">add_nested_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">submodule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">nested_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_nested_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_nested_type" title="Link to this definition">#</a></dt>
+<dd><p>Require the Nested Type <code class="docutils literal notranslate"><span class="pre">nested_type</span></code> at the submodule
+<code class="docutils literal notranslate"><span class="pre">submodule</span></code> of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D11), and write the
+nested Type’s effective parameter set under that submodule into
+every Instance of <code class="docutils literal notranslate"><span class="pre">type_name</span></code> — and of every Type nesting it —
+that lacks the parameters, with each entry’s default value and
+unit (D13).</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> — leaving the registry and the parameter
+tree untouched — naming every offending name or path when a Type
+does not exist, when <code class="docutils literal notranslate"><span class="pre">submodule</span></code> is empty, has an empty segment
+or starts with the reserved Globals name <code class="docutils literal notranslate"><span class="pre">_globals</span></code> (D18), when
+the submodule already requires a Nested Type, when the nesting
+would close a cycle (<code class="docutils literal notranslate"><span class="pre">type_name</span> <span class="pre">==</span> <span class="pre">nested_type</span></code> included), when
+the resulting effective parameter set of <code class="docutils literal notranslate"><span class="pre">type_name</span></code> or of any
+Type nesting it would contain a path twice, or when a target path
+cannot be created because an intermediate segment is an existing
+parameter, the final segment is an existing Parameter Group, or
+another target of the same edit is a strict segment-prefix of it.</p>
+<p>After the edit succeeds it emits one <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>
+Broadcast per parameter it created, in creation order, followed by
+one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast per Type Lock it applied to a new
+Instance and one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast per affected Type —
+the edited Type first, then every Type nesting it, whose effective
+parameter set the nested entries extend (D17, D22, ADR-0003); a
+failed validation emits nothing. A new Instance — a submodule that
+is an Instance after the edit but was not one before — gets the
+existing Type Locks of its Type applied to its parameters at the
+Type’s locked effective entries, parameters the edit kept included;
+the Nested Type’s own chain joins the Types whose Type Locks are
+applied, since nesting it completes the submodules at its position
+into Instances of it; skips are collected into one
+<code class="docutils literal notranslate"><span class="pre">logger.warning</span></code> and the edit still succeeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the outer Type.</p></li>
+<li><p><strong>submodule</strong> – Name of the submodule that requires the Nested
+Type.</p></li>
+<li><p><strong>nested_type</strong> – Name of the Nested Type.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_parameter">
+<span class="sig-name descname"><span class="pre">add_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Add a parameter, created as a <a class="reference internal" href="#instrumentserver.params.ManagedParameter" title="instrumentserver.params.ManagedParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ManagedParameter</span></code></a>.</p>
+<p>Same dotted-name semantics as <a class="reference internal" href="#instrumentserver.params.ParameterGroup.add_parameter" title="instrumentserver.params.ParameterGroup.add_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ParameterGroup.add_parameter()</span></code></a>,
+which this method calls; only the parameter class differs, so that
+the Parameter Manager’s parameters can carry a Lock. The created
+parameter’s <code class="docutils literal notranslate"><span class="pre">path</span></code> is set to its full dotted path with the
+instrument name (<code class="docutils literal notranslate"><span class="pre">parameter_manager.q01.x</span></code>), the form Locks and
+files use.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the offending path, creating nothing,
+when <code class="docutils literal notranslate"><span class="pre">name</span></code> is the reserved Globals name <code class="docutils literal notranslate"><span class="pre">_globals</span></code> or starts
+with it (D18): the Globals submodule holds only the default
+Targets of Type Locks, and its parameters are created on demand by
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_ensure_global_target()</span></code>, not through the public API. Since a
+Parameter Group routes its <code class="docutils literal notranslate"><span class="pre">add_parameter</span></code> to the root (D15),
+this check covers calls made on any Parameter Group of this
+Parameter Manager as well.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Name of the parameter; see
+<a class="reference internal" href="#instrumentserver.params.ParameterGroup.add_parameter" title="instrumentserver.params.ParameterGroup.add_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ParameterGroup.add_parameter()</span></code></a>.</p></li>
+<li><p><strong>kw</strong> – Any keyword arguments will be passed on to
+qcodes.Instrument.add_parameter, as in
+<a class="reference internal" href="#instrumentserver.params.ParameterGroup.add_parameter" title="instrumentserver.params.ParameterGroup.add_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ParameterGroup.add_parameter()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_type">
+<span class="sig-name descname"><span class="pre">add_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_type" title="Link to this definition">#</a></dt>
+<dd><p>Create an empty Type named <code class="docutils literal notranslate"><span class="pre">name</span></code> in the Type registry.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the name when it is the reserved
+Globals name <code class="docutils literal notranslate"><span class="pre">_globals</span></code> or when a Type with that name exists
+already; nothing is changed then. A fresh Type has no entries and
+no Nested Types, so it has no Instances until entries are added.
+Emits one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast carrying the new Type’s
+<code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code> after it is created (D22); a failed
+validation emits nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – Name of the Type.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.add_type_parameter">
+<span class="sig-name descname"><span class="pre">add_type_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.add_type_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.add_type_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Add an entry to the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D11) and create the
+parameter at <code class="docutils literal notranslate"><span class="pre">path</span></code> — with the entry’s default value and unit —
+in every Instance of the Type that lacks it, and in every Instance
+of a Type whose effective parameter set contains <code class="docutils literal notranslate"><span class="pre">type_name</span></code>
+through nesting (D13). Parameters that already exist at a target
+path are left alone, whatever their unit; the missing Parameter
+Groups along a target path are created.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> — leaving the registry and the parameter
+tree untouched — naming every offending path when no such Type
+exists, when <code class="docutils literal notranslate"><span class="pre">path</span></code> is empty or has an empty segment, when
+<code class="docutils literal notranslate"><span class="pre">path</span></code> is already in the Type’s effective parameter set (naming
+the Type that defines it), when <code class="docutils literal notranslate"><span class="pre">prefix</span> <span class="pre">+</span> <span class="pre">path</span></code> is already in
+the effective parameter set of a Type nesting this one — naming
+every colliding path and the Type whose effective set holds it,
+since the duplicated path would break every query on that Type —
+or when a target path cannot be created because an
+intermediate segment is an existing parameter, the final segment
+is an existing Parameter Group, or another target of the same
+edit is a strict segment-prefix of it.</p>
+<p>After the edit succeeds it emits one <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>
+Broadcast per parameter it created, in creation order, followed by
+one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast per Type Lock it applied to a new
+Instance and one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast per affected Type —
+the edited Type first, then every Type nesting it, whose effective
+parameter set the new entry extends (D17, D22, ADR-0003); a failed
+validation emits nothing. A new Instance — a submodule that is an
+Instance of an affected Type after the edit but was not one before
+— gets the existing Type Locks of that Type applied to its
+parameters at the Type’s locked effective entries, parameters the
+edit kept included; skips are collected into one <code class="docutils literal notranslate"><span class="pre">logger.warning</span></code>
+and the edit still succeeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>path</strong> – Relative parameter path of the entry.</p></li>
+<li><p><strong>default</strong> – Default value the created parameters start with.</p></li>
+<li><p><strong>unit</strong> – Unit of the entry and the created parameters.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -586,9 +988,18 @@ paramDict starts with &lt;instrumentName&gt;.[…]).</p></li>
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.followers_of">
+<span class="sig-name descname"><span class="pre">followers_of</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.followers_of"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.followers_of" title="Link to this definition">#</a></dt>
+<dd><p>Paths (relative to this Parameter Manager) of every Follower
+whose Lock points at the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code>, locked and
+unlocked alike. Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path when the
+parameter does not exist.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.fromFile">
 <span class="sig-name descname"><span class="pre">fromFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filePath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deleteMissing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.fromFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.fromFile" title="Link to this definition">#</a></dt>
-<dd><p>Load parameters from a parameter json file
+<dd><p>Load parameters, Types and Locks from a parameter json file
 (see <a class="reference internal" href="instrumentserver.serialize.html#module-instrumentserver.serialize" title="instrumentserver.serialize"><code class="xref py py-mod docutils literal notranslate"><span class="pre">serialize</span></code></a>).</p>
 <p>If the filepath starts with ‘parameter_manager-’ and ends with ‘.json’,
 selectedProfile is changed to the filename.</p>
@@ -607,13 +1018,70 @@ ParameterManager that are not listed in the file.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.fromParamDict">
 <span class="sig-name descname"><span class="pre">fromParamDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deleteMissing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.fromParamDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.fromParamDict" title="Link to this definition">#</a></dt>
-<dd><p>Load parameters from a parameter dictionary (see <a class="reference internal" href="instrumentserver.serialize.html#module-instrumentserver.serialize" title="instrumentserver.serialize"><code class="xref py py-mod docutils literal notranslate"><span class="pre">serialize</span></code></a>).</p>
+<dd><p>Load parameters, Types and Locks from a parameter dictionary
+(see <a class="reference internal" href="instrumentserver.serialize.html#module-instrumentserver.serialize" title="instrumentserver.serialize"><code class="xref py py-mod docutils literal notranslate"><span class="pre">serialize</span></code></a>).</p>
+<p>A dictionary without a top-level <code class="docutils literal notranslate"><span class="pre">version</span></code> key is the legacy flat
+parameter map and loads exactly as before: parameters only, and the
+Types and Locks of this Parameter Manager are untouched by the
+legacy reader.</p>
+<p>A version-2 profile document (the document <a class="reference internal" href="#instrumentserver.params.ParameterManager.toParamDict" title="instrumentserver.params.ParameterManager.toParamDict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">toParamDict()</span></code></a>
+writes, plan decision D19) is validated as a whole before anything
+is loaded (plan decision D20). The schema is checked with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">serialize.validateParameterManagerV2()</span></code>; every remaining
+problem is collected into one <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming all of them
+(rule 3): every file key must belong to this Parameter Manager
+(the full-path form with the instrument name), every Type name
+must be valid (non-empty, not the reserved Globals name
+<code class="docutils literal notranslate"><span class="pre">_globals</span></code>), every Nested Type must name a Type of the document,
+the document’s Types must form no Nested Type cycle and hold no
+effective parameter path twice, every <code class="docutils literal notranslate"><span class="pre">lock</span></code> Target and every
+non-null Type Lock Target must be a <code class="docutils literal notranslate"><span class="pre">parameters</span></code> key of the
+document, and no <code class="docutils literal notranslate"><span class="pre">lock</span></code> may be a self-lock or close a cycle
+among the document’s Locks (walking Targets regardless of
+locked/unlocked state, D7). A refused document changes nothing and
+emits nothing. Any other <code class="docutils literal notranslate"><span class="pre">version</span></code> value raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+naming it.</p>
+<p>After the validation the document loads in order (D20): first the
+Locks of every parameter it lists go away, so setting a stored own
+value on a currently locked Follower cannot raise (D6); then the
+parameters with the semantics the reader always had (an existing
+one is set to its stored own value and unit, a missing one is
+created — one under the Globals submodule through the internal
+creation path <code class="xref py py-meth docutils literal notranslate"><span class="pre">_create_managed_parameter()</span></code>, since the public
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.add_parameter" title="instrumentserver.params.ParameterManager.add_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_parameter()</span></code></a> refuses the Globals name (D18) — and
+<code class="docutils literal notranslate"><span class="pre">deleteMissing=True</span></code> removes the parameters the document does
+not list, dropping their Locks and Type Locks exactly like
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.remove_parameter" title="instrumentserver.params.ParameterManager.remove_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_parameter()</span></code></a> does); then the Types, written straight
+into the registry as definitions — with <code class="docutils literal notranslate"><span class="pre">deleteMissing=True</span></code>,
+every Type the document does not define is removed — with <strong>no</strong>
+Instance side effects (D20): no parameter is created for an
+Instance and no Type Lock is applied on load, so a partial
+Instance stays partial and an Instance’s Locks come only from the
+document’s <code class="docutils literal notranslate"><span class="pre">lock</span></code> entries; then the Locks, each set directly to
+the stored full-form Target and stored locked state (like
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.lock" title="instrumentserver.params.ParameterManager.lock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">lock()</span></code></a> creates it after the cycle check, not through a
+<code class="docutils literal notranslate"><span class="pre">lock()</span></code>/<code class="docutils literal notranslate"><span class="pre">unlock()</span></code> pair). A parameter the document lists
+without a <code class="docutils literal notranslate"><span class="pre">lock</span></code> entry ends with no Lock; parameters it does not
+list keep theirs when <code class="docutils literal notranslate"><span class="pre">deleteMissing=False</span></code>.</p>
+<p>The Broadcasts go out once, after the whole load succeeded (D22,
+D10): one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> per Type the document wrote, then one
+with a <code class="docutils literal notranslate"><span class="pre">None</span></code> payload per Type removed, then one
+<code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> per Lock that ended different from before the
+load (<code class="docutils literal notranslate"><span class="pre">None</span></code> when it was removed), in tree order. The load
+emits nothing for the parameter values it sets, and it re-emits
+<strong>no</strong> <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>/<code class="docutils literal notranslate"><span class="pre">parameter-deletion</span></code> Broadcasts
+for the parameters it creates and removes: the Server’s
+literal-name detection does not see them either, so a GUI watching
+this Parameter Manager must refresh its structure after a profile
+load.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>paramDict</strong> – Parameter dictionary.</p></li>
-<li><p><strong>deleteMissing</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, delete parameters currently in the
-ParameterManager that are not listed in the file.</p></li>
+<li><p><strong>paramDict</strong> – Parameter dictionary — a legacy flat map or a
+version-2 profile document.</p></li>
+<li><p><strong>deleteMissing</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, delete parameters currently in
+the ParameterManager that are not listed in the file, and
+remove the Types the file does not define.</p></li>
 </ul>
 </dd>
 </dl>
@@ -626,37 +1094,61 @@ ParameterManager that are not listed in the file.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.get" title="Link to this definition">#</a></dt>
-<dd><p>Shortcut for getting a parameter from its name.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>param_name</strong> – The name of a parameter of this instrument.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The current value of the parameter.</p>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is deprecated. Call get directly on the parameter.</p>
-</div>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.getWorkingDirectory">
 <span class="sig-name descname"><span class="pre">getWorkingDirectory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.getWorkingDirectory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.getWorkingDirectory" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.has_param">
-<span class="sig-name descname"><span class="pre">has_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.has_param"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.has_param" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.get_lock">
+<span class="sig-name descname"><span class="pre">get_lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.get_lock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.get_lock" title="Link to this definition">#</a></dt>
+<dd><p>The Lock of the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code> (dotted path relative to
+this Parameter Manager) as a <code class="xref py py-class docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code> whose Target
+is the full dotted path, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it carries no Lock.
+Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path when the parameter does not
+exist.</p>
+</dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.list">
-<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.list" title="Link to this definition">#</a></dt>
-<dd><p>Return a list of all parameters.</p>
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.get_type">
+<span class="sig-name descname"><span class="pre">get_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.get_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.get_type" title="Link to this definition">#</a></dt>
+<dd><p>The Type <code class="docutils literal notranslate"><span class="pre">name</span></code> as a <code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>: its own
+entries as <code class="docutils literal notranslate"><span class="pre">{path:</span> <span class="pre">{default,</span> <span class="pre">unit,</span> <span class="pre">target}}</span></code>, its Nested Types
+as <code class="docutils literal notranslate"><span class="pre">{submodule:</span> <span class="pre">type}</span></code>, and the computed effective parameter
+set as <code class="docutils literal notranslate"><span class="pre">{path:</span> <span class="pre">{unit,</span> <span class="pre">from_type}}</span></code>. Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+naming the name when no such Type exists, and like
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_effective_parameters()</span></code> when its Nested Types cycle or its
+effective set contains a path twice.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.instances_of">
+<span class="sig-name descname"><span class="pre">instances_of</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.instances_of"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.instances_of" title="Link to this definition">#</a></dt>
+<dd><p>Paths (relative to this Parameter Manager) of every Instance of
+the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D12): every Parameter Group at any depth
+that carries every path of the Type’s effective set with the unit
+the Type declares; values are irrelevant. The root is never an
+Instance, the Globals submodule <code class="docutils literal notranslate"><span class="pre">_globals</span></code> and everything under
+it are excluded, and an empty Type has no Instances (ADR-0001).
+Matching is computed on demand; this query changes no state.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the name when no such Type exists,
+and like <code class="xref py py-meth docutils literal notranslate"><span class="pre">_effective_parameters()</span></code> when its Nested Types cycle
+or its effective set contains a path twice.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>type_name</strong> – Name of the Type.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Paths of the Instances, in tree order.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.list_locks">
+<span class="sig-name descname"><span class="pre">list_locks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.list_locks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.list_locks" title="Link to this definition">#</a></dt>
+<dd><p>All Locks in this Parameter Manager, locked and unlocked alike
+(D5), as a mapping from the Follower’s path (relative to this
+Parameter Manager) to its <code class="xref py py-class docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -666,15 +1158,86 @@ ParameterManager that are not listed in the file.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.parameter">
-<span class="sig-name descname"><span class="pre">parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://microsoft.github.io/Qcodes/api/parameters/index.html#qcodes.parameters.ParameterBase" title="(in QCoDeS v0.62.0.dev58+main.ge7860299b)"><span class="pre">ParameterBase</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.parameter" title="Link to this definition">#</a></dt>
-<dd><p>Get a parameter object from the manager.</p>
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.list_types">
+<span class="sig-name descname"><span class="pre">list_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.list_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.list_types" title="Link to this definition">#</a></dt>
+<dd><p>Names of every Type in the Type registry.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.lock">
+<span class="sig-name descname"><span class="pre">lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.lock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.lock" title="Link to this definition">#</a></dt>
+<dd><p>Lock the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code> to the parameter at <code class="docutils literal notranslate"><span class="pre">target</span></code>
+(dotted paths relative to this Parameter Manager).</p>
+<p>Creates the Lock, or re-targets it when one exists already, and
+locks it: while locked, <code class="docutils literal notranslate"><span class="pre">name</span></code> answers <code class="docutils literal notranslate"><span class="pre">get</span></code> with the Target’s
+value and refuses <code class="docutils literal notranslate"><span class="pre">set</span></code> (ADR-0002). The Target must be a
+parameter of this same Parameter Manager (D8). Raises
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming every offending path when a path does not
+exist (both paths are checked before one error is raised), the
+Follower cannot carry a Lock, the Lock would be a self-lock, or it
+would close a cycle (walking Targets regardless of locked/unlocked
+state, D7). On success emits one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast
+naming the Follower with its new Lock (D10); a failed validation
+emits nothing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>name</strong> – the full name</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – path of the Follower.</p></li>
+<li><p><strong>target</strong> – path of the Target.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.lock_type_parameter">
+<span class="sig-name descname"><span class="pre">lock_type_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.lock_type_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.lock_type_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Declare the Type Lock of the entry <code class="docutils literal notranslate"><span class="pre">path</span></code> of the Type
+<code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D17): the Target is stored on the entry — the
+parameter at <code class="docutils literal notranslate"><span class="pre">target</span></code> when given, the Globals parameter
+<code class="docutils literal notranslate"><span class="pre">_globals.&lt;type_name&gt;.&lt;path&gt;</span></code> otherwise — and an ordinary,
+locked Lock on that Target is put on the entry’s parameter in
+every current Instance of the Type. The default Globals Target is
+created on demand with the entry’s default value and unit, through
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_ensure_global_target()</span></code>.</p>
+<p>Instance parameters that already carry a Lock on another Target
+are skipped: they are left untouched, named together with their
+Target in one <code class="docutils literal notranslate"><span class="pre">logger.warning</span></code>, and returned as a list of dotted
+paths relative to this Parameter Manager (empty when nothing was
+skipped). A parameter already locked to the same Target stays as
+it is; an unlocked Lock remembering the same Target is locked
+again. Declaring the Type Lock again therefore re-applies it to
+everyone (“lock all”); declaring it with a different Target stores
+the new one, and the Followers still locked to the old Target
+count as skipped.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> — before anything is touched — naming every
+offending path when no such Type exists, when <code class="docutils literal notranslate"><span class="pre">path</span></code> is not an
+entry of the Type itself (naming the Type that defines it when the
+path only reaches the effective parameter set through a Nested
+Type; own entries only, like
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.set_type_parameter_default" title="instrumentserver.params.ParameterManager.set_type_parameter_default"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_type_parameter_default()</span></code></a>), when an explicit <code class="docutils literal notranslate"><span class="pre">target</span></code>
+does not exist as a parameter of this Parameter Manager, and when
+locking one of the Instance parameters would be a self-lock, close
+a cycle (walking Targets regardless of locked/unlocked state, D7)
+or hit a parameter that cannot carry a Lock.</p>
+<p>On success it emits the Globals parameter’s <code class="docutils literal notranslate"><span class="pre">parameter-creation</span></code>
+(when created), then one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> per Lock it created or
+relocked — nothing for skipped or already-locked parameters — and
+finally one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> for the edited Type (D10, D22); the
+Types nesting it are not named, since their effective parameter
+set carries units and defining Types, not Targets. A failed
+validation emits nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>path</strong> – Relative parameter path of the Type’s own entry.</p></li>
+<li><p><strong>target</strong> – Path of the Target, relative to this Parameter
+Manager; the default Globals Target when <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>the parameter</p>
+<dd class="field-even"><p>The skipped Instance parameter paths, in tree order.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -691,32 +1254,126 @@ ParameterManager that are not listed in the file.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.relock">
+<span class="sig-name descname"><span class="pre">relock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.relock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.relock" title="Link to this definition">#</a></dt>
+<dd><p>Lock the Lock of the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code> (dotted path
+relative to this Parameter Manager) to its remembered Target again
+(D5). Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the paths when the parameter
+does not exist, carries no Lock, or when the remembered Target is
+gone or locking to it would close a cycle (D7); relocking an
+already locked Lock does nothing and logs at INFO level. On a
+state change emits one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast carrying the
+locked Lock (D10); the no-op path emits nothing.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_all_parameters">
 <span class="sig-name descname"><span class="pre">remove_all_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_all_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_all_parameters" title="Link to this definition">#</a></dt>
 <dd><p>Remove all parameters from the instrument.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_empty_submodules">
-<span class="sig-name descname"><span class="pre">remove_empty_submodules</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_empty_submodules"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_empty_submodules" title="Link to this definition">#</a></dt>
-<dd><p>Delete all empty submodules in the instrument.</p>
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_lock">
+<span class="sig-name descname"><span class="pre">remove_lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_lock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_lock" title="Link to this definition">#</a></dt>
+<dd><p>Remove the Lock of the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code> (dotted path
+relative to this Parameter Manager) entirely: the Target is
+forgotten and the parameter behaves as a plain parameter again
+(D5). Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path when the parameter
+does not exist or carries no Lock. Emits one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code>
+Broadcast with a <code class="docutils literal notranslate"><span class="pre">None</span></code> value for the Follower whose Lock was
+removed (D10).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_nested_type">
+<span class="sig-name descname"><span class="pre">remove_nested_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">submodule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_nested_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_nested_type" title="Link to this definition">#</a></dt>
+<dd><p>Remove the Nested Type required at the submodule <code class="docutils literal notranslate"><span class="pre">submodule</span></code>
+of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D13): the parameters of the Instances
+are untouched, and the submodules that no longer carry the whole
+shape simply stop being Instances (D1).</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the Type and the submodule when no
+such Type exists or the submodule requires no Nested Type;
+nothing is removed then. Emits one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast
+per affected Type — the edited Type first, then every Type nesting
+it, whose effective parameter set loses the nested paths — after
+the Nested Type is removed (D22); a failed validation emits
+nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>submodule</strong> – Name of the submodule that requires the Nested
+Type.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_parameter">
 <span class="sig-name descname"><span class="pre">remove_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cleanup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_parameter" title="Link to this definition">#</a></dt>
-<dd><p>Remove a Parameter from this instrument.</p>
-<p>Unlike modifying the parameters dict directly, this method will
-make sure that the parameter is properly unbound from the instrument
-if the parameter is added as a real attribute to the instrument.
-If a property of the same name exists it will not be modified.
-If name is an attribute but not a parameter, it will not be modified.</p>
+<dd><p>Remove a parameter, first removing every Lock whose Target it is
+(ADR-0002): the Followers become plain parameters and answer <code class="docutils literal notranslate"><span class="pre">get</span></code>
+with their own values again. One <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast with a
+<code class="docutils literal notranslate"><span class="pre">None</span></code> value is emitted per dropped Lock (D10).</p>
+<p>When the removed parameter is the stored Target of one or more Type
+Locks — a Globals parameter, or any parameter an explicit Type Lock
+points at — the Type Lock is cleared as well (D18): every own entry
+of every Type whose stored Target it was gets <code class="docutils literal notranslate"><span class="pre">target=None</span></code>, and
+one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast per affected Type, in registry
+order and carrying the Type’s fresh <code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>, is
+emitted after the <code class="docutils literal notranslate"><span class="pre">pm-lock-update``s</span> <span class="pre">(D22).</span> <span class="pre">The</span> <span class="pre">Locks</span> <span class="pre">a</span> <span class="pre">cleared</span>
+<span class="pre">Type</span> <span class="pre">Lock</span> <span class="pre">had</span> <span class="pre">put</span> <span class="pre">on</span> <span class="pre">Instance</span> <span class="pre">parameters</span> <span class="pre">are</span> <span class="pre">ordinary</span> <span class="pre">Locks</span>
+<span class="pre">pointing</span> <span class="pre">at</span> <span class="pre">the</span> <span class="pre">removed</span> <span class="pre">parameter,</span> <span class="pre">so</span> <span class="pre">the</span> <span class="pre">same</span> <span class="pre">cleanup</span> <span class="pre">drops</span> <span class="pre">them;</span>
+<span class="pre">a</span> <span class="pre">parameter</span> <span class="pre">that</span> <span class="pre">is</span> <span class="pre">no</span> <span class="pre">Type</span> <span class="pre">Lock</span> <span class="pre">Target</span> <span class="pre">emits</span> <span class="pre">no</span>
+<span class="pre">``pm-type-update</span></code>.</p>
+<p>Same signature and deletion behaviour as
+<a class="reference internal" href="#instrumentserver.params.ParameterGroup.remove_parameter" title="instrumentserver.params.ParameterGroup.remove_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ParameterGroup.remove_parameter()</span></code></a>; the path is relative to
+this Parameter Manager. The deletion itself emits nothing here:
+the Server announces a direct <code class="docutils literal notranslate"><span class="pre">remove_parameter</span></code> call with a
+<code class="docutils literal notranslate"><span class="pre">parameter-deletion</span></code> Broadcast (ADR-0003).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_type">
+<span class="sig-name descname"><span class="pre">remove_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_type" title="Link to this definition">#</a></dt>
+<dd><p>Remove the Type <code class="docutils literal notranslate"><span class="pre">name</span></code> from the Type registry.</p>
+<p>The parameters of Instances are untouched (D13). Raises
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> when no such Type exists, and — naming every Type
+that nests it — while any other Type still requires <code class="docutils literal notranslate"><span class="pre">name</span></code> as a
+Nested Type; nothing is removed then. Emits exactly one
+<code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast with a <code class="docutils literal notranslate"><span class="pre">None</span></code> payload after the
+Type is removed (D22): nobody nests it, so no other Type is
+affected; a failed validation emits nothing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>name</strong> – The name of the parameter to remove.</p>
+<dd class="field-odd"><p><strong>name</strong> – Name of the Type.</p>
 </dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If the parameter does not exist on the instrument.</p>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.remove_type_parameter">
+<span class="sig-name descname"><span class="pre">remove_type_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.remove_type_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.remove_type_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Remove the entry at <code class="docutils literal notranslate"><span class="pre">path</span></code> from the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code>’s own
+entries (D13): the parameters of the Instances are untouched, and
+the submodules that no longer carry the whole shape simply stop
+being Instances (D1).</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path when no such Type exists,
+when <code class="docutils literal notranslate"><span class="pre">path</span></code> is not an entry of the Type itself — naming the
+Type that defines it, when the path only reaches the effective
+parameter set through a Nested Type — and when it is in no
+effective set at all. Nothing is removed then. Emits one
+<code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast per affected Type — the edited Type
+first, then every Type nesting it, whose effective parameter set
+loses the path — after the entry is removed (D22); a failed
+validation emits nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>path</strong> – Relative parameter path of the entry.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -728,33 +1385,74 @@ If name is an attribute but not a parameter, it will not be modified.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.set">
-<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.set" title="Link to this definition">#</a></dt>
-<dd><p>Shortcut for setting a parameter from its name and new value.</p>
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.set_type_parameter_default">
+<span class="sig-name descname"><span class="pre">set_type_parameter_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.set_type_parameter_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.set_type_parameter_default" title="Link to this definition">#</a></dt>
+<dd><p>Set the default value of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code>’s own entry at
+<code class="docutils literal notranslate"><span class="pre">path</span></code> (D13): the parameters the Instances already carry keep
+their values, and only parameters created later start with the
+new default.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path under the same conditions
+as <a class="reference internal" href="#instrumentserver.params.ParameterManager.remove_type_parameter" title="instrumentserver.params.ParameterManager.remove_type_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_type_parameter()</span></code></a>; nothing is changed then. Emits
+one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast carrying the edited Type’s fresh
+blueprint after the default is set (D22); no Broadcast names a
+nesting Type, since a Type’s effective parameter set carries
+units and defining Types, not defaults, so their blueprints are
+unchanged. A failed validation emits nothing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>param_name</strong> – The name of a parameter of this instrument.</p></li>
-<li><p><strong>value</strong> – The new value to set.</p></li>
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>path</strong> – Relative parameter path of the entry.</p></li>
+<li><p><strong>value</strong> – The entry’s new default value.</p></li>
 </ul>
 </dd>
 </dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is deprecated. Call set directly on the parameter.</p>
-</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.set_type_parameter_unit">
+<span class="sig-name descname"><span class="pre">set_type_parameter_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.set_type_parameter_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.set_type_parameter_unit" title="Link to this definition">#</a></dt>
+<dd><p>Set the unit of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code>’s own entry at <code class="docutils literal notranslate"><span class="pre">path</span></code>
+and propagate it to that parameter in every Instance of the Type
+and of every Type whose effective parameter set contains
+<code class="docutils literal notranslate"><span class="pre">type_name</span></code> through nesting (D13); the target of a propagation
+is one of the Instance’s parameters by construction, and a
+parameter already carrying the new unit is simply set again.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path under the same conditions
+as <a class="reference internal" href="#instrumentserver.params.ParameterManager.remove_type_parameter" title="instrumentserver.params.ParameterManager.remove_type_parameter"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_type_parameter()</span></code></a>; nothing is changed then. Emits
+one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast per affected Type — the edited
+Type first, then every Type nesting it, whose effective parameter
+set carries the changed unit — after the unit is set and
+propagated (D22); a failed validation emits nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>path</strong> – Relative parameter path of the entry.</p></li>
+<li><p><strong>unit</strong> – The entry’s and the Instances’ new unit.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.switch_to_profile">
 <span class="sig-name descname"><span class="pre">switch_to_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.switch_to_profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.switch_to_profile" title="Link to this definition">#</a></dt>
-<dd><p>Switches the server to the passed profile.</p>
+<dd><p>Switches to the passed profile (D20): the current profile is
+saved first (the version-2 profile document <a class="reference internal" href="#instrumentserver.params.ParameterManager.toFile" title="instrumentserver.params.ParameterManager.toFile"><code class="xref py py-meth docutils literal notranslate"><span class="pre">toFile()</span></code></a>
+writes), then every parameter, Type and Lock is cleared
+(<code class="xref py py-meth docutils literal notranslate"><span class="pre">_clear_all()</span></code>), then the new profile is loaded
+(<a class="reference internal" href="#instrumentserver.params.ParameterManager.fromFile" title="instrumentserver.params.ParameterManager.fromFile"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fromFile()</span></code></a>, a legacy flat map or a version-2 document).
+Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> — saving, clearing and loading nothing —
+when the profile does not exist.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.toFile">
 <span class="sig-name descname"><span class="pre">toFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filePath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.toFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.toFile" title="Link to this definition">#</a></dt>
 <dd><p>Save parameters from the instrument into a json file.
+The file holds the version-2 profile document <a class="reference internal" href="#instrumentserver.params.ParameterManager.toParamDict" title="instrumentserver.params.ParameterManager.toParamDict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">toParamDict()</span></code></a>
+returns (plan decision D19), dumped with <code class="docutils literal notranslate"><span class="pre">indent=2,</span> <span class="pre">sort_keys=True</span></code>.
 If the file being saved is a profile file (starts with ‘parameter_manager-’ and ends with ‘.json’),
 the selectedProfile is changed to the filename.</p>
 <dl class="field-list simple">
@@ -774,12 +1472,119 @@ the name of the instrument.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.toParamDict">
 <span class="sig-name descname"><span class="pre">toParamDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simpleFormat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">includeMeta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['unit']</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.toParamDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.toParamDict" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Return the state of this Parameter Manager as a version-2
+profile document (plan decision D19):
+<code class="docutils literal notranslate"><span class="pre">{&quot;version&quot;:</span> <span class="pre">2,</span> <span class="pre">&quot;parameters&quot;:</span> <span class="pre">{...},</span> <span class="pre">&quot;types&quot;:</span> <span class="pre">{...}}</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">parameters</span></code> maps every parameter’s full dotted path (with the
+instrument name, like the legacy flat files) to a dict holding the
+parameter’s <strong>own</strong> value — <a class="reference internal" href="#instrumentserver.params.ManagedParameter.own_value" title="instrumentserver.params.ManagedParameter.own_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ManagedParameter.own_value()</span></code></a>
+for the parameters that can carry a Lock, so a locked Follower
+saves its own value and never the Target’s (ADR-0002), the cached
+snapshot value for any plain <code class="docutils literal notranslate"><span class="pre">Parameter</span></code> — the metadata
+<code class="docutils literal notranslate"><span class="pre">includeMeta</span></code> selects (<code class="docutils literal notranslate"><span class="pre">unit</span></code> by default; Globals parameters
+are saved like any other, D18), and, only on a parameter that
+carries a Lock in either state, a <code class="docutils literal notranslate"><span class="pre">lock</span></code> entry
+<code class="docutils literal notranslate"><span class="pre">{&quot;target&quot;:</span> <span class="pre">&lt;full</span> <span class="pre">dotted</span> <span class="pre">Target</span> <span class="pre">path&gt;,</span> <span class="pre">&quot;locked&quot;:</span> <span class="pre">&lt;bool&gt;}</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">types</span></code> maps every Type of the Type registry to its own entries
+as <code class="docutils literal notranslate"><span class="pre">{path:</span> <span class="pre">{&quot;default&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;unit&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;target&quot;:</span> <span class="pre">...}}</span></code> — the
+stored full-form Target of the entry’s Type Lock, or <code class="docutils literal notranslate"><span class="pre">None</span></code> —
+and its Nested Types as <code class="docutils literal notranslate"><span class="pre">{submodule:</span> <span class="pre">type}</span></code>; with no Types it is
+<code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p>The values are read from the qcodes snapshot with <code class="docutils literal notranslate"><span class="pre">update=False</span></code>
+(the cache, never <code class="docutils literal notranslate"><span class="pre">get</span></code>), like the legacy writer this replaces.</p>
+<p><code class="docutils literal notranslate"><span class="pre">simpleFormat</span></code> is kept for signature compatibility but has no
+effect: a version-2 document always stores the per-parameter
+dict. <code class="docutils literal notranslate"><span class="pre">includeMeta</span></code> still selects the per-parameter metadata
+besides <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>simpleFormat</strong> – Ignored (kept for signature compatibility).</p></li>
+<li><p><strong>includeMeta</strong> – List of parameter attributes to include
+besides value. All keys occurring in snapshots are valid.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The version-2 profile document.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.to_tree">
-<span class="sig-name descname"><span class="pre">to_tree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.to_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.to_tree" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.toggle_lock">
+<span class="sig-name descname"><span class="pre">toggle_lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.toggle_lock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.toggle_lock" title="Link to this definition">#</a></dt>
+<dd><p>Toggle the Lock of the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code> (dotted path
+relative to this Parameter Manager): locked becomes unlocked and
+unlocked becomes locked again (D5). Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming
+the path when the parameter does not exist or carries no Lock, and
+like <a class="reference internal" href="#instrumentserver.params.ParameterManager.relock" title="instrumentserver.params.ParameterManager.relock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relock()</span></code></a> when locking back would close a cycle. Emits
+one <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast through <a class="reference internal" href="#instrumentserver.params.ParameterManager.unlock" title="instrumentserver.params.ParameterManager.unlock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlock()</span></code></a> /
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.relock" title="instrumentserver.params.ParameterManager.relock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relock()</span></code></a>, which carry out the change (D10).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.types_of">
+<span class="sig-name descname"><span class="pre">types_of</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.types_of"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.types_of" title="Link to this definition">#</a></dt>
+<dd><p>Names of the Types claiming the parameter at <code class="docutils literal notranslate"><span class="pre">path</span></code> (a dotted
+path relative to this Parameter Manager), innermost first (D16):
+the Type whose Instance is the deepest submodule above the
+parameter wins, then the one with the largest effective set, with
+any remaining tie broken by Type name. A Type claims the parameter
+when an Instance of it above the parameter — some submodule the
+parameter lives under — carries the parameter’s path relative to
+that Instance in its effective set. Parameters under the Globals
+submodule <code class="docutils literal notranslate"><span class="pre">_globals</span></code> are claimed by nothing, since matching
+excludes <code class="docutils literal notranslate"><span class="pre">_globals</span></code> (D12). Matching is computed on demand; this
+query changes no state.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path when no parameter exists
+there.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Path of the parameter.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Claiming Type names, innermost first.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.unlock">
+<span class="sig-name descname"><span class="pre">unlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.unlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.unlock" title="Link to this definition">#</a></dt>
+<dd><p>Unlock the Lock of the parameter at <code class="docutils literal notranslate"><span class="pre">name</span></code> (dotted path
+relative to this Parameter Manager): it keeps remembering its
+Target but answers <code class="docutils literal notranslate"><span class="pre">get</span></code> with its own value again (D5). Raises
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the path when the parameter does not exist
+or carries no Lock; unlocking an already unlocked Lock does
+nothing and logs at INFO level. On a state change emits one
+<code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast carrying the unlocked Lock (D10);
+the no-op path emits nothing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.unlock_type_parameter">
+<span class="sig-name descname"><span class="pre">unlock_type_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/params.html#ParameterManager.unlock_type_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.params.ParameterManager.unlock_type_parameter" title="Link to this definition">#</a></dt>
+<dd><p>Remove the Type Lock of the entry <code class="docutils literal notranslate"><span class="pre">path</span></code> of the Type
+<code class="docutils literal notranslate"><span class="pre">type_name</span></code> (D17): only the rule goes — the entry’s stored Target
+is cleared and one <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast naming the Type
+goes out — while the Locks the declaration put on the Instance
+parameters stay until they are removed individually with
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.remove_lock" title="instrumentserver.params.ParameterManager.remove_lock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_lock()</span></code></a>. Instances that stop matching keep their
+Locks either way.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the Type and the path when no such
+Type exists or <code class="docutils literal notranslate"><span class="pre">path</span></code> is not an entry of the Type itself; nothing
+is changed then. An entry that carries no Type Lock is a no-op
+logged at INFO level that emits nothing (like <a class="reference internal" href="#instrumentserver.params.ParameterManager.unlock" title="instrumentserver.params.ParameterManager.unlock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlock()</span></code></a> and
+<a class="reference internal" href="#instrumentserver.params.ParameterManager.relock" title="instrumentserver.params.ParameterManager.relock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relock()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – Name of the Type.</p></li>
+<li><p><strong>path</strong> – Relative parameter path of the Type’s own entry.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="instrumentserver.params.ParameterManager.workingDirectory">
@@ -883,30 +1688,67 @@ the name of the instrument.</p></li>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter"><code class="docutils literal notranslate"><span class="pre">ManagedParameter</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter.get_raw"><code class="docutils literal notranslate"><span class="pre">ManagedParameter.get_raw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter.locked"><code class="docutils literal notranslate"><span class="pre">ManagedParameter.locked</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter.own_value"><code class="docutils literal notranslate"><span class="pre">ManagedParameter.own_value()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter.path"><code class="docutils literal notranslate"><span class="pre">ManagedParameter.path</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter.set_raw"><code class="docutils literal notranslate"><span class="pre">ManagedParameter.set_raw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ManagedParameter.snapshot_base"><code class="docutils literal notranslate"><span class="pre">ManagedParameter.snapshot_base()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup"><code class="docutils literal notranslate"><span class="pre">ParameterGroup</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.add_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.add_parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.get"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.get()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.has_param"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.has_param()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.list"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.list()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.parameter"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.remove_empty_submodules"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.remove_empty_submodules()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.remove_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.remove_parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.set"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.set()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterGroup.to_tree"><code class="docutils literal notranslate"><span class="pre">ParameterGroup.to_tree()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager"><code class="docutils literal notranslate"><span class="pre">ParameterManager</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.add_instance"><code class="docutils literal notranslate"><span class="pre">ParameterManager.add_instance()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.add_nested_type"><code class="docutils literal notranslate"><span class="pre">ParameterManager.add_nested_type()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.add_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.add_parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.add_type"><code class="docutils literal notranslate"><span class="pre">ParameterManager.add_type()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.add_type_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.add_type_parameter()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.cleanProfileName"><code class="docutils literal notranslate"><span class="pre">ParameterManager.cleanProfileName()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.createFromParamDict"><code class="docutils literal notranslate"><span class="pre">ParameterManager.createFromParamDict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.does_profile_exist"><code class="docutils literal notranslate"><span class="pre">ParameterManager.does_profile_exist()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.followers_of"><code class="docutils literal notranslate"><span class="pre">ParameterManager.followers_of()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.fromFile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.fromFile()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.fromParamDict"><code class="docutils literal notranslate"><span class="pre">ParameterManager.fromParamDict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.fullProfileName"><code class="docutils literal notranslate"><span class="pre">ParameterManager.fullProfileName()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.get"><code class="docutils literal notranslate"><span class="pre">ParameterManager.get()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.getWorkingDirectory"><code class="docutils literal notranslate"><span class="pre">ParameterManager.getWorkingDirectory()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.has_param"><code class="docutils literal notranslate"><span class="pre">ParameterManager.has_param()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.list"><code class="docutils literal notranslate"><span class="pre">ParameterManager.list()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.get_lock"><code class="docutils literal notranslate"><span class="pre">ParameterManager.get_lock()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.get_type"><code class="docutils literal notranslate"><span class="pre">ParameterManager.get_type()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.instances_of"><code class="docutils literal notranslate"><span class="pre">ParameterManager.instances_of()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.list_locks"><code class="docutils literal notranslate"><span class="pre">ParameterManager.list_locks()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.list_profiles"><code class="docutils literal notranslate"><span class="pre">ParameterManager.list_profiles()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.list_types"><code class="docutils literal notranslate"><span class="pre">ParameterManager.list_types()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.lock"><code class="docutils literal notranslate"><span class="pre">ParameterManager.lock()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.lock_type_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.lock_type_parameter()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.refresh_profiles"><code class="docutils literal notranslate"><span class="pre">ParameterManager.refresh_profiles()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.relock"><code class="docutils literal notranslate"><span class="pre">ParameterManager.relock()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_all_parameters"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_all_parameters()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_empty_submodules"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_empty_submodules()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_lock"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_lock()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_nested_type"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_nested_type()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_parameter()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_type"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_type()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.remove_type_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.remove_type_parameter()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.selectedProfile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.selectedProfile</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.set"><code class="docutils literal notranslate"><span class="pre">ParameterManager.set()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.set_type_parameter_default"><code class="docutils literal notranslate"><span class="pre">ParameterManager.set_type_parameter_default()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.set_type_parameter_unit"><code class="docutils literal notranslate"><span class="pre">ParameterManager.set_type_parameter_unit()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.switch_to_profile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.switch_to_profile()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.toFile"><code class="docutils literal notranslate"><span class="pre">ParameterManager.toFile()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.toParamDict"><code class="docutils literal notranslate"><span class="pre">ParameterManager.toParamDict()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.to_tree"><code class="docutils literal notranslate"><span class="pre">ParameterManager.to_tree()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.toggle_lock"><code class="docutils literal notranslate"><span class="pre">ParameterManager.toggle_lock()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.types_of"><code class="docutils literal notranslate"><span class="pre">ParameterManager.types_of()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.unlock"><code class="docutils literal notranslate"><span class="pre">ParameterManager.unlock()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.unlock_type_parameter"><code class="docutils literal notranslate"><span class="pre">ParameterManager.unlock_type_parameter()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.params.ParameterManager.workingDirectory"><code class="docutils literal notranslate"><span class="pre">ParameterManager.workingDirectory</span></code></a></li>
 </ul>
 </li>

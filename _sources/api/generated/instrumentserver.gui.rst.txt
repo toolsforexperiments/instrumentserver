@@ -22,5 +22,6 @@
    base_instrument
    instruments
    misc
+   parameter_manager
    parameters
    shortcuts

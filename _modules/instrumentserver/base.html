@@ -432,11 +432,12 @@
   <h1>Source code for instrumentserver.base</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">deserialize_obj</span><span class="p">,</span> <span class="n">to_dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">,</span> <span class="n">deserialize_obj</span><span class="p">,</span> <span class="n">to_dict</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -521,6 +522,83 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">socket</span><span class="o">.</span><span class="n">send_string</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">zmq</span><span class="o">.</span><span class="n">SNDMORE</span><span class="p">)</span>
     <span class="n">socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">encode</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="Broadcaster">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.base.html#instrumentserver.base.Broadcaster">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Broadcaster</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mixin implementing the Broadcaster contract: an instrument that emits its</span>
+<span class="sd">    own Broadcasts.</span>
+
+<span class="sd">    The instrument calls :meth:`broadcast` with a</span>
+<span class="sd">    :class:`~instrumentserver.blueprints.ParameterBroadcastBluePrint`; the</span>
+<span class="sd">    Server registers itself as a sink with :meth:`add_broadcast_sink` when</span>
+<span class="sd">    the instrument joins the Station. Used standalone (no sinks registered),</span>
+<span class="sd">    :meth:`broadcast` is a no-op.</span>
+
+<span class="sd">    Sinks are stored in a plain list: adding the same sink twice makes it</span>
+<span class="sd">    receive every Broadcast twice. An exception raised inside one sink is</span>
+<span class="sd">    logged and does not stop the remaining sinks.</span>
+
+<span class="sd">    The annotations of the public methods are strings on purpose: the client</span>
+<span class="sd">    builds proxy methods by exec-ing the blueprint&#39;s call signature string,</span>
+<span class="sd">    and a rendered class annotation would reference a name the exec&#39;d source</span>
+<span class="sd">    cannot resolve. Keep new blueprint-carrying annotations quoted like these.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_sinks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ParameterBroadcastBluePrint</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Broadcaster.add_broadcast_sink">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.base.html#instrumentserver.base.Broadcaster.add_broadcast_sink">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_broadcast_sink</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="s2">&quot;Callable[[ParameterBroadcastBluePrint], None]&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register ``fn`` as a sink that receives every Broadcast.</span>
+
+<span class="sd">        :param fn: callable taking a ParameterBroadcastBluePrint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_sinks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Broadcaster.remove_broadcast_sink">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.base.html#instrumentserver.base.Broadcaster.remove_broadcast_sink">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_broadcast_sink</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="s2">&quot;Callable[[ParameterBroadcastBluePrint], None]&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a sink that was registered with :meth:`add_broadcast_sink`.</span>
+
+<span class="sd">        Removing a sink that is not registered does nothing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_sinks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_sinks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Broadcaster.broadcast">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.base.html#instrumentserver.base.Broadcaster.broadcast">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">broadcast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bp</span><span class="p">:</span> <span class="s2">&quot;ParameterBroadcastBluePrint&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a Broadcast to every registered sink.</span>
+
+<span class="sd">        With no sinks registered this is a no-op. An exception raised inside</span>
+<span class="sd">        one sink is logged and the remaining sinks still receive the</span>
+<span class="sd">        Broadcast.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sink</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_sinks</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">sink</span><span class="p">(</span><span class="n">bp</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Exception in broadcast sink </span><span class="si">{</span><span class="n">sink</span><span class="si">}</span><span class="s2"> while broadcasting &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; / &#39;</span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">action</span><span class="si">}</span><span class="s2">&#39;; continuing with the &quot;</span>
+                    <span class="s2">&quot;remaining sinks.&quot;</span>
+                <span class="p">)</span></div>
+</div>
 
 
 

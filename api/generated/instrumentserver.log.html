@@ -406,6 +406,12 @@
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.logic.html">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
 </ul>
@@ -520,7 +526,7 @@
 <td><p>A simple logger widget.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.log.QLogHandler" title="instrumentserver.log.QLogHandler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLogHandler</span></code></a>(parent)</p></td>
-<td><p>A simple log handler that supports logging in TextEdit</p></td>
+<td><p>A simple log handler that supports logging in TextEdit.</p></td>
 </tr>
 </tbody>
 </table>
@@ -562,8 +568,13 @@ The handler has the actual widget that is used to display the logs.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="instrumentserver.log.QLogHandler">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.log.</span></span><span class="sig-name descname"><span class="pre">QLogHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/log.html#QLogHandler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.log.QLogHandler" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">QObject</span></code>, <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Handler" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Handler</span></code></a></p>
-<p>A simple log handler that supports logging in TextEdit</p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Handler" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Handler</span></code></a></p>
+<p>A simple log handler that supports logging in TextEdit.</p>
+<p>The handler itself is a plain <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Handler" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">logging.Handler</span></code></a>, not a
+<code class="docutils literal notranslate"><span class="pre">QObject</span></code>: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.shutdown" title="(in Python v3.15)"><code class="xref py py-func docutils literal notranslate"><span class="pre">logging.shutdown()</span></code></a> visits every handler at
+interpreter exit, after Qt has deleted the widgets, and touching a
+deleted <code class="docutils literal notranslate"><span class="pre">QObject</span></code> there raises. The Qt objects live in a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">_LogBridge</span></code> parented to <code class="docutils literal notranslate"><span class="pre">parent</span></code>.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="instrumentserver.log.QLogHandler.COLORS">
 <span class="sig-name descname"><span class="pre">COLORS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{10:</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">20:</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">30:</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">40:</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;}</span></span><a class="headerlink" href="#instrumentserver.log.QLogHandler.COLORS" title="Link to this definition">#</a></dt>
@@ -575,17 +586,6 @@ The handler has the actual widget that is used to display the logs.</p>
 <dd><p>Do whatever it takes to actually log the specified logging record.</p>
 <p>This version is intended to be implemented by subclasses and so
 raises a NotImplementedError.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="instrumentserver.log.QLogHandler.new_html">
-<span class="sig-name descname"><span class="pre">new_html</span></span><a class="headerlink" href="#instrumentserver.log.QLogHandler.new_html" title="Link to this definition">#</a></dt>
-<dd><p>Emitted with the html-formatted log record to append to the widget</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Signal(<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>)</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -675,7 +675,6 @@ raises a NotImplementedError.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.log.QLogHandler"><code class="docutils literal notranslate"><span class="pre">QLogHandler</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.log.QLogHandler.COLORS"><code class="docutils literal notranslate"><span class="pre">QLogHandler.COLORS</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.log.QLogHandler.emit"><code class="docutils literal notranslate"><span class="pre">QLogHandler.emit()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.log.QLogHandler.new_html"><code class="docutils literal notranslate"><span class="pre">QLogHandler.new_html</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.log.QLogHandler.set_transform"><code class="docutils literal notranslate"><span class="pre">QLogHandler.set_transform()</span></code></a></li>
 </ul>
 </li>

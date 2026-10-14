@@ -1,0 +1,31 @@
+instrumentserver.gui.parameter\_manager.panels
+==============================================
+
+.. automodule:: instrumentserver.gui.parameter_manager.panels
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      LOCK_PANEL_NOTE
+      LOCK_PANEL_NAME_WIDTH
+      LOCK_ROW_ROLE
+      ENTRIES_UNIT_WIDTH
+      INSTANCES_COUNT_WIDTH
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_lock_button
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GutterDelegate
+      LockArmStrip
+      LocksPanel
+      TypesPane
+   

@@ -510,6 +510,16 @@
 
 <span class="n">ParameterType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterWithSetpoints</span><span class="p">]</span>
 
+<span class="c1"># Action strings carried in ParameterBroadcastBluePrint.action. These are the</span>
+<span class="c1"># exact strings on the wire; PM_LOCK_UPDATE and PM_TYPE_UPDATE are emitted by</span>
+<span class="c1"># instruments implementing the Broadcaster contract.</span>
+<span class="n">PARAMETER_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;parameter-update&quot;</span>
+<span class="n">PARAMETER_CALL</span> <span class="o">=</span> <span class="s2">&quot;parameter-call&quot;</span>
+<span class="n">PARAMETER_CREATION</span> <span class="o">=</span> <span class="s2">&quot;parameter-creation&quot;</span>
+<span class="n">PARAMETER_DELETION</span> <span class="o">=</span> <span class="s2">&quot;parameter-deletion&quot;</span>
+<span class="n">PM_LOCK_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;pm-lock-update&quot;</span>
+<span class="n">PM_TYPE_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;pm-type-update&quot;</span>
+
 
 <div class="viewcode-block" id="ParameterBluePrint">
 <a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBluePrint">[docs]</a>
@@ -828,11 +838,16 @@
 <a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.ParameterBroadcastBluePrint">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ParameterBroadcastBluePrint</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Blueprint to broadcast parameter changes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Blueprint to broadcast parameter changes.</span>
+
+<span class="sd">    ``value`` carries whatever payload the action needs: a plain value for</span>
+<span class="sd">    the parameter actions and a :class:`PMLockBluePrint` for</span>
+<span class="sd">    ``pm-lock-update`` (``None`` when a Lock was removed).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">action</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ParameterBroadcastBluePrint&quot;</span>
 
@@ -869,11 +884,67 @@
 
 
 
+<div class="viewcode-block" id="PMLockBluePrint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PMLockBluePrint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Blueprint of a Lock of the Parameter Manager.</span>
+
+<span class="sd">    Carries the full name of the Target the Follower&#39;s Lock points at and</span>
+<span class="sd">    whether the Lock is currently locked. Sent as the value of</span>
+<span class="sd">    ``pm-lock-update`` Broadcasts and returned by the Lock API.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">target</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">locked</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PMLockBluePrint&quot;</span>
+
+<div class="viewcode-block" id="PMLockBluePrint.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PMTypeBluePrint">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PMTypeBluePrint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Blueprint of a Type of the Parameter Manager.</span>
+
+<span class="sd">    ``parameters`` carries the Type&#39;s own entries as</span>
+<span class="sd">    ``{path: {default, unit, target}}``, where ``target`` is the Target of</span>
+<span class="sd">    the entry&#39;s Type Lock (``None`` when it has none). ``nested`` maps the</span>
+<span class="sd">    submodule name that requires a Nested Type to the nested Type&#39;s name.</span>
+<span class="sd">    ``effective`` is the computed effective parameter set: every own and</span>
+<span class="sd">    Nested Type entry path expanded under its submodule names, mapped to</span>
+<span class="sd">    the unit the entry declares and the Type that defines it</span>
+<span class="sd">    (``{path: {unit, from_type}}``). Returned by the Type API and sent as</span>
+<span class="sd">    the value of ``pm-type-update`` Broadcasts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">nested</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">effective</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+    <span class="n">_class_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PMTypeBluePrint&quot;</span>
+
+<div class="viewcode-block" id="PMTypeBluePrint.toJson">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint.toJson">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toJson</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
 <span class="n">BluePrintType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
     <span class="n">ParameterBluePrint</span><span class="p">,</span>
     <span class="n">MethodBluePrint</span><span class="p">,</span>
     <span class="n">InstrumentModuleBluePrint</span><span class="p">,</span>
     <span class="n">ParameterBroadcastBluePrint</span><span class="p">,</span>
+    <span class="n">PMLockBluePrint</span><span class="p">,</span>
+    <span class="n">PMTypeBluePrint</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -1394,6 +1465,9 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                 <span class="n">serialized_iterable</span> <span class="o">=</span> <span class="n">dict_to_serialized_dict</span><span class="p">(</span><span class="n">dct</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
                 <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialized_iterable</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">get_args</span><span class="p">(</span><span class="n">BluePrintType</span><span class="p">)):</span>
+                <span class="n">converted_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">bluePrintToDict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
             <span class="c1"># Enum/IntFlag members are treated as scalars. This must come before</span>
             <span class="c1"># the generic Iterable check: since Python 3.11 a Flag member is</span>

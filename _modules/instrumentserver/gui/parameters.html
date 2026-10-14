@@ -620,6 +620,10 @@
         <span class="n">layout</span><span class="o">.</span><span class="n">setContentsMargins</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
 
+        <span class="c1"># Rows render read-only while their Lock is locked (plan task 5.3);</span>
+        <span class="c1"># :meth:`set_read_only` keeps this flag current.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_only</span> <span class="o">=</span> <span class="kc">False</span>
+
 <div class="viewcode-block" id="ParameterWidget.onReturnPressed">
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.ParameterWidget.onReturnPressed">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">()</span>
@@ -664,6 +668,26 @@
         <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameter</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setMethod</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameterSet</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">val</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParameterWidget.set_read_only">
+<a class="viewcode-back" href="../../../api/generated/instrumentserver.gui.parameters.html#instrumentserver.gui.parameters.ParameterWidget.set_read_only">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_read_only</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">read_only</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the value read-only while the parameter&#39;s Lock is locked</span>
+<span class="sd">        (D3): the input and the set button are disabled, since a locked</span>
+<span class="sd">        Follower refuses ``set``, and the get button stays enabled so the</span>
+<span class="sd">        Target&#39;s value still refreshes. A parameter without a set method</span>
+<span class="sd">        was constructed with its set button disabled; it is never</span>
+<span class="sd">        re-enabled here.</span>
+
+<span class="sd">        :param read_only: whether editing the value is refused.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_only</span> <span class="o">=</span> <span class="n">read_only</span>
+        <span class="c1"># disabling an AnyInput disables its input field and the eval</span>
+        <span class="c1"># toggle with it; every other kind of paramWidget *is* the input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramWidget</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="ow">not</span> <span class="n">read_only</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paramWidget</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setButton</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="ow">not</span> <span class="n">read_only</span><span class="p">)</span></div>
 </div>
 
 

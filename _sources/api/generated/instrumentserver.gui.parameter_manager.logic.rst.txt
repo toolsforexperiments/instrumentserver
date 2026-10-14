@@ -1,0 +1,50 @@
+instrumentserver.gui.parameter\_manager.logic
+=============================================
+
+.. automodule:: instrumentserver.gui.parameter_manager.logic
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      GUTTER_COLUMN
+      GUTTER_WIDTH
+      GUTTER_ROLE
+      TINT_PALETTE
+      TINT_PALETTE_DARK
+      TINT_COLOURS
+      LOCK_COLUMN
+      LOCK_COLUMN_WIDTH
+      LOCK_COLOUR
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      also_types
+      build_lock_rows
+      compute_claims
+      followers_reaching
+      instances_of_type
+      is_dark_theme
+      lock_button_tooltip
+      lock_column_text
+      lock_root
+      lock_row_paths
+      parse_default_text
+      rank_lock_targets
+      relative_path
+      tint_colours
+      type_entry_rows
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Claim
+      EntryRow
+      LockRow
+      PMState
+      TypePalette
+   

@@ -8,7 +8,6 @@ instrumentserver.gui.instruments
 
    .. autosummary::
    
-      AddParameterWidget
       GenericInstrument
       InstrumentMethods
       InstrumentParameters
@@ -19,10 +18,6 @@ instrumentserver.gui.instruments
       MethodsTreeView
       ModelParameters
       ParameterDelegate
-      ParameterDeleteDelegate
-      ParameterManagerGui
-      ParameterManagerTreeView
       ParametersTreeView
-      ProfilesManager
       ValueCellNavigationFilter
    

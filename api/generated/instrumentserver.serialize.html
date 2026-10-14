@@ -406,6 +406,12 @@
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.logic.html">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
 </ul>
@@ -569,6 +575,9 @@ parameters that are not present yet.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.serialize.validateParamDict" title="instrumentserver.serialize.validateParamDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validateParamDict</span></code></a>(params)</p></td>
 <td><p></p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.serialize.validateParameterManagerV2" title="instrumentserver.serialize.validateParameterManagerV2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">validateParameterManagerV2</span></code></a>(document)</p></td>
+<td><p>Validate a version-2 Parameter Manager profile document (see <a class="reference internal" href="instrumentserver.params.html#module-instrumentserver.params" title="instrumentserver.params"><code class="xref py py-mod docutils literal notranslate"><span class="pre">params</span></code></a>, plan decision D19).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -636,6 +645,24 @@ instrumentserver/schemas/parameters.json</p>
 <span class="sig-prename descclassname"><span class="pre">instrumentserver.serialize.</span></span><span class="sig-name descname"><span class="pre">validateParamDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/serialize.html#validateParamDict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.serialize.validateParamDict" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.serialize.validateParameterManagerV2">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.serialize.</span></span><span class="sig-name descname"><span class="pre">validateParameterManagerV2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/serialize.html#validateParameterManagerV2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.serialize.validateParameterManagerV2" title="Link to this definition">#</a></dt>
+<dd><p>Validate a version-2 Parameter Manager profile document (see
+<a class="reference internal" href="instrumentserver.params.html#module-instrumentserver.params" title="instrumentserver.params"><code class="xref py py-mod docutils literal notranslate"><span class="pre">params</span></code></a>, plan decision D19).</p>
+<p>The whole document is validated against
+<code class="docutils literal notranslate"><span class="pre">schemas/parameter_manager_v2.json</span></code> (the <code class="docutils literal notranslate"><span class="pre">version</span></code> key, the
+<code class="docutils literal notranslate"><span class="pre">lock</span></code> entry of a Follower and the <code class="docutils literal notranslate"><span class="pre">types</span></code> section); the
+<code class="docutils literal notranslate"><span class="pre">parameters</span></code> map is then validated against the per-parameter schema
+<code class="docutils literal notranslate"><span class="pre">schemas/parameters.json</span></code> like a legacy flat parameter map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>document</strong> – The profile document, with the keys <code class="docutils literal notranslate"><span class="pre">version</span></code>
+(2), <code class="docutils literal notranslate"><span class="pre">parameters</span></code> and <code class="docutils literal notranslate"><span class="pre">types</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -691,6 +718,7 @@ instrumentserver/schemas/parameters.json</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.serialize.toDataFrame"><code class="docutils literal notranslate"><span class="pre">toDataFrame()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.serialize.toParamDict"><code class="docutils literal notranslate"><span class="pre">toParamDict()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.serialize.validateParamDict"><code class="docutils literal notranslate"><span class="pre">validateParamDict()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.serialize.validateParameterManagerV2"><code class="docutils literal notranslate"><span class="pre">validateParameterManagerV2()</span></code></a></li>
 </ul>
   </nav></div>
 

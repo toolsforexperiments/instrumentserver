@@ -26,6 +26,8 @@
       InstrumentModuleBluePrint
       MethodBluePrint
       Operation
+      PMLockBluePrint
+      PMTypeBluePrint
       ParameterBluePrint
       ParameterBroadcastBluePrint
       ParameterSerializeSpec

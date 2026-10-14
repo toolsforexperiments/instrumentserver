@@ -1,0 +1,20 @@
+instrumentserver.gui.parameter\_manager.widget
+==============================================
+
+.. automodule:: instrumentserver.gui.parameter_manager.widget
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AddParameterWidget
+      LockableParameterWidget
+      LocksController
+      ModelParameterManager
+      ParameterDeleteDelegate
+      ParameterManagerGui
+      ParameterManagerTreeView
+      ProfilesManager
+      TypesController
+   

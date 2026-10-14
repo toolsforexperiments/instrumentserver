@@ -440,7 +440,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">qtpy.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">QFileDialog</span><span class="p">,</span> <span class="n">QWidget</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtWidgets</span><span class="p">,</span> <span class="n">getInstrumentserverPath</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterBroadcastBluePrint</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">PARAMETER_UPDATE</span><span class="p">,</span> <span class="n">ParameterBroadcastBluePrint</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientStation</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.client.proxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubClient</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.gui.instruments</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericInstrument</span>
@@ -623,7 +623,7 @@
 <a class="viewcode-back" href="../../../api/generated/instrumentserver.client.application.html#instrumentserver.client.application.ClientStationGui.listenerEvent">[docs]</a>
     <span class="nd">@QtCore</span><span class="o">.</span><span class="n">Slot</span><span class="p">(</span><span class="n">ParameterBroadcastBluePrint</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">listenerEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;parameter-update&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="n">PARAMETER_UPDATE</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">action</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 

@@ -443,6 +443,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instrument</span><span class="p">,</span> <span class="n">validators</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.math_utils.field_vector</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldVector</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Broadcaster</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">instrumentserver.blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParameterBroadcastBluePrint</span>
+
 
 <div class="viewcode-block" id="StatusFlag">
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.StatusFlag">[docs]</a>
@@ -1122,6 +1125,39 @@
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags.get_condition">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_condition</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DummyBroadcasterInstrument">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DummyBroadcasterInstrument</span><span class="p">(</span><span class="n">Broadcaster</span><span class="p">,</span> <span class="n">Instrument</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A dummy instrument implementing the Broadcaster contract.</span>
+
+<span class="sd">    The Server registers itself as a Broadcast sink when this instrument</span>
+<span class="sd">    joins the Station. Tests call :meth:`emit_broadcast` through a proxy</span>
+<span class="sd">    to make the instrument emit a Broadcast over the Server&#39;s PUB socket.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s2">&quot;param0&quot;</span><span class="p">,</span> <span class="n">set_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DummyBroadcasterInstrument.emit_broadcast">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument.emit_broadcast">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">emit_broadcast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;V&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;parameter-update&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Emit a Broadcast about ``param0`` and return the blueprint that was sent.</span>
+
+<span class="sd">        :param value: The value carried by the Broadcast.</span>
+<span class="sd">        :param unit: The unit carried by the Broadcast.</span>
+<span class="sd">        :param action: The action string carried by the Broadcast.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.param0&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">bp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bp</span></div>
 </div>
 
 </pre></div>

@@ -455,31 +455,18 @@
 
 
 
-<div class="viewcode-block" id="QLogHandler">
-<a class="viewcode-back" href="../../api/generated/instrumentserver.log.html#instrumentserver.log.QLogHandler">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">QLogHandler</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A simple log handler that supports logging in TextEdit&quot;&quot;&quot;</span>
-
-    <span class="n">COLORS</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;red&quot;</span><span class="p">),</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;orange&quot;</span><span class="p">),</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;green&quot;</span><span class="p">),</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;gray&quot;</span><span class="p">),</span>
-    <span class="p">}</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_LogBridge</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The Qt side of :class:`QLogHandler`: the text widget, and the signal</span>
+<span class="sd">    that carries each html line into the GUI thread, where the slot</span>
+<span class="sd">    appends it to the widget.&quot;&quot;&quot;</span>
 
     <span class="c1">#: Signal(str) : Emitted with the html-formatted log record to append to the widget</span>
     <span class="n">new_html</span> <span class="o">=</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">QtCore</span><span class="o">.</span><span class="n">QObject</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">widget</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QTextEdit</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">setReadOnly</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="kc">None</span>
-        <span class="p">)</span>
-
         <span class="c1"># connect signal to slot that actually touches the widget (GUI thread)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">new_html</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_append_html</span><span class="p">)</span>
 
@@ -492,6 +479,33 @@
         <span class="c1"># keep view scrolled to bottom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span>  <span class="c1"># type: ignore[union-attr]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">widget</span><span class="o">.</span><span class="n">verticalScrollBar</span><span class="p">()</span><span class="o">.</span><span class="n">maximum</span><span class="p">()</span>  <span class="c1"># type: ignore[union-attr]</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="QLogHandler">
+<a class="viewcode-back" href="../../api/generated/instrumentserver.log.html#instrumentserver.log.QLogHandler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QLogHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A simple log handler that supports logging in TextEdit.</span>
+
+<span class="sd">    The handler itself is a plain :class:`logging.Handler`, not a</span>
+<span class="sd">    ``QObject``: :func:`logging.shutdown` visits every handler at</span>
+<span class="sd">    interpreter exit, after Qt has deleted the widgets, and touching a</span>
+<span class="sd">    deleted ``QObject`` there raises. The Qt objects live in a</span>
+<span class="sd">    :class:`_LogBridge` parented to ``parent``.&quot;&quot;&quot;</span>
+
+    <span class="n">COLORS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;red&quot;</span><span class="p">),</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;orange&quot;</span><span class="p">),</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;green&quot;</span><span class="p">),</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;gray&quot;</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bridge</span> <span class="o">=</span> <span class="n">_LogBridge</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">widget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bridge</span><span class="o">.</span><span class="n">widget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="kc">None</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="QLogHandler.set_transform">
@@ -531,7 +545,7 @@
                     <span class="p">)</span>
 
                     <span class="c1"># send to GUI thread</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">new_html</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_bridge</span><span class="o">.</span><span class="n">new_html</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
                     <span class="k">return</span>
 
             <span class="c1"># fallback: original plain text path</span>
@@ -539,15 +553,18 @@
             <span class="n">clr_q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">,</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QColor</span><span class="p">(</span><span class="s2">&quot;black&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
             <span class="n">html</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;span style=&#39;color:</span><span class="si">{</span><span class="n">clr_q</span><span class="si">}</span><span class="s2">&#39;&gt;</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/span&gt;&quot;</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">new_html</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bridge</span><span class="o">.</span><span class="n">new_html</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
             <span class="c1"># Widget has been destroyed; detach self from the logger so we</span>
             <span class="c1"># stop receiving further records and Python can collect us.</span>
+            <span class="c1"># Assign a new list rather than removeHandler: the logger is</span>
+            <span class="c1"># iterating over its handlers list right now, and removing from</span>
+            <span class="c1"># it in place would skip the handler after this one.</span>
             <span class="k">for</span> <span class="n">lg</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">loggerDict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">+</span> <span class="p">[</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
             <span class="p">]:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lg</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">lg</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
-                    <span class="n">lg</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+                    <span class="n">lg</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">lg</span><span class="o">.</span><span class="n">handlers</span> <span class="k">if</span> <span class="n">h</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">]</span></div>
 </div>
 
 

@@ -406,6 +406,12 @@
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.logic.html">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
 </ul>
@@ -509,37 +515,40 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument" title="instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DefaultValuesInstrument</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Dummy whose public methods have defaults whose <code class="docutils literal notranslate"><span class="pre">repr</span></code> is not valid Python.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel" title="instrumentserver.testing.dummy_instruments.generic.DummyChannel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyChannel</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument" title="instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyBroadcasterInstrument</span></code></a>(*args, **kwargs)</p></td>
+<td><p>A dummy instrument implementing the Broadcaster contract.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel" title="instrumentserver.testing.dummy_instruments.generic.DummyChannel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyChannel</span></code></a>(*args, **kwargs)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentRandomNumber</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentRandomNumber"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentRandomNumber</span></code></a>(*args, **kwargs)</p></td>
 <td><p>A dummy instrument with a few parameters that have random numbers generated on demand</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentTimeout</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentTimeout</span></code></a>(*args, **kwargs)</p></td>
 <td><p>A dummy instrument to test timeout situations.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentWithFlags</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithFlags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentWithFlags</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Dummy instrument whose parameters return <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code> values.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentWithSubmodule</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule" title="instrumentserver.testing.dummy_instruments.generic.DummyInstrumentWithSubmodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyInstrumentWithSubmodule</span></code></a>(*args, **kwargs)</p></td>
 <td><p>A dummy instrument with submodules.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns" title="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FieldVectorIns</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.FieldVectorIns" title="instrumentserver.testing.dummy_instruments.generic.FieldVectorIns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FieldVectorIns</span></code></a>(*args, **kwargs)</p></td>
 <td><p>class used to develop json serialization and guis</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument" title="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MutableInterfaceInstrument</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument" title="instrumentserver.testing.dummy_instruments.generic.MutableInterfaceInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MutableInterfaceInstrument</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Dummy whose parameters, methods, and submodules can change at runtime.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument" title="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SerializationInstrument</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SerializationInstrument" title="instrumentserver.testing.dummy_instruments.generic.SerializationInstrument"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SerializationInstrument</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Dummy that returns representative values across the Client transport.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag" title="instrumentserver.testing.dummy_instruments.generic.StatusFlag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StatusFlag</span></code></a>(*values)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.StatusFlag" title="instrumentserver.testing.dummy_instruments.generic.StatusFlag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StatusFlag</span></code></a>(*values)</p></td>
 <td><p>An <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code> mirroring drivers like the Yokogawa GS200 status byte.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest" title="instrumentserver.testing.dummy_instruments.generic.SweepRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SweepRequest</span></code></a>(center_hz, span_hz, metadata, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepRequest" title="instrumentserver.testing.dummy_instruments.generic.SweepRequest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SweepRequest</span></code></a>(center_hz, span_hz, metadata, ...)</p></td>
 <td><p>Serializable request used by Client transport tests and examples.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult" title="instrumentserver.testing.dummy_instruments.generic.SweepResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SweepResult</span></code></a>(frequency_hz, magnitude_db)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.SweepResult" title="instrumentserver.testing.dummy_instruments.generic.SweepResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SweepResult</span></code></a>(frequency_hz, magnitude_db)</p></td>
 <td><p>Serializable result used by Client transport tests and examples.</p></td>
 </tr>
 </tbody>
@@ -633,6 +642,31 @@ when it creates proxy methods.</p>
 <dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.scaled">
 <span class="sig-name descname"><span class="pre">scaled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;object</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DefaultValuesInstrument.scaled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.scaled" title="Link to this definition">#</a></dt>
 <dd><p>Sentinel object as a keyword-only default.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.testing.dummy_instruments.generic.</span></span><span class="sig-name descname"><span class="pre">DummyBroadcasterInstrument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyBroadcasterInstrument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="instrumentserver.base.html#instrumentserver.base.Broadcaster" title="instrumentserver.base.Broadcaster"><code class="xref py py-class docutils literal notranslate"><span class="pre">Broadcaster</span></code></a>, <a class="reference external" href="https://microsoft.github.io/Qcodes/api/instrument/index.html#qcodes.instrument.Instrument" title="(in QCoDeS v0.62.0.dev58+main.ge7860299b)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Instrument</span></code></a></p>
+<p>A dummy instrument implementing the Broadcaster contract.</p>
+<p>The Server registers itself as a Broadcast sink when this instrument
+joins the Station. Tests call <a class="reference internal" href="#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument.emit_broadcast" title="instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument.emit_broadcast"><code class="xref py py-meth docutils literal notranslate"><span class="pre">emit_broadcast()</span></code></a> through a proxy
+to make the instrument emit a Broadcast over the Server’s PUB socket.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument.emit_broadcast">
+<span class="sig-name descname"><span class="pre">emit_broadcast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'V'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'parameter-update'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/testing/dummy_instruments/generic.html#DummyBroadcasterInstrument.emit_broadcast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument.emit_broadcast" title="Link to this definition">#</a></dt>
+<dd><p>Emit a Broadcast about <code class="docutils literal notranslate"><span class="pre">param0</span></code> and return the blueprint that was sent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – The value carried by the Broadcast.</p></li>
+<li><p><strong>unit</strong> – The unit carried by the Broadcast.</p></li>
+<li><p><strong>action</strong> – The action string carried by the Broadcast.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -1048,6 +1082,10 @@ recursion bug this instrument is used to test.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.positional_only"><code class="docutils literal notranslate"><span class="pre">DefaultValuesInstrument.positional_only()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.required_keyword"><code class="docutils literal notranslate"><span class="pre">DefaultValuesInstrument.required_keyword()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.scaled"><code class="docutils literal notranslate"><span class="pre">DefaultValuesInstrument.scaled()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument"><code class="docutils literal notranslate"><span class="pre">DummyBroadcasterInstrument</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyBroadcasterInstrument.emit_broadcast"><code class="docutils literal notranslate"><span class="pre">DummyBroadcasterInstrument.emit_broadcast()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.testing.dummy_instruments.generic.DummyChannel"><code class="docutils literal notranslate"><span class="pre">DummyChannel</span></code></a><ul class="nav section-nav flex-column">

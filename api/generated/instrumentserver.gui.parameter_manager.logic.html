@@ -1,0 +1,1321 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" data-theme="auto">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>instrumentserver.gui.parameter_manager.logic &#8212; InstrumentServer  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "auto";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "auto";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=87473038"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/instrumentserver.gui.parameter_manager.logic';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://toolsforexperiments.github.io/instrumentserver/api/generated/instrumentserver.gui.parameter_manager.logic.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="instrumentserver.gui.parameter_manager.panels" href="instrumentserver.gui.parameter_manager.panels.html" />
+    <link rel="prev" title="instrumentserver.gui.parameter_manager" href="instrumentserver.gui.parameter_manager.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="auto">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.png" class="logo__image only-light" alt=""/>
+    <img src="../../_static/logo.png" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">InstrumentServer</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../getting_started/index.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user_guide/index.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../technical_guide/index.html">
+    Technical Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/">
+    Tools for Experiments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/labcore/">
+    Labcore
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://toolsforexperiments.github.io/plottr/">
+    Plottr
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/toolsforexperiments/instrumentserver" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.apps.html">instrumentserver.apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.base.html">instrumentserver.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.blueprints.html">instrumentserver.blueprints</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.client.html">instrumentserver.client</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.application.html">instrumentserver.client.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.core.html">instrumentserver.client.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.client.proxy.html">instrumentserver.client.proxy</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.config.html">instrumentserver.config</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="instrumentserver.gui.html">instrumentserver.gui</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.base_instrument.html">instrumentserver.gui.base_instrument</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.instruments.html">instrumentserver.gui.instruments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.misc.html">instrumentserver.gui.misc</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="instrumentserver.gui.parameter_manager.html">instrumentserver.gui.parameter_manager</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">instrumentserver.gui.parameter_manager.logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html">instrumentserver.gui.parameter_manager.panels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html">instrumentserver.gui.parameter_manager.widget</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.parameters.html">instrumentserver.gui.parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.gui.shortcuts.html">instrumentserver.gui.shortcuts</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.helpers.html">instrumentserver.helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.log.html">instrumentserver.log</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.monitoring.html">instrumentserver.monitoring</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.monitoring.listener.html">instrumentserver.monitoring.listener</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.params.html">instrumentserver.params</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instrumentserver.serialize.html">instrumentserver.serialize</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.server.html">instrumentserver.server</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.application.html">instrumentserver.server.application</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.core.html">instrumentserver.server.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instrumentserver.server.pollingWorker.html">instrumentserver.server.pollingWorker</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="instrumentserver.testing.html">instrumentserver.testing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.html">instrumentserver.testing.dummy_instruments</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.generic.html">instrumentserver.testing.dummy_instruments.generic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instrumentserver.testing.dummy_instruments.rf.html">instrumentserver.testing.dummy_instruments.rf</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="instrumentserver.gui.html" class="nav-link">instrumentserver.gui</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="instrumentserver.gui.parameter_manager.html" class="nav-link">instrumentserver.gui.parameter_manager</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">instrumentserver.gui.parameter_manager.logic</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-instrumentserver.gui.parameter_manager.logic">
+<span id="instrumentserver-gui-parameter-manager-logic"></span><h1>instrumentserver.gui.parameter_manager.logic<a class="headerlink" href="#module-instrumentserver.gui.parameter_manager.logic" title="Link to this heading">#</a></h1>
+<p>Parameter Manager GUI logic that builds no widgets: the Type claims and
+tint palette, the Lock rows and texts, the Types tab rows, and the
+<a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.PMState" title="instrumentserver.gui.parameter_manager.logic.PMState"><code class="xref py py-class docutils literal notranslate"><span class="pre">PMState</span></code></a> cache of Types and Locks.</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_COLUMN" title="instrumentserver.gui.parameter_manager.logic.GUTTER_COLUMN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GUTTER_COLUMN</span></code></a></p></td>
+<td><p>Logical index of the gutter column of <a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html#instrumentserver.gui.parameter_manager.widget.ModelParameterManager" title="instrumentserver.gui.parameter_manager.widget.ModelParameterManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelParameterManager</span></code></a>, whose items carry a row's stack of Types for the <a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html#instrumentserver.gui.parameter_manager.panels.GutterDelegate" title="instrumentserver.gui.parameter_manager.panels.GutterDelegate"><code class="xref py py-class docutils literal notranslate"><span class="pre">GutterDelegate</span></code></a> to draw.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_WIDTH" title="instrumentserver.gui.parameter_manager.logic.GUTTER_WIDTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GUTTER_WIDTH</span></code></a></p></td>
+<td><p>Fixed pixel width of the gutter column in the view.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_ROLE" title="instrumentserver.gui.parameter_manager.logic.GUTTER_ROLE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GUTTER_ROLE</span></code></a></p></td>
+<td><p>Data role under which a row's stack of Type names is stored on its gutter item; <a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html#instrumentserver.gui.parameter_manager.panels.GutterDelegate" title="instrumentserver.gui.parameter_manager.panels.GutterDelegate"><code class="xref py py-class docutils literal notranslate"><span class="pre">GutterDelegate</span></code></a> reads it to draw the bands.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.TINT_PALETTE" title="instrumentserver.gui.parameter_manager.logic.TINT_PALETTE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TINT_PALETTE</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tint</span></code> and <code class="docutils literal notranslate"><span class="pre">tintAlt</span></code> are the row background of a claimed row (<code class="docutils literal notranslate"><span class="pre">tintAlt</span></code> for every other sibling row), <code class="docutils literal notranslate"><span class="pre">bar</span></code> the colour of its gutter band.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.TINT_PALETTE_DARK" title="instrumentserver.gui.parameter_manager.logic.TINT_PALETTE_DARK"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TINT_PALETTE_DARK</span></code></a></p></td>
+<td><p>dark, low-saturation tints that keep the theme's light text readable, and brighter bars so the gutter bands stand out on a dark background.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.TINT_COLOURS" title="instrumentserver.gui.parameter_manager.logic.TINT_COLOURS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TINT_COLOURS</span></code></a></p></td>
+<td><p>The palettes as QColors, in the same slot order.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN" title="instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LOCK_COLUMN</span></code></a></p></td>
+<td><p>Logical index of the Lock column of <a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html#instrumentserver.gui.parameter_manager.widget.ModelParameterManager" title="instrumentserver.gui.parameter_manager.widget.ModelParameterManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelParameterManager</span></code></a> (plan task 5.3).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN_WIDTH" title="instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN_WIDTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LOCK_COLUMN_WIDTH</span></code></a></p></td>
+<td><p>Fixed default pixel width of the Lock column in the view (the user can resize it: the section is Interactive).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLOUR" title="instrumentserver.gui.parameter_manager.logic.LOCK_COLOUR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LOCK_COLOUR</span></code></a></p></td>
+<td><p>the fill of a row's lock button while its Lock is locked.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.also_types" title="instrumentserver.gui.parameter_manager.logic.also_types"><code class="xref py py-obj docutils literal notranslate"><span class="pre">also_types</span></code></a>(instance, types, parameters)</p></td>
+<td><p>Every Type the submodule <code class="docutils literal notranslate"><span class="pre">instance</span></code> is an Instance of (plan task 5.5; the mock's <code class="docutils literal notranslate"><span class="pre">also</span></code> cell), in <code class="docutils literal notranslate"><span class="pre">types</span></code> order.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.build_lock_rows" title="instrumentserver.gui.parameter_manager.logic.build_lock_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_lock_rows</span></code></a>(locks, types, instrument_name)</p></td>
+<td><p>The Locks panel's rows from the client-side state (plan task 5.4; the mock's locks-panel walk).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.compute_claims" title="instrumentserver.gui.parameter_manager.logic.compute_claims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_claims</span></code></a>(types, parameters)</p></td>
+<td><p>The mock's <code class="docutils literal notranslate"><span class="pre">claims()</span></code> ported to the client-side state (plan task 5.2): which Type claims each row of the Parameter Manager tree, and which stack of Types carries it.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.followers_reaching" title="instrumentserver.gui.parameter_manager.logic.followers_reaching"><code class="xref py py-obj docutils literal notranslate"><span class="pre">followers_reaching</span></code></a>(path, locks, instrument_name)</p></td>
+<td><p>Paths (relative to the Parameter Manager) of every Follower whose locked Lock targets the parameter at <code class="docutils literal notranslate"><span class="pre">path</span></code>, directly or over a chain of locked Locks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.instances_of_type" title="instrumentserver.gui.parameter_manager.logic.instances_of_type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instances_of_type</span></code></a>(type_name, types, parameters)</p></td>
+<td><p>Paths (relative to the Parameter Manager) of every Instance of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code>, computed client-side over the model's parameter rows (plan task 5.5; the mock's <code class="docutils literal notranslate"><span class="pre">instancesOf</span></code>): the same candidate rules <a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.compute_claims" title="instrumentserver.gui.parameter_manager.logic.compute_claims"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_claims()</span></code></a> matches by — every proper dotted prefix, never the root, never anything under Globals — carrying every effective path with the declared unit (D12).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.is_dark_theme" title="instrumentserver.gui.parameter_manager.logic.is_dark_theme"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_dark_theme</span></code></a>()</p></td>
+<td><p>Whether the application currently uses a dark theme: its palette's window colour is darker than its window text.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.lock_button_tooltip" title="instrumentserver.gui.parameter_manager.logic.lock_button_tooltip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock_button_tooltip</span></code></a>(locked, target)</p></td>
+<td><p>The lock/relock button's tooltip for one Lock state (the mock's strings), with <code class="docutils literal notranslate"><span class="pre">target</span></code> relative to the Parameter Manager.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.lock_column_text" title="instrumentserver.gui.parameter_manager.logic.lock_column_text"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock_column_text</span></code></a>(path, locks, instrument_name)</p></td>
+<td><p>The text the Lock column shows for the parameter row <code class="docutils literal notranslate"><span class="pre">path</span></code> (a path relative to the Parameter Manager), computed client-side over the state's Locks (plan task 5.3; the mock's lock cell).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.lock_root" title="instrumentserver.gui.parameter_manager.logic.lock_root"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock_root</span></code></a>(path, locks, instrument_name)</p></td>
+<td><p>The end of the chain of locked Locks that starts at <code class="docutils literal notranslate"><span class="pre">path</span></code> (the mock's <code class="docutils literal notranslate"><span class="pre">root</span></code>): the parameter a locked read at <code class="docutils literal notranslate"><span class="pre">path</span></code> finally asks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.lock_row_paths" title="instrumentserver.gui.parameter_manager.logic.lock_row_paths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock_row_paths</span></code></a>(rows)</p></td>
+<td><p>Every row path of the built rows, depth first.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.parse_default_text" title="instrumentserver.gui.parameter_manager.logic.parse_default_text"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_default_text</span></code></a>(text)</p></td>
+<td><p>The value a default line edit's text stands for: <code class="docutils literal notranslate"><span class="pre">None</span></code> when the text is empty, otherwise the text parsed with <code class="docutils literal notranslate"><span class="pre">ast.literal_eval</span></code>, falling back to the raw string when it does not parse.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.rank_lock_targets" title="instrumentserver.gui.parameter_manager.logic.rank_lock_targets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rank_lock_targets</span></code></a>(follower, candidates, claims)</p></td>
+<td><p>The arm strip's Target candidates in the mock's completer order.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.relative_path" title="instrumentserver.gui.parameter_manager.logic.relative_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">relative_path</span></code></a>(full, instrument_name)</p></td>
+<td><p>The path relative to the Parameter Manager: <code class="docutils literal notranslate"><span class="pre">full</span></code> with the <code class="docutils literal notranslate"><span class="pre">&lt;instrument_name&gt;.</span></code> prefix stripped.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.tint_colours" title="instrumentserver.gui.parameter_manager.logic.tint_colours"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tint_colours</span></code></a>()</p></td>
+<td><p>The tint palette for the current theme (<a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.is_dark_theme" title="instrumentserver.gui.parameter_manager.logic.is_dark_theme"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_dark_theme()</span></code></a>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.type_entry_rows" title="instrumentserver.gui.parameter_manager.logic.type_entry_rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type_entry_rows</span></code></a>(type_name, types[, ...])</p></td>
+<td><p>The entries-pane rows of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (plan task 5.5): its effective parameter set as a segment-sorted tree of submodule and entry rows.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.Claim" title="instrumentserver.gui.parameter_manager.logic.Claim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Claim</span></code></a>(type, instance, stack)</p></td>
+<td><p>What the tree shows for one row that Types carry (the mock's <code class="docutils literal notranslate"><span class="pre">claims()</span></code>): the Claiming Type whose tint the row shows, the Instance submodule path that claims it, and every Type carrying the row, outermost first (the gutter draws one band per Type, up to three).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.EntryRow" title="instrumentserver.gui.parameter_manager.logic.EntryRow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EntryRow</span></code></a>(path, kind[, unit, nested_type, ...])</p></td>
+<td><p>One row of the Types tab's entries pane (plan task 5.5; the mock's <code class="docutils literal notranslate"><span class="pre">tParamRows</span></code>): a submodule row of the selected Type's tree, or one entry of it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LockRow" title="instrumentserver.gui.parameter_manager.logic.LockRow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LockRow</span></code></a>(path, type_locks, lock, children)</p></td>
+<td><p>One row of the Locks panel (plan task 5.4): a Target of one or more Locks — plain, or the Target of a Type Lock — and the Followers beneath it, recursively for chains.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.PMState" title="instrumentserver.gui.parameter_manager.logic.PMState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PMState</span></code></a>()</p></td>
+<td><p>Client-side cache of a Parameter Manager's Types and Locks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.TypePalette" title="instrumentserver.gui.parameter_manager.logic.TypePalette"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TypePalette</span></code></a>()</p></td>
+<td><p>Assigns the fixed tint palette's slots to the Types the GUI knows.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.Claim">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">Claim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">stack</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#Claim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.Claim" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>What the tree shows for one row that Types carry (the mock’s
+<code class="docutils literal notranslate"><span class="pre">claims()</span></code>): the Claiming Type whose tint the row shows, the Instance
+submodule path that claims it, and every Type carrying the row,
+outermost first (the gutter draws one band per Type, up to three).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.Claim.instance">
+<span class="sig-name descname"><span class="pre">instance</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.Claim.instance" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.Claim.stack">
+<span class="sig-name descname"><span class="pre">stack</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.Claim.stack" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.Claim.type">
+<span class="sig-name descname"><span class="pre">type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.Claim.type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">EntryRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nested_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">own</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#EntryRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One row of the Types tab’s entries pane (plan task 5.5; the mock’s
+<code class="docutils literal notranslate"><span class="pre">tParamRows</span></code>): a submodule row of the selected Type’s tree, or one
+entry of it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">kind</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;submodule&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;entry&quot;</span></code>. A submodule row carries
+<code class="docutils literal notranslate"><span class="pre">nested_type</span></code> — the Type required at that submodule, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for
+a structural row that only carries the rows below it. An entry row
+carries
+the effective entry’s <code class="docutils literal notranslate"><span class="pre">unit</span></code> and defining Type (<code class="docutils literal notranslate"><span class="pre">from_type</span></code>),
+whether the selected Type defines the entry itself (<code class="docutils literal notranslate"><span class="pre">own</span></code>), its
+<code class="docutils literal notranslate"><span class="pre">default</span></code> — an own entry’s stored default, a Nested Type entry’s
+default as stored on the defining Type — and, own entries only, the
+<code class="docutils literal notranslate"><span class="pre">target</span></code> of the entry’s Type Lock relative to the Parameter Manager
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> while it has none).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.default">
+<span class="sig-name descname"><span class="pre">default</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.default" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.from_type">
+<span class="sig-name descname"><span class="pre">from_type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.from_type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.kind">
+<span class="sig-name descname"><span class="pre">kind</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.kind" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.nested_type">
+<span class="sig-name descname"><span class="pre">nested_type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.nested_type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.own">
+<span class="sig-name descname"><span class="pre">own</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.own" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.path">
+<span class="sig-name descname"><span class="pre">path</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.path" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.target">
+<span class="sig-name descname"><span class="pre">target</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.target" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.EntryRow.unit">
+<span class="sig-name descname"><span class="pre">unit</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.unit" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.GUTTER_COLUMN">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">GUTTER_COLUMN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_COLUMN" title="Link to this definition">#</a></dt>
+<dd><p>Logical index of the gutter column of <a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html#instrumentserver.gui.parameter_manager.widget.ModelParameterManager" title="instrumentserver.gui.parameter_manager.widget.ModelParameterManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelParameterManager</span></code></a>,
+whose items carry a row’s stack of Types for the
+<a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html#instrumentserver.gui.parameter_manager.panels.GutterDelegate" title="instrumentserver.gui.parameter_manager.panels.GutterDelegate"><code class="xref py py-class docutils literal notranslate"><span class="pre">GutterDelegate</span></code></a> to draw. The existing columns keep their
+indexes: name (0), unit (1), delegate (2).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.GUTTER_ROLE">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">GUTTER_ROLE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">257</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_ROLE" title="Link to this definition">#</a></dt>
+<dd><p>Data role under which a row’s stack of Type names is stored on its
+gutter item; <a class="reference internal" href="instrumentserver.gui.parameter_manager.panels.html#instrumentserver.gui.parameter_manager.panels.GutterDelegate" title="instrumentserver.gui.parameter_manager.panels.GutterDelegate"><code class="xref py py-class docutils literal notranslate"><span class="pre">GutterDelegate</span></code></a> reads it to draw the bands.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.GUTTER_WIDTH">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">GUTTER_WIDTH</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_WIDTH" title="Link to this definition">#</a></dt>
+<dd><p>Fixed pixel width of the gutter column in the view.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LOCK_COLOUR">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">LOCK_COLOUR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#7e5bef'</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLOUR" title="Link to this definition">#</a></dt>
+<dd><p>the fill of a row’s
+lock button while its Lock is locked.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mock’s one purple (its <code class="docutils literal notranslate"><span class="pre">--log-value</span></code> token)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">LOCK_COLUMN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN" title="Link to this definition">#</a></dt>
+<dd><p>Logical index of the Lock column of <a class="reference internal" href="instrumentserver.gui.parameter_manager.widget.html#instrumentserver.gui.parameter_manager.widget.ModelParameterManager" title="instrumentserver.gui.parameter_manager.widget.ModelParameterManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelParameterManager</span></code></a>
+(plan task 5.3). The existing columns keep their indexes: name (0),
+unit (1), delegate (2), gutter (3). The view shows the Lock column
+between the unit and the delegate column.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN_WIDTH">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">LOCK_COLUMN_WIDTH</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">140</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN_WIDTH" title="Link to this definition">#</a></dt>
+<dd><p>Fixed default pixel width of the Lock column in the view (the user can
+resize it: the section is Interactive).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LockRow">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">LockRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_locks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">children</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LockRow" title="instrumentserver.gui.parameter_manager.logic.LockRow"><span class="pre">LockRow</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#LockRow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LockRow" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One row of the Locks panel (plan task 5.4): a Target of one or more
+Locks — plain, or the Target of a Type Lock — and the Followers beneath
+it, recursively for chains. <code class="docutils literal notranslate"><span class="pre">type_locks</span></code> holds every <code class="docutils literal notranslate"><span class="pre">(Type</span> <span class="pre">name,</span>
+<span class="pre">entry</span> <span class="pre">path)</span></code> whose Type Lock Target the row is; <code class="docutils literal notranslate"><span class="pre">lock</span></code> is the row’s
+own Lock (<code class="docutils literal notranslate"><span class="pre">None</span></code> for a plain Target).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LockRow.children">
+<span class="sig-name descname"><span class="pre">children</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LockRow" title="instrumentserver.gui.parameter_manager.logic.LockRow"><span class="pre">LockRow</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LockRow.children" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LockRow.lock">
+<span class="sig-name descname"><span class="pre">lock</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LockRow.lock" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LockRow.path">
+<span class="sig-name descname"><span class="pre">path</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LockRow.path" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.LockRow.type_locks">
+<span class="sig-name descname"><span class="pre">type_locks</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.15)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.LockRow.type_locks" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.PMState">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">PMState</span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#PMState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.PMState" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Client-side cache of a Parameter Manager’s Types and Locks.</p>
+<p>The Parameter Manager GUI owns one instance (<code class="docutils literal notranslate"><span class="pre">ParameterManagerGui.state</span></code>)
+so its widgets can react to Types and Locks without querying the Server
+again. It starts empty and is filled from the Parameter Manager — a Proxy
+Instrument or a local one — with <a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.PMState.refresh" title="instrumentserver.gui.parameter_manager.logic.PMState.refresh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">refresh()</span></code></a>; the <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code>
+and <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcasts then keep single entries current through
+<a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.PMState.apply_lock" title="instrumentserver.gui.parameter_manager.logic.PMState.apply_lock"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_lock()</span></code></a> and <a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.PMState.apply_type" title="instrumentserver.gui.parameter_manager.logic.PMState.apply_type"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_type()</span></code></a> (D22).</p>
+<p><code class="docutils literal notranslate"><span class="pre">types</span></code> maps each Type’s name to its <code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>; <code class="docutils literal notranslate"><span class="pre">locks</span></code>
+maps each Follower’s path relative to the Parameter Manager — the form
+<code class="docutils literal notranslate"><span class="pre">list_locks()</span></code> returns — to its <code class="xref py py-class docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.PMState.apply_lock">
+<span class="sig-name descname"><span class="pre">apply_lock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#PMState.apply_lock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.PMState.apply_lock" title="Link to this definition">#</a></dt>
+<dd><p>Record the change a <code class="docutils literal notranslate"><span class="pre">pm-lock-update</span></code> Broadcast reports about
+the Follower at <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – the Follower’s path relative to the Parameter Manager.</p></li>
+<li><p><strong>lock</strong> – the Follower’s <code class="xref py py-class docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>
+when its Lock was removed (the entry is dropped then).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.PMState.apply_type">
+<span class="sig-name descname"><span class="pre">apply_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_blueprint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#PMState.apply_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.PMState.apply_type" title="Link to this definition">#</a></dt>
+<dd><p>Record the change a <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast reports about
+the Type <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – the Type’s name.</p></li>
+<li><p><strong>type_blueprint</strong> – the Type’s <code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">None</span></code> when the Type was removed (the entry is dropped then).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.PMState.locks">
+<span class="sig-name descname"><span class="pre">locks</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.PMState.locks" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.PMState.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instrument</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#PMState.refresh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.PMState.refresh" title="Link to this definition">#</a></dt>
+<dd><p>Re-read every Type and Lock from the Parameter Manager.</p>
+<p>Works with a Proxy Instrument and with a local Parameter Manager:
+both expose <code class="docutils literal notranslate"><span class="pre">list_types</span></code>, <code class="docutils literal notranslate"><span class="pre">get_type</span></code> and <code class="docutils literal notranslate"><span class="pre">list_locks</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>instrument</strong> – the Parameter Manager whose Types and Locks to
+read.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.PMState.types">
+<span class="sig-name descname"><span class="pre">types</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.PMState.types" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TINT_COLOURS">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">TINT_COLOURS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">QColor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[{'bar':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tint':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tintAlt':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;},</span> <span class="pre">{'bar':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tint':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tintAlt':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;},</span> <span class="pre">{'bar':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tint':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tintAlt':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;},</span> <span class="pre">{'bar':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tint':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tintAlt':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;},</span> <span class="pre">{'bar':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tint':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;,</span> <span class="pre">'tintAlt':</span> <span class="pre">&lt;PyQt5.QtGui.QColor</span> <span class="pre">object&gt;}]</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TINT_COLOURS" title="Link to this definition">#</a></dt>
+<dd><p>The palettes as QColors, in the same slot order.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TINT_PALETTE">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">TINT_PALETTE</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[{'bar':</span> <span class="pre">'#4a7fc1',</span> <span class="pre">'tint':</span> <span class="pre">'#e8f1fb',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#dfe9f6'},</span> <span class="pre">{'bar':</span> <span class="pre">'#4f9e57',</span> <span class="pre">'tint':</span> <span class="pre">'#e9f4e9',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#e0ede0'},</span> <span class="pre">{'bar':</span> <span class="pre">'#b98a3e',</span> <span class="pre">'tint':</span> <span class="pre">'#f6efe4',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#efe7db'},</span> <span class="pre">{'bar':</span> <span class="pre">'#b5605f',</span> <span class="pre">'tint':</span> <span class="pre">'#f9ecec',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#f2e3e3'},</span> <span class="pre">{'bar':</span> <span class="pre">'#3f9490',</span> <span class="pre">'tint':</span> <span class="pre">'#e5f4f2',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#dcece9'}]</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TINT_PALETTE" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">tint</span></code> and <code class="docutils literal notranslate"><span class="pre">tintAlt</span></code> are the
+row background of a claimed row (<code class="docutils literal notranslate"><span class="pre">tintAlt</span></code> for every other sibling
+row), <code class="docutils literal notranslate"><span class="pre">bar</span></code> the colour of its gutter band. The slot of a Type is its
+index in this list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mock’s TINTS for a light theme</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TINT_PALETTE_DARK">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">TINT_PALETTE_DARK</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[{'bar':</span> <span class="pre">'#5b8fd1',</span> <span class="pre">'tint':</span> <span class="pre">'#1e2a3a',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#233245'},</span> <span class="pre">{'bar':</span> <span class="pre">'#5fae67',</span> <span class="pre">'tint':</span> <span class="pre">'#1e2e21',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#243627'},</span> <span class="pre">{'bar':</span> <span class="pre">'#c99a4e',</span> <span class="pre">'tint':</span> <span class="pre">'#33291b',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#3b3020'},</span> <span class="pre">{'bar':</span> <span class="pre">'#c5706f',</span> <span class="pre">'tint':</span> <span class="pre">'#352122',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#3e2728'},</span> <span class="pre">{'bar':</span> <span class="pre">'#4fa4a0',</span> <span class="pre">'tint':</span> <span class="pre">'#1b302e',</span> <span class="pre">'tintAlt':</span> <span class="pre">'#213835'}]</span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TINT_PALETTE_DARK" title="Link to this definition">#</a></dt>
+<dd><p>dark, low-saturation
+tints that keep the theme’s light text readable, and brighter bars so
+the gutter bands stand out on a dark background.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The same five hues for a dark theme, slot for slot</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TypePalette">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">TypePalette</span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#TypePalette"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TypePalette" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Assigns the fixed tint palette’s slots to the Types the GUI knows.</p>
+<p>A Type keeps its slot while it exists: the slot is assigned when the
+GUI first sees the Type (in <code class="docutils literal notranslate"><span class="pre">PMState.types</span></code> order after a refresh,
+then each new Type from a <code class="docutils literal notranslate"><span class="pre">pm-type-update</span></code> Broadcast), it never
+changes while the Type is in the state, and it is freed when the Type
+is removed. A new Type takes the lowest free slot, or slot 0 when all
+five are used (the mock’s <code class="docutils literal notranslate"><span class="pre">freeTint</span></code> recycles when exhausted).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TypePalette.bar_colour">
+<span class="sig-name descname"><span class="pre">bar_colour</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">QColor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#TypePalette.bar_colour"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.bar_colour" title="Link to this definition">#</a></dt>
+<dd><p>The gutter band colour of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TypePalette.colours">
+<span class="sig-name descname"><span class="pre">colours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">QColor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#TypePalette.colours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.colours" title="Link to this definition">#</a></dt>
+<dd><p>The palette entry of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (<code class="docutils literal notranslate"><span class="pre">tint</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tintAlt</span></code> and <code class="docutils literal notranslate"><span class="pre">bar</span></code>) for the current theme, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it
+has no slot.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TypePalette.slots">
+<span class="sig-name descname"><span class="pre">slots</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.slots" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.TypePalette.sync">
+<span class="sig-name descname"><span class="pre">sync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#TypePalette.sync"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.sync" title="Link to this definition">#</a></dt>
+<dd><p>Free the slots of Types that are gone and assign slots to new
+ones, in the given creation order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>type_names</strong> – the names of the Types the GUI knows
+(<code class="docutils literal notranslate"><span class="pre">PMState.types</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.also_types">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">also_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#also_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.also_types" title="Link to this definition">#</a></dt>
+<dd><p>Every Type the submodule <code class="docutils literal notranslate"><span class="pre">instance</span></code> is an Instance of (plan task
+5.5; the mock’s <code class="docutils literal notranslate"><span class="pre">also</span></code> cell), in <code class="docutils literal notranslate"><span class="pre">types</span></code> order. The Types pane
+shows the ones besides the selected Type as <code class="docutils literal notranslate"><span class="pre">also</span> <span class="pre">&lt;t1&gt;,</span> <span class="pre">&lt;t2&gt;</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.build_lock_rows">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">build_lock_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">locks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrument_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LockRow" title="instrumentserver.gui.parameter_manager.logic.LockRow"><span class="pre">LockRow</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#build_lock_rows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.build_lock_rows" title="Link to this definition">#</a></dt>
+<dd><p>The Locks panel’s rows from the client-side state (plan task 5.4;
+the mock’s locks-panel walk).</p>
+<p><code class="docutils literal notranslate"><span class="pre">locks</span></code> maps each Follower’s path (relative to the Parameter
+Manager) to its <code class="xref py py-class docutils literal notranslate"><span class="pre">PMLockBluePrint</span></code>; <code class="docutils literal notranslate"><span class="pre">types</span></code> maps each Type’s
+name to its <code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>. An unlocked Lock still
+remembers its Target (D5), so a Follower’s Lock names its Target
+whether the Lock is locked or not.</p>
+<p>The Targets are the unique Targets of the Locks, in <code class="docutils literal notranslate"><span class="pre">locks</span></code> order.
+The roots are the Targets that carry no Lock of their own, the Type
+Lock Targets first (a stable sort, like the mock’s), each walked
+recursively into its Followers — a <code class="docutils literal notranslate"><span class="pre">seen</span></code> set guards against loops —
+and then any Target the first walk did not reach (the mock’s second
+pass, e.g. a cycle among Followers). Every row carries its own Lock
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> for a plain Target) and its <code class="docutils literal notranslate"><span class="pre">(Type,</span> <span class="pre">entry)</span></code> pairs.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.compute_claims">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">compute_claims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.Claim" title="instrumentserver.gui.parameter_manager.logic.Claim"><span class="pre">Claim</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#compute_claims"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.compute_claims" title="Link to this definition">#</a></dt>
+<dd><p>The mock’s <code class="docutils literal notranslate"><span class="pre">claims()</span></code> ported to the client-side state (plan task
+5.2): which Type claims each row of the Parameter Manager tree, and
+which stack of Types carries it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>types</strong> – the Parameter Manager’s Types (<code class="docutils literal notranslate"><span class="pre">PMState.types</span></code>), each
+as its <code class="xref py py-class docutils literal notranslate"><span class="pre">PMTypeBluePrint</span></code>.</p></li>
+<li><p><strong>parameters</strong> – every parameter row of the tree as <code class="docutils literal notranslate"><span class="pre">{path</span> <span class="pre">relative</span>
+<span class="pre">to</span> <span class="pre">the</span> <span class="pre">Parameter</span> <span class="pre">Manager:</span> <span class="pre">unit}</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>for every claimed parameter path and submodule path, its
+<a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.Claim" title="instrumentserver.gui.parameter_manager.logic.Claim"><code class="xref py py-class docutils literal notranslate"><span class="pre">Claim</span></code></a>.</p>
+</dd>
+</dl>
+<p>Matching mirrors <code class="docutils literal notranslate"><span class="pre">ParameterManager.instances_of</span></code> (D12) client-side:
+a candidate is every submodule path derived from the parameter paths
+(every proper dotted prefix; never the root, never anything under
+Globals) and it is an Instance when it carries every effective path
+with the declared unit. The Claiming Type is the innermost (the
+longest Instance path), then the largest effective set, then the Type
+name. A Nested Type claims at and below its submodule, so a row it
+defines is claimed by it, with the outer Types behind it in the stack.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.followers_reaching">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">followers_reaching</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">locks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrument_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#followers_reaching"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.followers_reaching" title="Link to this definition">#</a></dt>
+<dd><p>Paths (relative to the Parameter Manager) of every Follower whose
+locked Lock targets the parameter at <code class="docutils literal notranslate"><span class="pre">path</span></code>, directly or over a
+chain of locked Locks.</p>
+<p>Only locked hops count (D7): an unlocked Lock answers <code class="docutils literal notranslate"><span class="pre">get</span></code> with its
+own value, so the Followers behind it do not see an update made past
+it. The walk follows each hop’s Target and stops there — no infinite
+loop on a cycle, and every Follower appears once.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.instances_of_type">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">instances_of_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#instances_of_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.instances_of_type" title="Link to this definition">#</a></dt>
+<dd><p>Paths (relative to the Parameter Manager) of every Instance of the
+Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code>, computed client-side over the model’s parameter
+rows (plan task 5.5; the mock’s <code class="docutils literal notranslate"><span class="pre">instancesOf</span></code>): the same candidate
+rules <a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.compute_claims" title="instrumentserver.gui.parameter_manager.logic.compute_claims"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_claims()</span></code></a> matches by — every proper dotted prefix,
+never the root, never anything under Globals — carrying every
+effective path with the declared unit (D12). An empty Type has no
+Instances. The Instances are sorted, for a stable pane order.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.is_dark_theme">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">is_dark_theme</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#is_dark_theme"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.is_dark_theme" title="Link to this definition">#</a></dt>
+<dd><p>Whether the application currently uses a dark theme: its palette’s
+window colour is darker than its window text. Reading the palette
+(rather than the platform’s colour scheme) also covers a dark palette
+or style sheet set on the application itself.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.lock_button_tooltip">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">lock_button_tooltip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">locked</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="instrumentserver.params.html#instrumentserver.params.ParameterTypes.bool" title="instrumentserver.params.ParameterTypes.bool"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#lock_button_tooltip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.lock_button_tooltip" title="Link to this definition">#</a></dt>
+<dd><p>The lock/relock button’s tooltip for one Lock state (the mock’s
+strings), with <code class="docutils literal notranslate"><span class="pre">target</span></code> relative to the Parameter Manager. Shared by
+the tree’s per-row widget (plan task 5.3) and the Locks panel (plan
+task 5.4).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.lock_column_text">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">lock_column_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">locks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrument_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#lock_column_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.lock_column_text" title="Link to this definition">#</a></dt>
+<dd><p>The text the Lock column shows for the parameter row <code class="docutils literal notranslate"><span class="pre">path</span></code> (a
+path relative to the Parameter Manager), computed client-side over the
+state’s Locks (plan task 5.3; the mock’s lock cell).</p>
+<p>A Follower shows its own Lock state: <code class="docutils literal notranslate"><span class="pre">locked</span> <span class="pre">to</span> <span class="pre">&lt;target&gt;</span></code> while
+locked, <code class="docutils literal notranslate"><span class="pre">unlocked</span> <span class="pre">·</span> <span class="pre">&lt;target&gt;</span></code> (middle dot) while unlocked, with the
+Target relative to the Parameter Manager. A parameter that is no
+Follower but the Target of <code class="docutils literal notranslate"><span class="pre">N</span></code> Locks — locked and unlocked alike,
+the way <code class="xref py py-meth docutils literal notranslate"><span class="pre">ParameterManager.followers_of()</span></code> counts — shows
+<code class="docutils literal notranslate"><span class="pre">target</span> <span class="pre">×N</span></code> (multiplication sign). Every other row shows nothing.</p>
+<p>A row that is both Follower and Target shows its Follower text, which
+wins over the Target note (the mock’s <code class="docutils literal notranslate"><span class="pre">rec.lockedTo</span> <span class="pre">||</span> <span class="pre">srcNote(p)</span></code>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.lock_root">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">lock_root</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">locks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMLockBluePrint" title="instrumentserver.blueprints.PMLockBluePrint"><span class="pre">PMLockBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrument_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#lock_root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.lock_root" title="Link to this definition">#</a></dt>
+<dd><p>The end of the chain of locked Locks that starts at <code class="docutils literal notranslate"><span class="pre">path</span></code> (the
+mock’s <code class="docutils literal notranslate"><span class="pre">root</span></code>): the parameter a locked read at <code class="docutils literal notranslate"><span class="pre">path</span></code> finally asks.
+Only locked hops count (D7): an unlocked Lock answers <code class="docutils literal notranslate"><span class="pre">get</span></code> with its
+own value, so the walk stops there. A <code class="docutils literal notranslate"><span class="pre">seen</span></code> set guards against a
+cycle. Paths are relative to the Parameter Manager, except the stored
+<code class="docutils literal notranslate"><span class="pre">PMLockBluePrint.target</span></code>, which is relativized on the way.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.lock_row_paths">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">lock_row_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.LockRow" title="instrumentserver.gui.parameter_manager.logic.LockRow"><span class="pre">LockRow</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#lock_row_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.lock_row_paths" title="Link to this definition">#</a></dt>
+<dd><p>Every row path of the built rows, depth first.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.parse_default_text">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">parse_default_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#parse_default_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.parse_default_text" title="Link to this definition">#</a></dt>
+<dd><p>The value a default line edit’s text stands for: <code class="docutils literal notranslate"><span class="pre">None</span></code> when the
+text is empty, otherwise the text parsed with <code class="docutils literal notranslate"><span class="pre">ast.literal_eval</span></code>,
+falling back to the raw string when it does not parse.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.rank_lock_targets">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">rank_lock_targets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">follower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.15)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.Claim" title="instrumentserver.gui.parameter_manager.logic.Claim"><span class="pre">Claim</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arm_rel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#rank_lock_targets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.rank_lock_targets" title="Link to this definition">#</a></dt>
+<dd><p>The arm strip’s Target candidates in the mock’s completer order.</p>
+<p><code class="docutils literal notranslate"><span class="pre">arm_rel</span></code> is the Follower’s path relative to its Instance (the part
+behind the Claiming Type’s Instance path), or <code class="docutils literal notranslate"><span class="pre">None</span></code> when the
+Follower is claimed by no Type; an explicit <code class="docutils literal notranslate"><span class="pre">arm_rel</span></code> argument
+overrides it, which the Types tab’s Type Lock re-target (plan task
+5.5) uses to rank for a Type’s entry path — there is no claimed
+Follower and so nothing to exclude. Rank 0: the candidate’s own
+relative path equals <code class="docutils literal notranslate"><span class="pre">arm_rel</span></code> (the same leaf on a sibling Instance,
+the mock’s first pick). Rank 1: <code class="docutils literal notranslate"><span class="pre">.&lt;arm_rel&gt;</span></code> occurs in the candidate
+(a submodule on the way). Rank 2: everything else. Equal ranks order
+alphabetically; the Follower itself is never a candidate. Cycles are
+not filtered here: the Server refuses them and the arm strip shows its
+error text.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.relative_path">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">relative_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">full</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrument_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#relative_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.relative_path" title="Link to this definition">#</a></dt>
+<dd><p>The path relative to the Parameter Manager: <code class="docutils literal notranslate"><span class="pre">full</span></code> with the
+<code class="docutils literal notranslate"><span class="pre">&lt;instrument_name&gt;.</span></code> prefix stripped. <code class="docutils literal notranslate"><span class="pre">PMLockBluePrint.target</span></code>
+stores the full dotted path, while model item names and every string
+the GUI shows the user are relative to the Parameter Manager.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.tint_colours">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">tint_colours</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.15)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">QColor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#tint_colours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.tint_colours" title="Link to this definition">#</a></dt>
+<dd><p>The tint palette for the current theme (<a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.is_dark_theme" title="instrumentserver.gui.parameter_manager.logic.is_dark_theme"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_dark_theme()</span></code></a>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="instrumentserver.gui.parameter_manager.logic.type_entry_rows">
+<span class="sig-prename descclassname"><span class="pre">instrumentserver.gui.parameter_manager.logic.</span></span><span class="sig-name descname"><span class="pre">type_entry_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="instrumentserver.blueprints.html#instrumentserver.blueprints.PMTypeBluePrint" title="instrumentserver.blueprints.PMTypeBluePrint"><span class="pre">PMTypeBluePrint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instrument_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.15)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#instrumentserver.gui.parameter_manager.logic.EntryRow" title="instrumentserver.gui.parameter_manager.logic.EntryRow"><span class="pre">EntryRow</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/instrumentserver/gui/parameter_manager/logic.html#type_entry_rows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#instrumentserver.gui.parameter_manager.logic.type_entry_rows" title="Link to this definition">#</a></dt>
+<dd><p>The entries-pane rows of the Type <code class="docutils literal notranslate"><span class="pre">type_name</span></code> (plan task 5.5):
+its effective parameter set as a segment-sorted tree of submodule and
+entry rows.</p>
+<p>The sort is segment-wise like the mock’s (paths order by their dotted
+segments), so a submodule row sorts directly before the rows below it
+and the list reads as a tree in order.</p>
+<p>An entry the Type defines itself (<code class="docutils literal notranslate"><span class="pre">from_type</span> <span class="pre">==</span> <span class="pre">type_name</span></code>) is
+<code class="docutils literal notranslate"><span class="pre">own</span></code>: its <code class="docutils literal notranslate"><span class="pre">default</span></code> and <code class="docutils literal notranslate"><span class="pre">target</span></code> come from the Type’s own
+entry, with the stored Type Lock Target relativized with
+<code class="docutils literal notranslate"><span class="pre">instrument_name</span></code>. An entry a Nested Type defines shows that Type
+as <code class="docutils literal notranslate"><span class="pre">from_type</span></code> and the defining Type’s own default for the path
+relative to it (the mock’s <code class="docutils literal notranslate"><span class="pre">ownerRel</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type_name</strong> – the selected Type’s name.</p></li>
+<li><p><strong>types</strong> – the Parameter Manager’s Types (<code class="docutils literal notranslate"><span class="pre">PMState.types</span></code>).</p></li>
+<li><p><strong>instrument_name</strong> – the Parameter Manager’s name, for
+relativizing the stored Type Lock Targets; without it the stored
+full-form Targets are returned unchanged.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the rows, parents before children.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="instrumentserver.gui.parameter_manager.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">instrumentserver.gui.parameter_manager</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="instrumentserver.gui.parameter_manager.panels.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">instrumentserver.gui.parameter_manager.panels</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.Claim"><code class="docutils literal notranslate"><span class="pre">Claim</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.Claim.instance"><code class="docutils literal notranslate"><span class="pre">Claim.instance</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.Claim.stack"><code class="docutils literal notranslate"><span class="pre">Claim.stack</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.Claim.type"><code class="docutils literal notranslate"><span class="pre">Claim.type</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow"><code class="docutils literal notranslate"><span class="pre">EntryRow</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.default"><code class="docutils literal notranslate"><span class="pre">EntryRow.default</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.from_type"><code class="docutils literal notranslate"><span class="pre">EntryRow.from_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.kind"><code class="docutils literal notranslate"><span class="pre">EntryRow.kind</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.nested_type"><code class="docutils literal notranslate"><span class="pre">EntryRow.nested_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.own"><code class="docutils literal notranslate"><span class="pre">EntryRow.own</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.path"><code class="docutils literal notranslate"><span class="pre">EntryRow.path</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.target"><code class="docutils literal notranslate"><span class="pre">EntryRow.target</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.EntryRow.unit"><code class="docutils literal notranslate"><span class="pre">EntryRow.unit</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_COLUMN"><code class="docutils literal notranslate"><span class="pre">GUTTER_COLUMN</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_ROLE"><code class="docutils literal notranslate"><span class="pre">GUTTER_ROLE</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.GUTTER_WIDTH"><code class="docutils literal notranslate"><span class="pre">GUTTER_WIDTH</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLOUR"><code class="docutils literal notranslate"><span class="pre">LOCK_COLOUR</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN"><code class="docutils literal notranslate"><span class="pre">LOCK_COLUMN</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LOCK_COLUMN_WIDTH"><code class="docutils literal notranslate"><span class="pre">LOCK_COLUMN_WIDTH</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LockRow"><code class="docutils literal notranslate"><span class="pre">LockRow</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LockRow.children"><code class="docutils literal notranslate"><span class="pre">LockRow.children</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LockRow.lock"><code class="docutils literal notranslate"><span class="pre">LockRow.lock</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LockRow.path"><code class="docutils literal notranslate"><span class="pre">LockRow.path</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.LockRow.type_locks"><code class="docutils literal notranslate"><span class="pre">LockRow.type_locks</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.PMState"><code class="docutils literal notranslate"><span class="pre">PMState</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.PMState.apply_lock"><code class="docutils literal notranslate"><span class="pre">PMState.apply_lock()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.PMState.apply_type"><code class="docutils literal notranslate"><span class="pre">PMState.apply_type()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.PMState.locks"><code class="docutils literal notranslate"><span class="pre">PMState.locks</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.PMState.refresh"><code class="docutils literal notranslate"><span class="pre">PMState.refresh()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.PMState.types"><code class="docutils literal notranslate"><span class="pre">PMState.types</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TINT_COLOURS"><code class="docutils literal notranslate"><span class="pre">TINT_COLOURS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TINT_PALETTE"><code class="docutils literal notranslate"><span class="pre">TINT_PALETTE</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TINT_PALETTE_DARK"><code class="docutils literal notranslate"><span class="pre">TINT_PALETTE_DARK</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TypePalette"><code class="docutils literal notranslate"><span class="pre">TypePalette</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.bar_colour"><code class="docutils literal notranslate"><span class="pre">TypePalette.bar_colour()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.colours"><code class="docutils literal notranslate"><span class="pre">TypePalette.colours()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.slots"><code class="docutils literal notranslate"><span class="pre">TypePalette.slots</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.TypePalette.sync"><code class="docutils literal notranslate"><span class="pre">TypePalette.sync()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.also_types"><code class="docutils literal notranslate"><span class="pre">also_types()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.build_lock_rows"><code class="docutils literal notranslate"><span class="pre">build_lock_rows()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.compute_claims"><code class="docutils literal notranslate"><span class="pre">compute_claims()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.followers_reaching"><code class="docutils literal notranslate"><span class="pre">followers_reaching()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.instances_of_type"><code class="docutils literal notranslate"><span class="pre">instances_of_type()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.is_dark_theme"><code class="docutils literal notranslate"><span class="pre">is_dark_theme()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.lock_button_tooltip"><code class="docutils literal notranslate"><span class="pre">lock_button_tooltip()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.lock_column_text"><code class="docutils literal notranslate"><span class="pre">lock_column_text()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.lock_root"><code class="docutils literal notranslate"><span class="pre">lock_root()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.lock_row_paths"><code class="docutils literal notranslate"><span class="pre">lock_row_paths()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.parse_default_text"><code class="docutils literal notranslate"><span class="pre">parse_default_text()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.rank_lock_targets"><code class="docutils literal notranslate"><span class="pre">rank_lock_targets()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.relative_path"><code class="docutils literal notranslate"><span class="pre">relative_path()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.tint_colours"><code class="docutils literal notranslate"><span class="pre">tint_colours()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instrumentserver.gui.parameter_manager.logic.type_entry_rows"><code class="docutils literal notranslate"><span class="pre">type_entry_rows()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/api/generated/instrumentserver.gui.parameter_manager.logic.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020-2026, Tools For Experiments.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

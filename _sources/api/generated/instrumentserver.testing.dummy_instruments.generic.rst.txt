@@ -10,6 +10,7 @@ instrumentserver.testing.dummy\_instruments.generic
    
       AnnotatedMethodsInstrument
       DefaultValuesInstrument
+      DummyBroadcasterInstrument
       DummyChannel
       DummyInstrumentRandomNumber
       DummyInstrumentTimeout

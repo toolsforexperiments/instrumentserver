@@ -470,6 +470,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..blueprints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">INSTRUMENT_MODULE_BASE_CLASSES</span><span class="p">,</span>
     <span class="n">PARAMETER_BASE_CLASSES</span><span class="p">,</span>
+    <span class="n">PARAMETER_CALL</span><span class="p">,</span>
+    <span class="n">PARAMETER_CREATION</span><span class="p">,</span>
+    <span class="n">PARAMETER_DELETION</span><span class="p">,</span>
+    <span class="n">PARAMETER_UPDATE</span><span class="p">,</span>
     <span class="n">CallSpec</span><span class="p">,</span>
     <span class="n">InstrumentCreationSpec</span><span class="p">,</span>
     <span class="n">InstrumentModuleBluePrint</span><span class="p">,</span>
@@ -579,6 +583,12 @@
                 <span class="k">if</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;initialize&quot;</span><span class="p">]:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">load_instrument</span><span class="p">(</span><span class="n">instrumentName</span><span class="p">)</span>
 
+        <span class="c1"># Instruments that reached the Station from config implement the</span>
+        <span class="c1"># Broadcaster contract (ADR-0003) or not; register the server as a</span>
+        <span class="c1"># Broadcast sink on the ones that do.</span>
+        <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_registerBroadcaster</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">allowUserShutdown</span> <span class="o">=</span> <span class="n">allowUserShutdown</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">listenAddresses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">addresses</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initScript</span> <span class="o">=</span> <span class="n">initScript</span>
@@ -619,6 +629,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_w</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="c1"># Per-instrument locks to avoid races when multiple threads talk to the same instrument concurrently</span>
+        <span class="c1"># Prose calls these the &quot;instrument mutex&quot; (ADR-0003); the code keeps its current names.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_instrument_locks_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
 
@@ -899,6 +910,7 @@
 
             <span class="k">if</span> <span class="n">new_instrument</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">add_component</span><span class="p">(</span><span class="n">new_instrument</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_registerBroadcaster</span><span class="p">(</span><span class="n">new_instrument</span><span class="p">)</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">instrumentCreated</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span>
                     <span class="n">bluePrintFromInstrumentModule</span><span class="p">(</span><span class="n">new_instrument</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">new_instrument</span><span class="p">),</span>
@@ -925,7 +937,7 @@
                     <span class="c1"># Broadcast changes in parameter values.</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span>
                         <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span>
-                            <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;parameter-update&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">PARAMETER_UPDATE</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -933,7 +945,7 @@
 
                     <span class="c1"># Broadcast calls of parameters.</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span>
-                        <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;parameter-call&quot;</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
+                        <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">PARAMETER_CALL</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
                     <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">funcCalled</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">ret</span><span class="p">)</span>
@@ -1007,6 +1019,17 @@
 
         <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">guiConfig</span><span class="p">[</span><span class="n">instrumentName</span><span class="p">])</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_registerBroadcaster</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instrument</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register the server as a Broadcast sink on an instrument implementing</span>
+<span class="sd">        the Broadcaster contract (ADR-0003). Instruments without the contract</span>
+<span class="sd">        are left untouched.</span>
+
+<span class="sd">        :param instrument: The instrument that joined the Station.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instrument</span><span class="p">,</span> <span class="s2">&quot;add_broadcast_sink&quot;</span><span class="p">):</span>
+            <span class="n">instrument</span><span class="o">.</span><span class="n">add_broadcast_sink</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_broadcastParameterChange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blueprint</span><span class="p">:</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Broadcast any changes to parameters in the server.</span>
@@ -1045,12 +1068,15 @@
         <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;add_parameter&quot;</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
             <span class="n">pb</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span>
-                <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;parameter-creation&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;initial_value&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">PARAMETER_CREATION</span><span class="p">,</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;initial_value&quot;</span><span class="p">),</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span><span class="n">pb</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;remove_parameter&quot;</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
-            <span class="n">pb</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;parameter-deletion&quot;</span><span class="p">)</span>
+            <span class="n">pb</span> <span class="o">=</span> <span class="n">ParameterBroadcastBluePrint</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">PARAMETER_DELETION</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_broadcastParameterChange</span><span class="p">(</span><span class="n">pb</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_lock_for_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">]:</span>
