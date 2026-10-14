@@ -242,6 +242,87 @@ class SerializationInstrument(Instrument):
         return "123"
 
 
+class AnnotatedMethodsInstrument(Instrument):
+    """Dummy whose public methods use module-level classes as annotations.
+
+    Mirrors drivers like the QDevil QDAC2 (``allocate_trace(...) -> Trace_Context``).
+    ``inspect.signature`` renders these annotations with their full module path,
+    which the client has to be able to rebuild when it creates proxy methods.
+    """
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+    def ask_raw(self, cmd: str) -> str:
+        """Return a minimal response to identification queries."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
+    def make_request(self, center_hz: float, span_hz: float) -> SweepRequest:
+        """Custom class as the return annotation."""
+        return SweepRequest(center_hz=center_hz, span_hz=span_hz)
+
+    def request_span(self, request: SweepRequest) -> float:
+        """Custom class as a parameter annotation."""
+        return request.span_hz
+
+
+_NO_VALUE = object()
+
+
+class DefaultValuesInstrument(Instrument):
+    """Dummy whose public methods have defaults whose ``repr`` is not valid Python.
+
+    ``inspect.signature`` renders these as ``<StatusFlag.EAV: 4>`` or
+    ``<object object at 0x...>``, which the client cannot paste into source
+    when it creates proxy methods.
+    """
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+    def ask_raw(self, cmd: str) -> str:
+        """Return a minimal response to identification queries."""
+        if cmd.strip().upper().startswith("*IDN"):
+            return f"dummy,{self.name},0,0"
+        return ""
+
+    def add(self, a, b=10):
+        """Plain literal default."""
+        return a + b
+
+    def flag_value(self, flag=StatusFlag.EAV):
+        """Enum member as the default."""
+        return int(flag)
+
+    def is_default(self, value=_NO_VALUE):
+        """Sentinel object as the default."""
+        return value is _NO_VALUE
+
+    def scaled(self, x, *, factor=_NO_VALUE):
+        """Sentinel object as a keyword-only default."""
+        if factor is _NO_VALUE:
+            return x
+        return x * factor
+
+    def combine(self, a, b=1, c=2):
+        """Lets a caller skip a middle default."""
+        return f"{a},{b},{c}"
+
+    def positional_only(self, a, b=1, /):
+        """Positional-only parameters with a default."""
+        return f"{a},{b}"
+
+    def required_keyword(self, x, *, k):
+        """Keyword-only parameter without a default."""
+        return f"{x},{k}"
+
+    def gather(self, a, b=1, *args, **kwargs):
+        """Defaults mixed with variadic arguments."""
+        return f"{a},{b},{list(args)},{sorted(kwargs.items())}"
+
+
 class DummyInstrumentTimeout(Instrument):
     """A dummy instrument to test timeout situations."""
 
