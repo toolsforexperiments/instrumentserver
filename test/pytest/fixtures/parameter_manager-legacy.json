@@ -1,0 +1,10 @@
+{
+  "parameter_manager.my_param": {
+    "value": 123,
+    "unit": "M"
+  },
+  "parameter_manager.nested_param.child": {
+    "value": 456,
+    "unit": "a"
+  }
+}

@@ -1,17 +1,31 @@
 import inspect
 import logging
-from typing import Any, Callable, Dict, Optional, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 
 from qcodes import Instrument
 
 from instrumentserver.gui.misc import AlertLabelGreen
 
 from .. import DEFAULT_PORT, QtCore, QtGui, QtWidgets
-from ..blueprints import ParameterBroadcastBluePrint
+from ..blueprints import (
+    PARAMETER_CALL,
+    PARAMETER_CREATION,
+    PARAMETER_DELETION,
+    PARAMETER_UPDATE,
+    ParameterBroadcastBluePrint,
+)
 from ..client import ProxyInstrument, SubClient
 from ..helpers import nestedAttributeFromString
-from ..params import ParameterManager, ParameterTypes, parameterTypes, paramTypeFromName
-from . import keepSmallHorizontally
 from .base_instrument import (
     DelegateBase,
     InstrumentDisplayBase,
@@ -21,177 +35,30 @@ from .base_instrument import (
 )
 from .parameters import AnyInput, AnyInputForMethod, ParameterWidget
 
+if TYPE_CHECKING:
+    from .parameter_manager import ParameterManagerGui, PMState
+
 # TODO: all styles set through a global style sheet.
 # TODO: [maybe] add a column for information on valid input values?
 
 logger = logging.getLogger(__name__)
 
+#: Names that moved to :mod:`instrumentserver.gui.parameter_manager` and are
+#: still served from this module, so station configs that name
+#: ``instrumentserver.gui.instruments.ParameterManagerGui`` keep loading.
+_MOVED_TO_PARAMETER_MANAGER = ("ParameterManagerGui", "PMState")
 
-class AddParameterWidget(QtWidgets.QWidget):
-    """A widget that allows parameter creation.
 
-    :param parent: parent widget
-    :param typeInput: if ``True``, add input fields for creating a value
-        validator.
-    """
+def __getattr__(name: str) -> Union[Type["ParameterManagerGui"], Type["PMState"]]:
+    # imported on first use: the parameter_manager package imports this module
+    if name in _MOVED_TO_PARAMETER_MANAGER:
+        from . import parameter_manager
 
-    #: Signal(str, str, str, ParameterTypes, str)
-    newParamRequested = QtCore.Signal(str, str, str, ParameterTypes, str)
-
-    #: Signal(str)
-    invalidParamRequested = QtCore.Signal(str)
-
-    def __init__(
-        self, parent: Optional[QtWidgets.QWidget] = None, typeInput: bool = False
-    ) -> None:
-        super().__init__(parent)
-
-        self.typeInput = typeInput
-
-        layout = QtWidgets.QGridLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.nameEdit = QtWidgets.QLineEdit(self)
-        lbl = QtWidgets.QLabel("Name:")
-        lbl.setAlignment(
-            cast(
-                "QtCore.Qt.Alignment",
-                QtCore.Qt.AlignmentFlag.AlignRight
-                | QtCore.Qt.AlignmentFlag.AlignVCenter,
-            )
+        return cast(
+            Union[Type["ParameterManagerGui"], Type["PMState"]],
+            getattr(parameter_manager, name),
         )
-        layout.addWidget(lbl, 0, 0)
-        layout.addWidget(self.nameEdit, 0, 1)
-
-        self.valueEdit = QtWidgets.QLineEdit(self)
-        lbl = QtWidgets.QLabel("Value:")
-        lbl.setAlignment(
-            cast(
-                "QtCore.Qt.Alignment",
-                QtCore.Qt.AlignmentFlag.AlignRight
-                | QtCore.Qt.AlignmentFlag.AlignVCenter,
-            )
-        )
-        layout.addWidget(lbl, 0, 2)
-        layout.addWidget(self.valueEdit, 0, 3)
-
-        self.unitEdit = QtWidgets.QLineEdit(self)
-        lbl = QtWidgets.QLabel("Unit:")
-        lbl.setAlignment(
-            cast(
-                "QtCore.Qt.Alignment",
-                QtCore.Qt.AlignmentFlag.AlignRight
-                | QtCore.Qt.AlignmentFlag.AlignVCenter,
-            )
-        )
-        layout.addWidget(lbl, 0, 4)
-        layout.addWidget(self.unitEdit, 0, 5)
-
-        if typeInput:
-            self.typeSelect = QtWidgets.QComboBox(self)
-            names: list[str] = []
-            for t, v in parameterTypes.items():
-                names.append(str(v["name"]))
-            for n in sorted(names):
-                self.typeSelect.addItem(n)
-            self.typeSelect.setCurrentText(
-                str(parameterTypes[ParameterTypes.numeric]["name"])
-            )
-            lbl = QtWidgets.QLabel("Type:")
-            lbl.setAlignment(
-                cast(
-                    "QtCore.Qt.Alignment",
-                    QtCore.Qt.AlignmentFlag.AlignRight
-                    | QtCore.Qt.AlignmentFlag.AlignVCenter,
-                )
-            )
-            layout.addWidget(lbl, 1, 0)
-            layout.addWidget(self.typeSelect, 1, 1)
-
-            self.valsArgsEdit = QtWidgets.QLineEdit(self)
-            lbl = QtWidgets.QLabel("Type opts.:")
-            lbl.setToolTip(
-                "Optional, for constraining parameter values."
-                "Allowed args and defaults:\n"
-                " - 'Numeric': min_value=-1e18, max_value=1e18\n"
-                " - 'Integer': min_value=-inf, max_value=inf\n"
-                " - 'String': min_length=0, max_length=1e9\n"
-                "See qcodes.utils.validators for details."
-            )
-            lbl.setAlignment(
-                cast(
-                    "QtCore.Qt.Alignment",
-                    QtCore.Qt.AlignmentFlag.AlignRight
-                    | QtCore.Qt.AlignmentFlag.AlignVCenter,
-                )
-            )
-            layout.addWidget(lbl, 1, 2)
-            layout.addWidget(self.valsArgsEdit, 1, 3)
-
-        self.addButton = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/plus-square.svg"), " Add", parent=self
-        )
-
-        self.addButton.clicked.connect(self.requestNewParameter)
-        self.nameEdit.returnPressed.connect(self.addButton.click)
-        self.valueEdit.returnPressed.connect(self.addButton.click)
-        self.unitEdit.returnPressed.connect(self.addButton.click)
-        layout.addWidget(self.addButton, 0, 6, 1, 1)
-        self.addButton.setAutoDefault(True)
-
-        self.clearButton = QtWidgets.QPushButton(
-            QtGui.QIcon(":/icons/delete.svg"), " Clear", parent=self
-        )
-
-        self.clearButton.setAutoDefault(True)
-        self.clearButton.clicked.connect(self.clear)
-        layout.addWidget(self.clearButton, 0, 7, 1, 1)
-
-        self.setLayout(layout)
-        self.invalidParamRequested.connect(self.setError)
-
-    @QtCore.Slot()
-    def clear(self) -> None:
-        self.clearError()
-        self.nameEdit.setText("")
-        self.valueEdit.setText("")
-        self.unitEdit.setText("")
-        if self.typeInput:
-            self.typeSelect.setCurrentText(
-                parameterTypes[ParameterTypes.numeric]["name"]  # type: ignore[arg-type]
-            )
-            self.valsArgsEdit.setText("")
-
-    @QtCore.Slot(bool)
-    def requestNewParameter(self, _: bool) -> None:
-        self.clearError()
-
-        name = self.nameEdit.text().strip()
-        if len(name) == 0:
-            self.invalidParamRequested.emit("Name must not be empty.")
-            return
-        value = self.valueEdit.text()
-        unit = self.unitEdit.text()
-
-        if hasattr(self, "typeSelect"):
-            ptype = paramTypeFromName(self.typeSelect.currentText())
-            valsArgs = self.valsArgsEdit.text()
-        else:
-            ptype = ParameterTypes.any
-            valsArgs = ""
-
-        self.newParamRequested.emit(name, value, unit, ptype, valsArgs)
-
-    @QtCore.Slot(str)
-    def setError(self, message: str) -> None:
-        self.addButton.setStyleSheet("""
-        QPushButton { background-color: red }
-        """)
-        self.addButton.setToolTip(message)
-
-    def clearError(self) -> None:
-        self.addButton.setStyleSheet("")
-        self.addButton.setToolTip("")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class MethodDisplay(QtWidgets.QWidget):
@@ -308,10 +175,15 @@ class ParameterDelegate(DelegateBase):
         if not item.showDelegate:  # type: ignore[attr-defined]
             return None  # type: ignore[return-value]
 
-        element = item.element  # type: ignore[attr-defined]
-
-        ret = ParameterWidget(element, widget)
+        ret = self.makeParameterWidget(item, widget)
         self.parameters[item.name] = ret  # type: ignore[attr-defined]
+        # Qt deletes the editor when its row is hidden (the filter, the
+        # trash toggle); forget it then, so nobody touches a dead widget
+        ret.destroyed.connect(
+            lambda _=None, name=item.name, editor=ret: self._forgetEditor(  # type: ignore[attr-defined]
+                name, editor
+            )
+        )
         ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
 
         if self.navFilter is not None:
@@ -331,6 +203,21 @@ class ParameterDelegate(DelegateBase):
         #     except Exception as e:
         #         logger.warning(f"Failed to get value for parameter {element.name}: {e}")
         return ret
+
+    def _forgetEditor(self, name: str, editor: QtWidgets.QWidget) -> None:
+        """Drop the destroyed ``editor`` of row ``name``, unless a newer
+        editor for the same row has already replaced it."""
+        if self.parameters.get(name) is editor:
+            del self.parameters[name]
+
+    def makeParameterWidget(
+        self, item: QtGui.QStandardItem, parent: QtWidgets.QWidget
+    ) -> ParameterWidget:
+        """The editor widget for the parameter of ``item``. A delegate that
+        adds buttons next to the value overrides this;
+        :meth:`createEditor` does the rest (registering the widget and
+        installing the navigation filter)."""
+        return ParameterWidget(item.element, parent)  # type: ignore[attr-defined]
 
 
 class ValueCellNavigationFilter(QtCore.QObject):
@@ -416,8 +303,9 @@ class ModelParameters(InstrumentModelBase):
         }
         super().__init__(*args, **kwargs)
 
-        self.setColumnCount(3)
-        self.setHorizontalHeaderLabels([self.attr, "unit", ""])
+        labels = self.headerLabels()
+        self.setColumnCount(len(labels))
+        self.setHorizontalHeaderLabels(labels)
 
         # Live updates items
         self.cliThread = QtCore.QThread()
@@ -442,19 +330,35 @@ class ModelParameters(InstrumentModelBase):
     def updateParameter(self, bp: ParameterBroadcastBluePrint) -> None:
         fullName = ".".join(bp.name.split(".")[1:])
 
-        if bp.action == "parameter-creation":
-            if fullName not in self.instrument.list():
-                self.instrument.update()
-            if fullName in self.instrument.list():
-                self.addItem(
-                    fullName,
-                    element=nestedAttributeFromString(self.instrument, fullName),
-                )
+        if bp.action == PARAMETER_CREATION:
+            # Resolve the parameter on the instrument first: a parameter
+            # another Client created while the GUI is open is already in the
+            # Proxy's remote list(), so only a fresh resolution tells whether
+            # the (Proxy) instrument's blueprint is stale. On a stale one,
+            # update() refreshes it and the element resolves on the second
+            # attempt (TEST_AUDIT.md, "Parameter Manager GUI — live creation
+            # from another client"; fixed in plan task 5.5 by Marcos's
+            # decision, an explicit exception to plan rule 6).
+            try:
+                element = nestedAttributeFromString(self.instrument, fullName)
+            except AttributeError:
+                if hasattr(self.instrument, "update"):
+                    self.instrument.update()
+                try:
+                    element = nestedAttributeFromString(self.instrument, fullName)
+                except AttributeError:
+                    logger.debug(
+                        f"Ignoring parameter-creation broadcast for a "
+                        f"parameter that cannot be resolved: {fullName}"
+                    )
+                    element = None
+            if element is not None:
+                self.addItem(fullName, element=element)
 
-        elif bp.action == "parameter-deletion":
+        elif bp.action == PARAMETER_DELETION:
             self.removeItem(fullName)
 
-        elif bp.action == "parameter-update" or bp.action == "parameter-call":
+        elif bp.action == PARAMETER_UPDATE or bp.action == PARAMETER_CALL:
             item = self.findItems(
                 fullName,
                 cast(
@@ -483,29 +387,40 @@ class ModelParameters(InstrumentModelBase):
                 # The model can't actually modify the widget since it knows nothing about the view itself.
                 self.itemNewValue.emit(item[0].name, bp.value)
 
+    def headerLabels(self) -> List[str]:
+        """The header label of every column: name, unit and delegate.
+        A model with more columns extends this list and :meth:`rowItems`
+        together."""
+        return [self.attr, "unit", ""]
+
+    def rowItems(self, item: QtGui.QStandardItem) -> List[QtGui.QStandardItem]:
+        """The items of one row, ``item`` first, one per column of
+        :meth:`headerLabels`. :meth:`insertItemTo` inserts them."""
+        # A parameter might not have a unit
+        unit = ""
+        if item.element is not None:  # type: ignore[attr-defined]
+            unit = item.element.unit  # type: ignore[attr-defined]
+        return [item, QtGui.QStandardItem(unit), QtGui.QStandardItem()]
+
     def insertItemTo(
         self, parent: QtGui.QStandardItem, item: QtGui.QStandardItem
     ) -> None:
         if item is not None:
-            # A parameter might not have a unit
-            unit = ""
-            if item.element is not None:  # type: ignore[attr-defined]
-                unit = item.element.unit  # type: ignore[attr-defined]
-            unitItem = QtGui.QStandardItem(unit)
-            extraItem = QtGui.QStandardItem()
-
+            row = self.rowItems(item)
             if parent == self:
                 rowCount = self.rowCount()
-                self.setItem(rowCount, 0, item)
-                self.setItem(rowCount, 1, unitItem)
-                self.setItem(rowCount, 2, extraItem)
+                for column, cell in enumerate(row):
+                    self.setItem(rowCount, column, cell)
             else:
-                parent.appendRow([item, unitItem, extraItem])
+                parent.appendRow(row)
 
             self.newItem.emit(item)
 
 
 class ParametersTreeView(InstrumentTreeViewBase):
+    #: The delegate class of the value column (column 2).
+    delegateClass: type[ParameterDelegate] = ParameterDelegate
+
     def __init__(
         self,
         model: QtCore.QAbstractItemModel,
@@ -514,15 +429,24 @@ class ParametersTreeView(InstrumentTreeViewBase):
     ) -> None:
         super().__init__(model, [2], *args, **kwargs)
 
-        self.delegate = ParameterDelegate(self)
+        self.delegate = self.delegateClass(self)
         self.delegate.navFilter = ValueCellNavigationFilter(self)
 
         self.setItemDelegateForColumn(2, self.delegate)
+        self.setupColumns()
         self.setAllDelegatesPersistent()
+
+    def setupColumns(self) -> None:
+        """Set up the delegates and header of any columns beyond name,
+        unit and value. Runs before the persistent editors are opened;
+        the default does nothing."""
 
     @QtCore.Slot(object, object)
     def onItemNewValue(self, itemName: str, value: Any) -> None:
-        widget = self.delegate.parameters[itemName]
+        widget = self.delegate.parameters.get(itemName)
+        if widget is None:
+            # the row is hidden, so it has no editor to update
+            return
         try:
             # use the abstract set method defined in parameter widget so it works for different types of widgets
             widget._setMethod(value)
@@ -539,6 +463,7 @@ class InstrumentParameters(InstrumentDisplayBase):
         parent: Optional[QtWidgets.QWidget] = None,
         viewType: type = ParametersTreeView,
         callSignals: bool = True,
+        modelType: type = ModelParameters,
         **kwargs: Any,
     ) -> None:
         if "instrument" in kwargs:
@@ -564,7 +489,7 @@ class InstrumentParameters(InstrumentDisplayBase):
             parent=parent,
             attr="parameters",
             itemType=ItemParameters,
-            modelType=ModelParameters,
+            modelType=modelType,
             viewType=viewType,
             callSignals=callSignals,
             shortcutManager=shortcutManager,
@@ -635,235 +560,6 @@ class InstrumentParameters(InstrumentDisplayBase):
 
 
 # ----------------- Parameters Display Classes - Ending --------------------------------
-
-# ----------------- Parameters Manager Classes - Beginning -----------------------------
-
-
-class ParameterDeleteDelegate(ParameterDelegate):
-    #: Signal(str)
-    #: Emits the name of the parameter to be deleted when the user presses the delete button.
-    removeParameter = QtCore.Signal(str)
-
-    def createEditor(  # type: ignore[override]
-        self,
-        widget: QtWidgets.QWidget,
-        option: QtWidgets.QStyleOptionViewItem,
-        index: QtCore.QModelIndex,
-    ) -> QtWidgets.QWidget:
-        item = self.getItem(index)
-
-        if not item.showDelegate:  # type: ignore[attr-defined]
-            return None  # type: ignore[return-value]
-
-        element = item.element  # type: ignore[attr-defined]
-        rw = self.makeRemoveWidget(item.name, widget)  # type: ignore[attr-defined]
-
-        ret = ParameterWidget(parameter=element, parent=widget, additionalWidgets=[rw])
-        self.parameters[item.name] = ret  # type: ignore[attr-defined]
-        ret.valueCommitted.connect(self.parent().setFocus)  # type: ignore[union-attr]
-
-        if self.navFilter is not None:
-            if isinstance(ret.paramWidget, AnyInput):
-                input_widget = ret.paramWidget.input
-            else:
-                input_widget = ret.paramWidget
-            input_widget.installEventFilter(self.navFilter)
-            self.navFilter.registerWidget(input_widget, index)
-
-        return ret
-
-    def makeRemoveWidget(
-        self, fullName: str, widget: QtWidgets.QWidget
-    ) -> QtWidgets.QPushButton:
-        w = QtWidgets.QPushButton(QtGui.QIcon(":/icons/delete.svg"), "", parent=widget)
-        w.setStyleSheet("""
-            QPushButton { background-color: salmon }
-        """)
-        w.setToolTip("Delete this parameter")
-        keepSmallHorizontally(w)
-
-        w.pressed.connect(lambda: self.removeParameter.emit(fullName))
-        return w
-
-
-# TODO: Make sure that the refresh button refreshes the profiles as well as the model
-class ParameterManagerTreeView(InstrumentTreeViewBase):
-    def __init__(
-        self,
-        model: QtCore.QAbstractItemModel,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(model, [2], *args, **kwargs)
-
-        self.delegate = ParameterDeleteDelegate(self)
-        self.delegate.navFilter = ValueCellNavigationFilter(self)
-
-        self.setItemDelegateForColumn(2, self.delegate)
-        self.setAllDelegatesPersistent()
-
-    @QtCore.Slot(object, object)
-    def onItemNewValue(self, itemName: str, value: Any) -> None:
-        widget = self.delegate.parameters[itemName]
-        widget.paramWidget.setValue(value)
-
-
-class ProfilesManager(QtWidgets.QComboBox):
-    #: Signal()
-    #: Emitted when the selected index changed.
-    indexChanged = QtCore.Signal()
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
-        self.setEditable(False)
-        self.params = self.parent().instrument  # type: ignore[union-attr]
-        self.refreshing = False
-
-        loadingProfile = None
-        for profile in self.params.list_profiles():
-            self.addItem(self.params.cleanProfileName(profile))
-            if loadingProfile is None:
-                loadingProfile = profile
-
-        self.currentIndexChanged.connect(self.onCurrentIndexChanged)
-
-    def refresh(self) -> None:
-        self.refreshing = True
-        currentlySelected = self.currentText()
-        self.clear()
-        for profile in self.params.list_profiles():
-            self.addItem(self.params.cleanProfileName(profile))
-            if self.params.cleanProfileName(profile) == currentlySelected:
-                self.setCurrentIndex(self.count() - 1)
-        self.refreshing = False
-
-    @QtCore.Slot(int)
-    def onCurrentIndexChanged(self, index: int) -> None:
-        if not self.refreshing:
-            self.indexChanged.emit()
-
-
-class ParameterManagerGui(InstrumentParameters):
-    #: Signal(str) --
-    #: emitted when there's an error during parameter creation.
-    parameterCreationError = QtCore.Signal(str)
-
-    #: Signal() --
-    #:  emitted when a parameter was created successfully
-    parameterCreated = QtCore.Signal()
-
-    def __init__(
-        self,
-        instrument: Union[ProxyInstrument, ParameterManager],
-        parent: Optional[QtWidgets.QWidget] = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            instrument,
-            parent=None,
-            viewType=ParameterManagerTreeView,
-            callSignals=False,
-            **kwargs,
-        )
-        self.profileManager = ProfilesManager(parent=self)
-        self.addParam = AddParameterWidget(parent=self)
-        layout = self.layout()
-        assert isinstance(layout, QtWidgets.QVBoxLayout)
-        layout.insertWidget(0, self.profileManager)
-        layout.addWidget(self.addParam)
-        self.connectSignals()
-        self.loadProfile()
-
-    def connectSignals(self) -> None:
-        super().connectSignals()
-        self.view.delegate.removeParameter.connect(self.removeParameter)
-        self.addParam.newParamRequested.connect(self.addParameter)
-        self.parameterCreationError.connect(self.addParam.setError)
-        self.parameterCreated.connect(self.addParam.clear)
-        self.profileManager.indexChanged.connect(self.loadProfile)
-        self.shortcutManager.register("delete_item", self._deleteCurrentItem, self)
-        self.shortcutManager.register("clear_add", self.addParam.clear, self)
-        self.shortcutManager.register("add_item", self.addParam.nameEdit.setFocus, self)
-        self.shortcutManager.register("load_items", self.loadFromFile, self)
-        self.shortcutManager.register("save_items", self.saveToFile, self)
-
-    @QtCore.Slot()
-    def _deleteCurrentItem(self) -> None:
-        item = self._getCurrentItem()
-        if item is not None:
-            self.removeParameter(item.name)
-
-    def makeToolbar(self) -> QtWidgets.QToolBar:
-        toolbar = super().makeToolbar()
-
-        toolbar.addSeparator()
-
-        loadParamAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/load.svg"),
-            "Load parameters from file",
-        )
-        loadParamAction.triggered.connect(lambda x: self.loadFromFile())  # type: ignore[union-attr]
-        self.shortcutManager.register_tooltip("load_items", loadParamAction)
-
-        saveParamAction = toolbar.addAction(
-            QtGui.QIcon(":/icons/save.svg"),
-            "Save parameters to file",
-        )
-        saveParamAction.triggered.connect(lambda x: self.saveToFile())  # type: ignore[union-attr]
-        self.shortcutManager.register_tooltip("save_items", saveParamAction)
-
-        return toolbar
-
-    def refreshAll(self) -> None:
-        super().refreshAll()
-        self.instrument.refresh_profiles()
-        self.profileManager.refresh()
-
-    def removeParameter(self, fullName: str) -> None:
-        if self.instrument.has_param(fullName):
-            self.instrument.remove_parameter(fullName)
-
-    def addParameter(self, fullName: str, value: Any, unit: str) -> None:
-        try:
-            # Validators are commented out until they can be serialized.
-            self.instrument.add_parameter(
-                fullName,
-                initial_value=value,
-                unit=unit,
-            )  # vals=vals)
-            self.parameterCreated.emit()
-        except Exception as e:
-            self.parameterCreationError.emit(
-                f"Could not create parameter.Adding parameter raised{type(e)}: {e.args}"
-            )
-            return
-
-    @QtCore.Slot()
-    def loadProfile(self) -> None:
-        profileName = self.profileManager.currentText()
-        self.instrument.switch_to_profile(profileName)
-        super().refreshAll()
-        self.instrument.refresh_profiles()
-
-    @QtCore.Slot()
-    def loadFromFile(self, loadFile: Optional[str] = None) -> None:
-        try:
-            self.instrument.fromFile(filePath=loadFile, deleteMissing=False)
-            self.refreshAll()
-
-        except Exception as e:
-            logger.info(f"Loading failed. {type(e)}: {e.args}")
-
-    @QtCore.Slot()
-    def saveToFile(self) -> None:
-        try:
-            self.instrument.toFile()
-        except Exception as e:
-            logger.info(f"Saving failed. {type(e)}: {e.args}")
-
-
-# ----------------- Parameters Manager Classes - Ending --------------------------------
 
 # ----------------- Methods Display Classes - Beginning --------------------------------
 

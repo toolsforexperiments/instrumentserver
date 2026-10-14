@@ -78,6 +78,16 @@ PARAMETER_BASE_CLASSES = [Parameter, ParameterWithSetpoints]
 
 ParameterType = Union[Parameter, ParameterWithSetpoints]
 
+# Action strings carried in ParameterBroadcastBluePrint.action. These are the
+# exact strings on the wire; PM_LOCK_UPDATE and PM_TYPE_UPDATE are emitted by
+# instruments implementing the Broadcaster contract.
+PARAMETER_UPDATE = "parameter-update"
+PARAMETER_CALL = "parameter-call"
+PARAMETER_CREATION = "parameter-creation"
+PARAMETER_DELETION = "parameter-deletion"
+PM_LOCK_UPDATE = "pm-lock-update"
+PM_TYPE_UPDATE = "pm-type-update"
+
 
 @dataclass
 class ParameterBluePrint:
@@ -355,11 +365,16 @@ def bluePrintFromInstrumentModule(
 
 @dataclass
 class ParameterBroadcastBluePrint:
-    """Blueprint to broadcast parameter changes."""
+    """Blueprint to broadcast parameter changes.
+
+    ``value`` carries whatever payload the action needs: a plain value for
+    the parameter actions and a :class:`PMLockBluePrint` for
+    ``pm-lock-update`` (``None`` when a Lock was removed).
+    """
 
     name: str
     action: str
-    value: int | None = None
+    value: Any | None = None
     unit: str = ""
     _class_type: str = "ParameterBroadcastBluePrint"
 
@@ -389,11 +404,55 @@ class ParameterBroadcastBluePrint:
         return bluePrintToDict(self)
 
 
+@dataclass
+class PMLockBluePrint:
+    """Blueprint of a Lock of the Parameter Manager.
+
+    Carries the full name of the Target the Follower's Lock points at and
+    whether the Lock is currently locked. Sent as the value of
+    ``pm-lock-update`` Broadcasts and returned by the Lock API.
+    """
+
+    target: str
+    locked: bool
+    _class_type: str = "PMLockBluePrint"
+
+    def toJson(self) -> Dict[str, Any]:
+        return bluePrintToDict(self)
+
+
+@dataclass
+class PMTypeBluePrint:
+    """Blueprint of a Type of the Parameter Manager.
+
+    ``parameters`` carries the Type's own entries as
+    ``{path: {default, unit, target}}``, where ``target`` is the Target of
+    the entry's Type Lock (``None`` when it has none). ``nested`` maps the
+    submodule name that requires a Nested Type to the nested Type's name.
+    ``effective`` is the computed effective parameter set: every own and
+    Nested Type entry path expanded under its submodule names, mapped to
+    the unit the entry declares and the Type that defines it
+    (``{path: {unit, from_type}}``). Returned by the Type API and sent as
+    the value of ``pm-type-update`` Broadcasts.
+    """
+
+    name: str
+    parameters: Dict[str, Dict[str, Any]]
+    nested: Dict[str, str]
+    effective: Dict[str, Dict[str, str]]
+    _class_type: str = "PMTypeBluePrint"
+
+    def toJson(self) -> Dict[str, Any]:
+        return bluePrintToDict(self)
+
+
 BluePrintType = Union[
     ParameterBluePrint,
     MethodBluePrint,
     InstrumentModuleBluePrint,
     ParameterBroadcastBluePrint,
+    PMLockBluePrint,
+    PMTypeBluePrint,
 ]
 
 
@@ -870,6 +929,9 @@ def dict_to_serialized_dict(
             if isinstance(value, dict):
                 serialized_iterable = dict_to_serialized_dict(dct=value)
                 converted_dict[name] = serialized_iterable
+
+            elif isinstance(value, get_args(BluePrintType)):
+                converted_dict[name] = bluePrintToDict(value)
 
             # Enum/IntFlag members are treated as scalars. This must come before
             # the generic Iterable check: since Python 3.11 a Flag member is

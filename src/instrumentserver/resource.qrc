@@ -21,5 +21,7 @@
     <file alias="icons/trash.svg">resource/icons/trash.svg</file>
     <file alias="icons/trash-crossed.svg">resource/icons/trash-crossed.svg</file>
     <file alias="icons/folder.svg">resource/icons/folder.svg</file>
+    <file alias="icons/lock.svg">resource/icons/lock.svg</file>
+    <file alias="icons/unlock.svg">resource/icons/unlock.svg</file>
 </qresource>
 </RCC>

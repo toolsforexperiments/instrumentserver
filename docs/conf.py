@@ -86,7 +86,7 @@ intersphinx_mapping = {
 }
 
 templates_path = ['_templates']
-exclude_patterns = ['build', 'agents', 'README.md', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+exclude_patterns = ['build', 'agents', 'adr', 'README.md', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # -- Internationalization ----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#internationalization

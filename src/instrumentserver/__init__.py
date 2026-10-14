@@ -21,6 +21,9 @@ def getInstrumentserverPath(*subfolder: str) -> str:
 
 
 PARAMS_SCHEMA_PATH = os.path.join(getInstrumentserverPath("schemas"), "parameters.json")
+PM_V2_SCHEMA_PATH = os.path.join(
+    getInstrumentserverPath("schemas"), "parameter_manager_v2.json"
+)
 
 DEFAULT_PORT = 5555
 

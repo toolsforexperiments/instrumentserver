@@ -19,6 +19,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from instrumentserver import DEFAULT_PORT
+
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
@@ -113,7 +115,7 @@ def test_server_script_gui_default_no_config():
     mock_lc.assert_not_called()
 
     kwargs = mock_gui.call_args.kwargs
-    assert kwargs["port"] == 5555
+    assert kwargs["port"] == DEFAULT_PORT
     assert kwargs["addresses"] is None
     assert kwargs["serverConfig"] is None
     assert kwargs["stationConfig"] is None
@@ -290,7 +292,9 @@ def test_client_station_script_no_config():
 
         clientStationScript()
 
-    mock_cs.assert_called_once_with(host="localhost", port=5555, config_path=None)
+    mock_cs.assert_called_once_with(
+        host="localhost", port=DEFAULT_PORT, config_path=None
+    )
 
 
 def test_client_station_script_with_config(tmp_path):
@@ -307,11 +311,14 @@ def test_client_station_script_with_config(tmp_path):
 
         clientStationScript()
 
-    mock_cs.assert_called_once_with(host="localhost", port=5555, config_path=cfg)
+    mock_cs.assert_called_once_with(
+        host="localhost", port=DEFAULT_PORT, config_path=cfg
+    )
 
 
 def test_detached_server_script_defaults():
-    """detachedServerScript: defaults → DetachedServerGui called with host=localhost, port=5555."""
+    """detachedServerScript: defaults → DetachedServerGui called with the
+    default host and the package's default port."""
     sys.argv = ["instrumentserver-detached"]
     with (
         patch("instrumentserver.apps.QtWidgets.QApplication") as mock_app,
@@ -323,7 +330,7 @@ def test_detached_server_script_defaults():
 
         detachedServerScript()
 
-    mock_dsg.assert_called_once_with(host="localhost", port=5555)
+    mock_dsg.assert_called_once_with(host="localhost", port=DEFAULT_PORT)
 
 
 def test_detached_server_script_custom():
@@ -350,8 +357,12 @@ def test_detached_server_script_custom():
 
 
 def test_param_manager_script_instrument_exists():
-    """parameterManagerScript: instrument exists → get_instrument path taken."""
-    sys.argv = ["instrumentserver-param-manager", "--port", "5555"]
+    """parameterManagerScript: instrument exists → get_instrument path taken.
+
+    The GUI must listen for Broadcasts on the server's broadcast port
+    (request port + 1), not on the default port.
+    """
+    sys.argv = ["instrumentserver-param-manager", "--port", "4567"]
     mock_pm = MagicMock()
     mock_cli = MagicMock()
     mock_cli.list_instruments.return_value = ["parameter_manager"]
@@ -370,13 +381,17 @@ def test_param_manager_script_instrument_exists():
 
     mock_cli.get_instrument.assert_called_once_with("parameter_manager")
     mock_cli.find_or_create_instrument.assert_not_called()
-    mock_pmg.assert_called_once_with(mock_pm)
+    mock_pmg.assert_called_once_with(mock_pm, sub_port=4568, sub_host="localhost")
     mock_wmw.assert_called_once()
 
 
 def test_param_manager_script_instrument_missing():
-    """parameterManagerScript: instrument not found → find_or_create path taken."""
-    sys.argv = ["instrumentserver-param-manager", "--port", "5555"]
+    """parameterManagerScript: instrument not found → find_or_create path taken.
+
+    The GUI must listen for Broadcasts on the server's broadcast port
+    (request port + 1), not on the default port.
+    """
+    sys.argv = ["instrumentserver-param-manager", "--port", "4567"]
     mock_pm = MagicMock()
     mock_cli = MagicMock()
     mock_cli.list_instruments.return_value = []
@@ -399,7 +414,7 @@ def test_param_manager_script_instrument_missing():
     mock_cli.get_instrument.assert_not_called()
     mock_pm.fromFile.assert_called_once()
     mock_pm.update.assert_called_once()
-    mock_pmg.assert_called_once_with(mock_pm)
+    mock_pmg.assert_called_once_with(mock_pm, sub_port=4568, sub_host="localhost")
     mock_wmw.assert_called_once()
 
 

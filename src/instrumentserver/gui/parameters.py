@@ -180,6 +180,10 @@ class ParameterWidget(QtWidgets.QWidget):
         layout.setContentsMargins(1, 1, 1, 1)
         self.setLayout(layout)
 
+        # Rows render read-only while their Lock is locked (plan task 5.3);
+        # :meth:`set_read_only` keeps this flag current.
+        self.read_only = False
+
     @QtCore.Slot()
     def onReturnPressed(self) -> None:
         """Activates the setButton when the input is selected and enter is pressed."""
@@ -210,6 +214,23 @@ class ParameterWidget(QtWidgets.QWidget):
         val = self._parameter.get()
         self._setMethod(val)
         self.parameterSet.emit(val)
+
+    def set_read_only(self, read_only: bool) -> None:
+        """Render the value read-only while the parameter's Lock is locked
+        (D3): the input and the set button are disabled, since a locked
+        Follower refuses ``set``, and the get button stays enabled so the
+        Target's value still refreshes. A parameter without a set method
+        was constructed with its set button disabled; it is never
+        re-enabled here.
+
+        :param read_only: whether editing the value is refused.
+        """
+        self.read_only = read_only
+        # disabling an AnyInput disables its input field and the eval
+        # toggle with it; every other kind of paramWidget *is* the input
+        self.paramWidget.setEnabled(not read_only)
+        if not isinstance(self.paramWidget, QtWidgets.QLabel):
+            self.setButton.setEnabled(not read_only)
 
 
 class AnyInput(QtWidgets.QWidget):

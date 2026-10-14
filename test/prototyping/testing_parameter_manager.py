@@ -6,7 +6,7 @@ from qcodes import Instrument, Station
 
 from instrumentserver.client import Client, ProxyInstrument
 from instrumentserver.gui import widgetDialog
-from instrumentserver.gui.instruments import ParameterManagerGui
+from instrumentserver.gui.parameter_manager import ParameterManagerGui
 from instrumentserver.params import ParameterManager
 
 # %% run the PM locally
