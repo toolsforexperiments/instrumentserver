@@ -746,6 +746,129 @@
 
 
 
+<div class="viewcode-block" id="AnnotatedMethodsInstrument">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.AnnotatedMethodsInstrument">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AnnotatedMethodsInstrument</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy whose public methods use module-level classes as annotations.</span>
+
+<span class="sd">    Mirrors drivers like the QDevil QDAC2 (``allocate_trace(...) -&gt; Trace_Context``).</span>
+<span class="sd">    ``inspect.signature`` renders these annotations with their full module path,</span>
+<span class="sd">    which the client has to be able to rebuild when it creates proxy methods.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AnnotatedMethodsInstrument.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.AnnotatedMethodsInstrument.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a minimal response to identification queries.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="AnnotatedMethodsInstrument.make_request">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.AnnotatedMethodsInstrument.make_request">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center_hz</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">span_hz</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SweepRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Custom class as the return annotation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SweepRequest</span><span class="p">(</span><span class="n">center_hz</span><span class="o">=</span><span class="n">center_hz</span><span class="p">,</span> <span class="n">span_hz</span><span class="o">=</span><span class="n">span_hz</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AnnotatedMethodsInstrument.request_span">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.AnnotatedMethodsInstrument.request_span">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">request_span</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">SweepRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Custom class as a parameter annotation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">span_hz</span></div>
+</div>
+
+
+
+<span class="n">_NO_VALUE</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DefaultValuesInstrument</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy whose public methods have defaults whose ``repr`` is not valid Python.</span>
+
+<span class="sd">    ``inspect.signature`` renders these as ``&lt;StatusFlag.EAV: 4&gt;`` or</span>
+<span class="sd">    ``&lt;object object at 0x...&gt;``, which the client cannot paste into source</span>
+<span class="sd">    when it creates proxy methods.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DefaultValuesInstrument.ask_raw">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.ask_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a minimal response to identification queries.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cmd</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;*IDN&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;dummy,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,0,0&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.add">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.add">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plain literal default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.flag_value">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.flag_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flag_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="n">StatusFlag</span><span class="o">.</span><span class="n">EAV</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enum member as the default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.is_default">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.is_default">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">_NO_VALUE</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sentinel object as the default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">value</span> <span class="ow">is</span> <span class="n">_NO_VALUE</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.scaled">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.scaled">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scaled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">_NO_VALUE</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sentinel object as a keyword-only default.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">factor</span> <span class="ow">is</span> <span class="n">_NO_VALUE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">factor</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.combine">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.combine">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lets a caller skip a middle default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.positional_only">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.positional_only">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">positional_only</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Positional-only parameters with a default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.required_keyword">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.required_keyword">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Keyword-only parameter without a default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="DefaultValuesInstrument.gather">
+<a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DefaultValuesInstrument.gather">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gather</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Defaults mixed with variadic arguments.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</div>
+
+
+
 <div class="viewcode-block" id="DummyInstrumentTimeout">
 <a class="viewcode-back" href="../../../../api/generated/instrumentserver.testing.dummy_instruments.generic.html#instrumentserver.testing.dummy_instruments.generic.DummyInstrumentTimeout">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DummyInstrumentTimeout</span><span class="p">(</span><span class="n">Instrument</span><span class="p">):</span>

@@ -437,7 +437,6 @@
 <span class="sd">@author: Chao</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -447,7 +446,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MethodType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">qc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">zmq</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qcodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instrument</span><span class="p">,</span> <span class="n">Parameter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qcodes.instrument</span><span class="w"> </span><span class="kn">import</span> <span class="n">InstrumentBase</span>
@@ -475,8 +473,87 @@
 <span class="c1"># TODO: enable creation of instruments through yaml files/station configurator.</span>
 <span class="c1"># TODO: support for channel lists</span>
 <span class="c1"># TODO: support for other parameter classes.</span>
-<span class="c1"># FIXME: need to generally find the imports we need for type annotations!</span>
 <span class="c1"># TODO: convenience function to refresh from server.</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Missing</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default of every proxy method parameter: the caller didn&#39;t pass it.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;missing&gt;&quot;</span>
+
+
+<span class="n">_MISSING</span> <span class="o">=</span> <span class="n">_Missing</span><span class="p">()</span>
+
+<span class="c1"># name of the forwarding helper in the generated method&#39;s globals; a driver</span>
+<span class="c1"># parameter won&#39;t use it.</span>
+<span class="n">_FORWARD_NAME</span> <span class="o">=</span> <span class="s2">&quot;__isrv_forward__&quot;</span>
+
+<span class="c1"># the blueprint stores each parameter kind as ``str(kind)``.</span>
+<span class="n">_PARAMETER_KINDS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">kind</span><span class="p">):</span> <span class="n">kind</span>
+    <span class="k">for</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">,</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">}</span>
+<span class="n">_POSITIONAL_KINDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span>
+    <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">_VARIADIC_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_defArguments</span><span class="p">(</span><span class="n">parameters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Argument list for the generated proxy method: ``self`` first, every</span>
+<span class="sd">    named parameter defaulting to ``_MISSING``, and the ``/`` and ``*`` markers</span>
+<span class="sd">    kept so positional-only and keyword-only behave as on the server.&quot;&quot;&quot;</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
+    <span class="n">star</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parameters</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;*</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">star</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">star</span><span class="p">:</span>
+                <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+                <span class="n">star</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">=_MISSING&quot;</span><span class="p">)</span>
+        <span class="n">is_last_positional_only</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">parameters</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_last_positional_only</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_ServerSignature</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Signature</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Signature of a proxy method. Its parameters match the generated method,</span>
+<span class="sd">    so ``bind()`` behaves like the proxy, but ``str()`` gives the server&#39;s</span>
+<span class="sd">    signature text, annotations and defaults included.&quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_server_text&quot;</span><span class="p">,)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">server_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_server_text</span> <span class="o">=</span> <span class="n">server_text</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_text</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;_ServerSignature&quot;</span><span class="p">:</span>
+        <span class="c1"># inspect calls this to drop ``self`` from a bound method&#39;s signature.</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">new</span><span class="o">.</span><span class="n">_server_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_text</span>
+        <span class="k">return</span> <span class="n">new</span>
+
+    <span class="n">__replace__</span> <span class="o">=</span> <span class="n">replace</span>
 
 
 <div class="viewcode-block" id="ProxyMixin">
@@ -819,37 +896,61 @@
             <span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">askServer</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-        <span class="n">sig</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">call_signature_str</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">signature_parameters</span>
-        <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="c1"># FIXME: a better solution to this would probably be to convet kind into the enum object. But it seems that the</span>
-        <span class="c1">#  parameter kind enum is private.</span>
-        <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">),</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">),</span>
-            <span class="p">]:</span>
-                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">):</span>
-                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;*</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
-                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">):</span>
-                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**</span><span class="si">{</span><span class="n">pn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># The server signature can hold annotations and defaults the client</span>
+        <span class="c1"># can&#39;t evaluate, so only names and kinds are used here. Every</span>
+        <span class="c1"># parameter defaults to _MISSING, and only what the caller passed is</span>
+        <span class="c1"># sent, so the server applies its own defaults.</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+                <span class="n">pn</span><span class="p">,</span>
+                <span class="n">_PARAMETER_KINDS</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span>
+                <span class="n">default</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>
+                    <span class="k">if</span> <span class="n">_PARAMETER_KINDS</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span> <span class="ow">in</span> <span class="n">_VARIADIC_KINDS</span>
+                    <span class="k">else</span> <span class="n">_MISSING</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">pn</span><span class="p">,</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">bp</span><span class="o">.</span><span class="n">signature_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">positional</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="n">_POSITIONAL_KINDS</span><span class="p">:</span>
+                    <span class="c1"># send by position until the first omitted one, then by keyword.</span>
+                    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="n">_MISSING</span><span class="p">:</span>
+                        <span class="n">positional</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">elif</span> <span class="n">positional</span><span class="p">:</span>
+                        <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">kwargs</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">:</span>
+                    <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_MISSING</span><span class="p">:</span>
+                        <span class="n">kwargs</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">wrap</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># we need to add a `self` argument because we want this to be a bound</span>
         <span class="c1"># method of the instrument instance.</span>
-        <span class="n">sig</span> <span class="o">=</span> <span class="n">sig</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;self, &quot;</span> <span class="o">+</span> <span class="n">sig</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-        <span class="n">new_func_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;from typing import *</span><span class="se">\n</span><span class="s2">def </span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="n">sig</span><span class="si">}</span><span class="s2">:</span>
-<span class="s2">        return wrap(</span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;&quot;&quot;</span>
-
-        <span class="c1"># make sure the method knows the wrap function.</span>
-        <span class="c1"># TODO: this is not complete!</span>
-        <span class="n">globs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;wrap&quot;</span><span class="p">:</span> <span class="n">wrap</span><span class="p">,</span> <span class="s2">&quot;qcodes&quot;</span><span class="p">:</span> <span class="n">qc</span><span class="p">,</span> <span class="s2">&quot;collections&quot;</span><span class="p">:</span> <span class="n">collections</span><span class="p">}</span>
+        <span class="n">new_func_str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;def </span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="n">_defArguments</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span><span class="si">}</span><span class="s2">):</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;    return </span><span class="si">{</span><span class="n">_FORWARD_NAME</span><span class="si">}</span><span class="s2">(locals())&quot;</span>
+        <span class="p">)</span>
+        <span class="n">globs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">_FORWARD_NAME</span><span class="p">:</span> <span class="n">forward</span><span class="p">,</span> <span class="s2">&quot;_MISSING&quot;</span><span class="p">:</span> <span class="n">_MISSING</span><span class="p">}</span>
         <span class="n">exec</span><span class="p">(</span><span class="n">new_func_str</span><span class="p">,</span> <span class="n">globs</span><span class="p">)</span>
         <span class="n">fun</span> <span class="o">=</span> <span class="n">globs</span><span class="p">[</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
-        <span class="n">fun</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">docstring</span>
-        <span class="k">return</span> <span class="n">globs</span><span class="p">[</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>  <span class="c1"># type: ignore[return-value]</span>
+        <span class="n">fun</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">_ServerSignature</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">)]</span> <span class="o">+</span> <span class="n">parameters</span><span class="p">,</span>
+            <span class="n">server_text</span><span class="o">=</span><span class="n">bp</span><span class="o">.</span><span class="n">call_signature_str</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fun</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">name</span><span class="si">}{</span><span class="n">bp</span><span class="o">.</span><span class="n">call_signature_str</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">bp</span><span class="o">.</span><span class="n">docstring</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">fun</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_getProxySubmodules</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Based on the submodule blue print replied from server, add the proxy</span>

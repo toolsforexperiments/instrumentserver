@@ -8,6 +8,8 @@ instrumentserver.testing.dummy\_instruments.generic
 
    .. autosummary::
    
+      AnnotatedMethodsInstrument
+      DefaultValuesInstrument
       DummyChannel
       DummyInstrumentRandomNumber
       DummyInstrumentTimeout
