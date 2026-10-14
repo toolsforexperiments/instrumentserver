@@ -473,18 +473,17 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
         # method of the instrument instance.
         new_func_str = (
             f"def {bp.name}({_defArguments(parameters)}):\n"
-            f"    return {_FORWARD_NAME}(what is ())"
+            f"    return {_FORWARD_NAME}(locals())"
         )
-        globs = {_FORWARD_NAME: forward, "_MISSING": _MISSING}
+        globs: Dict[str, Any] = {_FORWARD_NAME: forward, "_MISSING": _MISSING}
         exec(new_func_str, globs)
         fun = globs[bp.name]
         fun.__signature__ = _ServerSignature(
-            [inspect.Parameter("self", inspect.Parameter.POSITIONAL_ONLY)]
-            + parameters,
+            [inspect.Parameter("self", inspect.Parameter.POSITIONAL_ONLY)] + parameters,
             server_text=bp.call_signature_str,
         )
         fun.__doc__ = f"{bp.name}{bp.call_signature_str}\n\n{bp.docstring}"
-        return fun  # type: ignore[no-any-return]
+        return fun
 
     def _getProxySubmodules(self) -> None:
         """Based on the submodule blue print replied from server, add the proxy
