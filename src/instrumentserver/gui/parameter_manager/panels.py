@@ -9,6 +9,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Tuple,
     cast,
 )
 
@@ -18,7 +19,7 @@ from ...blueprints import (
     PMTypeBluePrint,
 )
 from .. import keepSmallHorizontally
-from ..parameters import ParameterWidget
+from ..parameters import ParameterWidget, SetButton
 from .logic import (
     GUTTER_ROLE,
     GUTTER_WIDTH,
@@ -597,7 +598,7 @@ class LocksPanel(QtWidgets.QWidget):
 ENTRIES_UNIT_WIDTH = 60
 ENTRIES_LOCK_WIDTH = 210
 ENTRIES_DEFAULT_WIDTH = 170
-ENTRIES_GLOBAL_WIDTH = 110
+ENTRIES_GLOBAL_WIDTH = 140
 
 #: Fixed pixel widths of the instances pane's parameter-count, "also" and
 #: button columns (the mock's 150/160/110 trio).
@@ -725,11 +726,13 @@ class TypesPane(QtWidgets.QWidget):
         # buttons of the instance rows, keyed by instance path
         self.entryWidgets: Dict[str, Dict[str, Any]] = {}
         self.showButtons: Dict[str, QtWidgets.QPushButton] = {}
-        # the values of the selected Type's Type Lock Targets, keyed by
-        # Target path (set by the GUI before a rebuild), and the global
-        # value editors showing them
+        # the global values, keyed by Target path (set by the GUI before a
+        # rebuild); the (editor, set button) pairs showing them; and the
+        # edited texts not committed yet, which survive rebuilds and
+        # incoming values
         self.globalValues: Dict[str, Any] = {}
-        self.globalEditors: Dict[str, QtWidgets.QLineEdit] = {}
+        self.globalEditors: Dict[str, Tuple[QtWidgets.QLineEdit, SetButton]] = {}
+        self.pendingGlobals: Dict[str, str] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1138,23 +1141,43 @@ class TypesPane(QtWidgets.QWidget):
                 if row.own:
                     # the value every locked Instance follows: the Type
                     # Lock's Target, or the entry's Globals parameter while
-                    # unlocked; Return sets it
+                    # unlocked. Like a parameter row: an edit turns the set
+                    # button orange, and Return or the button sets it
                     target = row.target or f"_globals.{selected}.{row.path}"
                     value = self.globalValues.get(target)
+                    global_cell = QtWidgets.QWidget(self.entriesView.viewport())
+                    global_layout = QtWidgets.QHBoxLayout(global_cell)
+                    global_layout.setContentsMargins(0, 0, 0, 0)
                     global_editor = QtWidgets.QLineEdit(
-                        "" if value is None else str(value),
-                        self.entriesView.viewport(),
+                        self.pendingGlobals.get(
+                            target, "" if value is None else str(value)
+                        ),
+                        global_cell,
                     )
                     global_editor.setToolTip(f"the value of {target}")
-                    global_editor.returnPressed.connect(
+                    global_set = SetButton(
+                        QtGui.QIcon(":/icons/set.svg"), "", parent=global_cell
+                    )
+                    keepSmallHorizontally(global_set)
+                    global_set.setPending(target in self.pendingGlobals)
+                    global_editor.textEdited.connect(
+                        lambda text, target=target, global_set=global_set: (
+                            self._on_global_edited(target, text, global_set)
+                        )
+                    )
+                    commit = (
                         lambda target=target, global_editor=global_editor: (
                             self.setGlobalRequested.emit(target, global_editor.text())
                         )
                     )
+                    global_editor.returnPressed.connect(commit)
+                    global_set.pressed.connect(commit)
+                    global_layout.addWidget(global_editor, 1)
+                    global_layout.addWidget(global_set)
                     self.entriesView.setIndexWidget(
-                        self.entriesModel.indexFromItem(global_item), global_editor
+                        self.entriesModel.indexFromItem(global_item), global_cell
                     )
-                    self.globalEditors[target] = global_editor
+                    self.globalEditors[target] = (global_editor, global_set)
         self.entriesView.expandAll()
 
     def _build_submodule_row(
@@ -1460,13 +1483,29 @@ class TypesPane(QtWidgets.QWidget):
         self.entriesNote.setStyleSheet("QLabel { color: red }")
         self.entriesNote.setText(text)
 
-    def show_global_value(self, target: str, value: Any) -> None:
+    def _on_global_edited(self, target: str, text: str, set_button: SetButton) -> None:
+        """Remember a global value edit until it is committed, and turn
+        its set button orange."""
+        self.pendingGlobals[target] = text
+        set_button.setPending(True)
+
+    def show_global_value(
+        self, target: str, value: Any, committed: bool = False
+    ) -> None:
         """Show ``value`` on the global value editor of the Target at
-        ``target``, if the entries pane shows one."""
+        ``target``, if the entries pane shows one. An edit not committed
+        yet keeps its text unless ``committed`` — the value was just set
+        from it — which also turns its set button back."""
         self.globalValues[target] = value
-        editor = self.globalEditors.get(target)
-        if editor is not None:
+        if committed:
+            self.pendingGlobals.pop(target, None)
+        elif target in self.pendingGlobals:
+            return
+        widgets = self.globalEditors.get(target)
+        if widgets is not None:
+            editor, set_button = widgets
             editor.setText("" if value is None else str(value))
+            set_button.setPending(False)
 
     def show_entries_note(self, text: str) -> None:
         """Show ``text`` on the entries pane's note in the normal colour

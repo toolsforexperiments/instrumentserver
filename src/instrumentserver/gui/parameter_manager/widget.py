@@ -1077,14 +1077,14 @@ class TypesController(QtCore.QObject):
         """An entry's committed global value editor (Return): set the
         global value, which every locked Instance follows. A refused set
         shows the error text on the entries pane's note."""
+        value = parse_default_text(text)
         try:
-            nestedAttributeFromString(self.gui.instrument, target)(
-                parse_default_text(text)
-            )
+            nestedAttributeFromString(self.gui.instrument, target)(value)
         except Exception as exc:
             self.gui.typesPane.show_entries_error(str(exc))
         else:
             self.gui.typesPane.reset_entries_note()
+            self.gui.typesPane.show_global_value(target, value, committed=True)
 
     @QtCore.Slot(str)
     def _on_pane_type_selected(self, name: str) -> None:
@@ -1114,11 +1114,13 @@ class TypesController(QtCore.QObject):
     @QtCore.Slot(str)
     def _on_pane_remove_type(self, name: str) -> None:
         """The Remove type button: remove the selected Type (D13) — the
-        Instances keep their parameters. A refused removal (the Type is
-        nested in another) shows the Server's error text on the strip's
-        note."""
+        Instances keep their parameters — and its Globals parameters under
+        ``_globals.<type>``; the Instance parameters locked to them are
+        unlocked first. A refused removal (the Type is nested in another)
+        shows the Server's error text on the strip's note."""
         try:
             self.gui.instrument.remove_type(name)
+            self._remove_parameters(self._globals_under(f"_globals.{name}"))
         except Exception as exc:
             self.gui.typesPane.show_type_error(str(exc))
         else:
@@ -1148,10 +1150,15 @@ class TypesController(QtCore.QObject):
     @QtCore.Slot(str, str)
     def _on_pane_remove_entry(self, type_name: str, path: str) -> None:
         """An own entry's Remove button: remove the entry from the Type
-        only (D13) — the Instances keep the parameter. A refused removal
-        shows the Server's error text on the entries pane's note."""
+        (D13) — the Instances keep the parameter — and its Globals
+        parameter; the Instance parameters locked to it are unlocked
+        first. A refused removal shows the Server's error text on the
+        entries pane's note."""
         try:
             self.gui.instrument.remove_type_parameter(type_name, path)
+            self._remove_parameters(
+                self._globals_under(f"_globals.{type_name}.{path}")
+            )
         except Exception as exc:
             self.gui.typesPane.show_entries_error(str(exc))
         else:
@@ -1274,23 +1281,38 @@ class TypesController(QtCore.QObject):
         )
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             return
-        # call the Server directly and refresh the proxy once: the proxy's
-        # remove_parameter refetches the whole blueprint after every call
-        instrument = self.gui.instrument
-        cli = getattr(instrument, "cli", None)
         try:
-            for path in paths:
-                if cli is None:
-                    instrument.remove_parameter(path)
-                else:
-                    cli.call(f"{instrument.remotePath}.remove_parameter", path)
-            if cli is not None:
-                instrument.update()
+            self._remove_parameters(paths)
         except Exception as exc:
             self.gui.typesPane.show_instances_error(str(exc))
         else:
             self.gui.typesPane.reset_instances_note()
             self.refresh_types_pane()
+
+    def _remove_parameters(self, paths: List[str]) -> None:
+        """Remove the parameters at ``paths``; the emptied Parameter Groups
+        go with them, and every Lock on one of them is dropped, so its
+        Follower answers with its own value again. The Server is called
+        directly and the proxy refreshed once: the proxy's
+        remove_parameter refetches the whole blueprint after every call."""
+        instrument = self.gui.instrument
+        cli = getattr(instrument, "cli", None)
+        for path in paths:
+            if cli is None:
+                instrument.remove_parameter(path)
+            else:
+                cli.call(f"{instrument.remotePath}.remove_parameter", path)
+        if cli is not None and paths:
+            instrument.update()
+
+    def _globals_under(self, prefix: str) -> List[str]:
+        """The Globals parameters at or under ``prefix`` — a Type's
+        ``_globals.<type>`` or an entry's ``_globals.<type>.<path>``."""
+        return [
+            path
+            for path in self.gui.model.parameter_units()
+            if path == prefix or path.startswith(f"{prefix}.")
+        ]
 
     @QtCore.Slot(str, str)
     def _on_pane_show_instance(self, type_name: str, instance: str) -> None:
