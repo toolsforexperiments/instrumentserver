@@ -2069,7 +2069,9 @@ def test_the_type_lock_rows_lock_all_and_remove_rule(
             timeout=BROADCAST_TIMEOUT,
         )
         assert pm.get_lock("dq01.IF").target == f"{PM_NAME}.tshared"
-        assert not any(path.startswith("_globals") for path in pm.list())
+        # the Types pane creates every entry's Globals parameter for its
+        # global column, so _globals.dqubit.IF exists; the rule and the
+        # Lock above still name the stored Target
     finally:
         gui.model.stopListener()
 
@@ -2432,7 +2434,7 @@ def _type_list_row(gui, name):
 
 
 def _entry_row_items(gui, path):
-    """The four items of the entries-pane row ``path`` (walked segment by
+    """The five items of the entries-pane row ``path`` (walked segment by
     segment through the tree), or ``None`` while the row does not
     exist."""
     item = gui.typesPane.entriesModel.invisibleRootItem()
@@ -2449,8 +2451,8 @@ def _entry_row_items(gui, path):
     parent = item.parent()
     if parent is None:
         model = gui.typesPane.entriesModel
-        return [model.item(item.row(), column) for column in range(4)]
-    return [parent.child(item.row(), column) for column in range(4)]
+        return [model.item(item.row(), column) for column in range(5)]
+    return [parent.child(item.row(), column) for column in range(5)]
 
 
 def _instance_row_items(gui, name):
@@ -2643,21 +2645,6 @@ def test_parse_default_text():
     assert parse_default_text("True") is True
     assert parse_default_text("abc") == "abc"
     assert parse_default_text("'xy'") == "xy"
-
-
-def test_rank_lock_targets_ranks_for_a_type_lock_arm():
-    """With an explicit ``arm_rel`` — the Types tab's Type Lock re-target
-    — the entry path ranks the candidates: the same leaf on any Instance
-    first, then submodules on the way, everything else last. There is no
-    Follower to exclude."""
-    claims = {
-        "q01.IF": Claim(type="qubit", instance="q01", stack=["qubit"]),
-        "q02.IF": Claim(type="qubit", instance="q02", stack=["qubit"]),
-    }
-    ranked = rank_lock_targets(
-        "", ["other.x", "q02.IF", "q05.IF.gain", "q01.IF"], claims, arm_rel="IF"
-    )
-    assert ranked == ["q01.IF", "q02.IF", "q05.IF.gain", "other.x"]
 
 
 def test_a_creation_from_a_second_client_under_an_existing_submodule_appears(
@@ -3012,7 +2999,7 @@ def test_the_types_tab_edits_entries_and_nested_types(
             ),
             timeout=BROADCAST_TIMEOUT,
         )
-        assert _entry_row_items(gui, "readout")[2].text() == "type: readout"
+        assert _entry_row_items(gui, "readout")[4].text() == "type: readout"
         defined_by = gui.typesPane.entryWidgets["readout.bw"]["definedBy"]
         assert defined_by.text() == "defined by readout"
         assert defined_by.toolTip() == "defined by readout — change the default there"
@@ -3031,14 +3018,12 @@ def test_the_types_tab_edits_entries_and_nested_types(
         gui.model.stopListener()
 
 
-def test_the_types_tab_type_locks_toggle_and_retarget(
+def test_the_types_tab_type_lock_toggle(
     qtbot, pm, second_client, server_port
 ):
     """The Type Lock toggle puts the Globals default Target on the entry,
     locks the Instance parameter and shows the ``_globals`` row in the
-    tree; toggling again removes only the rule (D17) and the Locks stay.
-    The re-target button arms the picker on the Parameters tab and the
-    picked row becomes the entry's Target."""
+    tree; toggling again removes only the rule (D17) and the Locks stay."""
     second_pm = _second_parameter_manager(second_client)
 
     gui = _make_gui(qtbot, pm, server_port)
@@ -3087,55 +3072,6 @@ def test_the_types_tab_type_locks_toggle_and_retarget(
         )
         assert pm.get_lock("q10.IF") is not None
 
-        # toggle on once more: the re-target button needs a locked entry
-        gui.typesPane.entryWidgets["IF"]["toggle"].click()
-        qtbot.waitUntil(
-            lambda: (
-                _state_target() == globals_target
-                and pm.get_type("qubit").parameters["IF"]["target"] == globals_target
-            ),
-            timeout=BROADCAST_TIMEOUT,
-        )
-
-        # re-target through the arm strip, with a root parameter created
-        # first
-        pm.add_parameter("tshared", initial_value=0.0, unit="Hz")
-        qtbot.waitUntil(lambda: _row_exists(gui, "tshared"), timeout=BROADCAST_TIMEOUT)
-        qtbot.waitUntil(
-            lambda: (
-                gui.typesPane.entryWidgets.get("IF", {}).get("retarget") is not None
-            ),
-            timeout=BROADCAST_TIMEOUT,
-        )
-        gui.typesPane.entryWidgets["IF"]["retarget"].click()
-        assert gui.tabs.currentIndex() == 0
-        assert gui.armStrip.label.text() == "Target for type qubit · IF"
-        assert gui.locksController.armed_type_lock == ("qubit", "IF")
-        assert gui.locksController.armed_follower is None
-
-        # a Target the Server refuses: the error text on the strip, which
-        # stays armed, and the entry's Target unchanged on the Server
-        gui.locksController.pick_lock_target("no.such.path")
-        qtbot.waitUntil(
-            lambda: "no.such.path" in gui.armStrip.errorLabel.text(),
-            timeout=BROADCAST_TIMEOUT,
-        )
-        assert not gui.armStrip.errorLabel.isHidden()
-        assert not gui.armStrip.isHidden()
-        assert gui.locksController.armed_type_lock == ("qubit", "IF")
-        assert gui.locksController.armed_follower is None
-        assert pm.get_type("qubit").parameters["IF"]["target"] == globals_target
-
-        gui.locksController.pick_lock_target("tshared")
-        qtbot.waitUntil(
-            lambda: (
-                pm.get_type("qubit").parameters["IF"]["target"] == f"{PM_NAME}.tshared"
-            ),
-            timeout=BROADCAST_TIMEOUT,
-        )
-        assert gui.armStrip.isHidden()
-        assert gui.locksController.armed_type_lock is None
-        assert gui.locksController.armed_follower is None
     finally:
         gui.model.stopListener()
 
@@ -3175,20 +3111,6 @@ def test_the_types_tab_names_skipped_locks_on_the_note(
         )
         assert pm.get_lock("q10.IF").target == f"{PM_NAME}.tshared"
 
-        # a clean Type Lock re-target with nothing skipped resets the
-        # note (plan task 5.6); re-targeting to the Follower's own Target
-        # skips nothing
-        gui.locksController.arm_type_lock("qubit", "IF")
-        assert gui.locksController.armed_type_lock == ("qubit", "IF")
-        gui.locksController.pick_lock_target("tshared")
-        qtbot.waitUntil(
-            lambda: (
-                pm.get_type("qubit").parameters["IF"]["target"] == f"{PM_NAME}.tshared"
-            ),
-            timeout=BROADCAST_TIMEOUT,
-        )
-        assert gui.typesPane.entriesNote.text() == ""
-        assert gui.locksController.armed_type_lock is None
     finally:
         gui.model.stopListener()
 

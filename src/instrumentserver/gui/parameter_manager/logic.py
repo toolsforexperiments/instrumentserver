@@ -408,16 +408,12 @@ def rank_lock_targets(
     follower: str,
     candidates: Iterable[str],
     claims: Mapping[str, Claim],
-    arm_rel: Optional[str] = None,
 ) -> List[str]:
     """The arm strip's Target candidates in the mock's completer order.
 
     ``arm_rel`` is the Follower's path relative to its Instance (the part
     behind the Claiming Type's Instance path), or ``None`` when the
-    Follower is claimed by no Type; an explicit ``arm_rel`` argument
-    overrides it, which the Types tab's Type Lock re-target (plan task
-    5.5) uses to rank for a Type's entry path — there is no claimed
-    Follower and so nothing to exclude. Rank 0: the candidate's own
+    Follower is claimed by no Type. Rank 0: the candidate's own
     relative path equals ``arm_rel`` (the same leaf on a sibling Instance,
     the mock's first pick). Rank 1: ``.<arm_rel>`` occurs in the candidate
     (a submodule on the way). Rank 2: everything else. Equal ranks order
@@ -425,13 +421,12 @@ def rank_lock_targets(
     not filtered here: the Server refuses them and the arm strip shows its
     error text.
     """
-    if arm_rel is None:
-        follower_claim = claims.get(follower)
-        arm_rel = (
-            follower[len(follower_claim.instance) + 1 :]
-            if follower_claim is not None
-            else None
-        )
+    follower_claim = claims.get(follower)
+    arm_rel = (
+        follower[len(follower_claim.instance) + 1 :]
+        if follower_claim is not None
+        else None
+    )
 
     def own_rel(candidate: str) -> Optional[str]:
         claim = claims.get(candidate)

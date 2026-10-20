@@ -592,11 +592,12 @@ class LocksPanel(QtWidgets.QWidget):
 # ----------------- Types tab ----------------------------------------------------------
 
 
-#: Fixed pixel widths of the entries pane's unit, "locked to" and default
-#: columns (the mock's 60/200/252 trio).
+#: Pixel widths of the entries pane's unit, default, global and "locked to
+#: global" columns.
 ENTRIES_UNIT_WIDTH = 60
 ENTRIES_LOCK_WIDTH = 210
-ENTRIES_DEFAULT_WIDTH = 250
+ENTRIES_DEFAULT_WIDTH = 170
+ENTRIES_GLOBAL_WIDTH = 110
 
 #: Fixed pixel widths of the instances pane's parameter-count, "also" and
 #: button columns (the mock's 150/160/110 trio).
@@ -613,10 +614,12 @@ class TypesPane(QtWidgets.QWidget):
     effective parameters, each row tinted with the Type's colour — and the
     New type strip. Right, above: the entries of the selected Type as a
     tree. Own entries carry an editable default (Return or the set button
-    commits), a Remove button and the Type Lock toggle in the "locked to"
-    column, with a re-target button and the Target's path while locked.
-    Entries from Nested Types render read-only with "defined by <type>".
-    Submodule rows show ``type: <t>`` in the "locked to" column and, for
+    commits), a Remove button, the global value in the "global" column —
+    the Type Lock's Target, or the entry's Globals parameter while
+    unlocked (Return sets it) — and the Type Lock toggle in the "locked
+    to global" column, with the Target's path while locked. Entries from Nested Types render read-only with "defined by
+    <type>". Submodule rows show ``type: <t>`` in the "locked to global"
+    column and, for
     the selected Type's own Nested Types, a Remove button. Beneath the
     tree run the "Add to type" and "Nested type" strips and a note line.
     Right, below: the Instances of the selected Type — name, parameter
@@ -626,7 +629,7 @@ class TypesPane(QtWidgets.QWidget):
     The pane never talks to the Server: every action is emitted as a
     signal — ``addTypeRequested``, ``addEntryRequested``,
     ``removeEntryRequested``, ``setDefaultRequested``,
-    ``toggleTypeLockRequested``, ``retargetTypeLockRequested``,
+    ``toggleTypeLockRequested``,
     ``addNestedRequested``, ``removeNestedRequested``,
     ``addInstanceRequested`` and ``showInstanceRequested`` — and
     :class:`.ParameterManagerGui`, which owns the pane, performs it and
@@ -670,15 +673,15 @@ class TypesPane(QtWidgets.QWidget):
     setUnitRequested = QtCore.Signal(str, str, str)
 
     #: Signal(str, str)
+    #: Emitted when the user commits a locked entry's global value editor
+    #: (Return): the Target's path and the editor's text.
+    setGlobalRequested = QtCore.Signal(str, str)
+
+    #: Signal(str, str)
     #: Emitted when the user presses a Type Lock toggle: the Type's name
     #: and the entry path. The GUI locks or unlocks from the entry's
     #: stored Target.
     toggleTypeLockRequested = QtCore.Signal(str, str)
-
-    #: Signal(str, str)
-    #: Emitted when the user presses a locked entry's re-target button:
-    #: the Type's name and the entry path.
-    retargetTypeLockRequested = QtCore.Signal(str, str)
 
     #: Signal(str, str, str)
     #: Emitted when the user presses "Add nested type": the Type's name,
@@ -722,6 +725,11 @@ class TypesPane(QtWidgets.QWidget):
         # buttons of the instance rows, keyed by instance path
         self.entryWidgets: Dict[str, Dict[str, Any]] = {}
         self.showButtons: Dict[str, QtWidgets.QPushButton] = {}
+        # the values of the selected Type's Type Lock Targets, keyed by
+        # Target path (set by the GUI before a rebuild), and the global
+        # value editors showing them
+        self.globalValues: Dict[str, Any] = {}
+        self.globalEditors: Dict[str, QtWidgets.QLineEdit] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -785,9 +793,9 @@ class TypesPane(QtWidgets.QWidget):
         entriesLayout.setContentsMargins(0, 0, 0, 0)
 
         self.entriesLabel = QtWidgets.QLabel(entriesPane)
-        self.entriesModel = QtGui.QStandardItemModel(0, 4, self)
+        self.entriesModel = QtGui.QStandardItemModel(0, 5, self)
         self.entriesModel.setHorizontalHeaderLabels(
-            ["parameter", "unit", "locked to", "default"]
+            ["parameter", "unit", "default", "global", "locked to global"]
         )
         self.entriesView = QtWidgets.QTreeView(entriesPane)
         self.entriesView.setModel(self.entriesModel)
@@ -800,8 +808,9 @@ class TypesPane(QtWidgets.QWidget):
         entriesHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         for column, width in (
             (1, ENTRIES_UNIT_WIDTH),
-            (2, ENTRIES_LOCK_WIDTH),
-            (3, ENTRIES_DEFAULT_WIDTH),
+            (2, ENTRIES_DEFAULT_WIDTH),
+            (3, ENTRIES_GLOBAL_WIDTH),
+            (4, ENTRIES_LOCK_WIDTH),
         ):
             entriesHeader.setSectionResizeMode(
                 column, QtWidgets.QHeaderView.ResizeMode.Interactive
@@ -1067,6 +1076,7 @@ class TypesPane(QtWidgets.QWidget):
         self._clear_index_widgets()
         self.entriesModel.removeRows(0, self.entriesModel.rowCount())
         self.entryWidgets = {}
+        self.globalEditors = {}
         blueprint = types.get(selected)
         if selected is None or blueprint is None:
             self.entriesView.expandAll()
@@ -1086,17 +1096,19 @@ class TypesPane(QtWidgets.QWidget):
             unit_item = QtGui.QStandardItem("" if row.kind == "submodule" else row.unit)
             lock_item = QtGui.QStandardItem()
             default_item = QtGui.QStandardItem()
-            parent_item.appendRow([name_item, unit_item, lock_item, default_item])
+            global_item = QtGui.QStandardItem()
+            parent_item.appendRow(
+                [name_item, unit_item, default_item, global_item, lock_item]
+            )
             items_by_path[path] = name_item
             if colours is not None:
-                for item in (name_item, unit_item, lock_item, default_item):
+                for item in (name_item, unit_item, default_item, global_item, lock_item):
                     item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
             entry: Dict[str, Any] = {
                 "editor": None,
                 "set": None,
                 "remove": None,
                 "toggle": None,
-                "retarget": None,
                 "targetLabel": None,
                 "definedBy": None,
                 "removeNested": None,
@@ -1123,6 +1135,26 @@ class TypesPane(QtWidgets.QWidget):
                     self.entriesView.setIndexWidget(
                         self.entriesModel.indexFromItem(unit_item), unit_editor
                     )
+                if row.own:
+                    # the value every locked Instance follows: the Type
+                    # Lock's Target, or the entry's Globals parameter while
+                    # unlocked; Return sets it
+                    target = row.target or f"_globals.{selected}.{row.path}"
+                    value = self.globalValues.get(target)
+                    global_editor = QtWidgets.QLineEdit(
+                        "" if value is None else str(value),
+                        self.entriesView.viewport(),
+                    )
+                    global_editor.setToolTip(f"the value of {target}")
+                    global_editor.returnPressed.connect(
+                        lambda target=target, global_editor=global_editor: (
+                            self.setGlobalRequested.emit(target, global_editor.text())
+                        )
+                    )
+                    self.entriesView.setIndexWidget(
+                        self.entriesModel.indexFromItem(global_item), global_editor
+                    )
+                    self.globalEditors[target] = global_editor
         self.entriesView.expandAll()
 
     def _build_submodule_row(
@@ -1181,7 +1213,7 @@ class TypesPane(QtWidgets.QWidget):
         entry: Dict[str, Any],
     ) -> None:
         # the "locked to" column: the Type Lock toggle, and while the entry
-        # is locked the re-target button and the Target's relative path
+        # is locked the Target's relative path
         locked = row.target is not None
         lock_container = QtWidgets.QWidget(self.entriesView.viewport())
         lock_layout = QtWidgets.QHBoxLayout(lock_container)
@@ -1205,21 +1237,6 @@ class TypesPane(QtWidgets.QWidget):
         lock_layout.addWidget(toggle)
         entry["toggle"] = toggle
         if locked:
-            retarget = QtWidgets.QPushButton(
-                QtGui.QIcon(":/icons/set.svg"), "", parent=lock_container
-            )
-            retarget.setToolTip(
-                f"lock every Instance of {selected} to another Target — "
-                "pick one in the parameter tree"
-            )
-            keepSmallHorizontally(retarget)
-            retarget.pressed.connect(
-                lambda type_name=selected, path=row.path: (
-                    self.retargetTypeLockRequested.emit(type_name, path)
-                )
-            )
-            lock_layout.addWidget(retarget)
-            entry["retarget"] = retarget
             target_label = QtWidgets.QLabel(row.target, parent=lock_container)
             target_label.setToolTip(
                 f"{row.target} — followed by every Instance of {selected}"
@@ -1442,6 +1459,14 @@ class TypesPane(QtWidgets.QWidget):
         """Show an action error in red on the entries pane's note."""
         self.entriesNote.setStyleSheet("QLabel { color: red }")
         self.entriesNote.setText(text)
+
+    def show_global_value(self, target: str, value: Any) -> None:
+        """Show ``value`` on the global value editor of the Target at
+        ``target``, if the entries pane shows one."""
+        self.globalValues[target] = value
+        editor = self.globalEditors.get(target)
+        if editor is not None:
+            editor.setText("" if value is None else str(value))
 
     def show_entries_note(self, text: str) -> None:
         """Show ``text`` on the entries pane's note in the normal colour
