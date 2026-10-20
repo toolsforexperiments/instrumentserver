@@ -3588,8 +3588,8 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
     """A parameter-update or parameter-call Broadcast for a parameter the
     model does not know adds the row through the base update branch; the
     tints are recomputed for it too (plan task 5.6), so the new row
-    carries the claiming Type's tint right away instead of staying
-    untinted until the next recompute."""
+    carries the claiming Type's tint once the burst of Broadcasts is over
+    instead of staying untinted until the next recompute."""
     second_pm = _second_parameter_manager(second_client)
     pm.add_parameter("q01.IF", initial_value=1.0, unit="Hz")
     pm.add_type("qubit")
@@ -3619,6 +3619,11 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
             )
         )
         qtbot.waitUntil(lambda: _row_exists(gui, "q02.IF"), timeout=BROADCAST_TIMEOUT)
+        # the recompute runs once the burst of Broadcasts is over
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q02.IF")[3].data(GUTTER_ROLE) == ["qubit"],
+            timeout=BROADCAST_TIMEOUT,
+        )
         tint = _type_tint(gui, "qubit")
         assert tint is not None
         for item in _row_items(gui, "q02.IF"):
@@ -3636,6 +3641,11 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
             )
         )
         qtbot.waitUntil(lambda: _row_exists(gui, "q03.IF"), timeout=BROADCAST_TIMEOUT)
+        # the recompute runs once the burst of Broadcasts is over
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q03.IF")[3].data(GUTTER_ROLE) == ["qubit"],
+            timeout=BROADCAST_TIMEOUT,
+        )
         for item in _row_items(gui, "q03.IF"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
         assert _row_items(gui, "q03.IF")[3].data(GUTTER_ROLE) == ["qubit"]

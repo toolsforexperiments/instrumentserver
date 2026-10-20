@@ -278,6 +278,12 @@ class ModelParameterManager(ModelParameters):
         # or reloads never reach updateParameter's check
         self._rows_added = False
         self.newItem.connect(self._on_new_item)
+        # a burst of Broadcasts (an Instance created or removed) emits
+        # structureChanged once, after the burst
+        self._structureTimer = QtCore.QTimer(self)
+        self._structureTimer.setSingleShot(True)
+        self._structureTimer.setInterval(50)
+        self._structureTimer.timeout.connect(self.structureChanged.emit)
 
     @QtCore.Slot(object)
     def _on_new_item(self, item: QtGui.QStandardItem) -> None:
@@ -323,7 +329,7 @@ class ModelParameterManager(ModelParameters):
         # must be recomputed then (plan task 5.6), or the new row would
         # stay untinted until the next recompute
         if self._rows_added or bp.action == PARAMETER_DELETION:
-            self.structureChanged.emit()
+            self._structureTimer.start()
 
 
 class LockableParameterWidget(ParameterWidget):
@@ -1260,9 +1266,18 @@ class TypesController(QtCore.QObject):
         )
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             return
+        # call the Server directly and refresh the proxy once: the proxy's
+        # remove_parameter refetches the whole blueprint after every call
+        instrument = self.gui.instrument
+        cli = getattr(instrument, "cli", None)
         try:
             for path in paths:
-                self.gui.instrument.remove_parameter(path)
+                if cli is None:
+                    instrument.remove_parameter(path)
+                else:
+                    cli.call(f"{instrument.remotePath}.remove_parameter", path)
+            if cli is not None:
+                instrument.update()
         except Exception as exc:
             self.gui.typesPane.show_instances_error(str(exc))
         else:
