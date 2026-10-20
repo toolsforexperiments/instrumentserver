@@ -400,6 +400,10 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
                         bluePrint=pbp,
                         setpoints_instrument=self,
                     )
+            else:
+                # the Server can change a unit in place (a Type's unit edit
+                # propagates to its Instances), so keep it current
+                self.parameters[pn].unit = p.unit
 
         delKeys = []
         for pn in self.parameters.keys():
