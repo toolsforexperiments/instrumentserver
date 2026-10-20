@@ -664,6 +664,11 @@ class TypesPane(QtWidgets.QWidget):
     #: the editor's text.
     setDefaultRequested = QtCore.Signal(str, str, str)
 
+    #: Signal(str, str, str)
+    #: Emitted when the user commits an own entry's unit editor (Return):
+    #: the Type's name, the entry path and the editor's text.
+    setUnitRequested = QtCore.Signal(str, str, str)
+
     #: Signal(str, str)
     #: Emitted when the user presses a Type Lock toggle: the Type's name
     #: and the entry path. The GUI locks or unlocks from the entry's
@@ -1098,6 +1103,21 @@ class TypesPane(QtWidgets.QWidget):
                 )
             else:
                 self._build_entry_row(selected, row, lock_item, default_item, entry)
+                if row.own:
+                    # the editable unit: Return commits it
+                    unit_editor = QtWidgets.QLineEdit(
+                        row.unit, self.entriesView.viewport()
+                    )
+                    unit_editor.returnPressed.connect(
+                        lambda path=path, unit_editor=unit_editor: (
+                            self.setUnitRequested.emit(
+                                selected, path, unit_editor.text()
+                            )
+                        )
+                    )
+                    self.entriesView.setIndexWidget(
+                        self.entriesModel.indexFromItem(unit_item), unit_editor
+                    )
         self.entriesView.expandAll()
 
     def _build_submodule_row(

@@ -984,6 +984,7 @@ class TypesController(QtCore.QObject):
         gui.typesPane.addEntryRequested.connect(self._on_pane_add_entry)
         gui.typesPane.removeEntryRequested.connect(self._on_pane_remove_entry)
         gui.typesPane.setDefaultRequested.connect(self._on_pane_set_default)
+        gui.typesPane.setUnitRequested.connect(self._on_pane_set_unit)
         gui.typesPane.toggleTypeLockRequested.connect(self._on_pane_toggle_type_lock)
         gui.typesPane.addNestedRequested.connect(self._on_pane_add_nested)
         gui.typesPane.removeNestedRequested.connect(self._on_pane_remove_nested)
@@ -1157,6 +1158,21 @@ class TypesController(QtCore.QObject):
         else:
             self.gui.typesPane.reset_entries_note()
             self.refresh_types_pane()
+
+    @QtCore.Slot(str, str, str)
+    def _on_pane_set_unit(self, type_name: str, path: str, unit: str) -> None:
+        """An own entry's committed unit editor (Return): set the entry's
+        unit, which the Server propagates to every Instance (D13). The
+        propagation broadcasts no parameter update, so the whole GUI is
+        refreshed to show the Instances' new units. A refused set shows
+        the Server's error text on the entries pane's note."""
+        try:
+            self.gui.instrument.set_type_parameter_unit(type_name, path, unit.strip())
+        except Exception as exc:
+            self.gui.typesPane.show_entries_error(str(exc))
+        else:
+            self.gui.typesPane.reset_entries_note()
+            self.gui.refreshAll()
 
     @QtCore.Slot(str, str)
     def _on_pane_toggle_type_lock(self, type_name: str, path: str) -> None:
