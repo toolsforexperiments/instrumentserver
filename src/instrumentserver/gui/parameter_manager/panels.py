@@ -602,7 +602,7 @@ ENTRIES_DEFAULT_WIDTH = 250
 #: button columns (the mock's 150/160/110 trio).
 INSTANCES_COUNT_WIDTH = 110
 INSTANCES_ALSO_WIDTH = 160
-INSTANCES_BUTTON_WIDTH = 80
+INSTANCES_BUTTON_WIDTH = 110
 
 
 class TypesPane(QtWidgets.QWidget):
@@ -699,6 +699,11 @@ class TypesPane(QtWidgets.QWidget):
     #: Emitted when the user presses an instance row's Show button: the
     #: Type's name and the Instance's name.
     showInstanceRequested = QtCore.Signal(str, str)
+
+    #: Signal(str)
+    #: Emitted when the user presses an instance row's delete button: the
+    #: Instance's name.
+    removeInstanceRequested = QtCore.Signal(str)
 
     def __init__(
         self, instrument_name: str, parent: Optional[QtWidgets.QWidget] = None
@@ -1318,15 +1323,29 @@ class TypesPane(QtWidgets.QWidget):
             if colours is not None:
                 for item in (name_item, count_item, also_item, button_item):
                     item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
-            show = QtWidgets.QPushButton("Show", parent=self.instancesView.viewport())
+            buttons = QtWidgets.QWidget(self.instancesView.viewport())
+            buttons_layout = QtWidgets.QHBoxLayout(buttons)
+            buttons_layout.setContentsMargins(0, 0, 0, 0)
+            show = QtWidgets.QPushButton("Show", parent=buttons)
             show.setToolTip("show in the parameter tree")
             show.pressed.connect(
                 lambda type_name=selected, node=instance: (
                     self.showInstanceRequested.emit(type_name, node)
                 )
             )
+            remove = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/delete.svg"), "", parent=buttons
+            )
+            remove.setStyleSheet("QPushButton { background-color: salmon }")
+            remove.setToolTip("delete the Instance and all its parameters")
+            keepSmallHorizontally(remove)
+            remove.pressed.connect(
+                lambda node=instance: self.removeInstanceRequested.emit(node)
+            )
+            buttons_layout.addWidget(show, 1)
+            buttons_layout.addWidget(remove)
             self.instancesView.setIndexWidget(
-                self.instancesModel.indexFromItem(button_item), show
+                self.instancesModel.indexFromItem(button_item), buttons
             )
             self.showButtons[instance] = show
 

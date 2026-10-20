@@ -990,6 +990,7 @@ class TypesController(QtCore.QObject):
         gui.typesPane.removeNestedRequested.connect(self._on_pane_remove_nested)
         gui.typesPane.addInstanceRequested.connect(self._on_pane_add_instance)
         gui.typesPane.showInstanceRequested.connect(self._on_pane_show_instance)
+        gui.typesPane.removeInstanceRequested.connect(self._on_pane_remove_instance)
 
     @QtCore.Slot(str, object)
     def _on_type_changed(
@@ -1239,6 +1240,33 @@ class TypesController(QtCore.QObject):
         else:
             self.gui.typesPane.reset_instances_note()
             self.gui.typesPane.newInstanceEdit.clear()
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str)
+    def _on_pane_remove_instance(self, instance: str) -> None:
+        """An instance row's delete button: after confirmation, remove
+        every parameter under the Instance; the emptied Parameter Groups
+        go with them. A refused removal shows the Server's error text on
+        the instances pane's note."""
+        paths = [
+            path
+            for path in self.gui.model.parameter_units()
+            if path.startswith(f"{instance}.")
+        ]
+        answer = QtWidgets.QMessageBox.question(
+            self.gui,
+            "Delete instance?",
+            f"Delete {instance} and its {len(paths)} parameters?",
+        )
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        try:
+            for path in paths:
+                self.gui.instrument.remove_parameter(path)
+        except Exception as exc:
+            self.gui.typesPane.show_instances_error(str(exc))
+        else:
+            self.gui.typesPane.reset_instances_note()
             self.refresh_types_pane()
 
     @QtCore.Slot(str, str)
