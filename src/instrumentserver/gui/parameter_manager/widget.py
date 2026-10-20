@@ -1156,9 +1156,7 @@ class TypesController(QtCore.QObject):
         entries pane's note."""
         try:
             self.gui.instrument.remove_type_parameter(type_name, path)
-            self._remove_parameters(
-                self._globals_under(f"_globals.{type_name}.{path}")
-            )
+            self._remove_parameters(self._globals_under(f"_globals.{type_name}.{path}"))
         except Exception as exc:
             self.gui.typesPane.show_entries_error(str(exc))
         else:
@@ -1179,6 +1177,7 @@ class TypesController(QtCore.QObject):
             self.gui.typesPane.show_entries_error(str(exc))
         else:
             self.gui.typesPane.reset_entries_note()
+            self.gui.typesPane.default_committed(type_name, path)
             self.refresh_types_pane()
 
     @QtCore.Slot(str, str, str)

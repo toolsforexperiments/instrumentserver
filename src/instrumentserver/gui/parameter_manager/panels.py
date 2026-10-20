@@ -733,6 +733,8 @@ class TypesPane(QtWidgets.QWidget):
         self.globalValues: Dict[str, Any] = {}
         self.globalEditors: Dict[str, Tuple[QtWidgets.QLineEdit, SetButton]] = {}
         self.pendingGlobals: Dict[str, str] = {}
+        # the same for the default editors, keyed by (Type, entry path)
+        self.pendingDefaults: Dict[Tuple[str, str], str] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1105,7 +1107,13 @@ class TypesPane(QtWidgets.QWidget):
             )
             items_by_path[path] = name_item
             if colours is not None:
-                for item in (name_item, unit_item, default_item, global_item, lock_item):
+                for item in (
+                    name_item,
+                    unit_item,
+                    default_item,
+                    global_item,
+                    lock_item,
+                ):
                     item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
             entry: Dict[str, Any] = {
                 "editor": None,
@@ -1162,13 +1170,13 @@ class TypesPane(QtWidgets.QWidget):
                     global_set.setPending(target in self.pendingGlobals)
                     global_editor.textEdited.connect(
                         lambda text, target=target, global_set=global_set: (
-                            self._on_global_edited(target, text, global_set)
+                            self._on_edited(
+                                self.pendingGlobals, target, text, global_set
+                            )
                         )
                     )
-                    commit = (
-                        lambda target=target, global_editor=global_editor: (
-                            self.setGlobalRequested.emit(target, global_editor.text())
-                        )
+                    commit = lambda target=target, global_editor=global_editor: (
+                        self.setGlobalRequested.emit(target, global_editor.text())
                     )
                     global_editor.returnPressed.connect(commit)
                     global_set.pressed.connect(commit)
@@ -1271,17 +1279,27 @@ class TypesPane(QtWidgets.QWidget):
         )
 
         # the default column: the editable default with its set button and
-        # the entry's Remove button
+        # the entry's Remove button; like a parameter row, an edit turns the
+        # set button orange until Return or the button sets it
         editor_container = QtWidgets.QWidget(self.entriesView.viewport())
         editor_layout = QtWidgets.QHBoxLayout(editor_container)
         editor_layout.setContentsMargins(0, 0, 0, 0)
         editor = QtWidgets.QLineEdit(editor_container)
-        editor.setText("" if row.default is None else str(row.default))
+        key = (selected, row.path)
+        editor.setText(
+            self.pendingDefaults.get(
+                key, "" if row.default is None else str(row.default)
+            )
+        )
         editor.setPlaceholderText("no default")
-        set_button = QtWidgets.QPushButton(
+        set_button = SetButton(
             QtGui.QIcon(":/icons/set.svg"), "", parent=editor_container
         )
         keepSmallHorizontally(set_button)
+        set_button.setPending(key in self.pendingDefaults)
+        editor.textEdited.connect(
+            lambda text: self._on_edited(self.pendingDefaults, key, text, set_button)
+        )
         set_button.pressed.connect(
             lambda: self.setDefaultRequested.emit(selected, row.path, editor.text())
         )
@@ -1483,11 +1501,18 @@ class TypesPane(QtWidgets.QWidget):
         self.entriesNote.setStyleSheet("QLabel { color: red }")
         self.entriesNote.setText(text)
 
-    def _on_global_edited(self, target: str, text: str, set_button: SetButton) -> None:
-        """Remember a global value edit until it is committed, and turn
-        its set button orange."""
-        self.pendingGlobals[target] = text
+    def _on_edited(
+        self, pending: Dict[Any, str], key: Any, text: str, set_button: SetButton
+    ) -> None:
+        """Remember an edit of a global value or default until it is
+        committed, and turn its set button orange."""
+        pending[key] = text
         set_button.setPending(True)
+
+    def default_committed(self, type_name: str, path: str) -> None:
+        """Forget the committed default edit of the entry ``path``: the
+        next rebuild shows the stored default with a plain set button."""
+        self.pendingDefaults.pop((type_name, path), None)
 
     def show_global_value(
         self, target: str, value: Any, committed: bool = False
