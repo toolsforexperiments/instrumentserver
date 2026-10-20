@@ -980,6 +980,7 @@ class TypesController(QtCore.QObject):
         # the two panes it drives
         gui.typesPane.typeSelected.connect(self._on_pane_type_selected)
         gui.typesPane.addTypeRequested.connect(self._on_pane_add_type)
+        gui.typesPane.removeTypeRequested.connect(self._on_pane_remove_type)
         gui.typesPane.addEntryRequested.connect(self._on_pane_add_entry)
         gui.typesPane.removeEntryRequested.connect(self._on_pane_remove_entry)
         gui.typesPane.setDefaultRequested.connect(self._on_pane_set_default)
@@ -1092,6 +1093,20 @@ class TypesController(QtCore.QObject):
             self.gui.typesPane.reset_type_note()
             self.gui.typesPane.newTypeEdit.clear()
             self.gui.typesPane.select_type(name)
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str)
+    def _on_pane_remove_type(self, name: str) -> None:
+        """The Remove type button: remove the selected Type (D13) — the
+        Instances keep their parameters. A refused removal (the Type is
+        nested in another) shows the Server's error text on the strip's
+        note."""
+        try:
+            self.gui.instrument.remove_type(name)
+        except Exception as exc:
+            self.gui.typesPane.show_type_error(str(exc))
+        else:
+            self.gui.typesPane.reset_type_note()
             self.refresh_types_pane()
 
     @QtCore.Slot(str, str, str, str)

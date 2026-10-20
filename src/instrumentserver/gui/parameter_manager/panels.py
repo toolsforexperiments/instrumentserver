@@ -639,6 +639,11 @@ class TypesPane(QtWidgets.QWidget):
     addTypeRequested = QtCore.Signal(str)
 
     #: Signal(str)
+    #: Emitted when the user presses the Remove type button: the selected
+    #: Type's name.
+    removeTypeRequested = QtCore.Signal(str)
+
+    #: Signal(str)
     #: Emitted when the selected Type changes (a row click, or a rebuild
     #: that had to pick one).
     typeSelected = QtCore.Signal(str)
@@ -746,6 +751,16 @@ class TypesPane(QtWidgets.QWidget):
         keepSmallHorizontally(self.addTypeButton)
         typeStrip.addWidget(self.newTypeEdit, 1)
         typeStrip.addWidget(self.addTypeButton)
+        self.removeTypeButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/delete.svg"), " Remove"
+        )
+        self.removeTypeButton.setStyleSheet("QPushButton { background-color: salmon }")
+        self.removeTypeButton.setToolTip(
+            "remove the selected Type — the Instances keep their parameters"
+        )
+        self.removeTypeButton.setVisible(False)
+        keepSmallHorizontally(self.removeTypeButton)
+        typeStrip.addWidget(self.removeTypeButton)
         self.typeNote = QtWidgets.QLabel(typeListPane)
 
         typeListLayout.addWidget(self.typeList, 1)
@@ -888,6 +903,9 @@ class TypesPane(QtWidgets.QWidget):
 
         self.addTypeButton.clicked.connect(self._request_add_type)
         self.newTypeEdit.returnPressed.connect(self.addTypeButton.click)
+        self.removeTypeButton.clicked.connect(
+            lambda: self.removeTypeRequested.emit(self.selectedType)
+        )
         self.addEntryButton.clicked.connect(self._request_add_entry)
         for edit in (self.entryNameEdit, self.entryDefaultEdit, self.entryUnitEdit):
             edit.returnPressed.connect(self.addEntryButton.click)
@@ -979,6 +997,7 @@ class TypesPane(QtWidgets.QWidget):
         self.instancesLabel.setText(
             f"instances of {selected}" if has_type else "instances"
         )
+        self.removeTypeButton.setVisible(has_type)
         self.addEntryButton.setEnabled(has_type)
         self.addNestedButton.setEnabled(has_type)
         self.addInstanceButton.setEnabled(has_type)
