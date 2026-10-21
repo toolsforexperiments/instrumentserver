@@ -403,7 +403,9 @@ class ProxyInstrumentModule(ProxyMixin, InstrumentBase):
             else:
                 # the Server can change a unit in place (a Type's unit edit
                 # propagates to its Instances), so keep it current
-                self.parameters[pn].unit = p.unit
+                param = self.parameters[pn]
+                if isinstance(param, Parameter):
+                    param.unit = p.unit
 
         delKeys = []
         for pn in self.parameters.keys():

@@ -1175,9 +1175,13 @@ class TypesPane(QtWidgets.QWidget):
                             )
                         )
                     )
-                    commit = lambda target=target, global_editor=global_editor: (
+
+                    def commit(
+                        target: str = target,
+                        global_editor: QtWidgets.QLineEdit = global_editor,
+                    ) -> None:
                         self.setGlobalRequested.emit(target, global_editor.text())
-                    )
+
                     global_editor.returnPressed.connect(commit)
                     global_set.pressed.connect(commit)
                     global_layout.addWidget(global_editor, 1)
