@@ -40,6 +40,23 @@ lock/unlock icons in the compiled resources, and the 5.6 polish: a
 parameter-update for an unknown row recomputes the tints, stale notes are
 reset on success, and with no Type selected the Types tab strips are
 disabled and the pane labels carry no trailing space.
+
+The Types tab editing tests cover the additions on top of 5.6. Without a
+Server: the Remove type button showing only while a Type is selected,
+the entries pane's columns (parameter, unit, default, global, locked to
+global), the editable unit of own entries, the global value editor every
+own entry carries (the Type Lock's Target, or ``_globals.<type>.<path>``
+while unlocked) and the default editor, both with the parameter rows'
+set button that turns orange on an edit, keeps the edit through rebuilds
+and incoming values, and commits on Return or the button; the instance
+rows' delete button next to Show; and the removed Type Lock re-target.
+Live: removing a Type or an entry also removes its Globals parameters,
+unlocking the Instance parameters locked to them while the Instances
+keep their parameters; a unit edit keeps the Instances recognised; the
+instance delete button asks first, removes the whole Instance with one
+proxy refresh and names a refused removal; the GUI creates the Globals
+parameter of every entry; the global and default editors set the Server;
+and a burst of structural Broadcasts recomputes the tints once.
 """
 
 import importlib
@@ -51,6 +68,8 @@ from qcodes.instrument import InstrumentBase
 from instrumentserver import QtCore, QtGui, QtWidgets
 from instrumentserver.blueprints import (
     PARAMETER_CALL,
+    PARAMETER_CREATION,
+    PARAMETER_DELETION,
     PARAMETER_UPDATE,
     PM_LOCK_UPDATE,
     PM_TYPE_UPDATE,
@@ -91,14 +110,16 @@ from instrumentserver.gui.parameter_manager.panels import (
     LOCK_ROW_ROLE,
     GutterDelegate,
     LockArmStrip,
+    TypesPane,
 )
 from instrumentserver.gui.parameter_manager.widget import (
     ModelParameterManager,
     ParameterManagerGui,
     ParameterManagerTreeView,
 )
-from instrumentserver.gui.parameters import ParameterWidget
+from instrumentserver.gui.parameters import ParameterWidget, SetButton
 from instrumentserver.gui.shortcuts import KeyboardShortcutManager
+from instrumentserver.helpers import nestedAttributeFromString
 
 PM_NAME = "parameter_manager"
 PM_CLASS = "instrumentserver.params.ParameterManager"
@@ -3018,9 +3039,7 @@ def test_the_types_tab_edits_entries_and_nested_types(
         gui.model.stopListener()
 
 
-def test_the_types_tab_type_lock_toggle(
-    qtbot, pm, second_client, server_port
-):
+def test_the_types_tab_type_lock_toggle(qtbot, pm, second_client, server_port):
     """The Type Lock toggle puts the Globals default Target on the entry,
     locks the Instance parameter and shows the ``_globals`` row in the
     tree; toggling again removes only the rule (D17) and the Locks stay."""
@@ -3571,5 +3590,1023 @@ def test_a_parameter_update_for_an_unknown_row_recomputes_the_tints(
         for item in _row_items(gui, "q03.IF"):
             assert item.data(QtCore.Qt.ItemDataRole.BackgroundRole) in tint
         assert _row_items(gui, "q03.IF")[3].data(GUTTER_ROLE) == ["qubit"]
+    finally:
+        gui.model.stopListener()
+
+
+# ---------------------------------------------------------------------------
+# Types tab editing: Remove type, unit and global value editors, the
+# orange set buttons, instance deletion, Globals cleanup and the removed
+# Type Lock re-target.
+# ---------------------------------------------------------------------------
+
+
+ENTRIES_HEADERS = ["parameter", "unit", "default", "global", "locked to global"]
+
+
+def _pane_blueprint(name, entries, nested=None, nested_entries=None):
+    """A ``PMTypeBluePrint`` for the pane tests: own ``entries`` as
+    ``{path: (default, unit, target)}`` (``target`` in the full dotted form
+    the Server stores, or ``None``), the ``nested`` map, and the entries the
+    Nested Types bring in as ``{path: (unit, defining Type)}``."""
+    parameters = {
+        path: {"default": default, "unit": unit, "target": target}
+        for path, (default, unit, target) in entries.items()
+    }
+    effective = {
+        path: {"unit": unit, "from_type": name}
+        for path, (_default, unit, _target) in entries.items()
+    }
+    for path, (unit, from_type) in (nested_entries or {}).items():
+        effective[path] = {"unit": unit, "from_type": from_type}
+    return PMTypeBluePrint(
+        name=name, parameters=parameters, nested=nested or {}, effective=effective
+    )
+
+
+def _make_pane(qtbot, types, selected=None, parameters=None, global_values=None):
+    """Build a standalone Types pane, rebuilt from ``types`` with
+    ``selected`` selected, the parameter rows ``parameters`` and the
+    global values ``global_values``. Returns the pane and a rebuild
+    callable that rebuilds it from the same state."""
+    pane = TypesPane(PM_NAME)
+    qtbot.addWidget(pane)
+    palette = TypePalette()
+    palette.sync(types)
+    pane.globalValues = dict(global_values or {})
+    if selected is not None:
+        pane.select_type(selected)
+
+    def rebuild():
+        pane.rebuild(types, parameters or {}, palette)
+
+    rebuild()
+    return pane, rebuild
+
+
+def _pane_entry_items(pane, path):
+    """The five items of the entries-pane row ``path`` of a standalone
+    pane (walked segment by segment), or ``None`` while it does not
+    exist."""
+    item = pane.entriesModel.invisibleRootItem()
+    for segment in path.split("."):
+        found = None
+        for row in range(item.rowCount()):
+            child = item.child(row, 0)
+            if child is not None and child.text() == segment:
+                found = child
+                break
+        if found is None:
+            return None
+        item = found
+    parent = item.parent()
+    if parent is None:
+        return [pane.entriesModel.item(item.row(), column) for column in range(5)]
+    return [parent.child(item.row(), column) for column in range(5)]
+
+
+def _pane_cell_widget(pane, path, column):
+    """The widget the entries view hosts in ``column`` of the row
+    ``path``, or ``None``."""
+    items = _pane_entry_items(pane, path)
+    assert items is not None, f"no entries row {path!r}"
+    return pane.entriesView.indexWidget(pane.entriesModel.indexFromItem(items[column]))
+
+
+def _is_pending(button):
+    """Whether a set button shows an uncommitted edit (orange)."""
+    return "orange" in button.styleSheet()
+
+
+def _global_widgets(pane, target):
+    """The (editor, set button) pair of the global value of ``target``."""
+    assert target in pane.globalEditors, f"no global editor for {target!r}"
+    return pane.globalEditors[target]
+
+
+def _server_value(pm, path):
+    """The current value of the parameter at ``path``, read through the
+    Proxy after refreshing it."""
+    pm.update()
+    return nestedAttributeFromString(pm, path)()
+
+
+def _server_unit(pm, path):
+    """The current unit of the parameter at ``path`` as the refreshed
+    Proxy reports it."""
+    pm.update()
+    return nestedAttributeFromString(pm, path).unit
+
+
+def _instance_buttons(gui, name):
+    """The (Show, delete) buttons of the instances-pane row ``name``."""
+    items = _instance_row_items(gui, name)
+    assert items is not None, f"no instance row {name!r}"
+    cell = gui.typesPane.instancesView.indexWidget(
+        gui.typesPane.instancesModel.indexFromItem(items[3])
+    )
+    assert cell is not None, f"the instance row {name!r} hosts no buttons"
+    buttons = cell.findChildren(QtWidgets.QPushButton)
+    show = [button for button in buttons if button.text() == "Show"]
+    delete = [button for button in buttons if button.text() != "Show"]
+    assert len(show) == 1 and len(delete) == 1, buttons
+    return show[0], delete[0]
+
+
+def _answer_dialogs(monkeypatch, answer, before=None):
+    """Answer every ``QMessageBox.question`` with ``answer``, running
+    ``before`` first (to change the Server while the dialog is open)."""
+
+    def question(*args, **kwargs):
+        if before is not None:
+            before()
+        return answer
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "question", staticmethod(question))
+
+
+def test_the_remove_type_button_shows_only_while_a_type_is_selected(qtbot):
+    """With no Type there is nothing to remove and the Remove type button
+    is hidden; once a Type is selected it shows next to Add, and pressing
+    it asks to remove the selected Type."""
+    pane, _rebuild = _make_pane(qtbot, {})
+    assert pane.selectedType is None
+    assert pane.removeTypeButton.isHidden()
+
+    types = {
+        "qubit": _pane_blueprint("qubit", {"IF": (1.0, "Hz", None)}),
+        "readout": _pane_blueprint("readout", {"bw": (2.0, "Hz", None)}),
+    }
+    pane, _rebuild = _make_pane(qtbot, types, selected="readout")
+    assert pane.selectedType == "readout"
+    assert not pane.removeTypeButton.isHidden()
+
+    with qtbot.waitSignal(pane.removeTypeRequested, timeout=1000) as blocker:
+        pane.removeTypeButton.click()
+    assert blocker.args == ["readout"]
+
+
+def test_the_entries_pane_columns_put_the_global_value_before_its_lock(qtbot):
+    """The entries pane reads parameter, unit, default, global and locked
+    to global, left to right; a submodule row names its Nested Type in the
+    last column."""
+    readout = _pane_blueprint("readout", {"bw": (2.0, "Hz", None)})
+    qubit = _pane_blueprint(
+        "qubit",
+        {"IF": (1.0, "Hz", None)},
+        nested={"readout": "readout"},
+        nested_entries={"readout.bw": ("Hz", "readout")},
+    )
+    pane, _rebuild = _make_pane(
+        qtbot, {"readout": readout, "qubit": qubit}, selected="qubit"
+    )
+
+    headers = [
+        pane.entriesModel.headerData(column, QtCore.Qt.Orientation.Horizontal)
+        for column in range(pane.entriesModel.columnCount())
+    ]
+    assert headers == ENTRIES_HEADERS
+    assert _pane_entry_items(pane, "readout")[4].text() == "type: readout"
+
+
+def test_an_own_entry_unit_is_editable_and_return_requests_the_change(qtbot):
+    """An own entry's unit cell is an editor holding the unit; Return asks
+    to set the typed unit. An entry from a Nested Type keeps a read-only
+    unit — its unit is edited on the Type that defines it."""
+    readout = _pane_blueprint("readout", {"bw": (2.0, "Hz", None)})
+    qubit = _pane_blueprint(
+        "qubit",
+        {"IF": (1.0, "Hz", None)},
+        nested={"readout": "readout"},
+        nested_entries={"readout.bw": ("Hz", "readout")},
+    )
+    pane, _rebuild = _make_pane(
+        qtbot, {"readout": readout, "qubit": qubit}, selected="qubit"
+    )
+
+    unit_editor = _pane_cell_widget(pane, "IF", 1)
+    assert isinstance(unit_editor, QtWidgets.QLineEdit)
+    assert unit_editor.text() == "Hz"
+    unit_editor.selectAll()
+    qtbot.keyClicks(unit_editor, "MHz")
+    with qtbot.waitSignal(pane.setUnitRequested, timeout=1000) as blocker:
+        qtbot.keyClick(unit_editor, QtCore.Qt.Key.Key_Return)
+    assert blocker.args == ["qubit", "IF", "MHz"]
+
+    assert not isinstance(_pane_cell_widget(pane, "readout.bw", 1), QtWidgets.QLineEdit)
+    assert _pane_entry_items(pane, "readout.bw")[1].text() == "Hz"
+
+
+def test_every_own_entry_carries_a_global_value_editor(qtbot):
+    """Every own entry shows its global value — the entry's Globals
+    parameter while unlocked, the Type Lock's Target while locked — in an
+    editor with a set button, whether or not it is locked; a value of
+    ``None`` shows an empty editor. Entries from a Nested Type carry no
+    global editor in the nesting Type."""
+    readout = _pane_blueprint("readout", {"bw": (2.0, "Hz", None)})
+    qubit = _pane_blueprint(
+        "qubit",
+        {
+            "IF": (1.0, "Hz", None),
+            "gain": (0.5, "", f"{PM_NAME}._globals.qubit.gain"),
+            "drive": (3.0, "V", f"{PM_NAME}.tshared"),
+            "spare": (None, "", None),
+        },
+        nested={"readout": "readout"},
+        nested_entries={"readout.bw": ("Hz", "readout")},
+    )
+    values = {
+        "_globals.qubit.IF": 5.0,
+        "_globals.qubit.gain": 0.25,
+        "tshared": 7,
+        "_globals.qubit.spare": None,
+    }
+    pane, _rebuild = _make_pane(
+        qtbot,
+        {"readout": readout, "qubit": qubit},
+        selected="qubit",
+        global_values=values,
+    )
+
+    assert set(pane.globalEditors) == set(values)
+    for target, value in values.items():
+        editor, set_button = _global_widgets(pane, target)
+        assert isinstance(editor, QtWidgets.QLineEdit)
+        assert isinstance(set_button, SetButton)
+        assert editor.text() == ("" if value is None else str(value))
+        assert not _is_pending(set_button)
+    # the editors sit in the global column of their rows
+    for path, target in (
+        ("IF", "_globals.qubit.IF"),
+        ("gain", "_globals.qubit.gain"),
+        ("drive", "tshared"),
+        ("spare", "_globals.qubit.spare"),
+    ):
+        cell = _pane_cell_widget(pane, path, 3)
+        assert cell is not None
+        assert _global_widgets(pane, target)[0] in cell.findChildren(
+            QtWidgets.QLineEdit
+        )
+    assert _pane_cell_widget(pane, "readout.bw", 3) is None
+
+
+def test_a_global_value_edit_turns_its_set_button_orange_until_committed(qtbot):
+    """Like a parameter row: typing in a global editor turns its set
+    button orange; the edit survives a rebuild of the pane and an incoming
+    value for the same Target; Return and the set button both ask to set
+    the typed text; a committed value shows the value with a plain button
+    again."""
+    qubit = _pane_blueprint("qubit", {"IF": (1.0, "Hz", None)})
+    target = "_globals.qubit.IF"
+    pane, rebuild = _make_pane(
+        qtbot, {"qubit": qubit}, selected="qubit", global_values={target: 5.0}
+    )
+
+    editor, set_button = _global_widgets(pane, target)
+    assert not _is_pending(set_button)
+    editor.selectAll()
+    qtbot.keyClicks(editor, "6.5")
+    assert editor.text() == "6.5"
+    assert _is_pending(set_button)
+
+    # a rebuild keeps the uncommitted edit and its orange button
+    rebuild()
+    editor, set_button = _global_widgets(pane, target)
+    assert editor.text() == "6.5"
+    assert _is_pending(set_button)
+
+    # an incoming value does not overwrite the uncommitted edit
+    pane.show_global_value(target, 8.0)
+    editor, set_button = _global_widgets(pane, target)
+    assert editor.text() == "6.5"
+    assert _is_pending(set_button)
+
+    with qtbot.waitSignal(pane.setGlobalRequested, timeout=1000) as blocker:
+        qtbot.keyClick(editor, QtCore.Qt.Key.Key_Return)
+    assert blocker.args == [target, "6.5"]
+    with qtbot.waitSignal(pane.setGlobalRequested, timeout=1000) as blocker:
+        set_button.click()
+    assert blocker.args == [target, "6.5"]
+
+    # the value set from the edit is committed: the button turns plain and
+    # later rebuilds and incoming values show the Server's value again
+    pane.show_global_value(target, 6.5, committed=True)
+    editor, set_button = _global_widgets(pane, target)
+    assert editor.text() == "6.5"
+    assert not _is_pending(set_button)
+    pane.show_global_value(target, 9.0)
+    rebuild()
+    editor, set_button = _global_widgets(pane, target)
+    assert editor.text() == "9.0"
+    assert not _is_pending(set_button)
+
+
+def test_a_default_edit_turns_its_set_button_orange_until_committed(qtbot):
+    """The default editor behaves like the global one: typing turns its
+    set button orange, the edit survives a rebuild, Return and the set
+    button ask to set the typed text, and once committed the next rebuild
+    shows the stored default with a plain button."""
+    qubit = _pane_blueprint("qubit", {"IF": (1.0, "Hz", None)})
+    pane, rebuild = _make_pane(qtbot, {"qubit": qubit}, selected="qubit")
+
+    widgets = pane.entryWidgets["IF"]
+    assert widgets["editor"].text() == "1.0"
+    assert isinstance(widgets["set"], SetButton)
+    assert not _is_pending(widgets["set"])
+
+    widgets["editor"].selectAll()
+    qtbot.keyClicks(widgets["editor"], "2.5")
+    assert _is_pending(widgets["set"])
+
+    rebuild()
+    widgets = pane.entryWidgets["IF"]
+    assert widgets["editor"].text() == "2.5"
+    assert _is_pending(widgets["set"])
+
+    with qtbot.waitSignal(pane.setDefaultRequested, timeout=1000) as blocker:
+        qtbot.keyClick(widgets["editor"], QtCore.Qt.Key.Key_Return)
+    assert blocker.args == ["qubit", "IF", "2.5"]
+    with qtbot.waitSignal(pane.setDefaultRequested, timeout=1000) as blocker:
+        widgets["set"].click()
+    assert blocker.args == ["qubit", "IF", "2.5"]
+
+    pane.default_committed("qubit", "IF")
+    rebuild()
+    widgets = pane.entryWidgets["IF"]
+    assert widgets["editor"].text() == "1.0"
+    assert not _is_pending(widgets["set"])
+
+
+def test_an_instance_row_carries_a_delete_button_next_to_show(qtbot):
+    """Every instance row hosts Show and a delete button; the delete
+    button asks to delete that Instance."""
+    qubit = _pane_blueprint("qubit", {"IF": (1.0, "Hz", None)})
+    pane, _rebuild = _make_pane(
+        qtbot,
+        {"qubit": qubit},
+        selected="qubit",
+        parameters={"q01.IF": "Hz", "q02.IF": "Hz"},
+    )
+
+    model = pane.instancesModel
+    for name in ("q01", "q02"):
+        matches = model.findItems(name, QtCore.Qt.MatchFlag.MatchExactly, 0)
+        assert matches, f"no instance row {name!r}"
+        cell = pane.instancesView.indexWidget(model.index(matches[0].row(), 3))
+        buttons = cell.findChildren(QtWidgets.QPushButton)
+        assert [button.text() for button in buttons].count("Show") == 1
+        delete = [button for button in buttons if button.text() != "Show"]
+        assert len(delete) == 1
+        with qtbot.waitSignal(pane.removeInstanceRequested, timeout=1000) as blocker:
+            delete[0].click()
+        assert blocker.args == [name]
+
+
+def test_a_type_lock_has_no_re_target_button(qtbot):
+    """The Type Lock re-target is gone: a locked entry's "locked to
+    global" cell holds the lock toggle and the Target's path, and no other
+    button; the pane offers no re-target request and the arm ranking takes
+    no entry path."""
+    qubit = _pane_blueprint(
+        "qubit", {"IF": (1.0, "Hz", f"{PM_NAME}._globals.qubit.IF")}
+    )
+    pane, _rebuild = _make_pane(
+        qtbot,
+        {"qubit": qubit},
+        selected="qubit",
+        global_values={"_globals.qubit.IF": 1.0},
+    )
+
+    widgets = pane.entryWidgets["IF"]
+    assert widgets.get("retarget") is None
+    lock_cell = _pane_cell_widget(pane, "IF", 4)
+    assert lock_cell.findChildren(QtWidgets.QPushButton) == [widgets["toggle"]]
+    labels = [label.text() for label in lock_cell.findChildren(QtWidgets.QLabel)]
+    assert "_globals.qubit.IF" in labels
+    assert not hasattr(pane, "retargetTypeLockRequested")
+
+    claims = {"q01.IF": Claim(type="qubit", instance="q01", stack=["qubit"])}
+    with pytest.raises(TypeError):
+        rank_lock_targets("", ["q01.IF"], claims, arm_rel="IF")
+
+
+def test_the_remove_type_button_removes_the_type_and_its_globals(
+    qtbot, pm, second_client, server_port
+):
+    """Remove type removes the selected Type and its Globals parameters;
+    the Instance keeps its parameters, the Type leaves the list and the
+    note stays empty. Another Type whose name starts the same keeps its
+    Globals parameters."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        second_pm.add_type("qubit2")
+        second_pm.add_type_parameter("qubit2", "IF", default=9.0, unit="Hz")
+        _create_type_with_instance(qtbot, gui, pm)
+        qtbot.waitUntil(
+            lambda: (
+                pm.has_param("_globals.qubit.IF") and pm.has_param("_globals.qubit2.IF")
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        assert gui.typesPane.selectedType == "qubit"
+        gui.typesPane.removeTypeButton.click()
+        qtbot.waitUntil(
+            lambda: "qubit" not in pm.list_types(), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: not pm.has_param("_globals.qubit.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: _type_list_row(gui, "qubit") is None, timeout=BROADCAST_TIMEOUT
+        )
+
+        assert pm.has_param("q10.IF")
+        assert pm.has_param("_globals.qubit2.IF")
+        assert "qubit2" in pm.list_types()
+        assert gui.typesPane.typeNote.text() == ""
+    finally:
+        gui.model.stopListener()
+
+
+def test_removing_a_type_unlocks_the_instances_locked_to_its_globals(
+    qtbot, pm, second_client, server_port
+):
+    """An Instance parameter locked to a Globals parameter of the removed
+    Type is unlocked before that parameter goes: it keeps its parameter
+    and answers with its own value again."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        globals_target = f"{PM_NAME}._globals.qubit.IF"
+
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: (
+                pm.get_lock("q10.IF")
+                == PMLockBluePrint(target=globals_target, locked=True)
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        second_pm.update()
+        nestedAttributeFromString(second_pm, "_globals.qubit.IF")(42.0)
+        assert _server_value(pm, "q10.IF") == 42.0
+
+        gui.typesPane.removeTypeButton.click()
+        qtbot.waitUntil(
+            lambda: not pm.has_param("_globals.qubit.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        assert pm.get_lock("q10.IF") is None
+        assert pm.list_locks() == {}
+        assert pm.has_param("q10.IF")
+        # its own value, kept underneath while it was locked
+        assert _server_value(pm, "q10.IF") == 1.0
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_refused_type_removal_names_the_reason_and_removes_nothing(
+    qtbot, pm, second_client, server_port
+):
+    """A Type nested in another cannot be removed: the Server's reason
+    shows in red on the New type strip's note, and the Type and its
+    Globals parameters stay."""
+    second_pm = _second_parameter_manager(second_client)
+    second_pm.add_type("readout")
+    second_pm.add_type_parameter("readout", "bw", default=2.0, unit="Hz")
+    second_pm.add_type("qubit")
+    second_pm.add_nested_type("qubit", "readout", "readout")
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        gui.tabs.setCurrentIndex(1)
+        gui.typesPane.select_type("readout")
+        gui.typesController.refresh_types_pane()
+        qtbot.waitUntil(
+            lambda: gui.typesPane.selectedType == "readout", timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: pm.has_param("_globals.readout.bw"), timeout=BROADCAST_TIMEOUT
+        )
+
+        gui.typesPane.removeTypeButton.click()
+        qtbot.waitUntil(
+            lambda: gui.typesPane.typeNote.text() != "", timeout=BROADCAST_TIMEOUT
+        )
+        assert "red" in gui.typesPane.typeNote.styleSheet()
+        assert "readout" in pm.list_types()
+        assert pm.has_param("_globals.readout.bw")
+    finally:
+        gui.model.stopListener()
+
+
+def test_removing_an_entry_removes_its_global_and_unlocks_the_instances(
+    qtbot, pm, second_client, server_port
+):
+    """An own entry's Remove button removes the entry and its Globals
+    parameter; the Instance parameter locked to it is unlocked and stays,
+    and the other entries keep their Globals parameters."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        gui.typesPane.entryNameEdit.setText("gain")
+        gui.typesPane.entryDefaultEdit.setText("0.5")
+        gui.typesPane.entryUnitEdit.setText("")
+        gui.typesPane.addEntryButton.click()
+        qtbot.waitUntil(
+            lambda: pm.has_param("_globals.qubit.gain"), timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("toggle") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q10.IF") is not None, timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("remove") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        gui.typesPane.entryWidgets["IF"]["remove"].click()
+        qtbot.waitUntil(
+            lambda: "IF" not in pm.get_type("qubit").parameters,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: not pm.has_param("_globals.qubit.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        assert pm.get_lock("q10.IF") is None
+        assert pm.has_param("q10.IF")
+        assert _server_value(pm, "q10.IF") == 1.0
+        assert pm.has_param("_globals.qubit.gain")
+        assert gui.typesPane.entriesNote.text() == ""
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_unit_edit_keeps_the_instances_recognised(
+    qtbot, pm, second_client, server_port
+):
+    """Return in an own entry's unit editor sets the unit on the Type, on
+    every Instance and on the entry's Globals parameter; the GUI shows the
+    new unit and still counts the Instance as one of the Type's."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        qtbot.waitUntil(
+            lambda: pm.has_param("_globals.qubit.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        items = _entry_row_items(gui, "IF")
+        unit_editor = gui.typesPane.entriesView.indexWidget(
+            gui.typesPane.entriesModel.indexFromItem(items[1])
+        )
+        assert isinstance(unit_editor, QtWidgets.QLineEdit)
+
+        unit_editor.selectAll()
+        qtbot.keyClicks(unit_editor, "MHz")
+        qtbot.keyClick(unit_editor, QtCore.Qt.Key.Key_Return)
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").parameters["IF"]["unit"] == "MHz",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert _server_unit(pm, "q10.IF") == "MHz"
+        assert _server_unit(pm, "_globals.qubit.IF") == "MHz"
+        assert pm.instances_of("qubit") == ["q10"]
+
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q10.IF")[1].text() == "MHz",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: gui.state.types["qubit"].parameters["IF"]["unit"] == "MHz",
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert instances_of_type(
+            "qubit", gui.state.types, gui.model.parameter_units()
+        ) == ["q10"]
+        assert _instance_row_items(gui, "q10") is not None
+        assert _row_items(gui, "q10.IF")[3].data(GUTTER_ROLE) == ["qubit"]
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_instance_delete_button_asks_before_deleting(
+    qtbot, pm, second_client, server_port, monkeypatch
+):
+    """The delete button asks first; answering No leaves the Instance as
+    it is."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        asked = []
+        _answer_dialogs(
+            monkeypatch,
+            QtWidgets.QMessageBox.StandardButton.No,
+            before=lambda: asked.append(True),
+        )
+
+        _show, delete = _instance_buttons(gui, "q10")
+        delete.click()
+        qtbot.wait(200)
+        assert asked == [True]
+        assert pm.has_param("q10.IF")
+        assert pm.instances_of("qubit") == ["q10"]
+        assert _instance_row_items(gui, "q10") is not None
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_instance_delete_button_removes_the_whole_instance(
+    qtbot, pm, second_client, server_port, monkeypatch
+):
+    """Answering Yes removes every parameter under the Instance and the
+    emptied groups; other parameters stay, the instance row goes and the
+    note stays empty. The proxy is refreshed once for the whole deletion,
+    not once per parameter."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        for path in ("q10.extra.a", "q10.extra.b", "q10.extra.deep.c", "other.x"):
+            second_pm.add_parameter(path, initial_value=0.0, unit="")
+        qtbot.waitUntil(lambda: _row_exists(gui, "other.x"), timeout=BROADCAST_TIMEOUT)
+        qtbot.waitUntil(
+            lambda: _row_exists(gui, "q10.extra.deep.c"), timeout=BROADCAST_TIMEOUT
+        )
+        _answer_dialogs(monkeypatch, QtWidgets.QMessageBox.StandardButton.Yes)
+
+        updates = []
+        original_update = pm.update
+
+        def counting_update(*args, **kwargs):
+            updates.append(True)
+            return original_update(*args, **kwargs)
+
+        monkeypatch.setattr(pm, "update", counting_update)
+        _show, delete = _instance_buttons(gui, "q10")
+        delete.click()
+        monkeypatch.setattr(pm, "update", original_update)
+
+        assert not any(path.startswith("q10.") for path in pm.list())
+        assert pm.has_param("other.x")
+        assert pm.instances_of("qubit") == []
+        assert len(updates) == 1
+        qtbot.waitUntil(
+            lambda: _instance_row_items(gui, "q10") is None, timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(lambda: not _row_exists(gui, "q10"), timeout=BROADCAST_TIMEOUT)
+        assert gui.typesPane.instancesNote.text() == ""
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_refused_instance_deletion_shows_the_error(
+    qtbot, pm, second_client, server_port, monkeypatch
+):
+    """When the Server refuses part of the deletion — here a parameter a
+    second Client removed while the dialog was open — the error shows in
+    red on the instances pane's note."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        _answer_dialogs(
+            monkeypatch,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+            before=lambda: second_pm.remove_parameter("q10.IF"),
+        )
+
+        _show, delete = _instance_buttons(gui, "q10")
+        delete.click()
+        qtbot.waitUntil(
+            lambda: gui.typesPane.instancesNote.text() != "", timeout=BROADCAST_TIMEOUT
+        )
+        assert "red" in gui.typesPane.instancesNote.styleSheet()
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_gui_creates_the_globals_parameter_of_every_entry(
+    qtbot, pm, second_client, server_port
+):
+    """Every Type entry gets its Globals parameter
+    ``_globals.<type>.<path>`` with the entry's default and unit — the
+    entries that existed before the GUI opened, and the ones added through
+    it — so every entry has a global value to edit. A Globals parameter
+    never counts as an Instance."""
+    second_pm = _second_parameter_manager(second_client)
+    second_pm.add_type("readout")
+    second_pm.add_type_parameter("readout", "bw", default=2.0, unit="Hz")
+    second_pm.add_type_parameter("readout", "sub.gain", default=None, unit="dB")
+    assert not pm.has_param("_globals.readout.bw")
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        qtbot.waitUntil(
+            lambda: (
+                pm.has_param("_globals.readout.bw")
+                and pm.has_param("_globals.readout.sub.gain")
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert _server_value(pm, "_globals.readout.bw") == 2.0
+        assert _server_unit(pm, "_globals.readout.bw") == "Hz"
+        assert _server_value(pm, "_globals.readout.sub.gain") is None
+        assert _server_unit(pm, "_globals.readout.sub.gain") == "dB"
+
+        _create_type_with_instance(qtbot, gui, pm)
+        qtbot.waitUntil(
+            lambda: pm.has_param("_globals.qubit.IF"), timeout=BROADCAST_TIMEOUT
+        )
+        assert _server_value(pm, "_globals.qubit.IF") == 1.0
+        assert _server_unit(pm, "_globals.qubit.IF") == "Hz"
+        assert pm.instances_of("readout") == []
+        assert pm.instances_of("qubit") == ["q10"]
+        qtbot.waitUntil(
+            lambda: "_globals.qubit.IF" in gui.typesPane.globalEditors,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        editor, _set_button = _global_widgets(gui.typesPane, "_globals.qubit.IF")
+        assert editor.text() == "1.0"
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_global_editor_sets_the_value_the_locked_instances_follow(
+    qtbot, pm, second_client, server_port
+):
+    """Setting the global value works locked or not: Return sets the
+    entry's Globals parameter and turns the button plain again; once the
+    entry is locked the Instances follow it, and the set button sets it as
+    well; a value a second Client sets shows in the editor."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        target = "_globals.qubit.IF"
+        qtbot.waitUntil(
+            lambda: target in gui.typesPane.globalEditors, timeout=BROADCAST_TIMEOUT
+        )
+
+        # unlocked: the Globals parameter is set, the Instance keeps its own
+        editor, set_button = _global_widgets(gui.typesPane, target)
+        editor.selectAll()
+        qtbot.keyClicks(editor, "3.5")
+        assert _is_pending(set_button)
+        qtbot.keyClick(editor, QtCore.Qt.Key.Key_Return)
+        qtbot.waitUntil(
+            lambda: _server_value(pm, target) == 3.5, timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: not _is_pending(_global_widgets(gui.typesPane, target)[1]),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert _server_value(pm, "q10.IF") == 1.0
+        assert gui.typesPane.entriesNote.text() == ""
+
+        # locked: the Instance follows the global value
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_lock("q10.IF") is not None, timeout=BROADCAST_TIMEOUT
+        )
+        assert _server_value(pm, "q10.IF") == 3.5
+        qtbot.waitUntil(
+            lambda: target in gui.typesPane.globalEditors, timeout=BROADCAST_TIMEOUT
+        )
+        editor, set_button = _global_widgets(gui.typesPane, target)
+        editor.selectAll()
+        qtbot.keyClicks(editor, "4.5")
+        set_button.click()
+        qtbot.waitUntil(
+            lambda: _server_value(pm, "q10.IF") == 4.5, timeout=BROADCAST_TIMEOUT
+        )
+        qtbot.waitUntil(
+            lambda: not _is_pending(_global_widgets(gui.typesPane, target)[1]),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        # a value set from outside shows in the editor
+        second_pm.update()
+        nestedAttributeFromString(second_pm, target)(5.5)
+        qtbot.waitUntil(
+            lambda: _global_widgets(gui.typesPane, target)[0].text() == "5.5",
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_an_uncommitted_global_edit_is_not_overwritten_from_outside(
+    qtbot, pm, second_client, server_port
+):
+    """While a global edit is uncommitted, a value a second Client sets
+    does not replace the typed text; committing then sets the typed
+    value."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        target = "_globals.qubit.IF"
+        qtbot.waitUntil(
+            lambda: target in gui.typesPane.globalEditors, timeout=BROADCAST_TIMEOUT
+        )
+        editor, set_button = _global_widgets(gui.typesPane, target)
+        editor.selectAll()
+        qtbot.keyClicks(editor, "8.0")
+
+        second_pm.update()
+        nestedAttributeFromString(second_pm, target)(9.0)
+        qtbot.wait(500)
+        editor, set_button = _global_widgets(gui.typesPane, target)
+        assert editor.text() == "8.0"
+        assert _is_pending(set_button)
+
+        qtbot.keyClick(editor, QtCore.Qt.Key.Key_Return)
+        qtbot.waitUntil(
+            lambda: _server_value(pm, target) == 8.0, timeout=BROADCAST_TIMEOUT
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_refused_global_value_shows_the_error(qtbot, pm, second_client, server_port):
+    """A global value the Server cannot set — a Target that does not
+    exist — shows the error in red on the entries pane's note."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+
+        gui.typesPane.setGlobalRequested.emit("no_such.parameter", "1.0")
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entriesNote.text() != "", timeout=BROADCAST_TIMEOUT
+        )
+        assert "red" in gui.typesPane.entriesNote.styleSheet()
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_default_editor_sets_the_entry_default(
+    qtbot, pm, second_client, server_port
+):
+    """Return and the set button set an own entry's default on the Server,
+    and the button turns plain once the default is set."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+
+        editor = gui.typesPane.entryWidgets["IF"]["editor"]
+        editor.selectAll()
+        qtbot.keyClicks(editor, "2.5")
+        assert _is_pending(gui.typesPane.entryWidgets["IF"]["set"])
+        qtbot.keyClick(editor, QtCore.Qt.Key.Key_Return)
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").parameters["IF"]["default"] == 2.5,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: (
+                gui.typesPane.entryWidgets["IF"]["editor"].text() == "2.5"
+                and not _is_pending(gui.typesPane.entryWidgets["IF"]["set"])
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+
+        editor = gui.typesPane.entryWidgets["IF"]["editor"]
+        editor.selectAll()
+        qtbot.keyClicks(editor, "3.5")
+        gui.typesPane.entryWidgets["IF"]["set"].click()
+        qtbot.waitUntil(
+            lambda: pm.get_type("qubit").parameters["IF"]["default"] == 3.5,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: not _is_pending(gui.typesPane.entryWidgets["IF"]["set"]),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        # a default only seeds new parameters: the Instance keeps its value
+        assert _server_value(pm, "q10.IF") == 1.0
+    finally:
+        gui.model.stopListener()
+
+
+def test_the_live_type_lock_has_no_re_target(qtbot, pm, second_client, server_port):
+    """With the Type Lock re-target gone, a locked entry offers only the
+    lock toggle, and the GUI has no Type Lock arm to pick a Target for."""
+    second_pm = _second_parameter_manager(second_client)
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        _create_type_with_instance(qtbot, gui, pm)
+        gui.typesPane.entryWidgets["IF"]["toggle"].click()
+        qtbot.waitUntil(
+            lambda: (
+                gui.state.types["qubit"].parameters["IF"]["target"]
+                == f"{PM_NAME}._globals.qubit.IF"
+            ),
+            timeout=BROADCAST_TIMEOUT,
+        )
+        qtbot.waitUntil(
+            lambda: gui.typesPane.entryWidgets.get("IF", {}).get("toggle") is not None,
+            timeout=BROADCAST_TIMEOUT,
+        )
+        assert gui.typesPane.entryWidgets["IF"].get("retarget") is None
+        assert not hasattr(gui.locksController, "arm_type_lock")
+        assert not hasattr(gui.locksController, "armed_type_lock")
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_burst_of_creations_recomputes_the_tints_once(
+    qtbot, pm, second_client, server_port
+):
+    """A burst of parameter-creation Broadcasts — an Instance created —
+    emits ``structureChanged`` once, after the burst, instead of once per
+    parameter; the new rows carry the claiming Type's gutter band."""
+    second_pm = _second_parameter_manager(second_client)
+    second_pm.add_type("qubit")
+    for name in ("a", "b", "c", "d", "e"):
+        second_pm.add_type_parameter("qubit", name, default=0.0, unit="Hz")
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        gui.model.stopListener()
+        second_pm.add_instance("qubit", "q20")
+        pm.update()
+        emitted = []
+        gui.model.structureChanged.connect(lambda: emitted.append(True))
+
+        for name in ("a", "b", "c", "d", "e"):
+            gui.model.updateParameter(
+                ParameterBroadcastBluePrint(
+                    name=f"{PM_NAME}.q20.{name}",
+                    action=PARAMETER_CREATION,
+                    value=0.0,
+                    unit="Hz",
+                )
+            )
+        qtbot.waitUntil(lambda: len(emitted) >= 1, timeout=BROADCAST_TIMEOUT)
+        qtbot.wait(300)
+        assert len(emitted) == 1
+        for name in ("a", "b", "c", "d", "e"):
+            assert _row_exists(gui, f"q20.{name}")
+        qtbot.waitUntil(
+            lambda: _row_items(gui, "q20.a")[3].data(GUTTER_ROLE) == ["qubit"],
+            timeout=BROADCAST_TIMEOUT,
+        )
+    finally:
+        gui.model.stopListener()
+
+
+def test_a_burst_of_deletions_recomputes_the_tints_once(
+    qtbot, pm, second_client, server_port
+):
+    """A burst of parameter-deletion Broadcasts — an Instance removed —
+    emits ``structureChanged`` once, after the burst."""
+    second_pm = _second_parameter_manager(second_client)
+    for name in ("a", "b", "c", "d", "e"):
+        second_pm.add_parameter(f"q30.{name}", initial_value=0.0, unit="Hz")
+    pm.update()
+    gui = _make_gui(qtbot, pm, server_port)
+    try:
+        _wait_until_broadcasts_arrive(qtbot, gui, second_pm)
+        for name in ("a", "b", "c", "d", "e"):
+            assert _row_exists(gui, f"q30.{name}")
+        gui.model.stopListener()
+        for name in ("a", "b", "c", "d", "e"):
+            second_pm.remove_parameter(f"q30.{name}")
+        pm.update()
+        emitted = []
+        gui.model.structureChanged.connect(lambda: emitted.append(True))
+
+        for name in ("a", "b", "c", "d", "e"):
+            gui.model.updateParameter(
+                ParameterBroadcastBluePrint(
+                    name=f"{PM_NAME}.q30.{name}", action=PARAMETER_DELETION
+                )
+            )
+        qtbot.waitUntil(lambda: len(emitted) >= 1, timeout=BROADCAST_TIMEOUT)
+        qtbot.wait(300)
+        assert len(emitted) == 1
+        assert not _row_exists(gui, "q30.a")
     finally:
         gui.model.stopListener()

@@ -101,6 +101,19 @@ Target through a second client: the SubClient sees the ``pm-lock-update``
 and the Server's ``parameter-deletion``, the first client's proxy shows
 the Follower unlocked after ``update()``, and ``get_type`` over the wire
 shows ``target`` ``None``.
+The global values part checks ``ensure_global_targets``: it creates the
+Globals parameter of every Type entry that has none, with the entry's
+default and unit, under the defining Type only (never under a Type that
+merely nests it), returns the created paths, keeps existing Globals
+parameters with their values, is idempotent, creates nothing for a Type
+without entries, emits one ``parameter-creation`` per created parameter
+and no ``pm-type-update``, and leaves the Instance matching alone. It
+checks that ``set_type_parameter_unit`` carries the new unit to the
+entry's Globals parameter (keeping its value, creating none), so a later
+Type Lock declaration on the default Target succeeds. The proxy part
+calls ``ensure_global_targets`` over the wire and checks that a proxy's
+``update()`` brings the new unit of a parameter it already knew, whether
+the unit was changed through the same or a second client.
 """
 
 import copy
@@ -4191,3 +4204,242 @@ def test_removing_a_globals_type_lock_target_over_the_wire(
     finally:
         second_cli.disconnect()
         _cleanup_proxy_deletion_types(params)
+
+
+# ---------------------------------------------------------------------------
+# Global values: every Type entry's Globals parameter, its unit following
+# the entry, and proxies keeping known units current.
+# ---------------------------------------------------------------------------
+
+
+def test_ensure_global_targets_creates_the_missing_globals_parameters(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "pulses.pi.len", default=None, unit="us")
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "bw", default=2.0, unit="Hz")
+
+    created = pm.ensure_global_targets()
+
+    assert sorted(created) == [
+        "_globals.qubit.IF",
+        "_globals.qubit.pulses.pi.len",
+        "_globals.readout.bw",
+    ]
+    # every Globals parameter starts with the entry's default and unit
+    assert pm.get("_globals.qubit.IF") == 5e9
+    assert pm.parameter("_globals.qubit.IF").unit == "Hz"
+    assert pm.get("_globals.qubit.pulses.pi.len") is None
+    assert pm.parameter("_globals.qubit.pulses.pi.len").unit == "us"
+    assert pm.get("_globals.readout.bw") == 2.0
+    assert pm.parameter("_globals.readout.bw").unit == "Hz"
+    # created like the Type Lock's default Target: a ManagedParameter with
+    # the full dotted path
+    param = pm.parameter("_globals.qubit.IF")
+    assert isinstance(param, ManagedParameter)
+    assert param.path == "parameter_manager._globals.qubit.IF"
+
+
+def test_ensure_global_targets_keeps_existing_globals_and_is_idempotent(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "gain", default=0.5, unit="")
+    pm._ensure_global_target("qubit", "IF")
+    pm.set("_globals.qubit.IF", 42.0)
+
+    # only the entry without a Globals parameter gets one; the existing one
+    # keeps its own value
+    assert pm.ensure_global_targets() == ["_globals.qubit.gain"]
+    assert pm.get("_globals.qubit.IF") == 42.0
+    assert pm.get("_globals.qubit.gain") == 0.5
+
+    # a second call has nothing left to create and changes nothing
+    pm.set("_globals.qubit.gain", 0.75)
+    before = sorted(pm.list())
+    assert pm.ensure_global_targets() == []
+    assert sorted(pm.list()) == before
+    assert pm.get("_globals.qubit.gain") == 0.75
+
+
+def test_ensure_global_targets_creates_nested_entries_under_their_own_type(pm):
+    pm.add_type("readout")
+    pm.add_type_parameter("readout", "IF", default=10e6, unit="Hz")
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "octave_gain", default=10, unit="dB")
+    pm.add_nested_type("qubit", "readout", "readout")
+
+    created = pm.ensure_global_targets()
+
+    # a Nested Type's entries have one global value, the defining Type's:
+    # qubit only owns octave_gain
+    assert sorted(created) == ["_globals.qubit.octave_gain", "_globals.readout.IF"]
+    assert not pm.has_param("_globals.qubit.readout.IF")
+
+
+def test_ensure_global_targets_with_no_entries_creates_nothing(pm):
+    assert pm.ensure_global_targets() == []
+    pm.add_type("empty")
+    assert pm.ensure_global_targets() == []
+    assert not any(path.startswith("_globals") for path in pm.list())
+
+
+def test_ensure_global_targets_leaves_the_instance_matching_alone(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_instance("qubit", "q01")
+
+    pm.ensure_global_targets()
+
+    # the Globals submodule carries the Type's shape but is never an
+    # Instance
+    assert pm.instances_of("qubit") == ["q01"]
+    assert pm.types_of("_globals.qubit.IF") == []
+
+
+def test_ensure_global_targets_emits_one_creation_per_created_parameter(
+    pm_with_sink,
+):
+    pm, received = pm_with_sink
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_type_parameter("qubit", "gain", default=0.5, unit="")
+    received.clear()
+
+    pm.ensure_global_targets()
+
+    assert sorted(bp.name for bp in received) == [
+        "parameter_manager._globals.qubit.IF",
+        "parameter_manager._globals.qubit.gain",
+    ]
+    assert all(bp.action == PARAMETER_CREATION for bp in received)
+    by_name = {bp.name: bp for bp in received}
+    assert by_name["parameter_manager._globals.qubit.IF"].value == 5e9
+    assert by_name["parameter_manager._globals.qubit.IF"].unit == "Hz"
+    # no Type is edited, so no pm-type-update goes out
+    assert not any(bp.action == PM_TYPE_UPDATE for bp in received)
+
+    # nothing left to create: nothing is emitted
+    received.clear()
+    pm.ensure_global_targets()
+    assert received == []
+
+
+def test_set_type_parameter_unit_carries_the_unit_to_the_globals_parameter(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_instance("qubit", "q01")
+    pm.ensure_global_targets()
+    pm.set("_globals.qubit.IF", 6e9)
+
+    pm.set_type_parameter_unit("qubit", "IF", "GHz")
+
+    assert pm.parameter("_globals.qubit.IF").unit == "GHz"
+    # the value stays; only the unit follows the entry
+    assert pm.get("_globals.qubit.IF") == 6e9
+    assert pm.parameter("q01.IF").unit == "GHz"
+
+
+def test_set_type_parameter_unit_creates_no_globals_parameter(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+
+    pm.set_type_parameter_unit("qubit", "IF", "GHz")
+
+    assert not pm.has_param("_globals.qubit.IF")
+
+
+def test_a_type_lock_after_a_unit_edit_uses_the_globals_parameter(pm):
+    pm.add_type("qubit")
+    pm.add_type_parameter("qubit", "IF", default=5e9, unit="Hz")
+    pm.add_instance("qubit", "q01")
+    pm.ensure_global_targets()
+    pm.set("_globals.qubit.IF", 6e9)
+    pm.set_type_parameter_unit("qubit", "IF", "GHz")
+
+    # the Globals parameter carries the entry's unit, so declaring the Type
+    # Lock on the default Target meets no unit conflict
+    assert pm.lock_type_parameter("qubit", "IF") == []
+    assert pm.get_type("qubit").parameters["IF"]["target"] == (
+        "parameter_manager._globals.qubit.IF"
+    )
+    assert pm.get("q01.IF") == 6e9
+
+
+PROXY_GLOBAL_TYPE = "pglob_qubit"
+PROXY_GLOBAL_INSTANCE = "pglob_q01"
+
+
+def _cleanup_proxy_global_types(params):
+    """Remove every parameter (the Globals ones included) and the Type the
+    global value proxy tests create, so the module's shared server-side
+    Parameter Manager starts each test clean."""
+    for path in list(params.list()):
+        parts = path.split(".")
+        if parts[0].startswith("pglob_") or (
+            parts[0] == "_globals" and parts[1].startswith("pglob_")
+        ):
+            params.remove_parameter(path)
+    if PROXY_GLOBAL_TYPE in params.list_types():
+        params.remove_type(PROXY_GLOBAL_TYPE)
+
+
+def test_ensure_global_targets_through_the_proxy(param_manager):
+    cli, params = param_manager
+    _cleanup_proxy_global_types(params)
+    try:
+        params.add_type(PROXY_GLOBAL_TYPE)
+        params.add_type_parameter(PROXY_GLOBAL_TYPE, "IF", default=5e9, unit="Hz")
+
+        created = params.ensure_global_targets()
+
+        assert f"_globals.{PROXY_GLOBAL_TYPE}.IF" in created
+        assert params.has_param(f"_globals.{PROXY_GLOBAL_TYPE}.IF")
+        assert f"_globals.{PROXY_GLOBAL_TYPE}.IF" not in params.ensure_global_targets()
+    finally:
+        _cleanup_proxy_global_types(params)
+
+
+def test_a_proxy_update_brings_the_new_unit_of_a_known_parameter(param_manager):
+    cli, params = param_manager
+    _cleanup_proxy_global_types(params)
+    try:
+        params.add_type(PROXY_GLOBAL_TYPE)
+        params.add_type_parameter(PROXY_GLOBAL_TYPE, "IF", default=5e9, unit="Hz")
+        params.add_instance(PROXY_GLOBAL_TYPE, PROXY_GLOBAL_INSTANCE)
+        params.update()
+        # the proxy knows the Instance's parameter with its first unit
+        instance = getattr(params, PROXY_GLOBAL_INSTANCE)
+        assert instance.IF.unit == "Hz"
+
+        params.set_type_parameter_unit(PROXY_GLOBAL_TYPE, "IF", "GHz")
+        params.update()
+
+        # update() refreshes the units of the parameters it already had
+        assert getattr(params, PROXY_GLOBAL_INSTANCE).IF.unit == "GHz"
+    finally:
+        _cleanup_proxy_global_types(params)
+
+
+def test_a_proxy_update_brings_a_unit_a_second_client_changed(
+    param_manager, server_port
+):
+    cli, params = param_manager
+    _cleanup_proxy_global_types(params)
+    second_cli = Client(port=server_port)
+    try:
+        params.add_type(PROXY_GLOBAL_TYPE)
+        params.add_type_parameter(PROXY_GLOBAL_TYPE, "IF", default=5e9, unit="Hz")
+        params.add_instance(PROXY_GLOBAL_TYPE, PROXY_GLOBAL_INSTANCE)
+        params.update()
+        assert getattr(params, PROXY_GLOBAL_INSTANCE).IF.unit == "Hz"
+
+        second = second_cli.find_or_create_instrument(
+            "parameter_manager", "instrumentserver.params.ParameterManager"
+        )
+        second.set_type_parameter_unit(PROXY_GLOBAL_TYPE, "IF", "MHz")
+        params.update()
+
+        assert getattr(params, PROXY_GLOBAL_INSTANCE).IF.unit == "MHz"
+    finally:
+        second_cli.disconnect()
+        _cleanup_proxy_global_types(params)
