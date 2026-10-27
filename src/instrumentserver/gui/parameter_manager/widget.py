@@ -7,7 +7,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -278,6 +277,12 @@ class ModelParameterManager(ModelParameters):
         # or reloads never reach updateParameter's check
         self._rows_added = False
         self.newItem.connect(self._on_new_item)
+        # a burst of Broadcasts (an Instance created or removed) emits
+        # structureChanged once, after the burst
+        self._structureTimer = QtCore.QTimer(self)
+        self._structureTimer.setSingleShot(True)
+        self._structureTimer.setInterval(50)
+        self._structureTimer.timeout.connect(self.structureChanged.emit)
 
     @QtCore.Slot(object)
     def _on_new_item(self, item: QtGui.QStandardItem) -> None:
@@ -323,7 +328,7 @@ class ModelParameterManager(ModelParameters):
         # must be recomputed then (plan task 5.6), or the new row would
         # stay untinted until the next recompute
         if self._rows_added or bp.action == PARAMETER_DELETION:
-            self.structureChanged.emit()
+            self._structureTimer.start()
 
 
 class LockableParameterWidget(ParameterWidget):
@@ -517,17 +522,14 @@ class LocksController(QtCore.QObject):
     target pick, and the Locks panel. It works on the GUI's widgets and
     state and wires them in :meth:`connectSignals`.
 
-    ``armed_follower`` is the Follower a pick is armed for, and
-    ``armed_type_lock`` the (Type, entry) pair a Type Lock re-target from
-    the Types tab (plan task 5.5) is armed for; both are ``None`` while
-    nothing is armed.
+    ``armed_follower`` is the Follower a pick is armed for, ``None``
+    while nothing is armed.
     """
 
     def __init__(self, gui: "ParameterManagerGui") -> None:
         super().__init__(gui)
         self.gui = gui
         self.armed_follower: Optional[str] = None
-        self.armed_type_lock: Optional[Tuple[str, str]] = None
 
     def connectSignals(self) -> None:
         gui = self.gui
@@ -560,8 +562,6 @@ class LocksController(QtCore.QObject):
         treeSelection = gui.view.selectionModel()
         assert treeSelection is not None  # set together with the model
         treeSelection.currentChanged.connect(self._on_tree_current_changed)
-        # the Types tab's Type Lock re-target arms the same strip
-        gui.typesPane.retargetTypeLockRequested.connect(self.arm_type_lock)
         gui.shortcutManager.register("toggle_locks", gui.locksAction.toggle, gui)
         # the Lock shortcuts (plan task 5.6); the tree's two lock actions
         # carry their key in their tooltips
@@ -763,55 +763,13 @@ class LocksController(QtCore.QObject):
         parameters = self.gui.model.parameter_units()
         claims = compute_claims(self.gui.state.types, parameters)
         self.armed_follower = follower
-        self.armed_type_lock = None
         self.gui.armStrip.arm(follower, rank_lock_targets(follower, parameters, claims))
 
-    def arm_type_lock(self, type_name: str, path: str) -> None:
-        """Arm the target picker for the Type Lock of the entry ``path``
-        of the Type ``type_name`` (plan task 5.5): the strip shows on the
-        Parameters tab with the entry named in its label, and the
-        candidates are every parameter row of the source model ranked
-        with the entry path as the relative path (the same leaf on any
-        Instance first). Arming while already armed re-arms for the new
-        entry."""
-        self.armed_type_lock = (type_name, path)
-        self.armed_follower = None
-        self.gui.tabs.setCurrentIndex(0)
-        parameters = self.gui.model.parameter_units()
-        claims = compute_claims(self.gui.state.types, parameters)
-        self.gui.armStrip.arm(
-            f"type {type_name} \u00b7 {path}",
-            rank_lock_targets("", parameters, claims, arm_rel=path),
-        )
-
     def pick_lock_target(self, target: str) -> None:
-        """Pick ``target`` as the Target of the armed pick — a Follower's
-        Lock (plan task 5.3) or, while a Type Lock re-target is armed, the
-        Type Lock declaration with ``target`` as its Target (plan task
-        5.5). A refused Lock — a cycle (D7), a self-lock — shows the
+        """Pick ``target`` as the Target of the armed Follower's Lock (plan
+        task 5.3). A refused Lock — a cycle (D7), a self-lock — shows the
         Server's error text on the strip and stays armed so another
-        target can be picked; a successful Lock disarms the strip, and a
-        Type Lock declaration names the Instance parameters it skipped
-        (D17) on the entries pane's note."""
-        if self.armed_type_lock is not None:
-            type_name, path = self.armed_type_lock
-            try:
-                skipped = self.gui.instrument.lock_type_parameter(
-                    type_name, path, target=target
-                )
-            except Exception as exc:
-                self.gui.armStrip.show_error(str(exc))
-            else:
-                if skipped:
-                    self.gui.typesPane.show_entries_note(
-                        f"skipped: {', '.join(skipped)}"
-                    )
-                else:
-                    # a clean declaration leaves no stale error or
-                    # skipped note behind (plan task 5.6)
-                    self.gui.typesPane.reset_entries_note()
-                self.cancel_arm()
-            return
+        target can be picked; a successful Lock disarms the strip."""
         if self.armed_follower is None:
             return
         try:
@@ -822,10 +780,8 @@ class LocksController(QtCore.QObject):
             self.cancel_arm()
 
     def cancel_arm(self) -> None:
-        """Disarm the target picker without picking anything (either kind
-        of pick: a Follower's Lock or a Type Lock's re-target)."""
+        """Disarm the target picker without picking anything."""
         self.armed_follower = None
-        self.armed_type_lock = None
         self.gui.armStrip.disarm()
 
     @QtCore.Slot(QtCore.QModelIndex)
@@ -833,7 +789,7 @@ class LocksController(QtCore.QObject):
         """A row click while the pick is armed chooses that row's parameter
         as the Target (the mock's rowClick); a submodule click does
         nothing."""
-        if self.armed_follower is None and self.armed_type_lock is None:
+        if self.armed_follower is None:
             return
         source_index = self.gui.proxyModel.mapToSource(index)
         source_index = source_index.sibling(source_index.row(), 0)
@@ -980,14 +936,19 @@ class TypesController(QtCore.QObject):
         # the two panes it drives
         gui.typesPane.typeSelected.connect(self._on_pane_type_selected)
         gui.typesPane.addTypeRequested.connect(self._on_pane_add_type)
+        gui.typesPane.removeTypeRequested.connect(self._on_pane_remove_type)
         gui.typesPane.addEntryRequested.connect(self._on_pane_add_entry)
         gui.typesPane.removeEntryRequested.connect(self._on_pane_remove_entry)
         gui.typesPane.setDefaultRequested.connect(self._on_pane_set_default)
+        gui.typesPane.setUnitRequested.connect(self._on_pane_set_unit)
+        gui.typesPane.setGlobalRequested.connect(self._on_pane_set_global)
+        gui.model.itemNewValue.connect(gui.typesPane.show_global_value)
         gui.typesPane.toggleTypeLockRequested.connect(self._on_pane_toggle_type_lock)
         gui.typesPane.addNestedRequested.connect(self._on_pane_add_nested)
         gui.typesPane.removeNestedRequested.connect(self._on_pane_remove_nested)
         gui.typesPane.addInstanceRequested.connect(self._on_pane_add_instance)
         gui.typesPane.showInstanceRequested.connect(self._on_pane_show_instance)
+        gui.typesPane.removeInstanceRequested.connect(self._on_pane_remove_instance)
 
     @QtCore.Slot(str, object)
     def _on_type_changed(
@@ -1066,14 +1027,70 @@ class TypesController(QtCore.QObject):
         returns (the Broadcast arrives on top of that; a double rebuild
         is fine). The pane keeps the selected Type across rebuilds and
         drops the selection when the Type is gone."""
+        self._load_global_values()
         self.gui.typesPane.rebuild(
             self.gui.state.types, self.gui.model.parameter_units(), self.gui.typePalette
         )
+
+    def _load_global_values(self) -> None:
+        """Read the global value of every Type entry — its Type Lock's
+        Target, or its Globals parameter — for the pane's global column.
+        The read broadcasts a ``parameter-call``, which only repaints rows,
+        so it cannot bring a rebuild back here."""
+        values: Dict[str, Any] = {}
+        refreshed = False
+        for type_name, blueprint in self.gui.state.types.items():
+            for path, entry in blueprint.parameters.items():
+                stored = entry.get("target")
+                target = (
+                    relative_path(stored, self.gui.instrument.name)
+                    if stored is not None
+                    else f"_globals.{type_name}.{path}"
+                )
+                if target in values:
+                    continue
+                try:
+                    values[target] = nestedAttributeFromString(
+                        self.gui.instrument, target
+                    )()
+                except Exception:
+                    values[target] = None
+                    if not refreshed:
+                        # a Target the Proxy does not know yet (created
+                        # just now, or an entry older than its Globals
+                        # parameter): create the missing Globals
+                        # parameters, refresh the Proxy once, read again
+                        refreshed = True
+                        try:
+                            self.gui.instrument.ensure_global_targets()
+                            if hasattr(self.gui.instrument, "update"):
+                                self.gui.instrument.update()
+                            values[target] = nestedAttributeFromString(
+                                self.gui.instrument, target
+                            )()
+                        except Exception:
+                            pass
+        self.gui.typesPane.globalValues = values
+
+    @QtCore.Slot(str, str)
+    def _on_pane_set_global(self, target: str, text: str) -> None:
+        """An entry's committed global value editor (Return): set the
+        global value, which every locked Instance follows. A refused set
+        shows the error text on the entries pane's note."""
+        value = parse_default_text(text)
+        try:
+            nestedAttributeFromString(self.gui.instrument, target)(value)
+        except Exception as exc:
+            self.gui.typesPane.show_entries_error(str(exc))
+        else:
+            self.gui.typesPane.reset_entries_note()
+            self.gui.typesPane.show_global_value(target, value, committed=True)
 
     @QtCore.Slot(str)
     def _on_pane_type_selected(self, name: str) -> None:
         """The Types pane's selected Type changed: re-render the entries
         and Instances panes for it."""
+        self._load_global_values()
         self.gui.typesPane.refresh_selected_panes(
             self.gui.state.types, self.gui.model.parameter_units(), self.gui.typePalette
         )
@@ -1092,6 +1109,22 @@ class TypesController(QtCore.QObject):
             self.gui.typesPane.reset_type_note()
             self.gui.typesPane.newTypeEdit.clear()
             self.gui.typesPane.select_type(name)
+            self.refresh_types_pane()
+
+    @QtCore.Slot(str)
+    def _on_pane_remove_type(self, name: str) -> None:
+        """The Remove type button: remove the selected Type (D13) — the
+        Instances keep their parameters — and its Globals parameters under
+        ``_globals.<type>``; the Instance parameters locked to them are
+        unlocked first. A refused removal (the Type is nested in another)
+        shows the Server's error text on the strip's note."""
+        try:
+            self.gui.instrument.remove_type(name)
+            self._remove_parameters(self._globals_under(f"_globals.{name}"))
+        except Exception as exc:
+            self.gui.typesPane.show_type_error(str(exc))
+        else:
+            self.gui.typesPane.reset_type_note()
             self.refresh_types_pane()
 
     @QtCore.Slot(str, str, str, str)
@@ -1117,10 +1150,13 @@ class TypesController(QtCore.QObject):
     @QtCore.Slot(str, str)
     def _on_pane_remove_entry(self, type_name: str, path: str) -> None:
         """An own entry's Remove button: remove the entry from the Type
-        only (D13) — the Instances keep the parameter. A refused removal
-        shows the Server's error text on the entries pane's note."""
+        (D13) — the Instances keep the parameter — and its Globals
+        parameter; the Instance parameters locked to it are unlocked
+        first. A refused removal shows the Server's error text on the
+        entries pane's note."""
         try:
             self.gui.instrument.remove_type_parameter(type_name, path)
+            self._remove_parameters(self._globals_under(f"_globals.{type_name}.{path}"))
         except Exception as exc:
             self.gui.typesPane.show_entries_error(str(exc))
         else:
@@ -1141,7 +1177,23 @@ class TypesController(QtCore.QObject):
             self.gui.typesPane.show_entries_error(str(exc))
         else:
             self.gui.typesPane.reset_entries_note()
+            self.gui.typesPane.default_committed(type_name, path)
             self.refresh_types_pane()
+
+    @QtCore.Slot(str, str, str)
+    def _on_pane_set_unit(self, type_name: str, path: str, unit: str) -> None:
+        """An own entry's committed unit editor (Return): set the entry's
+        unit, which the Server propagates to every Instance (D13). The
+        propagation broadcasts no parameter update, so the whole GUI is
+        refreshed to show the Instances' new units. A refused set shows
+        the Server's error text on the entries pane's note."""
+        try:
+            self.gui.instrument.set_type_parameter_unit(type_name, path, unit.strip())
+        except Exception as exc:
+            self.gui.typesPane.show_entries_error(str(exc))
+        else:
+            self.gui.typesPane.reset_entries_note()
+            self.gui.refreshAll()
 
     @QtCore.Slot(str, str)
     def _on_pane_toggle_type_lock(self, type_name: str, path: str) -> None:
@@ -1209,6 +1261,57 @@ class TypesController(QtCore.QObject):
             self.gui.typesPane.reset_instances_note()
             self.gui.typesPane.newInstanceEdit.clear()
             self.refresh_types_pane()
+
+    @QtCore.Slot(str)
+    def _on_pane_remove_instance(self, instance: str) -> None:
+        """An instance row's delete button: after confirmation, remove
+        every parameter under the Instance; the emptied Parameter Groups
+        go with them. A refused removal shows the Server's error text on
+        the instances pane's note."""
+        paths = [
+            path
+            for path in self.gui.model.parameter_units()
+            if path.startswith(f"{instance}.")
+        ]
+        answer = QtWidgets.QMessageBox.question(
+            self.gui,
+            "Delete instance?",
+            f"Delete {instance} and its {len(paths)} parameters?",
+        )
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+        try:
+            self._remove_parameters(paths)
+        except Exception as exc:
+            self.gui.typesPane.show_instances_error(str(exc))
+        else:
+            self.gui.typesPane.reset_instances_note()
+            self.refresh_types_pane()
+
+    def _remove_parameters(self, paths: List[str]) -> None:
+        """Remove the parameters at ``paths``; the emptied Parameter Groups
+        go with them, and every Lock on one of them is dropped, so its
+        Follower answers with its own value again. The Server is called
+        directly and the proxy refreshed once: the proxy's
+        remove_parameter refetches the whole blueprint after every call."""
+        instrument = self.gui.instrument
+        cli = getattr(instrument, "cli", None)
+        for path in paths:
+            if cli is None:
+                instrument.remove_parameter(path)
+            else:
+                cli.call(f"{instrument.remotePath}.remove_parameter", path)
+        if cli is not None and paths:
+            instrument.update()
+
+    def _globals_under(self, prefix: str) -> List[str]:
+        """The Globals parameters at or under ``prefix`` — a Type's
+        ``_globals.<type>`` or an entry's ``_globals.<type>.<path>``."""
+        return [
+            path
+            for path in self.gui.model.parameter_units()
+            if path == prefix or path.startswith(f"{prefix}.")
+        ]
 
     @QtCore.Slot(str, str)
     def _on_pane_show_instance(self, type_name: str, instance: str) -> None:
