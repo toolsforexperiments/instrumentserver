@@ -1654,6 +1654,9 @@ class ParameterManager(Broadcaster, ParameterGroup):
                     propagated.add(full)
                     if self.has_param(full):
                         cast(Parameter, self.parameter(full)).unit = unit
+        global_path = f"_globals.{type_name}.{path}"
+        if self.has_param(global_path):
+            cast(Parameter, self.parameter(global_path)).unit = unit
         for name in affected:
             self._broadcast_type_update(name)
 
@@ -2041,6 +2044,21 @@ class ParameterManager(Broadcaster, ParameterGroup):
         self._create_managed_parameter(global_path, entry.default, entry.unit)
         self._broadcast_parameter_creation(global_path, entry.default, entry.unit)
         return global_path
+
+    def ensure_global_targets(self) -> List[str]:
+        """Create the Globals parameter ``_globals.<type>.<path>`` of every
+        Type entry that has none yet, with the entry's default value and
+        unit, and return the created paths; the GUI calls it so every
+        entry has a global value to edit. Raises like
+        :meth:`_ensure_global_target`."""
+        created: List[str] = []
+        for type_name, definition in self._types.items():
+            for path in definition.parameters:
+                global_path = f"_globals.{type_name}.{path}"
+                if not self.has_param(global_path):
+                    self._ensure_global_target(type_name, path)
+                    created.append(global_path)
+        return created
 
     # ------------------------------------------------------------------
     # Type Locks (plan decision D17, task 3.2)

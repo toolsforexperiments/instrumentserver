@@ -262,7 +262,9 @@ class StationServer(QtCore.QObject):
                         pool.submit(self._handleRouterMessage, identity, message)
 
                     # handle wakeup events (one or more workers finished)
-                    if self._wakeup_r in socks and (socks[self._wakeup_r] & zmq.POLLIN):
+                    # the poller reports a plain socket by its file descriptor,
+                    # not by the socket object
+                    if socks.get(self._wakeup_r.fileno(), 0) & zmq.POLLIN:
                         # Drain the wakeup pipe so it doesn't stay "always readable"
                         try:
                             # Read whatever is there; content doesn't matter

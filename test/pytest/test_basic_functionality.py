@@ -1,3 +1,5 @@
+import time
+
 from qcodes.math_utils.field_vector import FieldVector
 
 
@@ -71,3 +73,23 @@ def test_sending_and_receiving_arbitrary_objects(cli, start_server):
     new_field_vector = FieldVector(101, 102, 103)
     magnet.set_field(new_field_vector)
     assert magnet.get_field().is_equal(new_field_vector)
+
+
+def test_the_server_goes_idle_after_answering_requests(cli, start_server):
+    """Regression: the Server's request loop is woken when a worker has
+    finished a request, and must drain that wakeup. Left undrained, every
+    poll returns at once and an idle Server spins a whole core. After a
+    few requests the process may use only a fraction of an idle second's
+    CPU time; the Server runs in this process, on its own thread."""
+    for _ in range(3):
+        cli.list_instruments()
+    time.sleep(0.5)  # the last response goes out and the loop settles
+
+    start = time.process_time()
+    time.sleep(1.0)
+    used = time.process_time() - start
+
+    assert used < 0.5, (
+        f"the process used {used:.2f} s of CPU time in an idle second: "
+        "the Server's request loop does not go idle"
+    )

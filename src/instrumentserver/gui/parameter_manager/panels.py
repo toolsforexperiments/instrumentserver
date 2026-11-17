@@ -9,6 +9,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Tuple,
     cast,
 )
 
@@ -18,7 +19,7 @@ from ...blueprints import (
     PMTypeBluePrint,
 )
 from .. import keepSmallHorizontally
-from ..parameters import ParameterWidget
+from ..parameters import ParameterWidget, SetButton
 from .logic import (
     GUTTER_ROLE,
     GUTTER_WIDTH,
@@ -592,17 +593,18 @@ class LocksPanel(QtWidgets.QWidget):
 # ----------------- Types tab ----------------------------------------------------------
 
 
-#: Fixed pixel widths of the entries pane's unit, "locked to" and default
-#: columns (the mock's 60/200/252 trio).
+#: Pixel widths of the entries pane's unit, default, global and "locked to
+#: global" columns.
 ENTRIES_UNIT_WIDTH = 60
 ENTRIES_LOCK_WIDTH = 210
-ENTRIES_DEFAULT_WIDTH = 250
+ENTRIES_DEFAULT_WIDTH = 170
+ENTRIES_GLOBAL_WIDTH = 140
 
 #: Fixed pixel widths of the instances pane's parameter-count, "also" and
 #: button columns (the mock's 150/160/110 trio).
 INSTANCES_COUNT_WIDTH = 110
 INSTANCES_ALSO_WIDTH = 160
-INSTANCES_BUTTON_WIDTH = 80
+INSTANCES_BUTTON_WIDTH = 110
 
 
 class TypesPane(QtWidgets.QWidget):
@@ -613,10 +615,12 @@ class TypesPane(QtWidgets.QWidget):
     effective parameters, each row tinted with the Type's colour — and the
     New type strip. Right, above: the entries of the selected Type as a
     tree. Own entries carry an editable default (Return or the set button
-    commits), a Remove button and the Type Lock toggle in the "locked to"
-    column, with a re-target button and the Target's path while locked.
-    Entries from Nested Types render read-only with "defined by <type>".
-    Submodule rows show ``type: <t>`` in the "locked to" column and, for
+    commits), a Remove button, the global value in the "global" column —
+    the Type Lock's Target, or the entry's Globals parameter while
+    unlocked (Return sets it) — and the Type Lock toggle in the "locked
+    to global" column, with the Target's path while locked. Entries from Nested Types render read-only with "defined by
+    <type>". Submodule rows show ``type: <t>`` in the "locked to global"
+    column and, for
     the selected Type's own Nested Types, a Remove button. Beneath the
     tree run the "Add to type" and "Nested type" strips and a note line.
     Right, below: the Instances of the selected Type — name, parameter
@@ -626,7 +630,7 @@ class TypesPane(QtWidgets.QWidget):
     The pane never talks to the Server: every action is emitted as a
     signal — ``addTypeRequested``, ``addEntryRequested``,
     ``removeEntryRequested``, ``setDefaultRequested``,
-    ``toggleTypeLockRequested``, ``retargetTypeLockRequested``,
+    ``toggleTypeLockRequested``,
     ``addNestedRequested``, ``removeNestedRequested``,
     ``addInstanceRequested`` and ``showInstanceRequested`` — and
     :class:`.ParameterManagerGui`, which owns the pane, performs it and
@@ -637,6 +641,11 @@ class TypesPane(QtWidgets.QWidget):
     #: Emitted when the user presses the New type strip's Add button;
     #: the name is trimmed and not empty.
     addTypeRequested = QtCore.Signal(str)
+
+    #: Signal(str)
+    #: Emitted when the user presses the Remove type button: the selected
+    #: Type's name.
+    removeTypeRequested = QtCore.Signal(str)
 
     #: Signal(str)
     #: Emitted when the selected Type changes (a row click, or a rebuild
@@ -659,16 +668,21 @@ class TypesPane(QtWidgets.QWidget):
     #: the editor's text.
     setDefaultRequested = QtCore.Signal(str, str, str)
 
+    #: Signal(str, str, str)
+    #: Emitted when the user commits an own entry's unit editor (Return):
+    #: the Type's name, the entry path and the editor's text.
+    setUnitRequested = QtCore.Signal(str, str, str)
+
+    #: Signal(str, str)
+    #: Emitted when the user commits a locked entry's global value editor
+    #: (Return): the Target's path and the editor's text.
+    setGlobalRequested = QtCore.Signal(str, str)
+
     #: Signal(str, str)
     #: Emitted when the user presses a Type Lock toggle: the Type's name
     #: and the entry path. The GUI locks or unlocks from the entry's
     #: stored Target.
     toggleTypeLockRequested = QtCore.Signal(str, str)
-
-    #: Signal(str, str)
-    #: Emitted when the user presses a locked entry's re-target button:
-    #: the Type's name and the entry path.
-    retargetTypeLockRequested = QtCore.Signal(str, str)
 
     #: Signal(str, str, str)
     #: Emitted when the user presses "Add nested type": the Type's name,
@@ -690,6 +704,11 @@ class TypesPane(QtWidgets.QWidget):
     #: Type's name and the Instance's name.
     showInstanceRequested = QtCore.Signal(str, str)
 
+    #: Signal(str)
+    #: Emitted when the user presses an instance row's delete button: the
+    #: Instance's name.
+    removeInstanceRequested = QtCore.Signal(str)
+
     def __init__(
         self, instrument_name: str, parent: Optional[QtWidgets.QWidget] = None
     ) -> None:
@@ -707,6 +726,15 @@ class TypesPane(QtWidgets.QWidget):
         # buttons of the instance rows, keyed by instance path
         self.entryWidgets: Dict[str, Dict[str, Any]] = {}
         self.showButtons: Dict[str, QtWidgets.QPushButton] = {}
+        # the global values, keyed by Target path (set by the GUI before a
+        # rebuild); the (editor, set button) pairs showing them; and the
+        # edited texts not committed yet, which survive rebuilds and
+        # incoming values
+        self.globalValues: Dict[str, Any] = {}
+        self.globalEditors: Dict[str, Tuple[QtWidgets.QLineEdit, SetButton]] = {}
+        self.pendingGlobals: Dict[str, str] = {}
+        # the same for the default editors, keyed by (Type, entry path)
+        self.pendingDefaults: Dict[Tuple[str, str], str] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -746,6 +774,16 @@ class TypesPane(QtWidgets.QWidget):
         keepSmallHorizontally(self.addTypeButton)
         typeStrip.addWidget(self.newTypeEdit, 1)
         typeStrip.addWidget(self.addTypeButton)
+        self.removeTypeButton = QtWidgets.QPushButton(
+            QtGui.QIcon(":/icons/delete.svg"), " Remove"
+        )
+        self.removeTypeButton.setStyleSheet("QPushButton { background-color: salmon }")
+        self.removeTypeButton.setToolTip(
+            "remove the selected Type — the Instances keep their parameters"
+        )
+        self.removeTypeButton.setVisible(False)
+        keepSmallHorizontally(self.removeTypeButton)
+        typeStrip.addWidget(self.removeTypeButton)
         self.typeNote = QtWidgets.QLabel(typeListPane)
 
         typeListLayout.addWidget(self.typeList, 1)
@@ -760,9 +798,9 @@ class TypesPane(QtWidgets.QWidget):
         entriesLayout.setContentsMargins(0, 0, 0, 0)
 
         self.entriesLabel = QtWidgets.QLabel(entriesPane)
-        self.entriesModel = QtGui.QStandardItemModel(0, 4, self)
+        self.entriesModel = QtGui.QStandardItemModel(0, 5, self)
         self.entriesModel.setHorizontalHeaderLabels(
-            ["parameter", "unit", "locked to", "default"]
+            ["parameter", "unit", "default", "global", "locked to global"]
         )
         self.entriesView = QtWidgets.QTreeView(entriesPane)
         self.entriesView.setModel(self.entriesModel)
@@ -775,8 +813,9 @@ class TypesPane(QtWidgets.QWidget):
         entriesHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
         for column, width in (
             (1, ENTRIES_UNIT_WIDTH),
-            (2, ENTRIES_LOCK_WIDTH),
-            (3, ENTRIES_DEFAULT_WIDTH),
+            (2, ENTRIES_DEFAULT_WIDTH),
+            (3, ENTRIES_GLOBAL_WIDTH),
+            (4, ENTRIES_LOCK_WIDTH),
         ):
             entriesHeader.setSectionResizeMode(
                 column, QtWidgets.QHeaderView.ResizeMode.Interactive
@@ -888,6 +927,9 @@ class TypesPane(QtWidgets.QWidget):
 
         self.addTypeButton.clicked.connect(self._request_add_type)
         self.newTypeEdit.returnPressed.connect(self.addTypeButton.click)
+        self.removeTypeButton.clicked.connect(
+            lambda: self.removeTypeRequested.emit(self.selectedType)
+        )
         self.addEntryButton.clicked.connect(self._request_add_entry)
         for edit in (self.entryNameEdit, self.entryDefaultEdit, self.entryUnitEdit):
             edit.returnPressed.connect(self.addEntryButton.click)
@@ -979,6 +1021,7 @@ class TypesPane(QtWidgets.QWidget):
         self.instancesLabel.setText(
             f"instances of {selected}" if has_type else "instances"
         )
+        self.removeTypeButton.setVisible(has_type)
         self.addEntryButton.setEnabled(has_type)
         self.addNestedButton.setEnabled(has_type)
         self.addInstanceButton.setEnabled(has_type)
@@ -1038,6 +1081,7 @@ class TypesPane(QtWidgets.QWidget):
         self._clear_index_widgets()
         self.entriesModel.removeRows(0, self.entriesModel.rowCount())
         self.entryWidgets = {}
+        self.globalEditors = {}
         blueprint = types.get(selected)
         if selected is None or blueprint is None:
             self.entriesView.expandAll()
@@ -1057,17 +1101,25 @@ class TypesPane(QtWidgets.QWidget):
             unit_item = QtGui.QStandardItem("" if row.kind == "submodule" else row.unit)
             lock_item = QtGui.QStandardItem()
             default_item = QtGui.QStandardItem()
-            parent_item.appendRow([name_item, unit_item, lock_item, default_item])
+            global_item = QtGui.QStandardItem()
+            parent_item.appendRow(
+                [name_item, unit_item, default_item, global_item, lock_item]
+            )
             items_by_path[path] = name_item
             if colours is not None:
-                for item in (name_item, unit_item, lock_item, default_item):
+                for item in (
+                    name_item,
+                    unit_item,
+                    default_item,
+                    global_item,
+                    lock_item,
+                ):
                     item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
             entry: Dict[str, Any] = {
                 "editor": None,
                 "set": None,
                 "remove": None,
                 "toggle": None,
-                "retarget": None,
                 "targetLabel": None,
                 "definedBy": None,
                 "removeNested": None,
@@ -1079,6 +1131,65 @@ class TypesPane(QtWidgets.QWidget):
                 )
             else:
                 self._build_entry_row(selected, row, lock_item, default_item, entry)
+                if row.own:
+                    # the editable unit: Return commits it
+                    unit_editor = QtWidgets.QLineEdit(
+                        row.unit, self.entriesView.viewport()
+                    )
+                    unit_editor.returnPressed.connect(
+                        lambda path=path, unit_editor=unit_editor: (
+                            self.setUnitRequested.emit(
+                                selected, path, unit_editor.text()
+                            )
+                        )
+                    )
+                    self.entriesView.setIndexWidget(
+                        self.entriesModel.indexFromItem(unit_item), unit_editor
+                    )
+                if row.own:
+                    # the value every locked Instance follows: the Type
+                    # Lock's Target, or the entry's Globals parameter while
+                    # unlocked. Like a parameter row: an edit turns the set
+                    # button orange, and Return or the button sets it
+                    target = row.target or f"_globals.{selected}.{row.path}"
+                    value = self.globalValues.get(target)
+                    global_cell = QtWidgets.QWidget(self.entriesView.viewport())
+                    global_layout = QtWidgets.QHBoxLayout(global_cell)
+                    global_layout.setContentsMargins(0, 0, 0, 0)
+                    global_editor = QtWidgets.QLineEdit(
+                        self.pendingGlobals.get(
+                            target, "" if value is None else str(value)
+                        ),
+                        global_cell,
+                    )
+                    global_editor.setToolTip(f"the value of {target}")
+                    global_set = SetButton(
+                        QtGui.QIcon(":/icons/set.svg"), "", parent=global_cell
+                    )
+                    keepSmallHorizontally(global_set)
+                    global_set.setPending(target in self.pendingGlobals)
+                    global_editor.textEdited.connect(
+                        lambda text, target=target, global_set=global_set: (
+                            self._on_edited(
+                                self.pendingGlobals, target, text, global_set
+                            )
+                        )
+                    )
+
+                    def commit(
+                        target: str = target,
+                        global_editor: QtWidgets.QLineEdit = global_editor,
+                    ) -> None:
+                        self.setGlobalRequested.emit(target, global_editor.text())
+
+                    global_editor.returnPressed.connect(commit)
+                    global_set.pressed.connect(commit)
+                    global_layout.addWidget(global_editor, 1)
+                    global_layout.addWidget(global_set)
+                    self.entriesView.setIndexWidget(
+                        self.entriesModel.indexFromItem(global_item), global_cell
+                    )
+                    self.globalEditors[target] = (global_editor, global_set)
         self.entriesView.expandAll()
 
     def _build_submodule_row(
@@ -1137,7 +1248,7 @@ class TypesPane(QtWidgets.QWidget):
         entry: Dict[str, Any],
     ) -> None:
         # the "locked to" column: the Type Lock toggle, and while the entry
-        # is locked the re-target button and the Target's relative path
+        # is locked the Target's relative path
         locked = row.target is not None
         lock_container = QtWidgets.QWidget(self.entriesView.viewport())
         lock_layout = QtWidgets.QHBoxLayout(lock_container)
@@ -1161,21 +1272,6 @@ class TypesPane(QtWidgets.QWidget):
         lock_layout.addWidget(toggle)
         entry["toggle"] = toggle
         if locked:
-            retarget = QtWidgets.QPushButton(
-                QtGui.QIcon(":/icons/set.svg"), "", parent=lock_container
-            )
-            retarget.setToolTip(
-                f"lock every Instance of {selected} to another Target — "
-                "pick one in the parameter tree"
-            )
-            keepSmallHorizontally(retarget)
-            retarget.pressed.connect(
-                lambda type_name=selected, path=row.path: (
-                    self.retargetTypeLockRequested.emit(type_name, path)
-                )
-            )
-            lock_layout.addWidget(retarget)
-            entry["retarget"] = retarget
             target_label = QtWidgets.QLabel(row.target, parent=lock_container)
             target_label.setToolTip(
                 f"{row.target} — followed by every Instance of {selected}"
@@ -1187,17 +1283,27 @@ class TypesPane(QtWidgets.QWidget):
         )
 
         # the default column: the editable default with its set button and
-        # the entry's Remove button
+        # the entry's Remove button; like a parameter row, an edit turns the
+        # set button orange until Return or the button sets it
         editor_container = QtWidgets.QWidget(self.entriesView.viewport())
         editor_layout = QtWidgets.QHBoxLayout(editor_container)
         editor_layout.setContentsMargins(0, 0, 0, 0)
         editor = QtWidgets.QLineEdit(editor_container)
-        editor.setText("" if row.default is None else str(row.default))
+        key = (selected, row.path)
+        editor.setText(
+            self.pendingDefaults.get(
+                key, "" if row.default is None else str(row.default)
+            )
+        )
         editor.setPlaceholderText("no default")
-        set_button = QtWidgets.QPushButton(
+        set_button = SetButton(
             QtGui.QIcon(":/icons/set.svg"), "", parent=editor_container
         )
         keepSmallHorizontally(set_button)
+        set_button.setPending(key in self.pendingDefaults)
+        editor.textEdited.connect(
+            lambda text: self._on_edited(self.pendingDefaults, key, text, set_button)
+        )
         set_button.pressed.connect(
             lambda: self.setDefaultRequested.emit(selected, row.path, editor.text())
         )
@@ -1279,15 +1385,29 @@ class TypesPane(QtWidgets.QWidget):
             if colours is not None:
                 for item in (name_item, count_item, also_item, button_item):
                     item.setData(colours["tint"], QtCore.Qt.ItemDataRole.BackgroundRole)
-            show = QtWidgets.QPushButton("Show", parent=self.instancesView.viewport())
+            buttons = QtWidgets.QWidget(self.instancesView.viewport())
+            buttons_layout = QtWidgets.QHBoxLayout(buttons)
+            buttons_layout.setContentsMargins(0, 0, 0, 0)
+            show = QtWidgets.QPushButton("Show", parent=buttons)
             show.setToolTip("show in the parameter tree")
             show.pressed.connect(
                 lambda type_name=selected, node=instance: (
                     self.showInstanceRequested.emit(type_name, node)
                 )
             )
+            remove = QtWidgets.QPushButton(
+                QtGui.QIcon(":/icons/delete.svg"), "", parent=buttons
+            )
+            remove.setStyleSheet("QPushButton { background-color: salmon }")
+            remove.setToolTip("delete the Instance and all its parameters")
+            keepSmallHorizontally(remove)
+            remove.pressed.connect(
+                lambda node=instance: self.removeInstanceRequested.emit(node)
+            )
+            buttons_layout.addWidget(show, 1)
+            buttons_layout.addWidget(remove)
             self.instancesView.setIndexWidget(
-                self.instancesModel.indexFromItem(button_item), show
+                self.instancesModel.indexFromItem(button_item), buttons
             )
             self.showButtons[instance] = show
 
@@ -1384,6 +1504,37 @@ class TypesPane(QtWidgets.QWidget):
         """Show an action error in red on the entries pane's note."""
         self.entriesNote.setStyleSheet("QLabel { color: red }")
         self.entriesNote.setText(text)
+
+    def _on_edited(
+        self, pending: Dict[Any, str], key: Any, text: str, set_button: SetButton
+    ) -> None:
+        """Remember an edit of a global value or default until it is
+        committed, and turn its set button orange."""
+        pending[key] = text
+        set_button.setPending(True)
+
+    def default_committed(self, type_name: str, path: str) -> None:
+        """Forget the committed default edit of the entry ``path``: the
+        next rebuild shows the stored default with a plain set button."""
+        self.pendingDefaults.pop((type_name, path), None)
+
+    def show_global_value(
+        self, target: str, value: Any, committed: bool = False
+    ) -> None:
+        """Show ``value`` on the global value editor of the Target at
+        ``target``, if the entries pane shows one. An edit not committed
+        yet keeps its text unless ``committed`` — the value was just set
+        from it — which also turns its set button back."""
+        self.globalValues[target] = value
+        if committed:
+            self.pendingGlobals.pop(target, None)
+        elif target in self.pendingGlobals:
+            return
+        widgets = self.globalEditors.get(target)
+        if widgets is not None:
+            editor, set_button = widgets
+            editor.setText("" if value is None else str(value))
+            set_button.setPending(False)
 
     def show_entries_note(self, text: str) -> None:
         """Show ``text`` on the entries pane's note in the normal colour

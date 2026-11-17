@@ -23,21 +23,45 @@ class LogLevels(Enum):
 class _LogBridge(QtCore.QObject):
     """The Qt side of :class:`QLogHandler`: the text widget, and the signal
     that carries each html line into the GUI thread, where the slot
-    appends it to the widget."""
+    appends it to the widget.
+
+    The bridge has no Qt parent, so Qt never deletes it together with the
+    widget. Records are emitted on it from any thread (the server logs
+    from its own), and a parent deleting it in the GUI thread while
+    another thread emits on it crashes or deadlocks. The handler deletes
+    the bridge itself (:meth:`QLogHandler.detach`), only after no thread
+    can emit on it any more."""
 
     #: Signal(str) : Emitted with the html-formatted log record to append to the widget
     new_html = QtCore.Signal(str)
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:
-        super().__init__(parent)
+    def __init__(
+        self,
+        parent: Optional[QtWidgets.QWidget],
+        on_widget_destroyed: Callable[[], None],
+    ) -> None:
+        super().__init__()
         self.widget = QtWidgets.QTextEdit(parent)
         self.widget.setReadOnly(True)
+        self._widget_alive = True
+        self._on_widget_destroyed_cb = on_widget_destroyed
         # connect signal to slot that actually touches the widget (GUI thread)
         self.new_html.connect(self._append_html)
+        # the widget dies with its parent (the LogWidget); both run in the
+        # GUI thread, so this slot runs right inside the deletion
+        self.widget.destroyed.connect(self._on_widget_destroyed)
+
+    @QtCore.Slot()
+    def _on_widget_destroyed(self) -> None:
+        self._widget_alive = False
+        self._on_widget_destroyed_cb()
 
     @QtCore.Slot(str)
     def _append_html(self, html: str) -> None:
         """Append HTML to the text widget in the GUI thread."""
+        # a line posted before the widget was deleted can arrive after it
+        if not self._widget_alive:
+            return
         self.widget.append(html)
         # reset char format so bold/italics don’t bleed into the next line
         self.widget.setCurrentCharFormat(QtGui.QTextCharFormat())
@@ -54,7 +78,11 @@ class QLogHandler(logging.Handler):
     ``QObject``: :func:`logging.shutdown` visits every handler at
     interpreter exit, after Qt has deleted the widgets, and touching a
     deleted ``QObject`` there raises. The Qt objects live in a
-    :class:`_LogBridge` parented to ``parent``."""
+    :class:`_LogBridge`; the text widget is parented to ``parent``.
+
+    When the text widget is deleted the handler detaches itself from every
+    logger, so windows that come and go (each server window has a
+    LogWidget) leave no handlers behind on the shared logger."""
 
     COLORS = {
         logging.ERROR: QtGui.QColor("red"),
@@ -65,7 +93,8 @@ class QLogHandler(logging.Handler):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget]) -> None:
         super().__init__()
-        self._bridge = _LogBridge(parent)
+        self._closed = False
+        self._bridge = _LogBridge(parent, self.detach)
         self.widget = self._bridge.widget
         self._transform: Optional[Callable[[logging.LogRecord, str], Optional[str]]] = (
             None
@@ -78,6 +107,11 @@ class QLogHandler(logging.Handler):
         self._transform = fn
 
     def emit(self, record: logging.LogRecord) -> None:
+        # logging.Handler.handle holds self.lock around emit, and detach
+        # sets _closed under the same lock: once detach has returned, no
+        # thread is inside emit or can enter the bridge again
+        if self._closed:
+            return
         try:
             formatted = self.format(record)  # prefix + message
             raw_msg = record.getMessage()  # message only
@@ -113,16 +147,35 @@ class QLogHandler(logging.Handler):
 
             self._bridge.new_html.emit(html)
         except RuntimeError:
-            # Widget has been destroyed; detach self from the logger so we
-            # stop receiving further records and Python can collect us.
-            # Assign a new list rather than removeHandler: the logger is
-            # iterating over its handlers list right now, and removing from
-            # it in place would skip the handler after this one.
-            for lg in list(logging.Logger.manager.loggerDict.values()) + [
-                logging.getLogger()
-            ]:
-                if isinstance(lg, logging.Logger) and self in lg.handlers:
-                    lg.handlers = [h for h in lg.handlers if h is not self]
+            # the bridge is gone (e.g. at interpreter exit): stop receiving
+            # records so Python can collect us
+            self._remove_from_loggers()
+
+    def detach(self) -> None:
+        """Stop handling records and delete the bridge.
+
+        Called in the GUI thread when the text widget is deleted. Waits for
+        a record another thread is emitting right now, then removes the
+        handler from every logger and schedules the bridge for deletion."""
+        with self.lock:  # type: ignore[union-attr]
+            if self._closed:
+                return
+            self._closed = True
+        self._remove_from_loggers()
+        try:
+            self._bridge.deleteLater()
+        except RuntimeError:
+            pass
+
+    def _remove_from_loggers(self) -> None:
+        # Assign a new list rather than removeHandler: another thread (or
+        # this one) may be iterating over the logger's handlers right now,
+        # and removing from the list in place would skip the next handler.
+        for lg in list(logging.Logger.manager.loggerDict.values()) + [
+            logging.getLogger()
+        ]:
+            if isinstance(lg, logging.Logger) and self in lg.handlers:
+                lg.handlers = [h for h in lg.handlers if h is not self]
 
 
 class LogWidget(QtWidgets.QWidget):
