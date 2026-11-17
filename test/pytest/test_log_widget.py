@@ -102,3 +102,43 @@ def test_closing_the_app_leaves_no_traceback_from_the_log_handler():
     assert result.returncode == 0, result.stderr
     assert "Traceback" not in result.stderr, result.stderr
     assert "has been deleted" not in result.stderr, result.stderr
+
+
+def test_deleting_the_widget_detaches_the_handler(qtbot):
+    """Each server window has a LogWidget; deleting the widget must take its
+    handler off the shared logger right away, not leave it behind for the
+    next window's server thread to log into."""
+    logger = logging.getLogger(LOGGER)
+    widget = LogWidget()
+    handler = widget.handler
+    assert handler in logger.handlers
+    sip.delete(widget)
+    assert handler not in logger.handlers
+
+
+def test_deleting_widgets_while_another_thread_logs(qtbot):
+    """Regression for a crash/hang in CI: a server thread logs while the GUI
+    thread deletes log widgets. Records must never reach a deleted bridge."""
+    logger = logging.getLogger(LOGGER)
+    stop = threading.Event()
+
+    def spam():
+        while not stop.is_set():
+            logger.info("from the server thread")
+
+    thread = threading.Thread(target=spam)
+    thread.start()
+    try:
+        with qtbot.captureExceptions() as exceptions:
+            for _ in range(50):
+                widget = LogWidget()
+                qtbot.wait(1)  # let some lines reach the widget
+                handler = widget.handler
+                sip.delete(widget)
+                assert handler not in logger.handlers
+                qtbot.wait(1)  # deliver lines posted before the deletion
+        assert exceptions == []
+    finally:
+        stop.set()
+        thread.join()
+    assert not any(isinstance(h, QLogHandler) for h in logger.handlers)
