@@ -125,13 +125,14 @@ class DFListener(Listener):
     def run(self) -> None:
         super().run()
 
-    def listenerEvent(self, message: ParameterBroadcastBluePrint) -> None:
+    def listenerEvent(self, instrument: str, message: ParameterBroadcastBluePrint) -> None:
 
         # listens only for parameters in the list, if it is empty, it listens to everything
         if not self.paramList:
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
             self.df.loc[len(self.df)] = [
                 datetime.now(),
+                instrument,
                 message.name,
                 message.value,
                 message.unit,
@@ -141,6 +142,7 @@ class DFListener(Listener):
             logger.info(f"Writing data [{message.name},{message.value},{message.unit}]")
             self.df.loc[len(self.df)] = [
                 datetime.now(),
+                instrument,
                 message.name,
                 message.value,
                 message.unit,
